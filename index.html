@@ -158,6 +158,43 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
 .frow .dot{width:16px;height:16px;border-radius:4px;flex:none;border:1px solid rgba(0,0,0,.4)}
 .frow .nm{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:700}
 .page h3{font-size:1rem;margin:18px 0 0}
+
+/* Home friends row: block tiles */
+.big{font-size:2rem!important;margin:0 0 4px!important}
+.hfr{display:flex;gap:14px;overflow-x:auto;padding:12px 0 6px}
+.ht{--c:#ff6b57;flex:none;width:92px;background:none;border:0;padding:0;cursor:pointer;text-align:center}
+.hb{width:92px;height:92px;border-radius:8px;background:#3a3c3f;display:grid;place-items:center;transition:background .15s}
+.ht:hover .hb{background:#46484b}
+.hb b{font-size:2.6rem;font-weight:500;line-height:1}
+.hn{display:block;margin-top:6px;font-size:.8rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mf{position:relative;width:36px;height:56px;display:block}
+.mf i,.mf::before,.mf::after{position:absolute;display:block;border:1px solid rgba(0,0,0,.4);border-radius:2px}
+.mf::before,.mf::after{content:"";top:17px;width:6px;height:20px;background:#f5cd30}
+.mf::before{left:0}.mf::after{left:30px}
+.mh{left:8px;top:0;width:20px;height:16px;background:#f5cd30;border-radius:4px!important}
+.mt{left:6px;top:17px;width:24px;height:20px;background:var(--c)}
+.ml{left:6px;top:38px;width:24px;height:16px;background:#a4bd47}
+/* Studio */
+#studio .bar{max-width:1280px}
+.sname{width:220px;min-height:36px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:#191b1d;font-weight:700}
+.sgrid{display:grid;grid-template-columns:190px minmax(0,1fr) 380px;gap:12px;max-width:1280px;margin:0 auto;height:calc(100vh - 100px);min-height:520px}
+@media(max-width:980px){.sgrid{grid-template-columns:minmax(0,1fr);height:auto}.pal{max-height:240px}.ws{min-height:320px}}
+.pal,.side{overflow:auto}.pal{padding:10px}.pal h4{margin:12px 0 6px;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.pal h4:first-child{margin-top:0}
+.ws{overflow:auto;padding:14px;background:#191b1d;border:1px solid var(--line);border-radius:8px;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;align-content:flex-start}
+.scr{min-width:210px}.ws>.empty{width:100%;text-align:center;padding:40px 10px}
+.side{display:flex;flex-direction:column;gap:10px}
+#s-cv{width:100%;border-radius:8px;border:1px solid var(--line);background:#191b1d}
+.pre{flex:1;min-height:140px;margin:0;padding:10px;background:#191b1d;border:1px solid var(--line);border-radius:8px;font:600 .8rem/1.5 ui-monospace,Consolas,monospace;overflow:auto;white-space:pre;color:#d7f7e6}
+.c-ev{--bc:#c9822b}.c-mo{--bc:#2f7de1}.c-lk{--bc:#8a5cf6}.c-ct{--bc:#b88a00}.c-vr{--bc:#d9503f}.c-fn{--bc:#cc437f}
+.bw{margin-bottom:2px}
+.bk2{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 26px 6px 10px;border-radius:6px;background:var(--bc);color:#fff;font-weight:700;font-size:.85rem;cursor:grab;user-select:none}
+.bw:has(.cbody)>.bk2{border-radius:6px 6px 0 0}
+.pal .bk2{padding-right:10px;margin-bottom:4px}
+.bk2 input{height:22px;min-width:2ch;border:0;border-radius:11px;padding:0 8px;background:#fff;color:#222;font:inherit;font-weight:600}
+.bk2 .x{position:absolute;right:4px;top:5px;width:18px;height:18px;border:0;border-radius:50%;background:rgba(0,0,0,.25);color:#fff;font-size:.65rem;cursor:pointer;padding:0;line-height:18px}
+.cbody{margin-left:14px;border-left:10px solid var(--bc);padding:2px 0 2px 4px;min-height:14px}
+.cend{height:10px;background:var(--bc);border-radius:0 0 6px 6px}
+.zn{height:6px;border-radius:3px;transition:height .1s}.zn.on{height:24px;background:rgba(255,255,255,.22)}
 </style>
 </head>
 <body>
@@ -197,15 +234,16 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
 <main id="lobby" class="screen" hidden>
   <header class="bar">
     <div class="logo sm"><span class="blk b1"></span><span class="blk b2"></span><span class="blk b3"></span><h1>BrixBlox</h1></div>
-    <nav class="nav"><button id="n-home" type="button" class="on">Home</button><button id="n-friends" type="button">Friends<em id="n-badge" hidden></em></button></nav>
+    <nav class="nav"><button id="n-home" type="button" class="on">Home</button><button id="n-friends" type="button">Friends<em id="n-badge" hidden></em></button><button id="n-studio" type="button">Studio</button></nav>
     <div class="who"><strong id="l-name"></strong><button id="b-out" class="btn ghost small" type="button">Log out</button></div>
   </header>
   <div id="p-home" class="page">
+    <section><h2 class="big">Home</h2><h3 id="h-fh">Friends (0)</h3><div id="h-fr" class="hfr"></div></section>
     <section class="panel av-panel">
       <div id="av" class="avatar"><i class="hd"></i><i class="tr"></i><i class="a1"></i><i class="a2"></i><i class="l1"></i><i class="l2"></i></div>
       <div><h2 id="l-name2"></h2><p class="note">Pick your shirt color</p><div id="sw" class="swatches"></div></div>
     </section>
-    <section><h2>Games</h2><div class="soon"><b>Nothing to play yet</b>Games made in BrixBlox Studio will show up here.</div></section>
+    <section><h2>Games</h2><div class="soon"><b>Nothing to play yet</b>Games made in BrixBlox Studio will show up here.<br><br><button id="g-studio" class="btn small" type="button">Open BrixBlox Studio</button></div></section>
   </div>
   <div id="p-friends" class="page" hidden>
     <section class="panel"><h2>Add a friend</h2>
@@ -214,6 +252,23 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
       <h3>Requests</h3><div id="f-req"></div>
       <h3>Friends</h3><div id="f-list"></div>
     </section>
+  </div>
+</main>
+
+<main id="studio" class="screen" hidden>
+  <header class="bar">
+    <div class="logo sm"><span class="blk b1"></span><span class="blk b2"></span><span class="blk b3"></span><h1>BrixBlox Studio</h1></div>
+    <input id="s-name" class="sname" maxlength="30" aria-label="Project name">
+    <div class="who"><button id="s-run" class="btn small" type="button">&#9654; Run</button><button id="s-stop" class="btn ghost small" type="button" disabled>&#9632; Stop</button><button id="s-back" class="btn ghost small" type="button">Back</button></div>
+  </header>
+  <div class="sgrid">
+    <aside id="s-pal" class="pal panel" aria-label="Block palette"></aside>
+    <section id="s-ws" class="ws" aria-label="Scripts"></section>
+    <aside class="side">
+      <canvas id="s-cv" width="480" height="360" aria-label="Stage"></canvas>
+      <div class="tabs"><button id="t-out" type="button" class="on">Output</button><button id="t-code" type="button">BricBloc code</button></div>
+      <pre id="s-out" class="pre"></pre><pre id="s-code" class="pre" hidden></pre>
+    </aside>
   </div>
 </main>
 
@@ -329,7 +384,16 @@ function nameProblem(n){
 
 /* ===== 4. Backends: Supabase when configured, otherwise a demo that saves in this browser only ===== */
 const mem={};
-const store={get:function(k){try{const v=localStorage.getItem(k);return v===null?mem[k]||null:v}catch(e){return mem[k]||null}},set:function(k,v){mem[k]=v;try{localStorage.setItem(k,v)}catch(e){}}};
+const store=(function(){
+  function wn(){try{return JSON.parse(window.name)||{}}catch(e){return {}}}
+  function wset(o){try{window.name=JSON.stringify(o)}catch(e){}}
+  return {
+    get:function(k){try{const v=localStorage.getItem(k);if(v!==null)return v}catch(e){}
+      if(mem[k]!=null)return mem[k];const o=wn();return o['bb:'+k]!=null?o['bb:'+k]:null},
+    set:function(k,v){mem[k]=v;let ok=false;try{localStorage.setItem(k,v);ok=true}catch(e){}
+      if(!ok){const o=wn();o['bb:'+k]=v;wset(o)}},
+    del:function(k){delete mem[k];try{localStorage.removeItem(k)}catch(e){}const o=wn();delete o['bb:'+k];wset(o)}};
+})();
 async function sha(t){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('')}catch(e){return btoa(t)}}
 function makeDemo(){
   function load(){try{return JSON.parse(store.get('brixblox-demo'))||{users:[],recs:{},session:null}}catch(e){return {users:[],recs:{},session:null}}}
@@ -357,7 +421,7 @@ function makeDemo(){
   };
 }
 function makeSupa(){
-  const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,storage:{getItem:function(k){return store.get(k)},setItem:function(k,v){store.set(k,v)},removeItem:function(k){store.del(k)}}}});
   async function profile(id){const r=await sb.from('profiles').select('id,username,avatar_color').eq('id',id).single();if(r.error)throw r.error;return {id:r.data.id,username:r.data.username,color:r.data.avatar_color}}
   return {
     demo:false,
@@ -384,7 +448,7 @@ let me=null,recs={},lbLevel=1,curLevel=null,toastT=0;
 const COLORS=['#ff6b57','#ffc233','#46c26b','#3da5ff','#7a4cff','#ff7ab8','#1fc8b4','#f5f0e6'];
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('on')},3200)}
 function fmt(ms){const s=ms/1000,m=Math.floor(s/60);return m+':'+(s-m*60).toFixed(2).padStart(5,'0')}
-function show(which){$('auth').hidden=which!=='auth';$('lobby').hidden=which!=='lobby';$('hud').hidden=which!=='play';if(which!=='play')$('done').hidden=true;playing=which==='play'}
+function show(which){$('auth').hidden=which!=='auth';$('lobby').hidden=which!=='lobby';$('hud').hidden=which!=='play';$('studio').hidden=which!=='studio';if(which!=='play')$('done').hidden=true;playing=which==='play'}
 function errText(e){const m=(e&&e.message)||'Something went wrong.';if(/Database error saving new user/i.test(m))return 'That player name was not accepted. Try a different one.';if(/send_friend_request|list_friends|answer_friend/i.test(m))return 'Friends need the SQL setup in Supabase (brixblox-friends.sql).';if(/already registered/i.test(m))return 'That email already has an account.';return m}
 $('mode-note').textContent=api.demo?'Demo mode: accounts and times are saved in this browser only. Add your Supabase keys to share them.':'';
 
@@ -428,11 +492,146 @@ async function loadFriends(){
     const inc=pend.filter(function(r){return r.incoming});
     fill($('f-req'),pend.map(function(r){return r.incoming?frow(r,[['Accept',true],['Decline',false,1]]):frow(r,[['Cancel',false,1]],' (sent)')}),'No pending requests.');
     fill($('f-list'),rows.filter(function(r){return r.status==='accepted'}).map(function(r){return frow(r,[['Remove',false,1]])}),'No friends yet. Add someone by username above.');
-    $('n-badge').hidden=!inc.length;$('n-badge').textContent=inc.length}
+    $('n-badge').hidden=!inc.length;$('n-badge').textContent=inc.length;
+    const acc=rows.filter(function(r){return r.status==='accepted'});$('h-fh').textContent='Friends ('+acc.length+')';
+    $('h-fr').replaceChildren.apply($('h-fr'),[tile('Add Friends',0,1)].concat(acc.map(function(r){return tile(r.name,r.color)})))}
   catch(e){$('n-badge').hidden=true;const p=document.createElement('p');p.className='empty';p.textContent=errText(e);$('f-req').replaceChildren(p);$('f-list').replaceChildren()}}
 $('f-add').addEventListener('submit',async function(e){e.preventDefault();const n=$('f-name').value.trim(),m=$('f-msg');if(!n)return;
   try{const r=await api.addFriend(me.id,n);m.className='hint '+(r.ok?'ok':'bad');m.textContent=r.ok?r.msg:r.reason;if(r.ok)$('f-name').value='';loadFriends()}catch(er){m.className='hint bad';m.textContent=errText(er)}});
 $('b-out').onclick=async function(){try{await api.logOut()}catch(e){}me=null;recs={};show('auth');tab(false)};
+
+/* ===== 5b. Home friend tiles ===== */
+function tile(name,color,plus){const d=document.createElement('button');d.type='button';d.className='ht';
+  d.innerHTML='<span class="hb">'+(plus?'<b>+</b>':'<span class="mf"><i class="mh"></i><i class="mt"></i><i class="ml"></i></span>')+'</span><span class="hn"></span>';
+  d.lastChild.textContent=name;if(color)d.style.setProperty('--c',color);
+  d.onclick=function(){nav('friends');loadFriends();if(plus)$('f-name').focus()};return d}
+
+/* ===== 5c. BrixBlox Studio: blocks that read and write BricBloc ===== */
+const CAT={ev:'Events',mo:'Motion',lk:'Looks',ct:'Control',vr:'Variables',fn:'Functions'};
+// l: label, _ marks an input. hat: starts a script. k: holds blocks inside. raw: first input is a plain word, not an expression.
+const BD={
+ start:{c:'ev',hat:1,l:'when start',a:[]},
+ key:{c:'ev',hat:1,l:'when key _',a:['space'],raw:1},
+ move:{c:'mo',l:'move _ steps',a:['10']},
+ turn:{c:'mo',l:'turn _ degrees',a:['90']},
+ goto:{c:'mo',l:'go to x _ y _',a:['0','0']},
+ say:{c:'lk',l:'say _',a:['Hello!']},
+ color:{c:'lk',l:'color _',a:['red'],raw:1},
+ wait:{c:'ct',l:'wait _ secs',a:['1']},
+ repeat:{c:'ct',l:'repeat _',a:['4'],k:1},
+ forever:{c:'ct',l:'forever',a:[],k:1},
+ 'if':{c:'ct',l:'if _',a:['x > 100'],k:1},
+ set:{c:'vr',l:'set _ to _',a:['score','0'],raw:1},
+ change:{c:'vr',l:'change _ by _',a:['score','1'],raw:1},
+ print:{c:'vr',l:'print _',a:['score']},
+ def:{c:'fn',hat:1,l:'define _',a:['spin'],raw:1},
+ call:{c:'fn',l:'call _',a:['spin'],raw:1}
+};
+function mk(t,a,k){return {t:t,a:a||BD[t].a.slice(),k:BD[t].k?(k||[]):null}}
+function starter(){return [[mk('start'),mk('say',['Hello!']),mk('repeat',['4'],[mk('move',['60']),mk('turn',['90']),mk('wait',['0.3'])])]]}
+let P;try{P=JSON.parse(store.get('brixblox-studio'));if(!P||!Array.isArray(P.scripts))throw 0}catch(e){P={name:'My first BricBloc game',scripts:starter()}}
+function save(){store.set('brixblox-studio',JSON.stringify(P))}
+function clean(){P.scripts=P.scripts.filter(function(s){return s.length})}
+function inside(b,arr){return !!b.k&&(b.k===arr||b.k.some(function(x){return inside(x,arr)}))}
+let dnd=null;
+function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x)e.textContent=x;return e}
+function zone(arr,i){const z=el('div','zn');
+  z.ondragover=function(e){e.preventDefault();z.classList.add('on')};z.ondragleave=function(){z.classList.remove('on')};
+  z.ondrop=function(e){e.preventDefault();e.stopPropagation();place(arr,i)};return z}
+function place(arr,i){if(!dnd)return;let b;
+  if(dnd.b){b=dnd.b;if(inside(b,arr))return;const j=dnd.arr.indexOf(b);dnd.arr.splice(j,1);if(dnd.arr===arr&&j<i)i--}
+  else b=mk(dnd.t);
+  if(BD[b.t].hat)P.scripts.push([b]);else arr.splice(i,0,b);
+  dnd=null;clean();rend()}
+function fit(n){n.style.width=Math.max(2,n.value.length+1)+'ch'}
+function rList(arr){const d=el('div');arr.forEach(function(b,i){if(i||!BD[b.t].hat)d.append(zone(arr,i));d.append(rBlock(b,arr))});d.append(zone(arr,arr.length));return d}
+function rBlock(b,arr){const D=BD[b.t],w=el('div','bw c-'+D.c),h=el('div','bk2');
+  D.l.split('_').forEach(function(p,i){if(p.trim())h.append(el('span','',p.trim()));
+    if(i<b.a.length){const n=el('input');n.value=b.a[i];fit(n);n.oninput=function(){b.a[i]=n.value;fit(n);save();view()};h.append(n)}});
+  const x=el('button','x','\u2715');x.type='button';x.setAttribute('aria-label','Delete block');
+  x.onclick=function(){if(D.hat)P.scripts.splice(P.scripts.indexOf(arr),1);else arr.splice(arr.indexOf(b),1);clean();rend()};h.append(x);
+  if(!D.hat){h.draggable=true;h.ondragstart=function(e){dnd={b:b,arr:arr};e.dataTransfer.setData('text','b')};h.ondragend=function(){dnd=null}}
+  w.append(h);if(b.k){w.append(el('div','cbody'),el('div','cend'));w.children[1].append(rList(b.k))}return w}
+function rend(){const w=$('s-ws');w.replaceChildren();
+  if(!P.scripts.length)w.append(el('p','empty','Drag blocks here, or tap one in the palette. Start with "when start".'));
+  P.scripts.forEach(function(s){const d=el('div','scr');d.append(rList(s));w.append(d)});save();view()}
+$('s-ws').ondragover=function(e){e.preventDefault()};
+$('s-ws').ondrop=function(e){e.preventDefault();if(!dnd)return;const n=[];P.scripts.push(n);place(n,0)};
+function add(t){const b=mk(t);if(BD[t].hat||!P.scripts.length)P.scripts.push([b]);else P.scripts[P.scripts.length-1].push(b);rend()}
+(function(){const p=$('s-pal');let c='';
+  for(const t in BD){const D=BD[t];if(D.c!==c){c=D.c;p.append(el('h4','',CAT[c]))}
+    let k=0;const w=el('div','bw c-'+c),h=el('div','bk2',D.l.replace(/_/g,function(){return D.a[k++]}));
+    h.draggable=true;h.ondragstart=function(e){dnd={t:t};e.dataTransfer.setData('text','p')};h.ondragend=function(){dnd=null};h.onclick=function(){add(t)};w.append(h);p.append(w)}
+  p.ondragover=function(e){e.preventDefault()};
+  p.ondrop=function(e){e.preventDefault();if(dnd&&dnd.b){dnd.arr.splice(dnd.arr.indexOf(dnd.b),1);dnd=null;clean();rend()}}})();
+
+/* BricBloc as text */
+const KW={start:'when start',key:'when key',def:'define'};
+function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
+function view(){$('s-code').textContent=P.scripts.map(function(s){return BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0)}).join('\n\n')}
+
+/* BricBloc interpreter. Expressions are parsed by hand, never eval'd. */
+function ev(src,S){
+  const t=src.match(/\d*\.?\d+|"[^"]*"|[A-Za-z_]\w*|[<>=!]=|[-+*\/%()<>]/g)||[];
+  if(t.join('')!==src.replace(/\s+/g,''))throw 0;
+  let p=0;const L=[['or'],['and'],['==','!=','<','>','<=','>='],['+','-'],['*','/','%']];
+  function bin(o,a,b){switch(o){case'or':return a||b;case'and':return a&&b;case'==':return a==b;case'!=':return a!=b;case'<':return a<b;case'>':return a>b;case'<=':return a<=b;case'>=':return a>=b;case'+':return(typeof a==='string'||typeof b==='string')?''+a+b:a+b;case'-':return a-b;case'*':return a*b;case'/':return a/b;default:return a%b}}
+  function lv(i){if(i===L.length)return un();let a=lv(i+1);while(L[i].indexOf(t[p])>=0){const o=t[p++];a=bin(o,a,lv(i+1))}return a}
+  function un(){const k=t[p++];if(k==null)throw 0;
+    if(k==='-')return -un();if(k==='not')return !un();
+    if(k==='('){const v=lv(0);if(t[p++]!==')')throw 0;return v}
+    if(k[0]==='"')return k.slice(1,-1);if(/^[\d.]/.test(k))return +k;
+    if(k==='true')return true;if(k==='false')return false;
+    if(k in S.v)return S.v[k];if(k==='x'||k==='y'||k==='dir')return S[k];throw 0}
+  const v=lv(0);if(p<t.length)throw 0;return v}
+function val(s,S){try{return ev(s,S)}catch(e){return s}}
+const sl=function(ms){return new Promise(function(r){setTimeout(r,ms)})},cl=function(v,m){return Math.max(-m,Math.min(m,v))};
+function log(m){const o=$('s-out');o.textContent+=m+'\n';o.scrollTop=1e9}
+async function ex(list,S){for(let i=0;i<list.length;i++){if(S.stop)return;await st(list[i],S)}}
+async function st(b,S){const a=b.a,n=function(i){return Number(val(a[i],S))||0};
+  switch(b.t){
+    case'move':{const r=S.dir*Math.PI/180;S.x=cl(S.x+Math.cos(r)*n(0),220);S.y=cl(S.y+Math.sin(r)*n(0),160);break}
+    case'turn':S.dir=(S.dir-n(0))%360;break;
+    case'goto':S.x=cl(n(0),220);S.y=cl(n(1),160);break;
+    case'say':S.say=String(val(a[0],S));break;
+    case'color':S.col=a[0].trim();break;
+    case'wait':await sl(Math.max(0,n(0))*1000);break;
+    case'set':S.v[a[0].trim()]=val(a[1],S);break;
+    case'change':{const k=a[0].trim();S.v[k]=(Number(S.v[k])||0)+n(1);break}
+    case'print':log(String(val(a[0],S)));break;
+    case'repeat':for(let i=0,c=Math.min(n(0),10000);i<c&&!S.stop;i++){await ex(b.k,S);await sl(30)}break;
+    case'forever':while(!S.stop){await ex(b.k,S);await sl(30)}break;
+    case'if':{let c;try{c=ev(a[0],S)}catch(e){log('Error: cannot read the condition "'+a[0]+'"');break}if(c)await ex(b.k,S);break}
+    case'call':{const f=S.fn[a[0].trim()];if(!f){log('Error: no function named "'+a[0].trim()+'"');break}
+      if(S.d>40){log('Error: calls nested too deep');S.stop=true;break}S.d++;await ex(f,S);S.d--;break}}
+  draw()}
+
+/* Stage and controls */
+const cv=$('s-cv'),cx=cv.getContext('2d');
+function fresh(){return {x:0,y:0,dir:0,col:'#00b06f',say:'',v:{},fn:{},stop:false,d:0}}
+let S=fresh(),running=false;
+function draw(){cx.fillStyle='#191b1d';cx.fillRect(0,0,480,360);cx.strokeStyle='#2a2d30';cx.lineWidth=1;cx.beginPath();
+  for(let i=0;i<=480;i+=40){cx.moveTo(i,0);cx.lineTo(i,360)}for(let i=0;i<=360;i+=40){cx.moveTo(0,i);cx.lineTo(480,i)}cx.stroke();
+  const px=240+S.x,py=180-S.y;cx.save();cx.translate(px,py);cx.rotate(-S.dir*Math.PI/180);
+  cx.fillStyle=S.col;cx.fillRect(-20,-20,40,40);cx.strokeStyle='rgba(0,0,0,.5)';cx.lineWidth=2;cx.strokeRect(-20,-20,40,40);
+  cx.fillStyle='rgba(255,255,255,.85)';cx.fillRect(8,-5,10,10);cx.restore();
+  if(S.say){cx.font='700 14px Montserrat,sans-serif';cx.textAlign='center';const w=cx.measureText(S.say).width+16;
+    cx.fillStyle='#fff';cx.fillRect(px-w/2,py-62,w,24);cx.fillStyle='#111';cx.fillText(S.say,px,py-45)}}
+function setRun(v){running=v;$('s-run').disabled=v;$('s-stop').disabled=!v}
+$('s-run').onclick=async function(){S.stop=true;S=fresh();const my=S;$('s-out').textContent='';setRun(true);draw();
+  const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
+  hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
+  await Promise.all(hs.filter(function(s){return s[0].t==='start'}).map(function(s){return ex(s.slice(1),my).catch(function(e){log('Error: '+e)})}));
+  if(my===S&&!hs.some(function(s){return s[0].t==='key'}))setRun(false)};
+$('s-stop').onclick=function(){S.stop=true;setRun(false)};
+addEventListener('keydown',function(e){if(!running||$('studio').hidden||/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;
+  const k=e.key===' '?'space':e.key.toLowerCase();
+  P.scripts.forEach(function(s){if(s[0].t==='key'&&s[0].a[0].trim().toLowerCase()===k){e.preventDefault();ex(s.slice(1),S).catch(function(){})}})});
+$('t-out').onclick=$('t-code').onclick=function(){const o=this.id==='t-out';$('t-out').classList.toggle('on',o);$('t-code').classList.toggle('on',!o);$('s-out').hidden=!o;$('s-code').hidden=o};
+$('s-name').oninput=function(){P.name=$('s-name').value;save()};
+function openStudio(){show('studio');$('s-name').value=P.name;rend();draw()}
+$('n-studio').onclick=$('g-studio').onclick=openStudio;
+$('s-back').onclick=function(){S.stop=true;setRun(false);show('lobby');lobby()};
 
 /* ===== 6. 3D view ===== */
 const renderer=new THREE.WebGLRenderer({canvas:$('gl'),antialias:true});
@@ -535,7 +734,7 @@ function frame(now){
   sun.position.set(sim.x+8,sim.y+16,sim.z+6);sun.target.position.set(sim.x,sim.y,sim.z);
   renderer.render(scene,camera)}
 requestAnimationFrame(frame);
-(async function(){try{const p=await api.restore();if(p)await enter(p);else show('auth')}catch(e){show('auth')}})();
+(async function(){try{const p=await api.restore();if(p)await enter(p);else show('auth')}catch(e){show('auth');toast('Could not restore your login: '+errText(e))}})();
 if(!useSupa&&SUPABASE_URL&&SUPABASE_ANON_KEY)toast('Supabase did not load, so this is running in demo mode.');
 </script>
 </body>
