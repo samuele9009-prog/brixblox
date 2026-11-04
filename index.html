@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -195,12 +195,39 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
 .cbody{margin-left:14px;border-left:10px solid var(--bc);padding:2px 0 2px 4px;min-height:14px}
 .cend{height:10px;background:var(--bc);border-radius:0 0 6px 6px}
 .zn{height:6px;border-radius:3px;transition:height .1s}.zn.on{height:24px;background:rgba(255,255,255,.22)}
+
+/* Left menu */
+#lobby{display:grid;grid-template-columns:240px minmax(0,1fr);padding:0;overflow:hidden}
+.sb{height:100%;overflow-y:auto;padding:14px 12px;background:var(--paper);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.sb .logo{margin:4px 6px 10px}.sbu{padding:6px 10px 12px}.sbu strong{font-size:1.05rem}
+.snav{display:grid;gap:2px}
+.snav button{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:0;border-radius:8px;background:none;color:var(--ink);font-weight:700;font-size:.95rem;cursor:pointer;text-align:left}
+.snav button:hover{background:rgba(127,127,127,.12)}.snav button.on{background:rgba(127,127,127,.2)}
+.snav svg{flex:none}.snav em{margin-left:auto;font-style:normal;background:#ff4b4b;color:#fff;border-radius:99px;padding:1px 8px;font-size:.75rem}
+.sbfoot{margin-top:auto}
+.ct{height:100%;overflow-y:auto;padding:24px 28px 60px}
+.page{margin:0}
+.seg{display:flex;gap:8px;margin-top:8px}.seg .btn[aria-pressed=true]{background:#00b06f!important;color:#fff!important}
+@media(max-width:760px){#lobby{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+ .sb{height:auto;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:8px}
+ .sb .logo,.sbu{display:none}.snav{display:flex}.snav button{width:auto;white-space:nowrap}.sbfoot{margin:0 0 0 auto;white-space:nowrap}.ct{padding:16px}}
+/* Light theme (default). Dark is the :root block above. */
+:root[data-theme=light]{--ink:#1d1f21;--muted:#5f656b;--paper:#fff;--line:#d5d9dd;--sky:#f2f4f6;color-scheme:light}
+[data-theme=light] .screen{background:#f2f4f6}
+[data-theme=light] input[type=text],[data-theme=light] input[type=email],[data-theme=light] input[type=password],[data-theme=light] .sname{background:#fff;border-color:#c9ced3}
+[data-theme=light] .btn.ghost{background:#e6e9ec;color:#1d1f21}
+[data-theme=light] .hint.ok,[data-theme=light] .msg.good{color:#0a7a4b}[data-theme=light] .hint.bad,[data-theme=light] .msg{color:#c2321f}
+[data-theme=light] #toast{background:#1d1f21;color:#fff}[data-theme=light] .overlay{background:rgba(0,0,0,.4)}
+[data-theme=light] .soon b{color:#1d1f21}[data-theme=light] .frow{background:#f2f4f6}
+[data-theme=light] .hb{background:#e3e6e9}[data-theme=light] .ht:hover .hb{background:#d6dade}
+[data-theme=light] .ws,[data-theme=light] .pre{background:#fff}[data-theme=light] .pre{color:#0b6b44}
+[data-theme=light] .zn.on{background:rgba(0,0,0,.12)}
 </style>
 </head>
 <body>
 <canvas id="gl" aria-label="Game view"></canvas>
 
-<main id="auth" class="screen">
+<main id="auth" class="screen" hidden>
   <section class="card auth-card">
     <div class="logo"><span class="blk b1"></span><span class="blk b2"></span><span class="blk b3"></span><h1>BrixBlox</h1></div>
     <p class="tag">Create, play and hang out with your friends.</p>
@@ -232,18 +259,31 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
 </main>
 
 <main id="lobby" class="screen" hidden>
-  <header class="bar">
+  <aside class="sb">
     <div class="logo sm"><span class="blk b1"></span><span class="blk b2"></span><span class="blk b3"></span><h1>BrixBlox</h1></div>
-    <nav class="nav"><button id="n-home" type="button" class="on">Home</button><button id="n-friends" type="button">Friends<em id="n-badge" hidden></em></button><button id="n-studio" type="button">Studio</button></nav>
-    <div class="who"><strong id="l-name"></strong><button id="b-out" class="btn ghost small" type="button">Log out</button></div>
-  </header>
+    <div class="sbu"><strong id="l-name"></strong></div>
+    <nav class="snav">
+      <button id="n-home" type="button" class="on" data-i="home">Home</button>
+      <button id="n-friends" type="button" data-i="friends">Friends<em id="n-badge" hidden></em></button>
+      <button id="n-avatar" type="button" data-i="avatar">Avatar</button>
+      <button id="n-studio" type="button" data-i="studio">Studio</button>
+      <button id="n-settings" type="button" data-i="settings">Settings</button>
+    </nav>
+    <button id="b-out" class="btn ghost small sbfoot" type="button">Log out</button>
+  </aside>
+  <div class="ct">
   <div id="p-home" class="page">
     <section><h2 class="big">Home</h2><h3 id="h-fh">Friends (0)</h3><div id="h-fr" class="hfr"></div></section>
+    <section><h2>Games</h2><div class="soon"><b>Nothing to play yet</b>Games made in BrixBlox Studio will show up here.<br><br><button id="g-studio" class="btn small" type="button">Open BrixBlox Studio</button></div></section>
+  </div>
+  <div id="p-avatar" class="page" hidden>
     <section class="panel av-panel">
       <div id="av" class="avatar"><i class="hd"></i><i class="tr"></i><i class="a1"></i><i class="a2"></i><i class="l1"></i><i class="l2"></i></div>
       <div><h2 id="l-name2"></h2><p class="note">Pick your shirt color</p><div id="sw" class="swatches"></div></div>
     </section>
-    <section><h2>Games</h2><div class="soon"><b>Nothing to play yet</b>Games made in BrixBlox Studio will show up here.<br><br><button id="g-studio" class="btn small" type="button">Open BrixBlox Studio</button></div></section>
+  </div>
+  <div id="p-settings" class="page" hidden>
+    <section class="panel"><h2>Settings</h2><h3>Theme</h3><div class="seg"><button id="th-light" class="btn ghost" type="button">Light</button><button id="th-dark" class="btn ghost" type="button">Dark</button></div></section>
   </div>
   <div id="p-friends" class="page" hidden>
     <section class="panel"><h2>Add a friend</h2>
@@ -253,7 +293,7 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
       <h3>Friends</h3><div id="f-list"></div>
     </section>
   </div>
-</main>
+</div></main>
 
 <main id="studio" class="screen" hidden>
   <header class="bar">
@@ -482,7 +522,13 @@ function lobby(){
   const sw=$('sw');sw.innerHTML='';
   COLORS.forEach(function(c){const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label','Color '+c);b.onclick=async function(){me.color=c;paintAvatar();try{await api.setColor(me.id,c)}catch(e){toast('Could not save your color.')}};sw.appendChild(b)});
   paintAvatar();nav('home');loadFriends()}
-function nav(p){$('p-home').hidden=p!=='home';$('p-friends').hidden=p!=='friends';$('n-home').classList.toggle('on',p==='home');$('n-friends').classList.toggle('on',p==='friends')}
+const PAGES=['home','friends','avatar','settings'];
+function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p)})}
+const IC={home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
+document.querySelectorAll('.snav button').forEach(function(b){b.insertAdjacentHTML('afterbegin','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+IC[b.dataset.i]+'</svg>')});
+function theme(t){document.documentElement.dataset.theme=t;store.set('brixblox-theme',t);$('th-light').setAttribute('aria-pressed',String(t==='light'));$('th-dark').setAttribute('aria-pressed',String(t==='dark'))}
+$('th-light').onclick=function(){theme('light')};$('th-dark').onclick=function(){theme('dark')};theme(store.get('brixblox-theme')==='dark'?'dark':'light');
+$('n-avatar').onclick=function(){nav('avatar')};$('n-settings').onclick=function(){nav('settings')};
 $('n-home').onclick=function(){nav('home')};$('n-friends').onclick=function(){nav('friends');loadFriends()};
 function frow(r,btns,tag){const d=document.createElement('div');d.className='frow';const dot=document.createElement('span');dot.className='dot';dot.style.background=r.color;const n=document.createElement('span');n.className='nm';n.textContent=r.name+(tag||'');d.append(dot,n);
   btns.forEach(function(b){const x=document.createElement('button');x.type='button';x.className='btn small'+(b[2]?' ghost':'');x.textContent=b[0];x.onclick=async function(){try{await api.answerFriend(me.id,r.fid,b[1])}catch(e){toast(errText(e))}loadFriends()};d.append(x)});return d}
@@ -734,7 +780,7 @@ function frame(now){
   sun.position.set(sim.x+8,sim.y+16,sim.z+6);sun.target.position.set(sim.x,sim.y,sim.z);
   renderer.render(scene,camera)}
 requestAnimationFrame(frame);
-(async function(){try{const p=await api.restore();if(p)await enter(p);else show('auth')}catch(e){show('auth');toast('Could not restore your login: '+errText(e))}})();
+(async function(){try{const p=await api.restore();if(p)await enter(p);else show('auth')}catch(e){show('auth');aMsg('Could not restore your login: '+errText(e))}})();
 if(!useSupa&&SUPABASE_URL&&SUPABASE_ANON_KEY)toast('Supabase did not load, so this is running in demo mode.');
 </script>
 </body>
