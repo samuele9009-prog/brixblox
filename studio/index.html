@@ -196,6 +196,17 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
 .cend{height:10px;background:var(--bc);border-radius:0 0 6px 6px}
 .zn{height:6px;border-radius:3px;transition:height .1s}.zn.on{height:24px;background:rgba(255,255,255,.22)}
 
+/* Operators and variable reporters (round blocks that drop into the slots of other blocks) */
+.c-op{--bc:#3fa34d}.c-rv{--bc:#ee7d16}
+.rp{display:inline-flex;align-items:center;gap:4px;max-width:100%;padding:2px 8px;margin:0 1px;border-radius:13px;background:var(--bc);color:#fff;font-weight:700;font-size:.8rem;border:1px solid rgba(0,0,0,.28);cursor:grab;user-select:none;vertical-align:middle;white-space:nowrap}
+.rp.bool{padding:2px 14px;border:0;border-radius:0;clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,10px 100%,0 50%)}
+.rp input{height:20px;min-width:2ch;border:0;border-radius:10px;padding:0 6px;background:#fff;color:#222;font:inherit;font-weight:600}
+.rp .ddsel{height:20px}
+.rp .rp{margin:0 1px}
+.rpw{display:block;margin:6px 0;cursor:grab}.rpw .rp{cursor:grab}
+.pvars{margin:6px 0 4px}.pvars .btn{width:100%;margin-bottom:4px}
+.slothl{outline:3px solid #fff;outline-offset:1px;box-shadow:0 0 0 5px #2f9bff}
+.rp.slothl{outline:0;box-shadow:none;filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 4px #2f9bff)}
 /* Left menu */
 #lobby{display:grid;grid-template-columns:240px minmax(0,1fr);padding:0;overflow:hidden}
 .sb{height:100%;overflow-y:auto;padding:14px 12px;background:var(--paper);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
@@ -470,7 +481,7 @@ const store=(function(){
     del:function(k){delete mem[k];try{localStorage.removeItem(k)}catch(e){}const o=wn();delete o['bb:'+k];wset(o)}};
 })();
 const $=function(id){return document.getElementById(id)};
-const CAT={ev:'Events',mo:'Motion',ph:'Physics',pl:'Player',au:'Audio',en:'Entities',lk:'Looks',ct:'Control',vr:'Variables',fn:'Functions'};
+const CAT={op:'Operators',rv:'Variables',ev:'Events',mo:'Motion',ph:'Physics',pl:'Player',au:'Audio',en:'Entities',lk:'Looks',ct:'Control',vr:'Variables',fn:'Functions'};
 // l: label, _ marks an input. hat: starts a script. k: holds blocks inside. raw: first input is a plain word, not an expression.
 const BD={
  start:{c:'ev',hat:1,l:'when start',a:[]},
@@ -492,6 +503,7 @@ const BD={
  walkanim:{c:'pl',l:'set player walk to _',a:['walk'],raw:1,tip:'Uses an animation from the rig as the walk animation.'},
  jumpanim:{c:'pl',l:'set player jump to _',a:['jump'],raw:1,tip:'Uses an animation from the rig as the jump animation.'},
  idleanim:{c:'pl',l:'set player idle to _',a:['idle'],raw:1,tip:'Uses an animation from the rig as the idle animation.'},
+ fov:{c:'pl',l:'set camera fov to _',a:['80'],tip:'Sets how wide the camera sees, from 30 (zoomed in) to 120 (very wide). The default is 70. It goes back to the game setting when the game restarts.'},
  pspeed:{c:'pl',l:'set player speed to _',a:['24'],tip:'How fast the player walks (default 16).'},
  addplayer:{c:'pl',l:'add player to game _',a:['Friend'],raw:1,tip:'Adds another player to the server. They show up next to you with a name tag. A banned player can not join.'},
  kick:{c:'pl',l:'kick player _ from game, reason _',a:['target','Breaking the rules'],tip:'Removes a player from the game and shows the reason. Type a name, a variable, or player (the first player in the server; player2 is the second, and so on) (like toucher or speaker). If you kick yourself the game stops and you see the reason.'},
@@ -518,6 +530,26 @@ const BD={
  set:{c:'vr',l:'set _ to _',a:['score','0'],raw:1,dd:{0:'var'}},
  change:{c:'vr',l:'change _ by _',a:['score','1'],raw:1,dd:{0:'var'}},
  print:{c:'vr',l:'print _',a:['score']},
+ /* Reporters: round (value) and pointed (true/false) blocks that you drop into the slots of other blocks. f turns them into the expression text the interpreter reads. sk says what each slot holds: n number, t text, b true/false, d dropdown. */
+ opadd:{c:'op',rep:1,l:'_ + _',a:['',''],sk:'nn',f:function(x){return '('+x[0]+' + '+x[1]+')'}},
+ opsub:{c:'op',rep:1,l:'_ - _',a:['',''],sk:'nn',f:function(x){return '('+x[0]+' - '+x[1]+')'}},
+ opmul:{c:'op',rep:1,l:'_ * _',a:['',''],sk:'nn',f:function(x){return '('+x[0]+' * '+x[1]+')'}},
+ opdiv:{c:'op',rep:1,l:'_ / _',a:['',''],sk:'nn',f:function(x){return '('+x[0]+' / '+x[1]+')'}},
+ oprand:{c:'op',rep:1,l:'pick random _ to _',a:['1','10'],sk:'nn',f:function(x){return 'random('+x[0]+', '+x[1]+')'}},
+ opgt:{c:'op',rep:1,bool:1,l:'_ > _',a:['','50'],sk:'nn',f:function(x){return '('+x[0]+' > '+x[1]+')'}},
+ oplt:{c:'op',rep:1,bool:1,l:'_ < _',a:['','50'],sk:'nn',f:function(x){return '('+x[0]+' < '+x[1]+')'}},
+ opeq:{c:'op',rep:1,bool:1,l:'_ = _',a:['','50'],sk:'tt',f:function(x){return '('+x[0]+' == '+x[1]+')'}},
+ opand:{c:'op',rep:1,bool:1,l:'_ and _',a:['',''],sk:'bb',f:function(x){return '('+x[0]+' and '+x[1]+')'}},
+ opor:{c:'op',rep:1,bool:1,l:'_ or _',a:['',''],sk:'bb',f:function(x){return '('+x[0]+' or '+x[1]+')'}},
+ opnot:{c:'op',rep:1,bool:1,l:'not _',a:[''],sk:'b',f:function(x){return '(not ('+x[0]+'))'}},
+ opjoin:{c:'op',rep:1,l:'join _ _',a:['apple','banana'],sk:'tt',f:function(x){return 'join('+x[0]+', '+x[1]+')'}},
+ opletter:{c:'op',rep:1,l:'letter _ of _',a:['1','apple'],sk:'nt',f:function(x){return 'letter('+x[0]+', '+x[1]+')'}},
+ oplen:{c:'op',rep:1,l:'length of _',a:['apple'],sk:'t',f:function(x){return 'length('+x[0]+')'}},
+ opcontains:{c:'op',rep:1,bool:1,l:'_ contains _ ?',a:['apple','a'],sk:'tt',f:function(x){return 'contains('+x[0]+', '+x[1]+')'}},
+ opmod:{c:'op',rep:1,l:'_ mod _',a:['',''],sk:'nn',f:function(x){return 'mod('+x[0]+', '+x[1]+')'}},
+ opround:{c:'op',rep:1,l:'round _',a:[''],sk:'n',f:function(x){return 'round('+x[0]+')'}},
+ opmath:{c:'op',rep:1,l:'_ of _',a:['abs',''],dd:{0:'mathf'},sk:'dn',f:function(x){return 'mathf('+x[0]+', '+x[1]+')'}},
+ var:{c:'rv',rep:1,l:'_',a:[''],sk:'',f:function(x){return x[0]}},
  def:{c:'fn',hat:1,l:'define _',a:['spin'],raw:1},
  call:{c:'fn',l:'call _',a:['spin'],raw:1}
 };
@@ -591,13 +623,13 @@ function save(){if(gameId)persistGame()}
 function clean(){P.scripts=P.scripts.filter(function(s){return s.length})}
 function inside(b,arr){return !!b.k&&(b.k===arr||b.k.some(function(x){return inside(x,arr)}))}
 /* ===== Scratch-style block board: drag blocks anywhere, snap them together, drop them on the palette to delete ===== */
-let selScr=null,conns=[],pend=null,gh=null,dI=null,CV=null;
+let selScr=null,conns=[],slots=[],slHl=null,pvEl=null,pvSig='',pend=null,gh=null,dI=null,CV=null;
 const WS=$('s-ws');
 function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x)e.textContent=x;return e}
 function fit(n){n.style.width='calc('+Math.max(1,n.value.length)+'ch + 20px)'}
 function hasB(arr,b){return arr.some(function(x){return x===b||(x.k&&hasB(x.k,b))})}
 /* Variables: every name made by a set / change / get nearest block, plus the ones events fill in. Used by the dropdowns on the blocks. */
-function varList(){const v=new Set();
+function varList(){const v=new Set((P&&Array.isArray(P.vars))?P.vars:[]);
   const w=function(arr){arr.forEach(function(b){if(!BD[b.t])return;
     if(b.t==='set'||b.t==='change'){const n=String(b.a[0]).trim();if(n)v.add(n)}
     else if(/^near(player|rig)s?$/.test(b.t)){const many=b.t.slice(-1)==='s',n=String(b.a[many?2:1]).trim();if(n){v.add(n);if(many)v.add(n+'_count')}}
@@ -609,6 +641,7 @@ function varList(){const v=new Set();
 const KEYOPT=(function(){const o=[];'abcdefghijklmnopqrstuvwxyz'.split('').forEach(function(c){o.push([c,c.toUpperCase()])});'0123456789'.split('').forEach(function(c){o.push([c,c])});
   [['space','Space'],['enter','Enter'],['shift','Shift'],['ctrl','Ctrl'],['alt','Alt'],['tab','Tab'],['escape','Escape'],['backspace','Backspace'],['up','Up arrow'],['down','Down arrow'],['left','Left arrow'],['right','Right arrow']].forEach(function(q){o.push(q)});
   for(let i=1;i<=12;i++)o.push(['f'+i,'F'+i]);return o})();
+const MATHOPT=['abs','floor','ceiling','sqrt','sin','cos','tan','asin','acos','atan','ln','log','e ^','10 ^'].map(function(q){return [q,q]});
 const DIROPT=[['front','Front'],['back','Back'],['left','Left'],['right','Right'],['up','Up'],['down','Down']];
 function ownerObj(o){return o?(byId(o)||byModel(o)||null):null}
 function ownName(o){const x=ownerObj(o);return x?x.name:null}
@@ -621,7 +654,7 @@ function newVarDlg(done){mdl('New variable',function(c,close){const n=el('input'
 function ddSel(b,i,kind,ro){
   if(ro){const n=el('input');n.value=b.a[i];n.readOnly=true;fit(n);return n}
   const s=el('select','ddsel');s.title=kind==='var'?'Pick a variable, or make a new one':'';
-  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='dir'?DIROPT.slice():kind==='bool'?[['true','true'],['false','false']]:varList().map(function(v){return [v,v]});
+  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='bool'?[['true','true'],['false','false']]:varList().map(function(v){return [v,v]});
     const cur=String(b.a[i]);if(cur&&!o.some(function(q){return q[0]===cur}))o.unshift([cur,cur]);
     o.forEach(function(q){const op=el('option','',q[1]);op.value=q[0];s.append(op)});
     if(kind==='var'){const nw=el('option','','\uFF0B New variable\u2026');nw.value='\u0001new';s.append(nw)}
@@ -630,7 +663,7 @@ function ddSel(b,i,kind,ro){
   s.onpointerdown=function(e){e.stopPropagation();if(kind==='var')fill()};
   s.onchange=function(){
     if(s.value==='\u0001new'){newVarDlg(function(v){if(v){b.a[i]=v;save();rend();renderParts()}else fill()});return}
-    b.a[i]=s.value;save();view()};
+    b.a[i]=s.value;reser();save();view()};
   return s}
 /* Small arrow next to a typed value: drops a variable name into it */
 function varPick(n,b,i){const s=el('select','vpick');s.title='Insert a variable';
@@ -652,15 +685,54 @@ function chip(sc,opts){const h=sc[0],w=el('label','own'),s=el('select');w.append
   s.onpointerdown=function(e){e.stopPropagation()};w.append(s);return w}
 function rList(arr,ro){const d=el('div','bl');
   arr.forEach(function(b,i){const w=rBlock(b,arr,ro);d.append(w);if(!ro)conns.push({k:'after',arr:arr,i:i+1,el:w})});return d}
-function rBlock(b,arr,ro){if(BD[b.t])for(let q=b.a.length;q<BD[b.t].a.length;q++)b.a.push(BD[b.t].a[q]);const D=BD[b.t],w=el('div','bw c-'+D.c+(D.hat?' hat':'')+(b.k?' cw':'')),h=el('div','bk2');
+/* The words and slots of a block (also used inside round blocks). A slot can hold typed text, a dropdown, or another round block. */
+function fillLbl(h,b,D,ro,inRep){
   D.l.split('_').forEach(function(p,i){if(p.trim())h.append(el('span','',p.trim()));
     if(i<b.a.length){const dk=D.dd&&D.dd[i];
       if(dk)h.append(ddSel(b,i,dk,ro));
-      else{const n=el('input');n.value=b.a[i];fit(n);if(ro)n.readOnly=true;else n.oninput=function(){b.a[i]=n.value;fit(n);save();view()};h.append(n);
-        if(!ro&&!(D.raw&&i===0))h.append(varPick(n,b,i))}}});
+      else if(b.r&&b.r[i])h.append(rRep(b.r[i],b,i,ro));
+      else{const n=el('input');n.value=b.a[i];fit(n);
+        if(ro)n.readOnly=true;
+        else{n.oninput=function(){b.a[i]=n.value;fit(n);reser();save();view()};if(!(D.raw&&i===0))slots.push({el:n,b:b,i:i})}
+        h.append(n);
+        if(!ro&&!inRep&&!(D.raw&&i===0))h.append(varPick(n,b,i))}}})}
+function rRep(nd,par,idx,ro){const D=BD[nd.t];
+  if(nd.t!=='var')for(let q=nd.a.length;q<D.a.length;q++)nd.a.push(D.a[q]);
+  const w=el('span','rp c-'+D.c+(D.bool?' bool':''));
+  if(nd.t==='var')w.textContent=nd.a[0];else fillLbl(w,nd,D,ro,true);
+  if(!ro){w.title='Drag to move it. Drop it on the block list on the left to delete it.';
+    w.onpointerdown=function(e){if(e.button!==0||e.target.closest('input,select'))return;e.preventDefault();e.stopPropagation();dragStart(e,{rb:nd,par:{b:par,i:idx},el:w})};
+    slots.push({el:w,b:par,i:idx})}
+  return w}
+/* Round blocks are kept as a tree, and also written out as an expression in the slot's text (a[i]) because that is what the interpreter reads. */
+function lit(v,k,kv){v=String(v==null?'':v).trim();
+  if(k==='b')return v===''?'false':v;
+  if(k==='n')return v===''?'0':v;
+  if(k==='d')return '"'+v.replace(/"/g,'')+'"';
+  if(kv.has(v)||v==='true'||v==='false')return v;
+  if(v.length>1&&v[0]==='"'&&v[v.length-1]==='"'&&v.indexOf('"',1)===v.length-1)return v;
+  return '"'+v.replace(/"/g,'')+'"'}
+function ser(nd,kv){const D=BD[nd.t];if(!D)return '0';if(nd.t==='var')return String(nd.a[0]);
+  const x=[];for(let i=0;i<D.a.length;i++)x.push(nd.r&&nd.r[i]?ser(nd.r[i],kv):lit(nd.a[i]!=null?nd.a[i]:D.a[i],D.sk.charAt(i),kv));return D.f(x)}
+function reser(){const kv=new Set(varList());
+  const w=function(arr){arr.forEach(function(b){if(!BD[b.t])return;if(b.r)for(const i in b.r)b.a[i]=ser(b.r[i],kv);if(b.k)w(b.k)})};
+  P.scripts.forEach(function(sc){w(sc)})}
+/* Variables section of the palette: Make a Variable, plus a round block for each variable that can be dragged into a slot */
+function buildVarPal(){if(!pvEl)return;const vs=varList(),sig=vs.join(',');if(sig===pvSig&&pvEl.firstChild)return;pvSig=sig;pvEl.replaceChildren();
+  const b=el('button','btn ghost small','Make a Variable');b.type='button';
+  b.onclick=function(){newVarDlg(function(v){if(!v)return;P.vars=P.vars||[];if(P.vars.indexOf(v)<0)P.vars.push(v);save();pvSig='';buildVarPal();renderParts()})};pvEl.append(b);
+  vs.forEach(function(name){const w=el('div','rpw'),pill=rRep({t:'var',a:[name],k:null},null,0,true);w.append(pill);w.title=(P.vars&&P.vars.indexOf(name)>=0)?'Drag it into a slot. Right-click to delete this variable.':'Drag it into a slot';
+    w.onpointerdown=function(e){if(e.button!==0)return;e.preventDefault();dragStart(e,{t:'var',name:name,rep:1,el:pill})};
+    w.oncontextmenu=function(e){e.preventDefault();if(P.vars&&P.vars.indexOf(name)>=0&&confirm('Delete the variable "'+name+'"?')){P.vars=P.vars.filter(function(q){return q!==name});save();pvSig='';buildVarPal()}};
+    pvEl.append(w)})}
+function slotAt(x,y){let best=null,ba=1e12;slots.forEach(function(sl){if(!sl.el.isConnected)return;const r=sl.el.getBoundingClientRect();
+    if(x>=r.left-4&&x<=r.right+4&&y>=r.top-4&&y<=r.bottom+4){const a=r.width*r.height;if(a<ba){ba=a;best=sl}}});return best}
+function showSlot(sl){if(slHl&&slHl.el)slHl.el.classList.remove('slothl');slHl=sl;if(sl)sl.el.classList.add('slothl')}
+function rBlock(b,arr,ro){if(BD[b.t])for(let q=b.a.length;q<BD[b.t].a.length;q++)b.a.push(BD[b.t].a[q]);const D=BD[b.t],w=el('div','bw c-'+D.c+(D.hat?' hat':'')+(b.k?' cw':'')),h=el('div','bk2');
+  fillLbl(h,b,D,ro,false);
   if(!ro){const x=el('button','x','\u2715');x.type='button';x.setAttribute('aria-label','Delete block');
     x.onclick=function(){if(D.hat)P.scripts.splice(P.scripts.indexOf(arr),1);else arr.splice(arr.indexOf(b),1);if(selScr===b)selScr=null;clean();rend();renderParts()};h.append(x);
-    h.onpointerdown=function(e){if(e.button!==0||e.target.closest('input,button,select'))return;e.preventDefault();
+    h.onpointerdown=function(e){if(e.button!==0||e.target.closest('input,button,select,.rp'))return;e.preventDefault();
       const sc=h.closest('.scr');if(sc&&sc._s){selScr=sc._s[0];markSel()}dragStart(e,{b:b,arr:arr,el:w})}}
   w.append(h);
   if(b.k){const cb=el('div','cbody'),ce=el('div','cend');cb.append(rList(b.k,ro));w.append(cb,ce);if(!ro)conns.push({k:'inner',arr:b.k,i:0,el:cb})}
@@ -668,7 +740,7 @@ function rBlock(b,arr,ro){if(BD[b.t])for(let q=b.a.length;q<BD[b.t].a.length;q++
 function sizeCvs(){if(!CV)return;let mx=0,my=0;
   Array.from(CV.children).forEach(function(d){if(d._s){mx=Math.max(mx,d.offsetLeft+d.offsetWidth);my=Math.max(my,d.offsetTop+d.offsetHeight)}});
   CV.style.width=Math.max(WS.clientWidth,mx+260)+'px';CV.style.height=Math.max(WS.clientHeight,my+260)+'px'}
-function rend(ns){WS.replaceChildren();conns=[];CV=el('div','cvs');WS.append(CV);
+function rend(ns){reser();WS.replaceChildren();conns=[];slots=[];slHl=null;CV=el('div','cvs');WS.append(CV);
   if(selScr&&!P.scripts.some(function(s){return s[0]===selScr}))selScr=null;
   const opts=ownOpts(),all=[];
   P.scripts.forEach(function(s){const d=el('div','scr'+(s[0]===selScr?' sel':'')),hat=BD[s[0].t].hat;d._s=s;
@@ -680,7 +752,7 @@ function rend(ns){WS.replaceChildren();conns=[];CV=el('div','cvs');WS.append(CV)
   all.forEach(function(q){const s=q[0],d=q[1];if(typeof s[0].x==='number')return;
     s[0].x=24;s[0].y=bot?bot+24:24;d.style.left=s[0].x+'px';d.style.top=s[0].y+'px';bot=s[0].y+d.offsetHeight});
   if(!P.scripts.length)CV.append(el('p','empty','Drag blocks from the left and drop them anywhere. Snap them together under a "when" block.'));
-  sizeCvs();if(!ns)save();view()}
+  sizeCvs();if(!ns)save();view();buildVarPal()}
 function markSel(){if(!CV)return;Array.from(CV.children).forEach(function(d){if(d._s)d.classList.toggle('sel',d._s[0]===selScr)})}
 function selScript(h){selScr=h;markSel();renderParts();
   const d=CV&&Array.from(CV.children).find(function(x){return x._s&&x._s[0]===h});if(d)d.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'})}
@@ -691,16 +763,24 @@ function add(t){const b=mk(t);
 WS.onpointerdown=function(e){if(e.target===WS||e.target===CV){selScr=null;markSel();renderParts()}};
 addEventListener('resize',sizeCvs);
 (function(){const p=$('s-pal');let c='';
-  for(const t in BD){const D=BD[t];if(D.c!==c){c=D.c;p.append(el('h4','c-'+c,CAT[c]))}
+  for(const t in BD){const D=BD[t];if(t==='var')continue;
+    if(D.c!==c){if(c==='vr'){pvEl=el('div','pvars');p.append(pvEl)}c=D.c;p.append(el('h4','c-'+c,CAT[c]))}
+    if(D.rep){const w=el('div','rpw');w.append(rRep(mk(t),null,0,true));w.onpointerdown=function(e){if(e.button!==0)return;e.preventDefault();dragStart(e,{t:t,rep:1,el:w.firstChild})};p.append(w);continue}
     let k=0;const w=el('div','bw c-'+c+(D.hat?' hat':'')+(D.k?' cw':'')),h=el('div','bk2',D.l.replace(/_/g,function(){return D.a[k++]}));
     if(D.tip)h.title=D.tip;
-    h.onpointerdown=function(e){if(e.button!==0)return;e.preventDefault();dragStart(e,{t:t,el:w})};w.append(h);p.append(w)}})();
+    h.onpointerdown=function(e){if(e.button!==0)return;e.preventDefault();dragStart(e,{t:t,el:w})};w.append(h);p.append(w)}
+  buildVarPal()})();
 
 /* Dragging: pick a block up (with everything under it), carry it, snap it into place or drop it anywhere on the board */
 function dragStart(e,src){const r=src.el.getBoundingClientRect();
   pend={sx:e.clientX,sy:e.clientY,ox:e.clientX-r.left,oy:e.clientY-r.top,src:src,on:false,bl:null,sn:null};
   addEventListener('pointermove',dMove);addEventListener('pointerup',dEnd);addEventListener('pointercancel',dEnd)}
 function dBegin(){const s=pend.src;let bl;
+  if(s.rep||s.rb){let nd;
+    if(s.rb){nd=s.rb;const pa=s.par;if(pa&&pa.b){if(pa.b.r)delete pa.b.r[pa.i];pa.b.a[pa.i]=(BD[pa.b.t]&&BD[pa.b.t].a[pa.i])||''}}
+    else nd=s.t==='var'?{t:'var',a:[s.name],k:null}:mk(s.t);
+    pend.rep=nd;pend.on=true;rend(true);
+    gh=el('div','dghost');gh.append(rRep(nd,null,0,true));document.body.append(gh);document.body.classList.add('dragging');return}
   if(s.t)bl=[mk(s.t)];else{const i=s.arr.indexOf(s.b);bl=s.arr.splice(i);clean()}
   pend.bl=bl;pend.on=true;rend(true);
   gh=el('div','dghost');gh.append(rList(bl,true));document.body.append(gh);document.body.classList.add('dragging')}
@@ -721,10 +801,15 @@ function dMove(e){if(!pend)return;
     if(e.clientX>wr.right-m)WS.scrollLeft+=14;if(e.clientX<wr.left+m)WS.scrollLeft-=14;
     if(e.clientY>wr.bottom-m)WS.scrollTop+=14;if(e.clientY<wr.top+m)WS.scrollTop-=14}
   const over=document.elementFromPoint(e.clientX,e.clientY),inWs=!!(over&&over.closest('#s-ws'));
+  if(pend.rep){showSlot(inWs?slotAt(e.clientX,e.clientY):null);gh.classList.toggle('del',!!(over&&over.closest('#s-pal')));return}
   pend.sn=inWs?findSnap():null;showDrop(pend.sn);gh.classList.toggle('del',!!(over&&over.closest('#s-pal')))}
 function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('pointerup',dEnd);removeEventListener('pointercancel',dEnd);
   const p=pend;if(!p)return;
-  if(!p.on){pend=null;if(p.src.t)add(p.src.t);else renderParts();return}
+  if(!p.on){pend=null;if(p.src.t&&!p.src.rep)add(p.src.t);else renderParts();return}
+  if(p.rep){const over=document.elementFromPoint(e.clientX,e.clientY),inWs=!!(over&&over.closest('#s-ws')),tg=inWs?slotAt(e.clientX,e.clientY):null;
+    gh.remove();gh=null;showSlot(null);document.body.classList.remove('dragging');pend=null;
+    if(tg&&tg.b){tg.b.r=tg.b.r||{};tg.b.r[tg.i]=p.rep}
+    rend();renderParts();return}
   const g=gh.getBoundingClientRect(),over=document.elementFromPoint(e.clientX,e.clientY),inWs=!!(over&&over.closest('#s-ws')),sn=inWs?findSnap():null,bl=p.bl,cr=CV.getBoundingClientRect();
   gh.remove();gh=null;if(dI){dI.remove();dI=null}document.body.classList.remove('dragging');pend=null;
   if(over&&over.closest('#s-pal')){/* dropped on the palette: deleted */}
@@ -739,14 +824,20 @@ function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('p
 
 
 /* BricBloc as text */
-const KW={unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio'};
+const KW={unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
 
 /* BricBloc interpreter. Expressions are parsed by hand, never eval'd. */
+/* Functions the round blocks turn into: join, letter, length, contains, random, round, mod and the "abs of" list */
+const FN={join:function(a,b){return String(a)+String(b)},letter:function(n,s){return String(s).charAt(Math.floor(+n)-1)},length:function(s){return String(s).length},
+  contains:function(s,q){return String(s).toLowerCase().indexOf(String(q).toLowerCase())>=0},
+  random:function(a,b){a=+a||0;b=+b||0;const lo=Math.min(a,b),hi=Math.max(a,b);return(Number.isInteger(a)&&Number.isInteger(b))?lo+Math.floor(Math.random()*(hi-lo+1)):lo+Math.random()*(hi-lo)},
+  round:function(x){return Math.round(+x||0)},mod:function(a,b){a=+a||0;b=+b||0;return b?((a%b)+b)%b:0},
+  mathf:function(o,x){x=+x||0;const R=Math.PI/180,D=180/Math.PI;switch(o){case'abs':return Math.abs(x);case'floor':return Math.floor(x);case'ceiling':return Math.ceil(x);case'sqrt':return Math.sqrt(x);case'sin':return Math.sin(x*R);case'cos':return Math.cos(x*R);case'tan':return Math.tan(x*R);case'asin':return Math.asin(x)*D;case'acos':return Math.acos(x)*D;case'atan':return Math.atan(x)*D;case'ln':return Math.log(x);case'log':return Math.log10(x);case'e ^':return Math.exp(x);case'10 ^':return Math.pow(10,x)}return 0}};
 function ev(src,S){
-  const t=src.match(/\d*\.?\d+|"[^"]*"|[A-Za-z_]\w*|[<>=!]=|[-+*\/%()<>]/g)||[];
-  if(t.join('')!==src.replace(/\s+/g,''))throw 0;
+  const t=src.match(/\d*\.?\d+|"[^"]*"|[A-Za-z_]\w*|[<>=!]=|[-+*\/%()<>,]/g)||[];
+  if(t.join('').replace(/\s+/g,'')!==src.replace(/\s+/g,''))throw 0;
   let p=0;const L=[['or'],['and'],['==','!=','<','>','<=','>='],['+','-'],['*','/','%']];
   function bin(o,a,b){switch(o){case'or':return a||b;case'and':return a&&b;case'==':return a==b;case'!=':return a!=b;case'<':return a<b;case'>':return a>b;case'<=':return a<=b;case'>=':return a>=b;case'+':return(typeof a==='string'||typeof b==='string')?''+a+b:a+b;case'-':return a-b;case'*':return a*b;case'/':return a/b;default:return a%b}}
   function lv(i){if(i===L.length)return un();let a=lv(i+1);while(L[i].indexOf(t[p])>=0){const o=t[p++];a=bin(o,a,lv(i+1))}return a}
@@ -755,6 +846,7 @@ function ev(src,S){
     if(k==='('){const v=lv(0);if(t[p++]!==')')throw 0;return v}
     if(k[0]==='"')return k.slice(1,-1);if(/^[\d.]/.test(k))return +k;
     if(k==='true')return true;if(k==='false')return false;
+    if(t[p]==='('&&Object.prototype.hasOwnProperty.call(FN,k)){p++;const args=[];if(t[p]===')')p++;else for(;;){args.push(lv(0));if(t[p]===','){p++;continue}if(t[p++]!==')')throw 0;break}return FN[k].apply(null,args)}
     if(k in S.v)return S.v[k];if(k==='x'||k==='y'||k==='dir')return S[k];throw 0}
   const v=lv(0);if(p<t.length)throw 0;return v}
 function val(s,S){try{return ev(s,S)}catch(e){return s}}
@@ -798,6 +890,7 @@ async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0
         draw();if(u>=1)break;await sl(16)}break}
     case'walkanim':case'jumpanim':case'idleanim':{const nm=a[0].trim();if(!P.anims[nm]){log('Error: no animation named "'+nm+'"');break}
       S[{walkanim:'walkA',jumpanim:'jumpA',idleanim:'idleA'}[b.t]]=nm;break}
+    case'fov':S.fov=Math.max(30,Math.min(120,n(0)));break;
     case'pspeed':S.speed=Math.max(0,Math.min(120,n(0)));break;
     case'addplayer':{const bn=banOf(String(a[0]).trim().slice(0,16)||'');if(bn){log(bn.name+' is banned'+(bn.reason?' ('+bn.reason+')':'')+' for '+leftText(bn)+' more, so they can not join.');break}spawnPlayer(a[0],S);break}
     case'playaud':{const au=audioFor(a[0].trim());if(!au)break;au.onended=null;au.loop=true;au.currentTime=0;au.play().catch(function(){log('Error: the browser blocked the sound. Click the stage once, then run again.')});break}
@@ -825,7 +918,7 @@ async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0
 
 /* ===== 3D stage: x is right, y is forward, jump lifts the brick ===== */
 const SITE_URL='/';
-const cv=$('s-cv'),renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true}),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(50,4/3,.5,1500);
+const cv=$('s-cv'),renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true}),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(70,4/3,.5,1500);
 scene.background=new THREE.Color('#8fd3ff');
 const hemi=new THREE.HemisphereLight(0xffffff,0x88aa88,.72);scene.add(hemi);const sun=new THREE.DirectionalLight(0xffffff,.85);sun.position.set(8,14,6);scene.add(sun);scene.add(sun.target);
 /* Realistic soft shadows: the sun's shadow box follows the camera (or the player) so shadows stay sharp up close */
@@ -863,7 +956,8 @@ function addFace(m,p){if(!FACE){const c=document.createElement('canvas');c.width
   const fp=1,g=new THREE.CylinderGeometry(1.01,1.01,p.size[1]*.9,32,1,true,Math.PI-fp,fp*2);g.scale(p.size[0]/2,1,p.size[2]/2);
   m.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:FACE,transparent:true,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})))}
 // S is the avatar's offset from where it was placed. x right, y forward (toward -z), h height, dir 90 faces forward.
-function fresh(){return {oth:[],x:0,y:0,h:0,vy:0,gr:true,wt:0,jt:0,pvx:0,pvz:0,bp:{},air:false,mv:false,dir:90,col:null,say:'',v:{},fn:{},stop:false,d:0}}
+function initVars(){const o={};((P&&P.vars)||[]).forEach(function(n){o[n]=0});return o}
+function fresh(){return {oth:[],x:0,y:0,h:0,vy:0,gr:true,wt:0,jt:0,pvx:0,pvz:0,bp:{},air:false,mv:false,dir:90,col:null,say:'',v:initVars(),fn:{},stop:false,d:0}}
 let S=fresh(),running=false;let RV={},RD={},RVY={},NP=[],RY={},CO={},TM=new Map();
 function draw(){const T=byId(P.avId),g=T&&J[T.id];
   for(const id in RO){const r=byId(id);if(r&&J[id]&&id!==P.avId)J[id].position.set(r.pos[0]+RO[id][0],r.pos[1]+(RY[id]||0),r.pos[2]+RO[id][1])}
@@ -876,8 +970,8 @@ function draw(){const T=byId(P.avId),g=T&&J[T.id];
 
 /* ===== Parts, welds, rig editor, animator ===== */
 P.parts=P.parts||[];P.models=P.models||[];P.anims=P.anims||{};P.nid=P.nid||1;
-P.assets=P.assets||{};P.assets.images=P.assets.images||{};P.assets.audio=P.assets.audio||{};P.bans=Array.isArray(P.bans)?P.bans:[];
-P.env=Object.assign({sky:'#8fd3ff',tod:14,bright:1,sun:1,fog:0},P.env||{});P.rules=Object.assign({grav:190,jump:48,speed:16,cam:14},P.rules||{});P.audio=Object.assign({vol:.5,mute:false},P.audio||{});
+P.vars=Array.isArray(P.vars)?P.vars:[];P.assets=P.assets||{};P.assets.images=P.assets.images||{};P.assets.audio=P.assets.audio||{};P.bans=Array.isArray(P.bans)?P.bans:[];
+P.env=Object.assign({sky:'#8fd3ff',tod:14,bright:1,sun:1,fog:0},P.env||{});P.rules=Object.assign({grav:190,jump:48,speed:16,cam:14,fov:70},P.rules||{});P.audio=Object.assign({vol:.5,mute:false},P.audio||{});
 P.squads=P.squads||[{id:'q1',name:'Red Squad',color:'#e5484d'},{id:'q2',name:'Blue Squad',color:'#3b82f6'}];P.player=P.player||{name:'Player1',squad:''};
 const byId=function(id){return P.parts.find(function(p){return p.id===id})};
 const piv=function(p){return p.parent?p.pivot:p.pos};
@@ -1906,7 +2000,7 @@ function openGM(){if(menuEl||!(running||playing))return;for(const k in keys)keys
   pn.append(el('div','gmt','Settings'));
   slider(pn,'Volume',P.audio,'vol',0,1,.05,function(v){return Math.round(v*100)+'%'},liveVol);
   const mt=el('input');mt.type='checkbox';mt.checked=P.audio.mute;mt.onchange=function(){P.audio.mute=mt.checked;save();liveVol()};pn.append(lab('Mute all sounds',mt));
-  slider(pn,'Camera distance',P.rules,'cam',4,60,1,null,function(){cd=P.rules.cam});
+  slider(pn,'Camera distance',P.rules,'cam',4,60,1,null,function(){cd=P.rules.cam});slider(pn,'Field of view',P.rules,'fov',30,120,1);
   const ct=el('input');ct.type='checkbox';ct.checked=!$('chat').classList.contains('min');ct.onchange=function(){$('chat').classList.toggle('min',!ct.checked)};pn.append(lab('Show chat',ct));
   const fb=mb(fsOn?'Exit fullscreen':'Fullscreen','ghost',function(){$('s-fs').click();closeGM()});fb.style.marginTop='6px';pn.append(fb);
   const k=el('p','gmk');k.innerHTML='<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move &middot; <kbd>Space</kbd> jump<br><kbd>/</kbd> chat &middot; <kbd>Esc</kbd> this menu &middot; <kbd>Esc</kbd> then <kbd>L</kbd> leave game<br>Hold right mouse and drag to look';pn.append(k);
@@ -1990,7 +2084,7 @@ function svcProps(d){const s=SV.find(function(x){return x.k===selSvc});if(!s)ret
     slider(d,'Time of day',P.env,'tod',0,24,.25,clock,applyEnv);slider(d,'Brightness',P.env,'bright',.2,2,.05,pct,applyEnv);
     slider(d,'Sun strength',P.env,'sun',0,1.5,.05,pct,applyEnv);slider(d,'Fog',P.env,'fog',0,100,1,null,applyEnv)}
   else if(s.k==='rules'){slider(d,'Gravity',P.rules,'grav',20,400,5);slider(d,'Jump power',P.rules,'jump',10,120,1);slider(d,'Walk speed',P.rules,'speed',4,40,1);
-    slider(d,'Camera distance',P.rules,'cam',4,60,1,null,function(){cd=P.rules.cam});
+    slider(d,'Camera distance',P.rules,'cam',4,60,1,null,function(){cd=P.rules.cam});slider(d,'Field of view',P.rules,'fov',30,120,1);
     const b=el('button','btn ghost small','Reset to defaults');b.type='button';b.style.marginTop='10px';b.onclick=function(){Object.assign(P.rules,{grav:190,jump:48,speed:16,cam:14});save();props()};d.append(b);
     d.append(el('p','note','Default gravity is 190. Lower it for a moon level. Jump height is about jump power squared divided by twice the gravity.'))}
   else if(s.k==='audio'){slider(d,'Volume',P.audio,'vol',0,1,.05,function(v){return Math.round(v*100)+'%'},liveVol);
@@ -2147,13 +2241,14 @@ function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.
   stageTick(dt);animBox();animGizUpdate();gz.forEach(function(g){g.scale.setScalar(Math.max(.6,Math.hypot(g.position.x-cam.x,g.position.y-cam.y,g.position.z-cam.z)/22))});
   const w=cv.clientWidth,h=fsOn?cv.clientHeight:Math.round(w*.75),pr=Math.min(window.devicePixelRatio||1,2);
   if(w&&h&&(cv.width!==Math.floor(w*pr)||cv.height!==Math.floor(h*pr))){renderer.setPixelRatio(pr);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+  {const fv=Math.max(30,Math.min(120,+(S.fov!=null?S.fov:P.rules.fov)||70));if(camera.fov!==fv){camera.fov=fv;camera.updateProjectionMatrix()}}
   camera.position.set(cam.x,cam.y,cam.z);camera.lookAt(cam.x+f[0],cam.y+f[1],cam.z+f[2]);{const T=playing&&byId(P.avId);if(T)sunTick(T.pos[0]+S.x,T.pos[1]+S.h,T.pos[2]-S.y);else sunTick(cam.x+f[0]*22,Math.max(0,cam.y+f[1]*22),cam.z+f[2]*22)}skyTick(dt);renderer.render(scene,camera)}
 
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing)}
 function setRun(v){running=v;sync()}
 function resetWorld(){HL.forEach(function(st){st.down=false});HL.clear();S=fresh();RO={};RV={};RD={};RVY={};RY={};CO={};TM=new Map();RAG={};RSZ={};stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
-function boot(my){const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
+function boot(my){reser();const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
   hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
   return {hs:hs,done:Promise.all(hs.filter(function(s){return s[0].t==='start'}).map(function(s){return ex(s.slice(1),my,s[0].o).catch(function(e){log('Error: '+e)})}))}}
 $('s-run').onclick=async function(){this.blur();if(banGate())return;S.stop=true;resetWorld();const my=S;$('s-out').textContent='';setRun(true);
