@@ -273,7 +273,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 
 .gcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
 .gc{background:var(--paper);border:1px solid var(--line);border-radius:8px;overflow:hidden;display:flex;flex-direction:column}
-.gc .th{height:96px;display:grid;place-items:center;font-size:2.6rem;font-weight:800;color:#fff}
+.gc .th{height:96px;display:grid;place-items:center;font-size:2.6rem;font-weight:800;color:#fff;background-size:cover;background-position:center}
 .gc .bd{padding:10px;display:flex;flex-direction:column;gap:3px;flex:1}
 .gc b{overflow-wrap:anywhere}.gc small{color:var(--muted)}
 .gc .row{display:flex;gap:6px;margin-top:auto;padding-top:8px}
@@ -573,7 +573,7 @@ function makeSupa(){
     async friends(id){const r=await sb.rpc('list_friends');if(r.error)throw r.error;return r.data.map(x=>({fid:x.fid,name:x.username,color:x.avatar_color,status:x.status,incoming:x.incoming}))},
     async addFriend(id,n){const r=await sb.rpc('send_friend_request',{p_username:n});if(r.error)throw r.error;return r.data},
     async answerFriend(id,fid,yes){const r=await sb.rpc('answer_friend',{p_id:fid,p_accept:yes});if(r.error)throw r.error},
-    async listGames(id){const r=await sb.from('games').select('id,name,owner_id,owner_name,vis,updated_at').or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(60);if(r.error)throw r.error;return r.data},
+    async listGames(id){let r=await sb.from('games').select('id,name,owner_id,owner_name,vis,updated_at,thumb').or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(60);if(r.error&&/thumb/i.test(r.error.message||''))r=await sb.from('games').select('id,name,owner_id,owner_name,vis,updated_at').or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(60);if(r.error)throw r.error;return r.data},
     async gameData(id){const r=await sb.from('games').select('data').eq('id',id).single();if(r.error)throw r.error;return r.data.data},
     async logOut(){await sb.auth.signOut()},
     async restore(){const r=await sb.auth.getSession();return r.data.session?await profile(r.data.session.user.id,r.data.session.user):null},
@@ -681,9 +681,9 @@ function hue(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;
 function mkx(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
 async function loadGames(){
   const map={},L=localGames();
-  Object.keys(L).forEach(function(id){const g=L[id];map[id]={id:id,name:g.name||'Untitled',vis:g.vis||'private',at:g.at||0,ownerId:g.owner?g.owner.id:me.id,ownerName:g.owner?g.owner.name:me.username,data:g.data}});
+  Object.keys(L).forEach(function(id){const g=L[id];map[id]={id:id,name:g.name||'Untitled',vis:g.vis||'private',at:g.at||0,ownerId:g.owner?g.owner.id:me.id,ownerName:g.owner?g.owner.name:me.username,data:g.data,thumb:g.thumb||null}});
   try{const rows=await api.listGames(me.id);rows.forEach(function(r){const t=Date.parse(r.updated_at)||0,o=map[r.id];
-    if(!o||t>o.at)map[r.id]={id:r.id,name:r.name||'Untitled',vis:r.vis,at:t,ownerId:r.owner_id,ownerName:r.owner_name||'?',data:o&&o.data||null}})}catch(e){}
+    if(!o||t>o.at)map[r.id]={id:r.id,name:r.name||'Untitled',vis:r.vis,at:t,ownerId:r.owner_id,ownerName:r.owner_name||'?',data:o&&o.data||null,thumb:r.thumb||(o&&o.thumb)||null}})}catch(e){}
   if(!me)return;
   const all=Object.keys(map).map(function(k){return map[k]}).filter(function(g){return g.vis==='public'||g.ownerId===me.id}).sort(function(a,b){return b.at-a.at});
   const pub=all.filter(function(g){return g.vis==='public'}),mine=all.filter(function(g){return g.ownerId===me.id});
@@ -691,7 +691,7 @@ async function loadGames(){
   gfill($('h-mine'),mine,'You have not published any games yet.')}
 function gfill(box,list,empty){box.replaceChildren();if(!list.length){box.className='';box.append(mkx('p','empty',empty));return}box.className='gcards';
   list.forEach(function(g){const mine=g.ownerId===me.id,c=mkx('div','gc'),th=mkx('div','th',(g.name||'?').trim().charAt(0).toUpperCase()||'?'),bd=mkx('div','bd');
-    th.style.background='hsl('+hue(g.id)+',55%,42%)';
+    th.style.background='hsl('+hue(g.id)+',55%,42%)';if(g.thumb){th.textContent='';th.style.background='center/cover url("'+g.thumb+'")'}
     bd.append(mkx('b','',g.name),mkx('small','','by '+(mine?'you':g.ownerName)+(mine?'  -  '+(g.vis==='public'?'Public':'Private'):'')));
     const row=mkx('div','row'),pl=mkx('button','btn small','Play');pl.type='button';pl.onclick=function(){playGame(g)};row.append(pl);
     if(mine){const ed=mkx('button','btn ghost small','Edit');ed.type='button';ed.onclick=function(){editGame(g)};row.append(ed)}
