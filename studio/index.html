@@ -1217,13 +1217,9 @@ function selBox(){const a=sel.map(function(id){return byId(id)}).filter(Boolean)
 /* Move everything selected (welded children already follow their parent, so they are not moved twice) */
 function moveSel(d){const ids=sel.slice();ids.forEach(function(id){const p=byId(id);if(!p)return;let a=p.parent&&byId(p.parent),skip=false;while(a){if(ids.indexOf(a.id)>=0){skip=true;break}a=a.parent&&byId(a.parent)}if(!skip)moveBy(p,d)})}
 /* Resize tool (press E): drag a face handle to stretch that side while the opposite side stays put. Ctrl = resize from both sides. Alt = no snapping. */
-let toolChip=null;
-function updTool(){if(!toolChip){const w=document.querySelector('#studio .cvw');if(!w)return;toolChip=document.createElement('button');toolChip.type='button';
-    toolChip.style.cssText='position:absolute;left:8px;top:8px;z-index:6;padding:5px 10px;border:0;border-radius:8px;background:rgba(20,22,24,.8);color:#fff;font:700 .75rem system-ui,sans-serif;cursor:pointer';
-    toolChip.onclick=function(){setTool(tool==='scale'?'move':'scale')};if(getComputedStyle(w).position==='static')w.style.position='relative';w.append(toolChip)}
-  toolChip.textContent=tool==='scale'?(rigOn?'Resize: close rig editor':canScale()?'Resize tool (E)':'Resize: select a plain part (E = move)'):'Move tool (E = resize)'}
+function updTool(){}
 function canScale(){return sel.length>0&&sel.every(function(id){const p=byId(id);return p&&!p.av&&!p.parent&&!p.stab&&!kids(p).length})}
-function setTool(t){tool=t;updTool();if(t==='scale'){msg(rigOn?'Leave the rig editor first, then press E to resize.':canScale()?'Resize tool: drag a square handle. Ctrl = both sides, Alt = no snapping. Press E to go back to move.':'Resize tool: select a plain part or model (rigs and your character cannot be resized). Press E to go back to move.')}else msg('Move tool.');buildEdit()}
+function setTool(t){tool=t;if(t==='scale'&&(rigOn||!canScale()))lockWarn(rigOn?'Close the rig editor to resize.':sel.length?'Rigs and your character cannot be resized. Select a plain part.':'Select a part first, then press E to resize it.');buildEdit()}
 function scaleStart(o){const bx=selBox();if(!bx)return;const a=o.userData.axis.clone(),ax=a.x?0:a.y?1:2,s=a.getComponent(ax)>0?1:-1,
   ps=sel.map(byId).filter(Boolean).map(function(p){return {p:p,pos:p.pos.slice(),size:p.size.slice()}}),lo=bx.c[ax]-bx.h[ax],hi=bx.c[ax]+bx.h[ax];
   let mn=1e9;ps.forEach(function(q){mn=Math.min(mn,q.size[ax])});
