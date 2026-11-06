@@ -1188,7 +1188,7 @@ function buildEdit(){try{updTool()}catch(e){}while(editG.children.length)editG.r
     ln.position.set(c[0],c[1],c[2]);ln.renderOrder=9;editG.add(ln);
     [[1,0,0,'#ff4444'],[-1,0,0,'#ff4444'],[0,1,0,'#44dd44'],[0,-1,0,'#44dd44'],[0,0,1,'#4488ff'],[0,0,-1,'#4488ff']].forEach(function(a){
       const d=new THREE.Vector3(a[0],a[1],a[2]),ax=a[0]?0:a[1]?1:2,off=half[ax]+.45,
-        hd=new THREE.Mesh(new THREE.BoxGeometry(.5,.5,.5),new THREE.MeshBasicMaterial({color:a[3],depthTest:false}));
+        hd=new THREE.Mesh(new THREE.SphereGeometry(.32,20,14),new THREE.MeshBasicMaterial({color:a[3],depthTest:false}));
       hd.position.set(c[0]+a[0]*off,c[1]+a[1]*off,c[2]+a[2]*off);hd.renderOrder=10;hd.userData.axis=d;hd.userData.scale=true;editG.add(hd);gizmo.push(hd)});
     return}
   [[1,0,0,'#ff4444'],[-1,0,0,'#ff4444'],[0,1,0,'#44dd44'],[0,-1,0,'#44dd44'],[0,0,1,'#4488ff'],[0,0,-1,'#4488ff']].forEach(function(a){
