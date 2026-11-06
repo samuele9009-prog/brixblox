@@ -350,6 +350,9 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
           <div class="seg" id="shop-tabs" style="margin-top:0;flex-wrap:wrap"></div>
           <p id="shop-note" class="hint"></p>
           <div id="shop" class="shop-grid"></div>
+          <div id="acc-up" hidden><h3>Upload accessory (FBX)</h3>
+            <div class="addrow" style="flex-wrap:wrap"><input id="ac-name" type="text" maxlength="24" placeholder="Name"><select id="ac-slot" class="sname"><option value="hat">Hat</option><option value="face">Face</option><option value="back">Back</option><option value="neck">Neck</option></select><input id="ac-price" type="number" min="0" max="999" value="10" style="width:90px" title="Price in coins"><input id="ac-scale" type="number" min=".1" max="5" step=".1" value="1" style="width:90px" title="Size multiplier"></div>
+            <input id="ac-file" type="file" accept=".fbx" style="margin-top:8px"><div class="seg"><button id="ac-go" class="btn small" type="button">Upload accessory</button></div><p id="ac-msg" class="hint"></p></div>
         </div>
       </div>
     </section>
@@ -541,6 +544,9 @@ function makeDemo(){
     async answerFriend(id,fid,yes){const d=load();const f=(d.fr||[]).find(x=>x.id===fid);if(!f)return;if(yes&&f.b===id)f.status='accepted';else d.fr=d.fr.filter(x=>x!==f);save(d)},
     async listGames(){return []},
     async gameData(){return null},
+    async listAcc(){try{return (JSON.parse(store.get('brixblox-acc'))||[]).map(function(x){return Object.assign({c:'#4a4c4e'},x)})}catch(e){return []}},
+    async saveAcc(it){let a=[];try{a=JSON.parse(store.get('brixblox-acc'))||[]}catch(e){}a.push(it);store.set('brixblox-acc',JSON.stringify(a))},
+    async delAcc(id){let a=[];try{a=JSON.parse(store.get('brixblox-acc'))||[]}catch(e){}store.set('brixblox-acc',JSON.stringify(a.filter(function(x){return x.id!==id})))},
     async logOut(){const d=load();d.session=null;save(d)},
     async restore(){const d=load();const u=d.users.find(function(x){return x.id===d.session});return u?prof(u):null},
     async bankStatus(id){const d=load();flushPlay(d,id);save(d);const b=bk(d,id);return {saved:b.saved,wallet:b.wallet,code:b.code,codeAmt:b.amt,log:b.log}},
@@ -575,6 +581,9 @@ function makeSupa(){
     async answerFriend(id,fid,yes){const r=await sb.rpc('answer_friend',{p_id:fid,p_accept:yes});if(r.error)throw r.error},
     async listGames(id){let r=await sb.from('games').select('id,name,owner_id,owner_name,vis,updated_at,thumb').or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(60);if(r.error&&/thumb/i.test(r.error.message||''))r=await sb.from('games').select('id,name,owner_id,owner_name,vis,updated_at').or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(60);if(r.error)throw r.error;return r.data},
     async gameData(id){const r=await sb.from('games').select('data').eq('id',id).single();if(r.error)throw r.error;return r.data.data},
+    async listAcc(){const r=await sb.from('games').select('id,name,data').like('id','acc_%');if(r.error)throw r.error;return r.data.map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,slot:d.slot,price:d.price,scale:d.scale,fbx:d.fbx,c:'#4a4c4e'}})},
+    async saveAcc(it){const r=await sb.from('games').upsert({id:it.id,owner_id:me.id,owner_name:me.username,name:it.name,vis:'public',data:JSON.stringify({slot:it.slot,price:it.price,scale:it.scale,fbx:it.fbx}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
+    async delAcc(id){const r=await sb.from('games').delete().eq('id',id);if(r.error)throw r.error},
     async logOut(){await sb.auth.signOut()},
     async restore(){const r=await sb.auth.getSession();return r.data.session?await profile(r.data.session.user.id,r.data.session.user):null},
     async bankStatus(){const r=await sb.rpc('bank_status');if(r.error)throw r.error;const x=r.data||{};return {saved:x.saved||0,wallet:x.wallet||0,code:x.code||null,codeAmt:x.code_amount||0,log:x.log||[]}},
@@ -626,7 +635,9 @@ $('f-up').addEventListener('submit',async function(e){e.preventDefault();if($('b
 $('f-in').addEventListener('submit',async function(e){e.preventDefault();$('b-in').disabled=true;aMsg('Logging in...',true);
   try{const r=await api.logIn({email:loginMail($('i-mail').value.trim()),username:$('i-mail').value.trim(),password:$('i-pass').value});await enter(r.profile)}catch(er){aMsg(errText(er))}$('b-in').disabled=false});
 
-async function enter(p){me=p;store.set('brixblox-me',JSON.stringify({id:p.id,username:p.username,demo:!!api.demo}));$('a-msg').textContent='';$('f-up').reset();$('f-in').reset();nameOk=false;updUp();
+/* The game reads who you are (name, shirt colour) from here, so your in-game avatar matches this page. */
+function syncMe(){if(me)store.set('brixblox-me',JSON.stringify({id:me.id,username:me.username,demo:!!api.demo,color:me.color,av:me.av}))}
+async function enter(p){me=p;syncMe();$('a-msg').textContent='';$('f-up').reset();$('f-in').reset();nameOk=false;updUp();
   try{recs=await api.records(me.id)}catch(e){recs={};toast('Could not load your times.')}
   lobby()}
 function paintAvatar(){if(typeof pvRebuild==='function')pvRebuild();$('sw').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.c===me.color))})}
@@ -634,8 +645,8 @@ function unlocked(id){return id===1||!!recs[id-1]}
 function lobby(){
   show('lobby');{const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}}$('l-name').textContent=me.username;$('l-name2').textContent=me.username;
   const sw=$('sw');sw.innerHTML='';
-  COLORS.forEach(function(c){const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label','Color '+c);b.onclick=async function(){me.color=c;paintAvatar();try{await api.setColor(me.id,c)}catch(e){toast('Could not save your color.')}};sw.appendChild(b)});
-  paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');loadFriends();loadGames();loadBank()}
+  COLORS.forEach(function(c){const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label','Color '+c);b.onclick=async function(){me.color=c;syncMe();paintAvatar();try{await api.setColor(me.id,c)}catch(e){toast('Could not save your color.')}};sw.appendChild(b)});
+  paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');loadFriends();loadGames();loadBank();loadItems()}
 const PAGES=['home','friends','avatar','bank','settings'];
 function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p)})}
 const IC={home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',bank:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 9l9-6 9 6M8 13v3M12 13v3M16 13v3"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
@@ -682,7 +693,7 @@ function mkx(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=n
 async function loadGames(){
   const map={},L=localGames();
   Object.keys(L).forEach(function(id){const g=L[id];map[id]={id:id,name:g.name||'Untitled',vis:g.vis||'private',at:g.at||0,ownerId:g.owner?g.owner.id:me.id,ownerName:g.owner?g.owner.name:me.username,data:g.data,thumb:g.thumb||null}});
-  try{const rows=await api.listGames(me.id);rows.forEach(function(r){const t=Date.parse(r.updated_at)||0,o=map[r.id];
+  try{const rows=await api.listGames(me.id);rows.forEach(function(r){if(String(r.id).indexOf('acc_')===0)return;const t=Date.parse(r.updated_at)||0,o=map[r.id];
     if(!o||t>o.at)map[r.id]={id:r.id,name:r.name||'Untitled',vis:r.vis,at:t,ownerId:r.owner_id,ownerName:r.owner_name||'?',data:o&&o.data||null,thumb:r.thumb||(o&&o.thumb)||null}})}catch(e){}
   if(!me)return;
   const all=Object.keys(map).map(function(k){return map[k]}).filter(function(g){return g.vis==='public'||g.ownerId===me.id}).sort(function(a,b){return b.at-a.at});
@@ -693,13 +704,17 @@ function gfill(box,list,empty){box.replaceChildren();if(!list.length){box.classN
   list.forEach(function(g){const mine=g.ownerId===me.id,c=mkx('div','gc'),th=mkx('div','th',(g.name||'?').trim().charAt(0).toUpperCase()||'?'),bd=mkx('div','bd');
     th.style.background='hsl('+hue(g.id)+',55%,42%)';if(g.thumb){th.textContent='';th.style.background='center/cover url("'+g.thumb+'")'}
     bd.append(mkx('b','',g.name),mkx('small','','by '+(mine?'you':g.ownerName)+(mine?'  -  '+(g.vis==='public'?'Public':'Private'):'')));
-    const row=mkx('div','row'),pl=mkx('button','btn small','Play');pl.type='button';pl.onclick=function(){playGame(g)};row.append(pl);
+    const row=mkx('div','row'),pl=mkx('button','btn small','Join');pl.type='button';pl.onclick=function(){playGame(g)};row.append(pl);
     if(mine){const ed=mkx('button','btn ghost small','Edit');ed.type='button';ed.onclick=function(){editGame(g)};row.append(ed)}
     bd.append(row);c.append(th,bd);box.append(c)})}
 async function gameData(g){if(g.data)return g.data;try{return await api.gameData(g.id)}catch(e){return null}}
 async function playGame(g){const d=await gameData(g);if(!d){toast('Could not load that game.');return}
   await Promise.race([Promise.resolve(api.recordPlay(me.id,g.id,g.ownerId)).catch(function(){}),new Promise(function(r){setTimeout(r,1500)})]);
-  store.set('brixblox-play',JSON.stringify({id:g.id,data:d,owner:g.ownerName}));location.href=STUDIO_URL}
+  store.set('brixblox-play',JSON.stringify({id:g.id,data:d,owner:g.ownerName}));openPlayer()}
+/* Games run right here on BrixBlox in a full-screen player (no Studio buttons). The Studio only saves the game. */
+function openPlayer(){if($('pl-frame'))return;const f=document.createElement('iframe');f.id='pl-frame';f.src=STUDIO_URL+'?player=1';f.setAttribute('allow','fullscreen; autoplay');f.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:60;background:#111';document.body.append(f)}
+function closePlayer(){const f=$('pl-frame');if(f)f.remove();const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}if(me){loadBank();loadGames()}}
+addEventListener('message',function(e){if(e.origin===location.origin&&e.data&&e.data.bb==='leave')closePlayer()});
 async function editGame(g){const L=localGames();
   if(!L[g.id]){const d=await gameData(g);if(!d){toast('Could not load that game.');return}
     L[g.id]={id:g.id,name:g.name,vis:g.vis,at:Date.now(),owner:{id:me.id,name:me.username},data:d};store.set(GKEY,JSON.stringify(L))}
@@ -751,40 +766,23 @@ function disposeWorld(){if(!world)return;scene.remove(world);world.traverse(func
 function faceTex(){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');x.fillStyle='#111';
   [44,84].forEach(function(ex){x.beginPath();x.ellipse(ex,44,7,12,0,0,7);x.fill()});
   x.strokeStyle='#111';x.lineWidth=7;x.lineCap='round';x.beginPath();x.arc(64,50,32,.25*Math.PI,.75*Math.PI);x.stroke();return new THREE.CanvasTexture(c)}
-/* Avatar items. Slots: hat, face, back, neck. Prices are in coins. */
-const ITEMS=[
- {id:'cap',slot:'hat',name:'Red Cap',price:8,c:'#e0402f'},
- {id:'party',slot:'hat',name:'Party Hat',price:8,c:'#ff7ab8'},
- {id:'tophat',slot:'hat',name:'Top Hat',price:15,c:'#222'},
- {id:'crown',slot:'hat',name:'Crown',price:30,c:'#ffc233'},
- {id:'round',slot:'face',name:'Round Glasses',price:8,c:'#c9a227'},
- {id:'shades',slot:'face',name:'Sunglasses',price:12,c:'#111'},
- {id:'stache',slot:'face',name:'Mustache',price:10,c:'#4a2c17'},
- {id:'pack',slot:'back',name:'Backpack',price:15,c:'#8a5a2b'},
- {id:'cape',slot:'back',name:'Hero Cape',price:20,c:'#d62839'},
- {id:'wings',slot:'back',name:'Wings',price:35,c:'#ffffff'},
- {id:'bow',slot:'neck',name:'Bow Tie',price:6,c:'#d62839'},
- {id:'scarf',slot:'neck',name:'Scarf',price:12,c:'#ff9f1c'}
-];
+/* Avatar accessories are FBX files uploaded by the brixblox account. Slots: hat, face, back, neck. Prices are in coins. */
+let ITEMS=[];const FBXC={};
 const SLOTS=[['hat','Hats'],['face','Faces'],['back','Back'],['neck','Neck']];
+const ISLOT={hat:{y:1.74,z:0,s:.55,base:1},face:{y:1.55,z:.28,s:.32},back:{y:1,z:-.3,s:.9},neck:{y:1.3,z:0,s:.6}};
 function itemById(id){return ITEMS.find(function(x){return x.id===id})}
-function addItem(g,id,fx){
-  const it=itemById(id);if(!it)return;
-  function box(w,h,d,c,x,y,z,par){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),lam(c));m.position.set(x,y,z);m.castShadow=true;(par||g).add(m);return m}
-  function cyl(rt,rb,h,c,x,y,z,seg){const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg||20),lam(c));m.position.set(x,y,z);m.castShadow=true;g.add(m);return m}
-  if(id==='tophat'){cyl(.34,.34,.04,'#222',0,1.75,0,24);cyl(.21,.21,.34,'#222',0,1.94,0,24);cyl(.215,.215,.07,'#d62839',0,1.82,0,24)}
-  else if(id==='cap'){const d=new THREE.Mesh(new THREE.SphereGeometry(.285,20,12,0,Math.PI*2,0,Math.PI/2),lam(it.c));d.position.y=1.68;d.castShadow=true;g.add(d);box(.3,.03,.24,'#b8301f',0,1.7,.3)}
-  else if(id==='crown'){cyl(.27,.27,.12,'#ffc233',0,1.79,0,24);for(let k=0;k<6;k++){const a=k/6*Math.PI*2;const m=new THREE.Mesh(new THREE.ConeGeometry(.055,.16,8),lam('#ffc233'));m.position.set(Math.sin(a)*.24,1.93,Math.cos(a)*.24);g.add(m)}const ge=new THREE.Mesh(new THREE.SphereGeometry(.04,10,8),lam('#d62839'));ge.position.set(0,1.8,.275);g.add(ge)}
-  else if(id==='party'){const m=new THREE.Mesh(new THREE.ConeGeometry(.2,.46,18),lam('#ff7ab8'));m.position.y=1.96;m.castShadow=true;g.add(m);const b=new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),lam('#ffc233'));b.position.y=2.2;g.add(b);cyl(.2,.2,.05,'#3da5ff',0,1.76,0,18)}
-  else if(id==='shades'){box(.15,.1,.025,'#111',-.09,1.6,.278);box(.15,.1,.025,'#111',.09,1.6,.278);box(.06,.02,.025,'#111',0,1.62,.278)}
-  else if(id==='round'){[-.09,.09].forEach(function(x){const t=new THREE.Mesh(new THREE.TorusGeometry(.07,.014,8,20),lam('#c9a227'));t.position.set(x,1.6,.275);g.add(t)});box(.05,.014,.014,'#c9a227',0,1.62,.275)}
-  else if(id==='stache'){box(.2,.045,.03,'#4a2c17',0,1.54,.275);box(.06,.05,.03,'#4a2c17',-.12,1.52,.272);box(.06,.05,.03,'#4a2c17',.12,1.52,.272)}
-  else if(id==='pack'){box(.46,.56,.2,'#8a5a2b',0,1.02,-.27);box(.46,.16,.22,'#6e4521',0,1.2,-.27);box(.06,.5,.04,'#5a371a',-.2,1.04,.19);box(.06,.5,.04,'#5a371a',.2,1.04,.19)}
-  else if(id==='cape'){const pv=new THREE.Group();pv.position.set(0,1.34,-.19);g.add(pv);box(.66,.95,.04,'#d62839',0,-.48,-.02,pv);box(.7,.08,.06,'#ffc233',0,-.02,0,pv);fx.cape=pv}
-  else if(id==='wings'){fx.wings=[];[-1,1].forEach(function(sd){const pv=new THREE.Group();pv.position.set(sd*.2,1.2,-.22);g.add(pv);box(.5,.12,.04,'#ffffff',sd*.28,.18,0,pv);box(.42,.12,.04,'#f1f5ff',sd*.24,.02,0,pv);box(.32,.12,.04,'#e3ebff',sd*.2,-.14,0,pv);pv.userData.sd=sd;fx.wings.push(pv)})}
-  else if(id==='bow'){box(.1,.1,.06,'#d62839',0,1.3,.2);const a=box(.15,.14,.05,'#d62839',-.12,1.3,.2);const b=box(.15,.14,.05,'#d62839',.12,1.3,.2);a.rotation.z=.4;b.rotation.z=-.4}
-  else if(id==='scarf'){box(.76,.11,.42,'#ff9f1c',0,1.33,0);box(.11,.42,.05,'#ff9f1c',.2,1.12,.2);box(.11,.1,.05,'#d97e00',.2,.9,.2)}
-}
+function isBB(){return !!me&&me.username.toLowerCase()==='brixblox'}
+function addItem(g,id,fx){const it=itemById(id),o=it&&FBXC[id];if(!o)return;
+  const c=o.clone(true);c.position.set(0,0,0);c.updateMatrixWorld(true);
+  const bx=new THREE.Box3().setFromObject(c),sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),sl=ISLOT[it.slot]||ISLOT.hat,k=sl.s*(it.scale||1)/(Math.max(sz.x,sz.y,sz.z)||1);
+  const w=new THREE.Group();c.position.set(-ct.x,sl.base?-bx.min.y:-ct.y,-ct.z);w.add(c);w.scale.setScalar(k);w.position.set(0,sl.y,sl.z);g.add(w)}
+function ensureFbx(){return new Promise(function(ok,no){if(THREE.FBXLoader)return ok();
+  const L=['https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js','https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js'];let i=0;
+  (function nx(){if(i>=L.length){THREE.FBXLoader?ok():no(new Error('Could not load the FBX loader.'));return}const s=document.createElement('script');s.src=L[i++];s.onload=nx;s.onerror=nx;document.head.append(s)})()})}
+async function loadItems(){
+  try{const rows=await api.listAcc();if(rows.length){await ensureFbx();rows.forEach(function(it){if(FBXC[it.id])return;try{const b=atob(it.fbx),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);FBXC[it.id]=new THREE.FBXLoader().parse(u.buffer,'')}catch(e){}})}
+    ITEMS=rows.filter(function(r){return FBXC[r.id]})}catch(e){ITEMS=[]}
+  if(me){pvRebuild();if(!$('p-avatar').hidden)paintShop()}}
 function makeAvatar(color,eq){
   const g=new THREE.Group(),skin='#f5cd30',S=.34,fx={};
   function part(w,h,d,c,x,y,z,p){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),lam(c));m.position.set(x,y,z);m.castShadow=true;(p||g).add(m);return m}
@@ -887,7 +885,7 @@ function pvTick(now){
   pv.r.render(pv.sc,pv.cam)}
 function coinsEarned(){let n=10;Object.keys(recs).forEach(function(k){n+=recs[k].coins||0});return n}
 function balance(){return coinsEarned()-(me.av.spent||0)}
-async function saveAv(){try{await api.setAvatar(me.id,me.av);return true}catch(e){toast('Could not save: '+errText(e));return false}}
+async function saveAv(){try{await api.setAvatar(me.id,me.av);syncMe();return true}catch(e){toast('Could not save: '+errText(e));return false}}
 function paintShop(){
   $('wal').textContent=balance();
   const tabs=$('shop-tabs');tabs.innerHTML='';
@@ -909,8 +907,18 @@ function paintShop(){
         if(balance()<it.price){toast('Not enough coins. You need '+(it.price-balance())+' more.');return}
         const prev=JSON.stringify(me.av);me.av.owned.push(it.id);me.av.spent=(me.av.spent||0)+it.price;eq[it.slot]=it.id;pv.tryEq=null;pvRebuild();paintShop();
         if(await saveAv())toast('Bought '+it.name+'!');else{me.av=JSON.parse(prev);pvRebuild();paintShop()}})}
+    if(isBB())btn('Delete',async function(){if(!confirm('Delete '+it.name+' for everyone?'))return;try{await api.delAcc(it.id);delete FBXC[it.id];await loadItems()}catch(e){toast('Could not delete: '+errText(e))}},true);
     d.append(sw,n,pr,row);g.appendChild(d)})}
-function openAvatarPage(){pvInit();pv.tryEq=null;pvRebuild();paintShop()}
+$('ac-go').onclick=async function(){const f=$('ac-file').files[0],nm=$('ac-name').value.trim(),m=$('ac-msg');
+  function say(t,ok){m.textContent=t;m.className='hint '+(ok?'ok':'bad')}
+  if(!isBB())return;if(!nm){say('Give it a name.');return}if(!f||!/\.fbx$/i.test(f.name)){say('Choose an .fbx file.');return}if(f.size>4e6){say('That file is over 4 MB.');return}
+  $('ac-go').disabled=true;say('Reading...',true);
+  try{await ensureFbx();const buf=await f.arrayBuffer(),u=new Uint8Array(buf);let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));
+    new THREE.FBXLoader().parse(buf,'');
+    const it={id:'acc_'+Date.now().toString(36),name:nm,slot:$('ac-slot').value,price:Math.max(0,Math.min(999,parseInt($('ac-price').value,10)||0)),scale:Math.max(.1,Math.min(5,parseFloat($('ac-scale').value)||1)),fbx:btoa(s)};
+    await api.saveAcc(it);say('Uploaded '+nm+'.',true);$('ac-name').value='';$('ac-file').value='';await loadItems()}catch(e){say('Could not upload: '+((e&&e.message)||e))}
+  $('ac-go').disabled=false};
+function openAvatarPage(){$('acc-up').hidden=!isBB();pvInit();pv.tryEq=null;pvRebuild();paintShop()}
 function frame(now){
   requestAnimationFrame(frame);
   if(!playing)pvTick(now);
