@@ -946,7 +946,7 @@ neon:{n:'Neon',c:'#00f0ff',sh:0,sp:'#000000'}};
 const TC={};
 function tex(k){if(!TC[k]){const S=256,c=document.createElement('canvas');c.width=c.height=S;let h=0;for(let i=0;i<k.length;i++)h=h*31+k.charCodeAt(i);TX[k](c.getContext('2d'),S,RNG(h+7));
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());TC[k]=t}return TC[k]}
-function mkMat(p){const k=MATS[p.mat]?p.mat:'plastic',d=MATS[k],m=new THREE.MeshPhongMaterial({color:p.color,shininess:p.av?0:(d.sh==null?20:d.sh),specular:new THREE.Color(p.av?'#000000':(d.sp||'#111111'))});
+function mkMat(p){const k=MATS[p.mat]?p.mat:'plastic',d=MATS[k],m=new THREE.MeshPhongMaterial({color:p.color,shininess:(p.av||p.mt)?0:(d.sh==null?20:d.sh),specular:new THREE.Color((p.av||p.mt)?'#000000':(d.sp||'#111111'))});
   if(TX[k])m.map=tex(k);if(d.op){m.transparent=true;m.opacity=d.op}if(k==='neon')m.emissive.set(p.color);return m}
 /* World-sized texture coordinates: each face is mapped by its dominant axis, so a tile always covers ts studs */
 function boxUV(g,ts){const ps=g.attributes.position,nm=g.attributes.normal,uv=g.attributes.uv;
@@ -1358,9 +1358,10 @@ function newRig(){const an=animOn();
   sel=partsOf(mid).map(function(q){return q.id});selModel=mid;msg('Added a new character-style rig in front of you. Shift+Y turns it into the blocky rig.');all()}
 /* The standard block character: red torso, head, two arms, two legs, all welded under the Stabilizer ST (centered on the torso) */
 function blockBody(ST,smooth){const x=ST.pos[0],y=ST.pos[1],z=ST.pos[2];
-  const T=mkPart('Torso',[x,y,z],[1.6,2,.8],'#ff6b57');T.parent=ST.id;T.pivot=defPivot(T);if(smooth)T.sm=true;
-  [['Head',[0,1.65,0],[1.4,1.5,1.4],'#f0c49a'],['Rarm',[1.1,-.1,0],[.7,2,.7],'#f0c49a'],['Larm',[-1.1,-.1,0],[.7,2,.7],'#f0c49a'],['Rleg',[.4,-2,0],[.75,2,.75],'#a4bd47'],['Lleg',[-.4,-2,0],[.75,2,.75],'#a4bd47']].forEach(function(r){
-    const c=mkPart(r[0],[x+r[1][0],y+r[1][1],z+r[1][2]],r[2].slice(),r[3]);c.parent=T.id;c.pivot=defPivot(c);if(smooth)c.sm=true;if(r[0]==='Head')c.face=true});return T}
+  /* Same body as your BrixBlox avatar: 2x2x1 torso, round yellow head with a smiley, 1x2x1 yellow arms, green legs, matte */
+  const T=mkPart('Torso',[x,y,z],[2,2,1],'#ff6b57');T.parent=ST.id;T.pivot=defPivot(T);T.mt=true;if(smooth)T.sm=true;
+  [['Head',[0,1.56,0],[1.53,1.12,1.53],'#f5cd30'],['Rarm',[1.5,0,0],[1,2,1],'#f5cd30'],['Larm',[-1.5,0,0],[1,2,1],'#f5cd30'],['Rleg',[.5,-2,0],[1,2,1],'#a4bd47'],['Lleg',[-.5,-2,0],[1,2,1],'#a4bd47']].forEach(function(r){
+    const c=mkPart(r[0],[x+r[1][0],y+r[1][1],z+r[1][2]],r[2].slice(),r[3]);c.parent=T.id;c.pivot=defPivot(c);c.mt=true;if(smooth)c.sm=true;if(r[0]==='Head'){c.face=true;if(!smooth)c.shape='cyl'}});return T}
 /* Shift+Y: turn the selected rig into the original blocky rig (same rig, so its scripts keep working) */
 function resetRig(){if(animOn()){$('a-hint').textContent='Go back to the Parts view, select a rig, then press Shift+Y to reset it.';return}
   const p0=sel.length&&byId(sel[0]),r=p0&&rootOf(p0);
@@ -2158,6 +2159,11 @@ if(!P.v9){P.v9=1;const T=P.avId&&byId(P.avId);
   if(T&&T.name==='Torso'&&!T.parent&&!P.parts.some(function(p){return p.stab})){
     const ST=mkPart('Stabilizer',T.pos.slice(),[.6,.6,.6],'#9aa4ae');ST.stab=true;ST.av=true;if(T.model)ST.model=T.model;if(T.svc){ST.svc=T.svc;delete T.svc}
     T.parent=ST.id;T.pivot=defPivot(T);P.avId=ST.id;snapRig(ST)}
+  save()}
+/* v10: your character gets the same body as your BrixBlox avatar (2x2x1 torso, round head, 1x2x1 arms and legs). The feet stay where they were. */
+if(!P.v10){P.v10=1;if(P.avId){const av=function(n){return P.parts.find(function(p){return p.av&&p.name===n})},T=av('Torso');
+  if(T){T.size=[2,2,1];T.mt=true;[['Head',[0,1.56,0],[1.53,1.12,1.53],'#f5cd30'],['Rarm',[1.5,0,0],[1,2,1],'#f5cd30'],['Larm',[-1.5,0,0],[1,2,1],'#f5cd30'],['Rleg',[.5,-2,0],[1,2,1],'#a4bd47'],['Lleg',[-.5,-2,0],[1,2,1],'#a4bd47']].forEach(function(r){
+    const q=av(r[0]);if(!q)return;q.pos=[T.pos[0]+r[1][0],T.pos[1]+r[1][1],T.pos[2]+r[1][2]];q.size=r[2].slice();q.color=r[3];q.mt=true;q.pivot=defPivot(q);if(r[0]==='Head')q.face=true;delete q.shape})}}
   save()}
 applyEnv();rebuildParts();renderParts();anims();requestAnimationFrame(frame);loadBig();setTimeout(gcBig,4000);
 
