@@ -732,12 +732,27 @@ function buildVarPal(){if(!pvEl)return;const vs=varList(),sig=vs.join(',');if(si
 function slotAt(x,y){let best=null,ba=1e12;slots.forEach(function(sl){if(!sl.el.isConnected)return;const r=sl.el.getBoundingClientRect();
     if(x>=r.left-4&&x<=r.right+4&&y>=r.top-4&&y<=r.bottom+4){const a=r.width*r.height;if(a<ba){ba=a;best=sl}}});return best}
 function showSlot(sl){if(slHl&&slHl.el)slHl.el.classList.remove('slothl');slHl=sl;if(sl)sl.el.classList.add('slothl')}
+/* Right-click a block: Duplicate copies it and everything under it (the blocks below it in the stack and anything inside it) as a new stack just beside the original. */
+let bMenu=null;
+function closeBMenu(){if(bMenu){bMenu.remove();bMenu=null}}
+function bmenu(e,items){closeBMenu();const m=el('div','an-menu');
+  items.forEach(function(it){const b=el('button','',it[0]);b.type='button';b.onclick=function(){closeBMenu();it[1]()};m.append(b)});
+  document.body.append(m);const r=m.getBoundingClientRect();
+  m.style.left=Math.max(4,Math.min(e.clientX,innerWidth-r.width-6))+'px';m.style.top=Math.max(4,Math.min(e.clientY,innerHeight-r.height-6))+'px';bMenu=m}
+addEventListener('pointerdown',function(e){if(bMenu&&!bMenu.contains(e.target))closeBMenu()},true);
+addEventListener('keydown',function(e){if(e.code==='Escape')closeBMenu()});
+function dupBlock(b,arr){const i=arr.indexOf(b);if(i<0)return;
+  const top=P.scripts.find(function(s){return hasB(s,b)}),cl=JSON.parse(JSON.stringify(arr.slice(i))),h=cl[0],whole=!!top&&arr===top&&i===0;
+  const bx=top&&typeof top[0].x==='number'?top[0].x:24,by=top&&typeof top[0].y==='number'?top[0].y:24;
+  if(!whole)delete h.o;h.x=bx+40;h.y=by+40;
+  P.scripts.push(cl);selScr=h;rend();renderParts()}
 function rBlock(b,arr,ro){if(BD[b.t])for(let q=b.a.length;q<BD[b.t].a.length;q++)b.a.push(BD[b.t].a[q]);const D=BD[b.t],w=el('div','bw c-'+D.c+(D.hat?' hat':'')+(b.k?' cw':'')),h=el('div','bk2');
   fillLbl(h,b,D,ro,false);
   if(!ro){const x=el('button','x','\u2715');x.type='button';x.setAttribute('aria-label','Delete block');
     x.onclick=function(){if(D.hat)P.scripts.splice(P.scripts.indexOf(arr),1);else arr.splice(arr.indexOf(b),1);if(selScr===b)selScr=null;clean();rend();renderParts()};h.append(x);
     h.onpointerdown=function(e){if(e.button!==0||e.target.closest('input,button,select,.rp'))return;e.preventDefault();
-      const sc=h.closest('.scr');if(sc&&sc._s){selScr=sc._s[0];markSel()}dragStart(e,{b:b,arr:arr,el:w})}}
+      const sc=h.closest('.scr');if(sc&&sc._s){selScr=sc._s[0];markSel()}dragStart(e,{b:b,arr:arr,el:w})};
+    h.oncontextmenu=function(e){if(e.target.closest('input,select'))return;e.preventDefault();bmenu(e,[['Duplicate',function(){dupBlock(b,arr)}]])}}
   w.append(h);
   if(b.k){const cb=el('div','cbody'),ce=el('div','cend');cb.append(rList(b.k,ro));w.append(cb,ce);if(!ro)conns.push({k:'inner',arr:b.k,i:0,el:cb})}
   return w}
