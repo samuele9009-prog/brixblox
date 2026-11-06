@@ -1116,7 +1116,19 @@ function boxUV(g,ts){const ps=g.attributes.position,nm=g.attributes.normal,uv=g.
     if(ax>=ay&&ax>=az){u=nx>0?-z:z;v=y}else if(ay>=az){u=x;v=ny>0?-z:z}else{u=nz>0?x:-x;v=y}
     uv.setXY(i,u/ts,v/ts)}uv.needsUpdate=true}
 function emi(p){return p.mat==='neon'?M[p.id].material.color.getHex():0}
-function hl(){P.parts.forEach(function(p){M[p.id].material.emissive.setHex(animOn()&&aJ===p.id?0x8a6a10:selModel&&sel.indexOf(p.id)>=0?0x2a4a8a:p.id===sel[0]?0x2a4a8a:sel.indexOf(p.id)>=0?0x444444:emi(p))})}
+/* Selected parts get a solid blue outline: a copy of the shape pushed outwards along its surface, so it wraps rounded parts and rigs evenly.
+   Vertices that share a spot (box corners, cylinder rims) are pushed along the sum of their face directions so there are no gaps. */
+function outGeo(g,t){const c=g.userData.olg;if(c&&c.t===t)return c.g;const ps=g.attributes.position,nm=g.attributes.normal;if(!ps||!nm)return null;
+  const groups=new Map();for(let i=0;i<ps.count;i++){const k=Math.round(ps.getX(i)*400)+','+Math.round(ps.getY(i)*400)+','+Math.round(ps.getZ(i)*400);let r=groups.get(k);if(!r){r=[];groups.set(k,r)}r.push(i)}
+  const out=g.clone(),po=out.attributes.position;
+  groups.forEach(function(ix){const ds=[];ix.forEach(function(i){const v=new THREE.Vector3(nm.getX(i),nm.getY(i),nm.getZ(i));if(v.lengthSq()<1e-9)return;v.normalize();if(!ds.some(function(d){return d.dot(v)>.97}))ds.push(v)});
+    const o=new THREE.Vector3();ds.forEach(function(d){o.add(d)});if(o.length()>1.8)o.setLength(1.8);
+    ix.forEach(function(i){po.setXYZ(i,ps.getX(i)+o.x*t,ps.getY(i)+o.y*t,ps.getZ(i)+o.z*t)})});
+  po.needsUpdate=true;out.userData.keep=true;g.userData.olg={t:t,g:out};return out}
+function hl(){P.parts.forEach(function(p){const m=M[p.id];if(!m)return;m.material.emissive.setHex(animOn()&&aJ===p.id?0x8a6a10:emi(p));
+  if(m.userData.ol){m.remove(m.userData.ol);m.userData.ol.material.dispose();m.userData.ol=null}
+  if(sel.indexOf(p.id)>=0&&!p.stab){const z=p.size,t=.18,og=outGeo(m.geometry,t),o=new THREE.Mesh(og||m.geometry,new THREE.MeshBasicMaterial({color:'#3da5ff',side:THREE.BackSide,fog:false}));
+    if(!og)o.scale.set((z[0]+2*t)/z[0],(z[1]+2*t)/z[1],(z[2]+2*t)/z[2]);o.raycast=function(){};m.add(o);m.userData.ol=o}})}
 function matSel(cur,fn){const s=el('select');Object.keys(MATS).forEach(function(k){const o=el('option','',MATS[k].n);o.value=k;s.append(o)});s.value=MATS[cur]?cur:'plastic';s.onchange=function(){fn(s.value)};return s}
 function setMat(p,k){const old=MATS[p.mat]||MATS.plastic;if(!p.color||p.color.toLowerCase()===old.c.toLowerCase())p.color=MATS[k].c;p.mat=k}
 /* While dragging, only move the existing meshes (once per frame) instead of rebuilding every part, material and gizmo on each mouse event */
