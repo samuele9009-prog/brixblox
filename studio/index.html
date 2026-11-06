@@ -1506,7 +1506,8 @@ function buildAnimGizmo(){const t=animTarget();if(!t||!J[t.id])return;
     sh.position.y=.65;co.position.y=1.6;[sh,co].forEach(function(m){m.renderOrder=10;m.userData.axis=d;g.add(m);gizmo.push(m)});
     g.quaternion.setFromUnitVectors(AY,d);g.userData.off=d.clone().multiplyScalar(off);editG.add(g);gz.push(g)})}
 /* Tool handles (move arrows, resize balls, rotate rings, rig joints) keep the same size on screen at any distance */
-function gizmoFit(){const cp=new THREE.Vector3(cam.x,cam.y,cam.z),sf=function(v){return Math.max(.02,v.distanceTo(cp)/22)};
+const GIZ=13;/* smaller number = bigger handles (was 22) */
+function gizmoFit(){const cp=new THREE.Vector3(cam.x,cam.y,cam.z),sf=function(v){return Math.max(.02,v.distanceTo(cp)/GIZ)};
   editG.children.forEach(function(o){const f=o.userData.fx;
     if(f){const k=sf(f.b);o.scale.setScalar(k);o.position.copy(f.b).addScaledVector(f.d,f.off*k)}
     else if(o.userData.off||o.userData.ri!==undefined)o.scale.setScalar(sf(o.position))})}
