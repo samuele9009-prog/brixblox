@@ -967,7 +967,7 @@ function rebuildParts(){
   P.parts.forEach(function(p){const g=J[p.id],v=piv(p),pa=p.parent&&byId(p.parent);
     if(pa){const q=piv(pa);g.position.set(v[0]-q[0],v[1]-q[1],v[2]-q[2]);J[pa.id].add(g)}else{g.position.set(v[0],v[1],v[2]);g.visible=inW(p);PG.add(g)}g.userData.base=g.position.clone();g.userData.gry=!p.parent&&hk[p.id]&&p.ry?p.ry*Math.PI/180:0});
   stageApply();hl();if(rigOn)applyPose({});else preview();buildEdit();lastCol='';lastSay='\u0000';draw()}
-function applyPose(po,only){P.parts.forEach(function(p){if(only&&!p.av)return;if(p.id===P.avId){const o=po&&po['p:'+p.id],ro=po&&po[p.id];J[p.id].userData.off=o?o.slice():null;J[p.id].userData.rot=ro?ro.slice():null;return}const r=(po&&po[p.id])||[0,0,0];J[p.id].rotation.set(r[0]*Math.PI/180,r[1]*Math.PI/180+(J[p.id].userData.gry||0),r[2]*Math.PI/180);const o=po&&po['p:'+p.id],b=J[p.id].userData.base;if(b)J[p.id].position.set(b.x+(o?o[0]:0),b.y+(o?o[1]:0),b.z+(o?o[2]:0))})}
+function applyPose(po,only,hold){P.parts.forEach(function(p){if(only&&!p.av)return;if(hold&&hold[p.id]>0&&p.id!==P.avId)return;if(p.id===P.avId){const o=po&&po['p:'+p.id],ro=po&&po[p.id];J[p.id].userData.off=o?o.slice():null;J[p.id].userData.rot=ro?ro.slice():null;return}const r=(po&&po[p.id])||[0,0,0];J[p.id].rotation.set(r[0]*Math.PI/180,r[1]*Math.PI/180+(J[p.id].userData.gry||0),r[2]*Math.PI/180);const o=po&&po['p:'+p.id],b=J[p.id].userData.base;if(b)J[p.id].position.set(b.x+(o?o[0]:0),b.y+(o?o[1]:0),b.z+(o?o[2]:0))})}
 function evalPosKeys(A,t,o){for(const id in A.keys){const k=A.keys[id].filter(function(x){return x.p}).sort(function(a,b){return a.t-b.t});if(!k.length)continue;const f=k[0],l=k[k.length-1];
   if(t<=f.t)o['p:'+id]=f.p;else if(t>=l.t)o['p:'+id]=l.p;else for(let i=0;i<k.length-1;i++)if(t>=k[i].t&&t<=k[i+1].t){const u=(t-k[i].t)/((k[i+1].t-k[i].t)||1),a=k[i].p,b=k[i+1].p;o['p:'+id]=a.map(function(v,j){return v+(b[j]-v)*u});break}}}
 function evalPose(A,t){const o={};for(const id in A.keys){const k=A.keys[id].slice().sort(function(a,b){return a.t-b.t});if(!k.length)continue;
@@ -975,7 +975,12 @@ function evalPose(A,t){const o={};for(const id in A.keys){const k=A.keys[id].sli
   if(t<=f.t)o[id]=f.r;else if(t>=l.t)o[id]=l.r;else for(let i=0;i<k.length-1;i++)if(t>=k[i].t&&t<=k[i+1].t){const a=k[i],b=k[i+1],u=(t-a.t)/((b.t-a.t)||1),p0=k[i-1]||a,p3=k[i+2]||b;o[id]=a.r.map(function(v,j){const q0=p0.r[j],w=b.r[j],q3=p3.r[j];return .5*(2*v+(w-q0)*u+(2*q0-5*v+4*w-q3)*u*u+(3*v-q0-3*w+q3)*u*u*u)});break}}evalPosKeys(A,t,o);return o}
 function preview(){if(rigOn)return;const A=P.anims[curA];applyPose(animOn()?Object.assign(A?evalPose(A,aT):{},live):{})}
 async function playAnim(name,S){const A=P.anims[name];if(!A){log('Error: no animation named "'+name+'"');return}
-  const t0=performance.now();let t=0;while(t<A.len&&!S.stop){t=(performance.now()-t0)/1000;applyKeyed(evalPose(A,Math.min(t,A.len)));await sl(16)}}
+  /* Your own character is also posed by the walk / idle / jump animations every frame. Hold its parts while this one plays so they do not fight. */
+  const hid=Object.keys(A.keys).filter(function(id){const q=byId(id);return q&&q.av&&id!==P.avId});S.hold=S.hold||{};hid.forEach(function(id){S.hold[id]=(S.hold[id]||0)+1});
+  try{const t0=performance.now();let t=0;while(t<A.len&&!S.stop){t=(performance.now()-t0)/1000;applyKeyed(evalPose(A,Math.min(t,A.len)));await sl(16)}}
+  finally{hid.forEach(function(id){S.hold[id]=Math.max(0,(S.hold[id]||1)-1);if(!S.hold[id]){const g=J[id],bs=g&&g.userData.base,D=180/Math.PI;
+      if(g){S.bp[id]=[g.rotation.x*D,(g.rotation.y-(g.userData.gry||0))*D,g.rotation.z*D];if(bs)S.bp['p:'+id]=[g.position.x-bs.x,g.position.y-bs.y,g.position.z-bs.z]}}});
+    if(hid.length){S.ak='';S.bl=.2}}}
 
 /* Only touches the parts an animation has keyframes for, so several rigs can animate at once */
 function applyKeyed(po){for(const id in po){const v=po[id];
@@ -1575,8 +1580,8 @@ function play(dt,f){const SP=S.speed!=null?S.speed:P.rules.speed,l=Math.hypot(f[
   const W=P.anims[S.walkA||'walk'],JA=P.anims[S.jumpA||'jump'],IA=P.anims[S.idleA||'idle'],air=!S.gr;let tp={};
   if(air&&JA){S.jt+=dt;S.air=true;tp=evalPose(JA,Math.min(S.jt,JA.len))}
   else{if(S.air){S.air=false;S.jt=0}if(W&&(mv||Math.hypot(S.pvx,S.pvz)>1.5)){S.wt+=dt*Math.min(1,Math.hypot(S.pvx,S.pvz)/12+.2);const sn=Math.floor(S.wt/(W.len/2));if(S.sn===undefined)S.sn=sn;else if(sn!==S.sn){S.sn=sn;stepSound()}tp=evalPose(W,S.wt%W.len)}else if(IA){S.it=(S.it||0)+dt;tp=evalPose(IA,S.it%IA.len)}}
-  const ak=(air&&JA)?'j':(W&&(mv||Math.hypot(S.pvx,S.pvz)>1.5))?'w':'i';if(S.ak!==ak){S.ak=ak;S.bl=.15}S.bl=Math.max(0,(S.bl||0)-dt);const kb=S.bl>0?1-Math.exp(-dt*(air?18:14)):1;P.parts.forEach(function(p){if(p.id===P.avId||!p.av)return;const t=tp[p.id]||[0,0,0],c=S.bp[p.id]||(S.bp[p.id]=[0,0,0]);for(let i=0;i<3;i++)c[i]+=(t[i]-c[i])*kb;const pk='p:'+p.id,t2=tp[pk]||[0,0,0],c2=S.bp[pk]||(S.bp[pk]=[0,0,0]);for(let i=0;i<3;i++)c2[i]+=(t2[i]-c2[i])*kb});
-  applyPose(S.bp,true);S.mv=mv}
+  const ak=(air&&JA)?'j':(W&&(mv||Math.hypot(S.pvx,S.pvz)>1.5))?'w':'i';if(S.ak!==ak){S.ak=ak;S.bl=.15}S.bl=Math.max(0,(S.bl||0)-dt);const kb=S.bl>0?1-Math.exp(-dt*(air?18:14)):1;P.parts.forEach(function(p){if(p.id===P.avId||!p.av||(S.hold&&S.hold[p.id]>0))return;const t=tp[p.id]||[0,0,0],c=S.bp[p.id]||(S.bp[p.id]=[0,0,0]);for(let i=0;i<3;i++)c[i]+=(t[i]-c[i])*kb;const pk='p:'+p.id,t2=tp[pk]||[0,0,0],c2=S.bp[pk]||(S.bp[pk]=[0,0,0]);for(let i=0;i<3;i++)c2[i]+=(t2[i]-c2[i])*kb});
+  applyPose(S.bp,true,S.hold);S.mv=mv}
 function solid(r){return CO[r.id]!==undefined?CO[r.id]:!r.nocol}
 function collide(){const T=byId(P.avId);if(!T)return;const R=1.1,fy=feet0()+S.h;
   for(let it=0;it<2;it++)P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;
