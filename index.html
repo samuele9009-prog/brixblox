@@ -344,6 +344,12 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
             <button class="btn ghost small" type="button" data-a="wave" aria-pressed="false">Wave</button>
             <button class="btn ghost small" type="button" data-a="jump" aria-pressed="false">Jump</button>
           </div>
+          <p class="note">Model</p>
+          <div class="av-tools seg" id="av-style">
+            <button class="btn ghost small" type="button" data-m="a" aria-pressed="true" title="Chunky yellow model, smooth corners">A: Smooth</button>
+            <button class="btn ghost small" type="button" data-m="b" aria-pressed="false" title="The Studio rig exactly as the Studio builds it">B: Studio rig</button>
+            <button class="btn ghost small" type="button" data-m="c" aria-pressed="false" title="The Studio rig with smooth corners">C: Studio smooth</button>
+          </div>
           <p class="note">Shirt color</p><div id="sw" class="swatches"></div>
         </div>
         <div>
@@ -775,7 +781,7 @@ function isBB(){return !!me&&me.username.toLowerCase()==='brixblox'}
 function addItem(g,id,fx){const it=itemById(id),o=it&&FBXC[id];if(!o)return;
   const c=o.clone(true);c.position.set(0,0,0);c.updateMatrixWorld(true);
   const bx=new THREE.Box3().setFromObject(c),sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),sl=ISLOT[it.slot]||ISLOT.hat,k=sl.s*(it.scale||1)/(Math.max(sz.x,sz.y,sz.z)||1);
-  const w=new THREE.Group();c.position.set(-ct.x,sl.base?-bx.min.y:-ct.y,-ct.z);w.add(c);w.scale.setScalar(k);w.position.set(0,sl.y,sl.z);g.add(w)}
+  const w=new THREE.Group();c.position.set(-ct.x,sl.base?-bx.min.y:-ct.y,-ct.z);w.add(c);w.scale.setScalar(k);w.position.set(0,sl.y+((it.slot==='hat'||it.slot==='face')?(g.userData.dy||0):0),sl.z);g.add(w)}
 function ensureFbx(){return new Promise(function(ok,no){if(THREE.FBXLoader)return ok();
   const L=['https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js','https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js'];let i=0;
   (function nx(){if(i>=L.length){THREE.FBXLoader?ok():no(new Error('Could not load the FBX loader.'));return}const s=document.createElement('script');s.src=L[i++];s.onload=nx;s.onerror=nx;document.head.append(s)})()})}
@@ -794,18 +800,26 @@ function cylGeo(w,h,d,b){b=Math.min(b,h/2*.99,w/2*.99,d/2*.99);const bx=b/(w/2),
   pts.push(new THREE.Vector2(0,h/2));const g=new THREE.LatheGeometry(pts,72);g.scale(w/2,1,d/2);return g}
 const AVG={};
 function avGeoC(k,mk){if(!AVG[k]){const g=mk();g.scale(.34,.34,.34);AVG[k]=g}return AVG[k]}
+/* Avatar models (sizes in studs). a = chunky yellow model with smooth corners. b = the Studio rig exactly as the Studio builds it (sharp corners).
+   c = the Studio rig with smooth corners. Pick one with the Model buttons on the Avatar page; the choice is remembered. */
+const MS={
+ a:{ts:[2,2,1],hs:[1.53,1.12,1.53],hy:1.56,ax:1.5,ay:0,aw:1,lx:.5,lw:1,skin:'#f5cd30',r:.18,hr:.14},
+ b:{ts:[1.6,2,.8],hs:[1.4,1.5,1.4],hy:1.65,ax:1.1,ay:-.1,aw:.7,lx:.4,lw:.75,skin:'#f0c49a',r:0,hr:0},
+ c:{ts:[1.6,2,.8],hs:[1.4,1.5,1.4],hy:1.65,ax:1.1,ay:-.1,aw:.7,lx:.4,lw:.75,skin:'#f0c49a',r:.14,hr:.12}};
+let AVSTYLE=store.get('brixblox-avstyle');if(!MS[AVSTYLE])AVSTYLE='a';
 function makeAvatar(color,eq){
-  const g=new THREE.Group(),skin='#f5cd30',S=.34,fx={};
-  /* Matte smooth blocks, a round-edged cylinder head and a smile wrapped around the front of it */
+  const M=MS[AVSTYLE],g=new THREE.Group(),skin=M.skin,S=.34,fx={},K=AVSTYLE;
+  /* Matte blocks, a cylinder head and a smile wrapped around the front of it */
   const phg=function(c){return new THREE.MeshPhongMaterial({color:c,shininess:0,specular:0x000000})};
-  function part(w,h,d,c,x,y,z,p){const m=new THREE.Mesh(avGeoC('b'+w+'|'+h+'|'+d,function(){return rbox(w/S,h/S,d/S,.18)}),phg(c));m.position.set(x,y,z);m.castShadow=true;(p||g).add(m);return m}
-  part(2*S,2*S,S,color,0,3*S,0);
-  const head=new THREE.Mesh(avGeoC('head',function(){return cylGeo(1.53,1.12,1.53,.14)}),phg(skin));head.position.y=1.55;head.castShadow=true;g.add(head);
+  function part(w,h,d,c,x,y,z,p){const m=new THREE.Mesh(avGeoC(K+'b'+w+'|'+h+'|'+d,function(){return M.r?rbox(w/S,h/S,d/S,M.r):new THREE.BoxGeometry(w/S,h/S,d/S)}),phg(c));m.position.set(x,y,z);m.castShadow=true;(p||g).add(m);return m}
+  part(M.ts[0]*S,M.ts[1]*S,M.ts[2]*S,color,0,3*S,0);
+  const hs=M.hs,hy=(3+M.hy)*S,head=new THREE.Mesh(avGeoC(K+'head',function(){if(M.hr)return cylGeo(hs[0],hs[1],hs[2],M.hr);const q=new THREE.CylinderGeometry(.5,.5,1,32);q.scale(hs[0],hs[1],hs[2]);return q}),phg(skin));head.position.y=hy;head.castShadow=true;g.add(head);
+  g.userData.dy=hy-1.55;
   if(!faceTex.t)faceTex.t=faceTex();
-  const fp=.7,fg=new THREE.CylinderGeometry(1.01,1.01,.38*.78,32,1,true,-fp,fp*2);fg.scale(.26,1,.26);
+  const fp=.7,fg=new THREE.CylinderGeometry(1.01,1.01,hs[1]*S*(M.hr?.78:.9),32,1,true,-fp,fp*2);fg.scale(hs[0]/2*S,1,hs[2]/2*S);
   head.add(new THREE.Mesh(fg,new THREE.MeshBasicMaterial({map:faceTex.t,transparent:true,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})));
-  const L=[];
-  [[-S/2,2*S,'#a4bd47'],[S/2,2*S,'#a4bd47'],[-1.5*S,4*S,skin],[1.5*S,4*S,skin]].forEach(function(a){const pv=new THREE.Group();pv.position.set(a[0],a[1],0);g.add(pv);part(S,2*S,S,a[2],0,-S,0,pv);L.push(pv)});
+  const L=[],ay=(3+M.ay+1)*S;
+  [[-M.lx*S,2*S,'#a4bd47',M.lw],[M.lx*S,2*S,'#a4bd47',M.lw],[-M.ax*S,ay,skin,M.aw],[M.ax*S,ay,skin,M.aw]].forEach(function(a){const pv=new THREE.Group();pv.position.set(a[0],a[1],0);g.add(pv);part(a[3]*S,2*S,a[3]*S,a[2],0,-S,0,pv);L.push(pv)});
   if(eq)Object.keys(eq).forEach(function(k){if(eq[k])addItem(g,eq[k],fx)});
   return {g:g,limbs:L,fx:fx}}
 function buildScene(L){
@@ -878,6 +892,8 @@ function pvInit(){
   v.addEventListener('wheel',function(e){e.preventDefault();pv.zoom=Math.max(3.2,Math.min(9,pv.zoom+e.deltaY*.004))},{passive:false});
   $('av-tools').querySelectorAll('button').forEach(function(b){b.onclick=function(){pvMode(b.dataset.a)}});
 }
+function styleBtns(){$('av-style').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.m===AVSTYLE))})}
+$('av-style').querySelectorAll('button').forEach(function(b){b.onclick=function(){AVSTYLE=b.dataset.m;store.set('brixblox-avstyle',AVSTYLE);styleBtns();pvRebuild()}});styleBtns();
 function pvMode(m){pv.mode=pv.mode===m&&m!=='idle'?'idle':m;$('av-tools').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.a===pv.mode))})}
 function pvRebuild(){
   if(!pv.sc||!me)return;
