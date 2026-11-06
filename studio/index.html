@@ -546,6 +546,7 @@ const BD={
  opletter:{c:'op',rep:1,l:'letter _ of _',a:['1','apple'],sk:'nt',f:function(x){return 'letter('+x[0]+', '+x[1]+')'}},
  oplen:{c:'op',rep:1,l:'length of _',a:['apple'],sk:'t',f:function(x){return 'length('+x[0]+')'}},
  opcontains:{c:'op',rep:1,bool:1,l:'_ contains _ ?',a:['apple','a'],sk:'tt',f:function(x){return 'contains('+x[0]+', '+x[1]+')'}},
+ opkeyheld:{c:'op',rep:1,bool:1,l:'key _ is being held',a:['space'],dd:{0:'keys'},sk:'d',f:function(x){return 'keyheld('+x[0]+')'}},
  opmod:{c:'op',rep:1,l:'_ mod _',a:['',''],sk:'nn',f:function(x){return 'mod('+x[0]+', '+x[1]+')'}},
  opround:{c:'op',rep:1,l:'round _',a:[''],sk:'n',f:function(x){return 'round('+x[0]+')'}},
  opmath:{c:'op',rep:1,l:'_ of _',a:['abs',''],dd:{0:'mathf'},sk:'dn',f:function(x){return 'mathf('+x[0]+', '+x[1]+')'}},
@@ -830,7 +831,11 @@ function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].
 
 /* BricBloc interpreter. Expressions are parsed by hand, never eval'd. */
 /* Functions the round blocks turn into: join, letter, length, contains, random, round, mod and the "abs of" list */
-const FN={join:function(a,b){return String(a)+String(b)},letter:function(n,s){return String(s).charAt(Math.floor(+n)-1)},length:function(s){return String(s).length},
+const KH=new Set();
+addEventListener('keydown',function(e){if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;keyNames(e).forEach(function(k){KH.add(k)})},true);
+addEventListener('keyup',function(e){keyNames(e).forEach(function(k){KH.delete(k)})},true);
+addEventListener('blur',function(){KH.clear()});
+const FN={keyheld:function(k){return KH.has(String(k).trim().toLowerCase())},join:function(a,b){return String(a)+String(b)},letter:function(n,s){return String(s).charAt(Math.floor(+n)-1)},length:function(s){return String(s).length},
   contains:function(s,q){return String(s).toLowerCase().indexOf(String(q).toLowerCase())>=0},
   random:function(a,b){a=+a||0;b=+b||0;const lo=Math.min(a,b),hi=Math.max(a,b);return(Number.isInteger(a)&&Number.isInteger(b))?lo+Math.floor(Math.random()*(hi-lo+1)):lo+Math.random()*(hi-lo)},
   round:function(x){return Math.round(+x||0)},mod:function(a,b){a=+a||0;b=+b||0;return b?((a%b)+b)%b:0},
@@ -2247,7 +2252,7 @@ function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing)}
 function setRun(v){running=v;sync()}
-function resetWorld(){HL.forEach(function(st){st.down=false});HL.clear();S=fresh();RO={};RV={};RD={};RVY={};RY={};CO={};TM=new Map();RAG={};RSZ={};stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
+function resetWorld(){KH.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();RO={};RV={};RD={};RVY={};RY={};CO={};TM=new Map();RAG={};RSZ={};stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
 function boot(my){reser();const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
   hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
   return {hs:hs,done:Promise.all(hs.filter(function(s){return s[0].t==='start'}).map(function(s){return ex(s.slice(1),my,s[0].o).catch(function(e){log('Error: '+e)})}))}}
