@@ -247,16 +247,14 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
       <label for="u-name">Player name</label>
       <input id="u-name" type="text" maxlength="16" autocomplete="username" autocapitalize="off" spellcheck="false" required>
       <p id="u-msg" class="hint">3 to 16 letters, numbers or underscores. Keep it friendly.</p>
-      <label for="u-mail">Email</label>
-      <input id="u-mail" type="email" autocomplete="email" required>
       <label for="u-pass">Password</label>
       <input id="u-pass" type="password" minlength="8" autocomplete="new-password" required>
-      <p class="hint">At least 8 characters.</p>
+      <p class="hint">At least 8 characters. No email needed, so remember it: passwords can&#8217;t be reset.</p>
       <button id="b-up" class="btn" type="submit" disabled>Create account</button>
     </form>
     <form id="f-in" hidden>
-      <label for="i-mail">Email</label>
-      <input id="i-mail" type="email" autocomplete="email" required>
+      <label for="i-mail">Username or email</label>
+      <input id="i-mail" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required>
       <label for="i-pass">Password</label>
       <input id="i-pass" type="password" autocomplete="current-password" required>
       <button id="b-in" class="btn" type="submit">Log in</button>
@@ -486,11 +484,15 @@ const COLORS=['#ff6b57','#ffc233','#46c26b','#3da5ff','#7a4cff','#ff7ab8','#1fc8
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('on')},3200)}
 function fmt(ms){const s=ms/1000,m=Math.floor(s/60);return m+':'+(s-m*60).toFixed(2).padStart(5,'0')}
 function show(which){$('auth').hidden=which!=='auth';$('lobby').hidden=which!=='lobby';$('hud').hidden=which!=='play';if(which!=='play')$('done').hidden=true;playing=which==='play'}
-function errText(e){const m=(e&&e.message)||'Something went wrong.';if(/Database error saving new user/i.test(m))return 'That player name was not accepted. Try a different one.';if(/send_friend_request|list_friends|answer_friend/i.test(m))return 'Friends need the SQL setup in Supabase (brixblox-friends.sql).';if(/already registered/i.test(m))return 'That email already has an account.';return m}
+/* No email needed: accounts are made from the username and a made-up address that never receives mail. */
+const MAIL_DOMAIN='brixblox.pages.dev';
+function fakeMail(n){return n.toLowerCase()+'@'+MAIL_DOMAIN}
+function loginMail(v){return v.indexOf('@')>=0?v:fakeMail(v)}
+function errText(e){const m=(e&&e.message)||'Something went wrong.';if(/error sending|confirmation email|rate limit/i.test(m))return 'Supabase is still trying to send a confirmation email. Turn off Confirm email in Supabase (Authentication, Sign In / Providers, Email).';if(/Database error saving new user/i.test(m))return 'That player name was not accepted. Try a different one.';if(/send_friend_request|list_friends|answer_friend/i.test(m))return 'Friends need the SQL setup in Supabase (brixblox-friends.sql).';if(/already registered/i.test(m))return 'That email already has an account.';return m}
 $('mode-note').textContent=api.demo?'Demo mode: accounts and times are saved in this browser only. Add your Supabase keys to share them.':'';
 
 let nameOk=false,chkT=0,chkSeq=0;
-function updUp(){$('b-up').disabled=!(nameOk&&$('u-mail').value&&$('u-pass').value.length>=8)}
+function updUp(){$('b-up').disabled=!(nameOk&&$('u-pass').value.length>=8)}
 $('u-name').addEventListener('input',function(){
   const n=$('u-name').value.trim(),m=$('u-msg');nameOk=false;updUp();clearTimeout(chkT);
   if(!n){m.className='hint';m.textContent='3 to 16 letters, numbers or underscores. Keep it friendly.';return}
@@ -498,16 +500,16 @@ $('u-name').addEventListener('input',function(){
   m.className='hint';m.textContent='Checking...';const seq=++chkSeq;
   chkT=setTimeout(async function(){try{const p=await api.checkUsername(n);if(seq!==chkSeq)return;nameOk=!p;m.className='hint '+(p?'bad':'ok');m.textContent=p||'Nice, that name is free.';updUp()}catch(e){if(seq!==chkSeq)return;m.className='hint bad';m.textContent='Could not check the name. Try again.'}},350);
 });
-['u-mail','u-pass'].forEach(function(i){$(i).addEventListener('input',updUp)});
+['u-pass'].forEach(function(i){$(i).addEventListener('input',updUp)});
 function tab(up){$('tab-up').classList.toggle('on',up);$('tab-in').classList.toggle('on',!up);$('f-up').hidden=!up;$('f-in').hidden=up;$('a-msg').textContent=''}
 $('tab-up').onclick=function(){tab(true)};$('tab-in').onclick=function(){tab(false)};
 function aMsg(t,good){const m=$('a-msg');m.textContent=t;m.className='msg'+(good?' good':'')}
 $('f-up').addEventListener('submit',async function(e){e.preventDefault();if($('b-up').disabled)return;$('b-up').disabled=true;aMsg('Creating your account...',true);
-  try{const r=await api.signUp({username:$('u-name').value.trim(),email:$('u-mail').value.trim(),password:$('u-pass').value});
+  try{const r=await api.signUp({username:$('u-name').value.trim(),email:fakeMail($('u-name').value.trim()),password:$('u-pass').value});
     if(r.confirm){aMsg('Check your email to confirm your account, then log in.',true);tab(false);$('a-msg').textContent='Check your email to confirm your account, then log in.';$('a-msg').className='msg good'}
     else await enter(r.profile)}catch(er){aMsg(errText(er));updUp()}});
 $('f-in').addEventListener('submit',async function(e){e.preventDefault();$('b-in').disabled=true;aMsg('Logging in...',true);
-  try{const r=await api.logIn({email:$('i-mail').value.trim(),password:$('i-pass').value});await enter(r.profile)}catch(er){aMsg(errText(er))}$('b-in').disabled=false});
+  try{const r=await api.logIn({email:loginMail($('i-mail').value.trim()),password:$('i-pass').value});await enter(r.profile)}catch(er){aMsg(errText(er))}$('b-in').disabled=false});
 
 async function enter(p){me=p;store.set('brixblox-me',JSON.stringify({id:p.id,username:p.username,demo:!!api.demo}));$('a-msg').textContent='';$('f-up').reset();$('f-in').reset();nameOk=false;updUp();
   try{recs=await api.records(me.id)}catch(e){recs={};toast('Could not load your times.')}
