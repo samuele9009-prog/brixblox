@@ -1125,10 +1125,14 @@ function outGeo(g,t){const c=g.userData.olg;if(c&&c.t===t)return c.g;const ps=g.
     const o=new THREE.Vector3();ds.forEach(function(d){o.add(d)});if(o.length()>1.8)o.setLength(1.8);
     ix.forEach(function(i){po.setXYZ(i,ps.getX(i)+o.x*t,ps.getY(i)+o.y*t,ps.getZ(i)+o.z*t)})});
   po.needsUpdate=true;out.userData.keep=true;g.userData.olg={t:t,g:out};return out}
+/* Stencil trick: selected bodies mark the pixels they cover, and the outline only draws outside those pixels, so you get one clean edge around the whole selection and no lines in the gaps between pieces. */
 function hl(){P.parts.forEach(function(p){const m=M[p.id];if(!m)return;m.material.emissive.setHex(animOn()&&aJ===p.id?0x8a6a10:emi(p));
   if(m.userData.ol){m.remove(m.userData.ol);m.userData.ol.material.dispose();m.userData.ol=null}
-  if(sel.indexOf(p.id)>=0&&!p.stab){const z=p.size,t=.18,og=outGeo(m.geometry,t),o=new THREE.Mesh(og||m.geometry,new THREE.MeshBasicMaterial({color:'#3da5ff',side:THREE.BackSide,fog:false}));
-    if(!og)o.scale.set((z[0]+2*t)/z[0],(z[1]+2*t)/z[1],(z[2]+2*t)/z[2]);o.raycast=function(){};m.add(o);m.userData.ol=o}})}
+  const on=sel.indexOf(p.id)>=0&&!p.stab,mt=m.material;
+  if(mt.stencilWrite!==on){mt.stencilWrite=on;if(on){mt.stencilFunc=THREE.AlwaysStencilFunc;mt.stencilRef=1;mt.stencilZPass=THREE.ReplaceStencilOp}}
+  if(on){const z=p.size,t=.18,og=outGeo(m.geometry,t),
+      o=new THREE.Mesh(og||m.geometry,new THREE.MeshBasicMaterial({color:'#3da5ff',side:THREE.BackSide,fog:false,stencilWrite:true,stencilFunc:THREE.NotEqualStencilFunc,stencilRef:1,stencilFail:THREE.KeepStencilOp,stencilZFail:THREE.KeepStencilOp,stencilZPass:THREE.KeepStencilOp}));
+    if(!og)o.scale.set((z[0]+2*t)/z[0],(z[1]+2*t)/z[1],(z[2]+2*t)/z[2]);o.renderOrder=5;o.raycast=function(){};m.add(o);m.userData.ol=o}})}
 function matSel(cur,fn){const s=el('select');Object.keys(MATS).forEach(function(k){const o=el('option','',MATS[k].n);o.value=k;s.append(o)});s.value=MATS[cur]?cur:'plastic';s.onchange=function(){fn(s.value)};return s}
 function setMat(p,k){const old=MATS[p.mat]||MATS.plastic;if(!p.color||p.color.toLowerCase()===old.c.toLowerCase())p.color=MATS[k].c;p.mat=k}
 /* While dragging, only move the existing meshes (once per frame) instead of rebuilding every part, material and gizmo on each mouse event */
