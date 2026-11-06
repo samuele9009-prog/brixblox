@@ -222,6 +222,14 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
 [data-theme=light] .hb{background:#e3e6e9}[data-theme=light] .ht:hover .hb{background:#d6dade}
 [data-theme=light] .ws,[data-theme=light] .pre{background:#fff}[data-theme=light] .pre{color:#0b6b44}
 [data-theme=light] .zn.on{background:rgba(0,0,0,.12)}
+
+.gcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.gc{background:var(--paper);border:1px solid var(--line);border-radius:8px;overflow:hidden;display:flex;flex-direction:column}
+.gc .th{height:96px;display:grid;place-items:center;font-size:2.6rem;font-weight:800;color:#fff}
+.gc .bd{padding:10px;display:flex;flex-direction:column;gap:3px;flex:1}
+.gc b{overflow-wrap:anywhere}.gc small{color:var(--muted)}
+.gc .row{display:flex;gap:6px;margin-top:auto;padding-top:8px}
+.gc .row .btn{flex:1;padding:0 8px}
 </style>
 </head>
 <body>
@@ -274,7 +282,8 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
   <div class="ct">
   <div id="p-home" class="page">
     <section><h2 class="big">Home</h2><h3 id="h-fh">Friends (0)</h3><div id="h-fr" class="hfr"></div></section>
-    <section><h2>Games</h2><div class="soon"><b>Nothing to play yet</b>Games made in BrixBlox Studio will show up here.<br><br><button id="g-studio" class="btn small" type="button">Open BrixBlox Studio</button></div></section>
+    <section><h2>Games</h2><div id="h-games"></div></section>
+    <section><h2>Your games</h2><div id="h-mine"></div><div class="seg"><button id="g-new" class="btn small" type="button">Create a new game</button><button id="g-studio" class="btn ghost small" type="button">Open BrixBlox Studio</button></div></section>
   </div>
   <div id="p-avatar" class="page" hidden>
     <section class="panel av-panel">
@@ -295,22 +304,6 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
   </div>
 </div></main>
 
-<main id="studio" class="screen" hidden>
-  <header class="bar">
-    <div class="logo sm"><span class="blk b1"></span><span class="blk b2"></span><span class="blk b3"></span><h1>BrixBlox Studio</h1></div>
-    <input id="s-name" class="sname" maxlength="30" aria-label="Project name">
-    <div class="who"><button id="s-run" class="btn small" type="button">&#9654; Run</button><button id="s-stop" class="btn ghost small" type="button" disabled>&#9632; Stop</button><button id="s-back" class="btn ghost small" type="button">Back</button></div>
-  </header>
-  <div class="sgrid">
-    <aside id="s-pal" class="pal panel" aria-label="Block palette"></aside>
-    <section id="s-ws" class="ws" aria-label="Scripts"></section>
-    <aside class="side">
-      <canvas id="s-cv" width="480" height="360" aria-label="Stage"></canvas>
-      <div class="tabs"><button id="t-out" type="button" class="on">Output</button><button id="t-code" type="button">BricBloc code</button></div>
-      <pre id="s-out" class="pre"></pre><pre id="s-code" class="pre" hidden></pre>
-    </aside>
-  </div>
-</main>
 
 <div id="hud" hidden>
   <div class="hud-top">
@@ -452,6 +445,8 @@ function makeDemo(){
       if(ex){if(ex.status==='accepted')return {ok:false,reason:'Already friends.'};if(ex.a===t.id){ex.status='accepted';save(d);return {ok:true,msg:'You are now friends with '+t.username+'!'}}return {ok:false,reason:'Request already sent.'}}
       d.fr.push({id:Date.now(),a:id,b:t.id,status:'pending'});save(d);return {ok:true,msg:'Request sent to '+t.username+'.'}},
     async answerFriend(id,fid,yes){const d=load();const f=(d.fr||[]).find(x=>x.id===fid);if(!f)return;if(yes&&f.b===id)f.status='accepted';else d.fr=d.fr.filter(x=>x!==f);save(d)},
+    async listGames(){return []},
+    async gameData(){return null},
     async logOut(){const d=load();d.session=null;save(d)},
     async restore(){const d=load();const u=d.users.find(function(x){return x.id===d.session});return u?prof(u):null},
     async setColor(id,c){const d=load();const u=d.users.find(function(x){return x.id===id});if(u){u.color=c;save(d)}},
@@ -471,6 +466,8 @@ function makeSupa(){
     async friends(id){const r=await sb.rpc('list_friends');if(r.error)throw r.error;return r.data.map(x=>({fid:x.fid,name:x.username,color:x.avatar_color,status:x.status,incoming:x.incoming}))},
     async addFriend(id,n){const r=await sb.rpc('send_friend_request',{p_username:n});if(r.error)throw r.error;return r.data},
     async answerFriend(id,fid,yes){const r=await sb.rpc('answer_friend',{p_id:fid,p_accept:yes});if(r.error)throw r.error},
+    async listGames(id){const r=await sb.from('games').select('id,name,owner_id,owner_name,vis,updated_at').or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(60);if(r.error)throw r.error;return r.data},
+    async gameData(id){const r=await sb.from('games').select('data').eq('id',id).single();if(r.error)throw r.error;return r.data.data},
     async logOut(){await sb.auth.signOut()},
     async restore(){const r=await sb.auth.getSession();return r.data.session?await profile(r.data.session.user.id):null},
     async setColor(id,c){const r=await sb.from('profiles').update({avatar_color:c}).eq('id',id);if(r.error)throw r.error},
@@ -488,7 +485,7 @@ let me=null,recs={},lbLevel=1,curLevel=null,toastT=0;
 const COLORS=['#ff6b57','#ffc233','#46c26b','#3da5ff','#7a4cff','#ff7ab8','#1fc8b4','#f5f0e6'];
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('on')},3200)}
 function fmt(ms){const s=ms/1000,m=Math.floor(s/60);return m+':'+(s-m*60).toFixed(2).padStart(5,'0')}
-function show(which){$('auth').hidden=which!=='auth';$('lobby').hidden=which!=='lobby';$('hud').hidden=which!=='play';$('studio').hidden=which!=='studio';if(which!=='play')$('done').hidden=true;playing=which==='play'}
+function show(which){$('auth').hidden=which!=='auth';$('lobby').hidden=which!=='lobby';$('hud').hidden=which!=='play';if(which!=='play')$('done').hidden=true;playing=which==='play'}
 function errText(e){const m=(e&&e.message)||'Something went wrong.';if(/Database error saving new user/i.test(m))return 'That player name was not accepted. Try a different one.';if(/send_friend_request|list_friends|answer_friend/i.test(m))return 'Friends need the SQL setup in Supabase (brixblox-friends.sql).';if(/already registered/i.test(m))return 'That email already has an account.';return m}
 $('mode-note').textContent=api.demo?'Demo mode: accounts and times are saved in this browser only. Add your Supabase keys to share them.':'';
 
@@ -512,7 +509,7 @@ $('f-up').addEventListener('submit',async function(e){e.preventDefault();if($('b
 $('f-in').addEventListener('submit',async function(e){e.preventDefault();$('b-in').disabled=true;aMsg('Logging in...',true);
   try{const r=await api.logIn({email:$('i-mail').value.trim(),password:$('i-pass').value});await enter(r.profile)}catch(er){aMsg(errText(er))}$('b-in').disabled=false});
 
-async function enter(p){me=p;$('a-msg').textContent='';$('f-up').reset();$('f-in').reset();nameOk=false;updUp();
+async function enter(p){me=p;store.set('brixblox-me',JSON.stringify({id:p.id,username:p.username,demo:!!api.demo}));$('a-msg').textContent='';$('f-up').reset();$('f-in').reset();nameOk=false;updUp();
   try{recs=await api.records(me.id)}catch(e){recs={};toast('Could not load your times.')}
   lobby()}
 function paintAvatar(){$('av').style.setProperty('--c',me.color);$('sw').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.c===me.color))})}
@@ -521,7 +518,7 @@ function lobby(){
   show('lobby');$('l-name').textContent=me.username;$('l-name2').textContent=me.username;
   const sw=$('sw');sw.innerHTML='';
   COLORS.forEach(function(c){const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label','Color '+c);b.onclick=async function(){me.color=c;paintAvatar();try{await api.setColor(me.id,c)}catch(e){toast('Could not save your color.')}};sw.appendChild(b)});
-  paintAvatar();nav('home');loadFriends()}
+  paintAvatar();nav('home');loadFriends();loadGames()}
 const PAGES=['home','friends','avatar','settings'];
 function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p)})}
 const IC={home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
@@ -529,7 +526,7 @@ document.querySelectorAll('.snav button').forEach(function(b){b.insertAdjacentHT
 function theme(t){document.documentElement.dataset.theme=t;store.set('brixblox-theme',t);$('th-light').setAttribute('aria-pressed',String(t==='light'));$('th-dark').setAttribute('aria-pressed',String(t==='dark'))}
 $('th-light').onclick=function(){theme('light')};$('th-dark').onclick=function(){theme('dark')};theme(store.get('brixblox-theme')==='dark'?'dark':'light');
 $('n-avatar').onclick=function(){nav('avatar')};$('n-settings').onclick=function(){nav('settings')};
-$('n-home').onclick=function(){nav('home')};$('n-friends').onclick=function(){nav('friends');loadFriends()};
+$('n-home').onclick=function(){nav('home');loadGames()};$('n-friends').onclick=function(){nav('friends');loadFriends()};
 function frow(r,btns,tag){const d=document.createElement('div');d.className='frow';const dot=document.createElement('span');dot.className='dot';dot.style.background=r.color;const n=document.createElement('span');n.className='nm';n.textContent=r.name+(tag||'');d.append(dot,n);
   btns.forEach(function(b){const x=document.createElement('button');x.type='button';x.className='btn small'+(b[2]?' ghost':'');x.textContent=b[0];x.onclick=async function(){try{await api.answerFriend(me.id,r.fid,b[1])}catch(e){toast(errText(e))}loadFriends()};d.append(x)});return d}
 function fill(el,rows,empty){el.innerHTML='';if(!rows.length){const p=document.createElement('p');p.className='empty';p.textContent=empty;el.append(p);return}rows.forEach(function(x){el.append(x)})}
@@ -544,7 +541,7 @@ async function loadFriends(){
   catch(e){$('n-badge').hidden=true;const p=document.createElement('p');p.className='empty';p.textContent=errText(e);$('f-req').replaceChildren(p);$('f-list').replaceChildren()}}
 $('f-add').addEventListener('submit',async function(e){e.preventDefault();const n=$('f-name').value.trim(),m=$('f-msg');if(!n)return;
   try{const r=await api.addFriend(me.id,n);m.className='hint '+(r.ok?'ok':'bad');m.textContent=r.ok?r.msg:r.reason;if(r.ok)$('f-name').value='';loadFriends()}catch(er){m.className='hint bad';m.textContent=errText(er)}});
-$('b-out').onclick=async function(){try{await api.logOut()}catch(e){}me=null;recs={};show('auth');tab(false)};
+$('b-out').onclick=async function(){try{await api.logOut()}catch(e){}store.del('brixblox-me');me=null;recs={};show('auth');tab(false)};
 
 /* ===== 5b. Home friend tiles ===== */
 function tile(name,color,plus){const d=document.createElement('button');d.type='button';d.className='ht';
@@ -552,132 +549,37 @@ function tile(name,color,plus){const d=document.createElement('button');d.type='
   d.lastChild.textContent=name;if(color)d.style.setProperty('--c',color);
   d.onclick=function(){nav('friends');loadFriends();if(plus)$('f-name').focus()};return d}
 
-/* ===== 5c. BrixBlox Studio: blocks that read and write BricBloc ===== */
-const CAT={ev:'Events',mo:'Motion',lk:'Looks',ct:'Control',vr:'Variables',fn:'Functions'};
-// l: label, _ marks an input. hat: starts a script. k: holds blocks inside. raw: first input is a plain word, not an expression.
-const BD={
- start:{c:'ev',hat:1,l:'when start',a:[]},
- key:{c:'ev',hat:1,l:'when key _',a:['space'],raw:1},
- move:{c:'mo',l:'move _ steps',a:['10']},
- turn:{c:'mo',l:'turn _ degrees',a:['90']},
- goto:{c:'mo',l:'go to x _ y _',a:['0','0']},
- say:{c:'lk',l:'say _',a:['Hello!']},
- color:{c:'lk',l:'color _',a:['red'],raw:1},
- wait:{c:'ct',l:'wait _ secs',a:['1']},
- repeat:{c:'ct',l:'repeat _',a:['4'],k:1},
- forever:{c:'ct',l:'forever',a:[],k:1},
- 'if':{c:'ct',l:'if _',a:['x > 100'],k:1},
- set:{c:'vr',l:'set _ to _',a:['score','0'],raw:1},
- change:{c:'vr',l:'change _ by _',a:['score','1'],raw:1},
- print:{c:'vr',l:'print _',a:['score']},
- def:{c:'fn',hat:1,l:'define _',a:['spin'],raw:1},
- call:{c:'fn',l:'call _',a:['spin'],raw:1}
-};
-function mk(t,a,k){return {t:t,a:a||BD[t].a.slice(),k:BD[t].k?(k||[]):null}}
-function starter(){return [[mk('start'),mk('say',['Hello!']),mk('repeat',['4'],[mk('move',['60']),mk('turn',['90']),mk('wait',['0.3'])])]]}
-let P;try{P=JSON.parse(store.get('brixblox-studio'));if(!P||!Array.isArray(P.scripts))throw 0}catch(e){P={name:'My first BricBloc game',scripts:starter()}}
-function save(){store.set('brixblox-studio',JSON.stringify(P))}
-function clean(){P.scripts=P.scripts.filter(function(s){return s.length})}
-function inside(b,arr){return !!b.k&&(b.k===arr||b.k.some(function(x){return inside(x,arr)}))}
-let dnd=null;
-function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x)e.textContent=x;return e}
-function zone(arr,i){const z=el('div','zn');
-  z.ondragover=function(e){e.preventDefault();z.classList.add('on')};z.ondragleave=function(){z.classList.remove('on')};
-  z.ondrop=function(e){e.preventDefault();e.stopPropagation();place(arr,i)};return z}
-function place(arr,i){if(!dnd)return;let b;
-  if(dnd.b){b=dnd.b;if(inside(b,arr))return;const j=dnd.arr.indexOf(b);dnd.arr.splice(j,1);if(dnd.arr===arr&&j<i)i--}
-  else b=mk(dnd.t);
-  if(BD[b.t].hat)P.scripts.push([b]);else arr.splice(i,0,b);
-  dnd=null;clean();rend()}
-function fit(n){n.style.width=Math.max(2,n.value.length+1)+'ch'}
-function rList(arr){const d=el('div');arr.forEach(function(b,i){if(i||!BD[b.t].hat)d.append(zone(arr,i));d.append(rBlock(b,arr))});d.append(zone(arr,arr.length));return d}
-function rBlock(b,arr){const D=BD[b.t],w=el('div','bw c-'+D.c),h=el('div','bk2');
-  D.l.split('_').forEach(function(p,i){if(p.trim())h.append(el('span','',p.trim()));
-    if(i<b.a.length){const n=el('input');n.value=b.a[i];fit(n);n.oninput=function(){b.a[i]=n.value;fit(n);save();view()};h.append(n)}});
-  const x=el('button','x','\u2715');x.type='button';x.setAttribute('aria-label','Delete block');
-  x.onclick=function(){if(D.hat)P.scripts.splice(P.scripts.indexOf(arr),1);else arr.splice(arr.indexOf(b),1);clean();rend()};h.append(x);
-  if(!D.hat){h.draggable=true;h.ondragstart=function(e){dnd={b:b,arr:arr};e.dataTransfer.setData('text','b')};h.ondragend=function(){dnd=null}}
-  w.append(h);if(b.k){w.append(el('div','cbody'),el('div','cend'));w.children[1].append(rList(b.k))}return w}
-function rend(){const w=$('s-ws');w.replaceChildren();
-  if(!P.scripts.length)w.append(el('p','empty','Drag blocks here, or tap one in the palette. Start with "when start".'));
-  P.scripts.forEach(function(s){const d=el('div','scr');d.append(rList(s));w.append(d)});save();view()}
-$('s-ws').ondragover=function(e){e.preventDefault()};
-$('s-ws').ondrop=function(e){e.preventDefault();if(!dnd)return;const n=[];P.scripts.push(n);place(n,0)};
-function add(t){const b=mk(t);if(BD[t].hat||!P.scripts.length)P.scripts.push([b]);else P.scripts[P.scripts.length-1].push(b);rend()}
-(function(){const p=$('s-pal');let c='';
-  for(const t in BD){const D=BD[t];if(D.c!==c){c=D.c;p.append(el('h4','',CAT[c]))}
-    let k=0;const w=el('div','bw c-'+c),h=el('div','bk2',D.l.replace(/_/g,function(){return D.a[k++]}));
-    h.draggable=true;h.ondragstart=function(e){dnd={t:t};e.dataTransfer.setData('text','p')};h.ondragend=function(){dnd=null};h.onclick=function(){add(t)};w.append(h);p.append(w)}
-  p.ondragover=function(e){e.preventDefault()};
-  p.ondrop=function(e){e.preventDefault();if(dnd&&dnd.b){dnd.arr.splice(dnd.arr.indexOf(dnd.b),1);dnd=null;clean();rend()}}})();
-
-/* BricBloc as text */
-const KW={start:'when start',key:'when key',def:'define'};
-function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
-function view(){$('s-code').textContent=P.scripts.map(function(s){return BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0)}).join('\n\n')}
-
-/* BricBloc interpreter. Expressions are parsed by hand, never eval'd. */
-function ev(src,S){
-  const t=src.match(/\d*\.?\d+|"[^"]*"|[A-Za-z_]\w*|[<>=!]=|[-+*\/%()<>]/g)||[];
-  if(t.join('')!==src.replace(/\s+/g,''))throw 0;
-  let p=0;const L=[['or'],['and'],['==','!=','<','>','<=','>='],['+','-'],['*','/','%']];
-  function bin(o,a,b){switch(o){case'or':return a||b;case'and':return a&&b;case'==':return a==b;case'!=':return a!=b;case'<':return a<b;case'>':return a>b;case'<=':return a<=b;case'>=':return a>=b;case'+':return(typeof a==='string'||typeof b==='string')?''+a+b:a+b;case'-':return a-b;case'*':return a*b;case'/':return a/b;default:return a%b}}
-  function lv(i){if(i===L.length)return un();let a=lv(i+1);while(L[i].indexOf(t[p])>=0){const o=t[p++];a=bin(o,a,lv(i+1))}return a}
-  function un(){const k=t[p++];if(k==null)throw 0;
-    if(k==='-')return -un();if(k==='not')return !un();
-    if(k==='('){const v=lv(0);if(t[p++]!==')')throw 0;return v}
-    if(k[0]==='"')return k.slice(1,-1);if(/^[\d.]/.test(k))return +k;
-    if(k==='true')return true;if(k==='false')return false;
-    if(k in S.v)return S.v[k];if(k==='x'||k==='y'||k==='dir')return S[k];throw 0}
-  const v=lv(0);if(p<t.length)throw 0;return v}
-function val(s,S){try{return ev(s,S)}catch(e){return s}}
-const sl=function(ms){return new Promise(function(r){setTimeout(r,ms)})},cl=function(v,m){return Math.max(-m,Math.min(m,v))};
-function log(m){const o=$('s-out');o.textContent+=m+'\n';o.scrollTop=1e9}
-async function ex(list,S){for(let i=0;i<list.length;i++){if(S.stop)return;await st(list[i],S)}}
-async function st(b,S){const a=b.a,n=function(i){return Number(val(a[i],S))||0};
-  switch(b.t){
-    case'move':{const r=S.dir*Math.PI/180;S.x=cl(S.x+Math.cos(r)*n(0),220);S.y=cl(S.y+Math.sin(r)*n(0),160);break}
-    case'turn':S.dir=(S.dir-n(0))%360;break;
-    case'goto':S.x=cl(n(0),220);S.y=cl(n(1),160);break;
-    case'say':S.say=String(val(a[0],S));break;
-    case'color':S.col=a[0].trim();break;
-    case'wait':await sl(Math.max(0,n(0))*1000);break;
-    case'set':S.v[a[0].trim()]=val(a[1],S);break;
-    case'change':{const k=a[0].trim();S.v[k]=(Number(S.v[k])||0)+n(1);break}
-    case'print':log(String(val(a[0],S)));break;
-    case'repeat':for(let i=0,c=Math.min(n(0),10000);i<c&&!S.stop;i++){await ex(b.k,S);await sl(30)}break;
-    case'forever':while(!S.stop){await ex(b.k,S);await sl(30)}break;
-    case'if':{let c;try{c=ev(a[0],S)}catch(e){log('Error: cannot read the condition "'+a[0]+'"');break}if(c)await ex(b.k,S);break}
-    case'call':{const f=S.fn[a[0].trim()];if(!f){log('Error: no function named "'+a[0].trim()+'"');break}
-      if(S.d>40){log('Error: calls nested too deep');S.stop=true;break}S.d++;await ex(f,S);S.d--;break}}
-  draw()}
-
-/* Stage and controls */
-const cv=$('s-cv'),cx=cv.getContext('2d');
-function fresh(){return {x:0,y:0,dir:0,col:'#00b06f',say:'',v:{},fn:{},stop:false,d:0}}
-let S=fresh(),running=false;
-function draw(){cx.fillStyle='#191b1d';cx.fillRect(0,0,480,360);cx.strokeStyle='#2a2d30';cx.lineWidth=1;cx.beginPath();
-  for(let i=0;i<=480;i+=40){cx.moveTo(i,0);cx.lineTo(i,360)}for(let i=0;i<=360;i+=40){cx.moveTo(0,i);cx.lineTo(480,i)}cx.stroke();
-  const px=240+S.x,py=180-S.y;cx.save();cx.translate(px,py);cx.rotate(-S.dir*Math.PI/180);
-  cx.fillStyle=S.col;cx.fillRect(-20,-20,40,40);cx.strokeStyle='rgba(0,0,0,.5)';cx.lineWidth=2;cx.strokeRect(-20,-20,40,40);
-  cx.fillStyle='rgba(255,255,255,.85)';cx.fillRect(8,-5,10,10);cx.restore();
-  if(S.say){cx.font='700 14px Montserrat,sans-serif';cx.textAlign='center';const w=cx.measureText(S.say).width+16;
-    cx.fillStyle='#fff';cx.fillRect(px-w/2,py-62,w,24);cx.fillStyle='#111';cx.fillText(S.say,px,py-45)}}
-function setRun(v){running=v;$('s-run').disabled=v;$('s-stop').disabled=!v}
-$('s-run').onclick=async function(){S.stop=true;S=fresh();const my=S;$('s-out').textContent='';setRun(true);draw();
-  const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
-  hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
-  await Promise.all(hs.filter(function(s){return s[0].t==='start'}).map(function(s){return ex(s.slice(1),my).catch(function(e){log('Error: '+e)})}));
-  if(my===S&&!hs.some(function(s){return s[0].t==='key'}))setRun(false)};
-$('s-stop').onclick=function(){S.stop=true;setRun(false)};
-addEventListener('keydown',function(e){if(!running||$('studio').hidden||/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;
-  const k=e.key===' '?'space':e.key.toLowerCase();
-  P.scripts.forEach(function(s){if(s[0].t==='key'&&s[0].a[0].trim().toLowerCase()===k){e.preventDefault();ex(s.slice(1),S).catch(function(){})}})});
-$('t-out').onclick=$('t-code').onclick=function(){const o=this.id==='t-out';$('t-out').classList.toggle('on',o);$('t-code').classList.toggle('on',!o);$('s-out').hidden=!o;$('s-code').hidden=o};
-$('s-name').oninput=function(){P.name=$('s-name').value;save()};
-function openStudio(){show('studio');$('s-name').value=P.name;rend();draw()}
-$('n-studio').onclick=$('g-studio').onclick=openStudio;
-$('s-back').onclick=function(){S.stop=true;setRun(false);show('lobby');lobby()};
+/* ===== 5c. Games: published games from BrixBlox Studio show on the front page ===== */
+const GKEY='brixblox-games',STUDIO_URL='/studio';
+function localGames(){try{return JSON.parse(store.get(GKEY))||{}}catch(e){return {}}}
+function hue(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h%360}
+function mkx(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+async function loadGames(){
+  const map={},L=localGames();
+  Object.keys(L).forEach(function(id){const g=L[id];map[id]={id:id,name:g.name||'Untitled',vis:g.vis||'private',at:g.at||0,ownerId:g.owner?g.owner.id:me.id,ownerName:g.owner?g.owner.name:me.username,data:g.data}});
+  try{const rows=await api.listGames(me.id);rows.forEach(function(r){const t=Date.parse(r.updated_at)||0,o=map[r.id];
+    if(!o||t>o.at)map[r.id]={id:r.id,name:r.name||'Untitled',vis:r.vis,at:t,ownerId:r.owner_id,ownerName:r.owner_name||'?',data:o&&o.data||null}})}catch(e){}
+  if(!me)return;
+  const all=Object.keys(map).map(function(k){return map[k]}).filter(function(g){return g.vis==='public'||g.ownerId===me.id}).sort(function(a,b){return b.at-a.at});
+  const pub=all.filter(function(g){return g.vis==='public'}),mine=all.filter(function(g){return g.ownerId===me.id});
+  gfill($('h-games'),pub,'No games have been published yet. Make one in BrixBlox Studio and press Publish.');
+  gfill($('h-mine'),mine,'You have not published any games yet.')}
+function gfill(box,list,empty){box.replaceChildren();if(!list.length){box.className='';box.append(mkx('p','empty',empty));return}box.className='gcards';
+  list.forEach(function(g){const mine=g.ownerId===me.id,c=mkx('div','gc'),th=mkx('div','th',(g.name||'?').trim().charAt(0).toUpperCase()||'?'),bd=mkx('div','bd');
+    th.style.background='hsl('+hue(g.id)+',55%,42%)';
+    bd.append(mkx('b','',g.name),mkx('small','','by '+(mine?'you':g.ownerName)+(mine?'  -  '+(g.vis==='public'?'Public':'Private'):'')));
+    const row=mkx('div','row'),pl=mkx('button','btn small','Play');pl.type='button';pl.onclick=function(){playGame(g)};row.append(pl);
+    if(mine){const ed=mkx('button','btn ghost small','Edit');ed.type='button';ed.onclick=function(){editGame(g)};row.append(ed)}
+    bd.append(row);c.append(th,bd);box.append(c)})}
+async function gameData(g){if(g.data)return g.data;try{return await api.gameData(g.id)}catch(e){return null}}
+async function playGame(g){const d=await gameData(g);if(!d){toast('Could not load that game.');return}
+  store.set('brixblox-play',JSON.stringify({id:g.id,data:d,owner:g.ownerName}));location.href=STUDIO_URL}
+async function editGame(g){const L=localGames();
+  if(!L[g.id]){const d=await gameData(g);if(!d){toast('Could not load that game.');return}
+    L[g.id]={id:g.id,name:g.name,vis:g.vis,at:Date.now(),owner:{id:me.id,name:me.username},data:d};store.set(GKEY,JSON.stringify(L))}
+  store.set('brixblox-pending',g.id);location.href=STUDIO_URL}
+$('n-studio').onclick=$('g-studio').onclick=function(){store.del('brixblox-pending');location.href=STUDIO_URL};
+$('g-new').onclick=function(){store.set('brixblox-pending','__new__');location.href=STUDIO_URL};
 
 /* ===== 6. 3D view ===== */
 const renderer=new THREE.WebGLRenderer({canvas:$('gl'),antialias:true});
