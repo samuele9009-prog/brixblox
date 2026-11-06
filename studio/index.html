@@ -823,8 +823,8 @@ function setHover(id){if(id===hov)return;hov=id;if(hline.parent)hline.parent.rem
 let FACE=null;
 /* Static smiley: two dot eyes and a smile, wrapped around the front of the cylinder head */
 function addFace(m,p){if(!FACE){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d'),ink='#2b1a12';
-  x.fillStyle=ink;[45,83].forEach(function(ex){x.beginPath();x.ellipse(ex,50,4.8,6.2,0,0,7);x.fill()});
-  x.strokeStyle=ink;x.lineCap='round';x.lineWidth=4.5;x.beginPath();x.arc(64,52,29,.24*Math.PI,.76*Math.PI);x.stroke();
+  x.fillStyle=ink;[51,77].forEach(function(ex){x.beginPath();x.ellipse(ex,50,4.8,6.2,0,0,7);x.fill()});
+  x.strokeStyle=ink;x.lineCap='round';x.lineWidth=4.5;x.beginPath();x.arc(64,58,22,.24*Math.PI,.76*Math.PI);x.stroke();
   FACE=new THREE.CanvasTexture(c)}
   const fp=1,g=new THREE.CylinderGeometry(1.01,1.01,p.size[1]*.9,32,1,true,Math.PI-fp,fp*2);g.scale(p.size[0]/2,1,p.size[2]/2);
   m.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:FACE,transparent:true,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})))}
@@ -941,7 +941,7 @@ neon:{n:'Neon',c:'#00f0ff',sh:0,sp:'#000000'}};
 const TC={};
 function tex(k){if(!TC[k]){const S=256,c=document.createElement('canvas');c.width=c.height=S;let h=0;for(let i=0;i<k.length;i++)h=h*31+k.charCodeAt(i);TX[k](c.getContext('2d'),S,RNG(h+7));
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());TC[k]=t}return TC[k]}
-function mkMat(p){const k=MATS[p.mat]?p.mat:'plastic',d=MATS[k],m=new THREE.MeshPhongMaterial({color:p.color,shininess:p.av?0:(d.sh==null?20:d.sh),specular:new THREE.Color(p.av?'#000000':(d.sp||'#111111'))});
+function mkMat(p){const k=MATS[p.mat]?p.mat:'plastic',d=MATS[k],m=new THREE.MeshPhongMaterial({color:p.color,shininess:p.av?40:(d.sh==null?20:d.sh),specular:new THREE.Color(p.av?'#4a4a4a':(d.sp||'#111111'))});
   if(TX[k])m.map=tex(k);if(d.op){m.transparent=true;m.opacity=d.op}if(k==='neon')m.emissive.set(p.color);return m}
 /* World-sized texture coordinates: each face is mapped by its dominant axis, so a tile always covers ts studs */
 function boxUV(g,ts){const ps=g.attributes.position,nm=g.attributes.normal,uv=g.attributes.uv;
