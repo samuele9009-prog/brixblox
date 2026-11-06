@@ -785,14 +785,10 @@ async function loadItems(){
   if(me){pvRebuild();if(!$('p-avatar').hidden)paintShop()}}
 function makeAvatar(color,eq){
   const g=new THREE.Group(),skin='#f5cd30',S=.34,fx={};
-  /* Same look as the Studio rig: matte Phong blocks, a plain cylinder head and a smile wrapped around the front of it */
-  const phg=function(c){return new THREE.MeshPhongMaterial({color:c,shininess:0,specular:0x000000})};
-  function part(w,h,d,c,x,y,z,p){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),phg(c));m.position.set(x,y,z);m.castShadow=true;(p||g).add(m);return m}
+  function part(w,h,d,c,x,y,z,p){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),lam(c));m.position.set(x,y,z);m.castShadow=true;(p||g).add(m);return m}
   part(2*S,2*S,S,color,0,3*S,0);
-  const head=new THREE.Mesh(new THREE.CylinderGeometry(.26,.26,.38,32),phg(skin));head.position.y=1.55;head.castShadow=true;g.add(head);
-  if(!faceTex.t)faceTex.t=faceTex();
-  const fp=.7,fg=new THREE.CylinderGeometry(1.01,1.01,.38*.9,32,1,true,-fp,fp*2);fg.scale(.26,1,.26);
-  head.add(new THREE.Mesh(fg,new THREE.MeshBasicMaterial({map:faceTex.t,transparent:true,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})));
+  const head=new THREE.Mesh(new THREE.CylinderGeometry(.26,.26,.38,24),lam(skin));head.position.y=1.55;head.castShadow=true;g.add(head);
+  const face=new THREE.Mesh(new THREE.PlaneGeometry(.34,.34),new THREE.MeshBasicMaterial({map:faceTex(),transparent:true}));face.position.set(0,1.55,.262);g.add(face);
   const L=[];
   [[-S/2,2*S,'#a4bd47'],[S/2,2*S,'#a4bd47'],[-1.5*S,4*S,skin],[1.5*S,4*S,skin]].forEach(function(a){const pv=new THREE.Group();pv.position.set(a[0],a[1],0);g.add(pv);part(S,2*S,S,a[2],0,-S,0,pv);L.push(pv)});
   if(eq)Object.keys(eq).forEach(function(k){if(eq[k])addItem(g,eq[k],fx)});
@@ -879,7 +875,7 @@ function pvTick(now){
   const t=now/1000,L=pv.limbs;let by=0,amt=0;
   L.forEach(function(x){x.rotation.x=0;x.rotation.z=0});
   if(pv.mode==='spin'){pv.yaw+=.012}
-  if(pv.mode==='walk'){const sw=Math.sin(t*6.2832)*.61;L[0].rotation.x=sw;L[1].rotation.x=-sw;L[2].rotation.x=-sw;L[3].rotation.x=sw;amt=.5}
+  if(pv.mode==='walk'){const sw=Math.sin(t*7)*.8;L[0].rotation.x=sw;L[1].rotation.x=-sw;L[2].rotation.x=-sw;L[3].rotation.x=sw;amt=.5}
   if(pv.mode==='wave'){L[3].rotation.z=2.5+Math.sin(t*9)*.35}
   if(pv.mode==='jump'){const k=Math.abs(Math.sin(t*3.2));by=k*.7;L[2].rotation.x=-2.6*k;L[3].rotation.x=-2.6*k;L[0].rotation.x=.4*k;L[1].rotation.x=-.4*k;amt=1}
   if(pv.mode==='idle'||pv.mode==='spin'){by=Math.sin(t*2)*.015;L[2].rotation.z=-.05;L[3].rotation.z=.05}
