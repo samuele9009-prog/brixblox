@@ -2210,6 +2210,20 @@ async function studioHome(){
     bd.append(row);c.append(th,bd);box.append(c)})}
 if(HOME&&!VIEWONLY)studioHome();
 addEventListener('beforeunload',function(e){if(!skipUnload&&dirty()){e.preventDefault();e.returnValue=''}});
+/* Blockbank: while someone plays a game opened from the front page, report once a minute so they earn blockbucks for play time.
+   Players who do nothing for 15 minutes are kicked back to the front page. */
+(function(){if(!VIEWONLY||!ME)return;
+  const IDLE_MS=15*60*1000,WARN_MS=13*60*1000;let lastIn=Date.now(),warned=false;
+  ['keydown','pointerdown','pointermove','mousemove','wheel','touchstart'].forEach(function(n){addEventListener(n,function(){lastIn=Date.now();warned=false},{passive:true,capture:true})});
+  setInterval(function(){try{
+    if(!(running||playing))return;
+    const idle=Date.now()-lastIn;
+    if(idle>=IDLE_MS){S.stop=true;store.set('brixblox-notice','You were kicked from the game for being inactive for 15 minutes.');location.href=SITE_URL;return}
+    if(idle>=WARN_MS&&!warned){warned=true;try{msg('Still there? Move or press a key, or you will be kicked in 2 minutes.')}catch(e){}}
+  }catch(e){}},5000);
+  setInterval(function(){try{if(document.hidden||!(running||playing))return;
+    if(sb)sb.rpc('play_heartbeat',{p_seconds:60}).then(function(){},function(){});
+    else if(ME.demo)store.set('brixblox-playsec',String((parseInt(store.get('brixblox-playsec')||'0',10)||0)+60))}catch(e){}},60000)})();
 </script>
 </body>
 </html>
