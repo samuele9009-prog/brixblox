@@ -1175,7 +1175,7 @@ function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
     const po=evalPose(A,q.t%A.len);for(const id in q.JJ){if(id===P.avId)continue;const r=po[id]||[0,0,0];q.JJ[id].rotation.set(r[0]*Math.PI/180,r[1]*Math.PI/180,r[2]*Math.PI/180)}})}
 
 /* Rig editor: balls at anchor points, arrows to move them */
-function buildEdit(){while(editG.children.length)editG.remove(editG.children[0]);gizmo=[];balls=[];gz=[];agT=null;if(playing)return;if(animOn()){buildAnimGizmo();return}
+function buildEdit(){try{updTool()}catch(e){}while(editG.children.length)editG.remove(editG.children[0]);gizmo=[];balls=[];gz=[];agT=null;if(playing)return;if(animOn()){buildAnimGizmo();return}
   let c=null,half=[.3,.3,.3];
   if(rigOn){P.parts.filter(function(p){return p.parent}).forEach(function(p){const b=new THREE.Mesh(new THREE.SphereGeometry(.35,16,12),new THREE.MeshBasicMaterial({color:p.id===selJ?'#ffd23f':'#ff5a5a',depthTest:false}));
       b.position.set(p.pivot[0],p.pivot[1],p.pivot[2]);b.renderOrder=9;b.userData.joint=p.id;editG.add(b);balls.push(b)});
@@ -1217,8 +1217,13 @@ function selBox(){const a=sel.map(function(id){return byId(id)}).filter(Boolean)
 /* Move everything selected (welded children already follow their parent, so they are not moved twice) */
 function moveSel(d){const ids=sel.slice();ids.forEach(function(id){const p=byId(id);if(!p)return;let a=p.parent&&byId(p.parent),skip=false;while(a){if(ids.indexOf(a.id)>=0){skip=true;break}a=a.parent&&byId(a.parent)}if(!skip)moveBy(p,d)})}
 /* Resize tool (press E): drag a face handle to stretch that side while the opposite side stays put. Ctrl = resize from both sides. Alt = no snapping. */
+let toolChip=null;
+function updTool(){if(!toolChip){const w=document.querySelector('#studio .cvw');if(!w)return;toolChip=document.createElement('button');toolChip.type='button';
+    toolChip.style.cssText='position:absolute;left:8px;top:8px;z-index:6;padding:5px 10px;border:0;border-radius:8px;background:rgba(20,22,24,.8);color:#fff;font:700 .75rem system-ui,sans-serif;cursor:pointer';
+    toolChip.onclick=function(){setTool(tool==='scale'?'move':'scale')};if(getComputedStyle(w).position==='static')w.style.position='relative';w.append(toolChip)}
+  toolChip.textContent=tool==='scale'?(rigOn?'Resize: close rig editor':canScale()?'Resize tool (E)':'Resize: select a plain part (E = move)'):'Move tool (E = resize)'}
 function canScale(){return sel.length>0&&sel.every(function(id){const p=byId(id);return p&&!p.av&&!p.parent&&!p.stab&&!kids(p).length})}
-function setTool(t){tool=t;if(t==='scale'){msg(rigOn?'Leave the rig editor first, then press E to resize.':canScale()?'Resize tool: drag a square handle. Ctrl = both sides, Alt = no snapping. Press E to go back to move.':'Resize tool: select a plain part or model (rigs and your character cannot be resized). Press E to go back to move.')}else msg('Move tool.');buildEdit()}
+function setTool(t){tool=t;updTool();if(t==='scale'){msg(rigOn?'Leave the rig editor first, then press E to resize.':canScale()?'Resize tool: drag a square handle. Ctrl = both sides, Alt = no snapping. Press E to go back to move.':'Resize tool: select a plain part or model (rigs and your character cannot be resized). Press E to go back to move.')}else msg('Move tool.');buildEdit()}
 function scaleStart(o){const bx=selBox();if(!bx)return;const a=o.userData.axis.clone(),ax=a.x?0:a.y?1:2,s=a.getComponent(ax)>0?1:-1,
   ps=sel.map(byId).filter(Boolean).map(function(p){return {p:p,pos:p.pos.slice(),size:p.size.slice()}}),lo=bx.c[ax]-bx.h[ax],hi=bx.c[ax]+bx.h[ax];
   let mn=1e9;ps.forEach(function(q){mn=Math.min(mn,q.size[ax])});
@@ -1234,8 +1239,8 @@ function scaleDrag(e,dx,dy){const g=gd,ax=g.ax,pt=new THREE.Vector3(g.c0[0],g.c0
   g.ps.forEach(function(q){q.p.size[ax]=r3(q.size[ax]*f);q.p.pos[ax]=r3(fixed+(q.pos[ax]-fixed)*f);
     const m=M[q.p.id];if(!m)return;const old=m.geometry,ng=shapeGeo(q.p),md=MATS[q.p.mat]||MATS.plastic;if(TX[q.p.mat])boxUV(ng,md.ts||6);m.geometry=ng;if(old&&!old.userData.keep)old.dispose()});
   quickSync()}
-addEventListener('keydown',function(e){if(e.code!=='KeyE'||e.repeat||e.ctrlKey||e.metaKey||e.altKey||e.shiftKey||playing||running||VIEWONLY||document.getElementById('shome')||!edArea||animOn()||!$('studio').getClientRects().length)return;
-  const a=document.activeElement;if(a&&(/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a.isContentEditable))return;e.preventDefault();setTool(tool==='scale'?'move':'scale')});
+addEventListener('keydown',function(e){if(e.code!=='KeyE'||e.repeat||e.ctrlKey||e.metaKey||e.altKey||e.shiftKey||playing||running||VIEWONLY||document.getElementById('shome')||animOn()||!$('studio').getClientRects().length)return;
+  const a=document.activeElement;if(a&&(/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a.isContentEditable))return;e.preventDefault();if(a&&a.blur&&a.tagName==='BUTTON')a.blur();setTool(tool==='scale'?'move':'scale')});
 /* Clicking a piece of a model selects the whole model. Alt+click, double-click, or the Workspace list picks one piece. */
 function pick(id,add,indiv){{const q=id&&byId(id);if(q)snapRig(rootOf(q))}if(animOn()){animPickId(id);return}selSvc=null;const p=id&&byId(id);
   if(!p){sel=[];selModel=null}
