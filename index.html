@@ -403,7 +403,7 @@ function stepSim(S,dt,inp){
 
 /* ===== 3. Name rules. The server repeats these checks, so this is only quick feedback. ===== */
 const BLOCKED=['fuck','shit','bitch','cunt','pussy','whore','slut','porn','nazi','hitler','penis','vagina','bastard','asshole'];
-const RESERVED=['admin','administrator','moderator','mod','staff','support','system','owner','official','brixblox'];
+const RESERVED=['admin','administrator','moderator','mod','staff','support','system','owner','official'];
 function squash(s){return s.replace(/(.)\1+/g,'$1')}
 function nameProblem(n){
   if(n.length<3||n.length>16)return 'Use 3 to 16 characters.';
