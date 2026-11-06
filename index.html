@@ -41,12 +41,14 @@ button,input{font:inherit;color:inherit}
 .tabs button{flex:1 1 auto;min-height:40px;border:1px solid var(--line);border-radius:10px;background:transparent;font-weight:800;cursor:pointer;padding:0 12px}
 .tabs button.on{background:var(--ink);color:var(--paper)}
 label{display:block;font-weight:800;font-size:.85rem;margin:12px 0 4px}
-input[type=text],input[type=email],input[type=password]{width:100%;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:1rem}
+input[type=text],input[type=email],input[type=password],input[type=number]{width:100%;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:1rem}
 input:focus-visible,button:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
 .hint{margin:6px 0 0;font-size:.85rem;color:var(--muted);min-height:1.3em}
 .hint.ok{color:#17803d}.hint.bad{color:#c2321f}
 .msg{margin:12px 0 0;min-height:1.3em;font-size:.9rem;color:#c2321f}
 .msg.good{color:#17803d}
+.msg:not(:empty){padding:10px 12px;border-radius:10px;border:1px solid currentColor;background:rgba(194,50,31,.08);font-weight:500;line-height:1.4}
+.msg.good:not(:empty){background:rgba(23,128,61,.1)}
 .note{margin:12px 0 0;font-size:.8rem;color:var(--muted)}
 .btn{min-height:46px;padding:0 20px;border:1px solid var(--line);border-radius:12px;background:var(--sun);color:var(--ink);font-family:var(--display);font-size:1.1rem;box-shadow:none;cursor:pointer;transition:transform .06s,box-shadow .06s}
 .btn:active{transform:translateY(3px);box-shadow:none}
@@ -123,7 +125,7 @@ h1,h2,h3{font-weight:800}
 .screen{background:#232527}.screen::after{display:none}
 .logo h1{text-transform:uppercase;letter-spacing:.06em;font-size:1.8rem}
 .tabs button.on{background:#00b06f;border-color:#00b06f;color:#fff}
-input[type=text],input[type=email],input[type=password]{background:#191b1d;border-color:#555}
+input[type=text],input[type=email],input[type=password],input[type=number]{background:#191b1d;border-color:#555}
 .btn{background:#00b06f;color:#fff;border-radius:8px;font-weight:800;font-size:.95rem}
 .btn.ghost{background:#393b3d}
 .hint.ok,.msg.good{color:#4be3a0}.hint.bad,.msg{color:#ff7b7b}
@@ -214,7 +216,7 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
 /* Light theme (default). Dark is the :root block above. */
 :root[data-theme=light]{--ink:#1d1f21;--muted:#5f656b;--paper:#fff;--line:#d5d9dd;--sky:#f2f4f6;color-scheme:light}
 [data-theme=light] .screen{background:#f2f4f6}
-[data-theme=light] input[type=text],[data-theme=light] input[type=email],[data-theme=light] input[type=password],[data-theme=light] .sname{background:#fff;border-color:#c9ced3}
+[data-theme=light] input[type=text],[data-theme=light] input[type=email],[data-theme=light] input[type=password],[data-theme=light] input[type=number],[data-theme=light] .sname{background:#fff;border-color:#c9ced3}
 [data-theme=light] .btn.ghost{background:#e6e9ec;color:#1d1f21}
 [data-theme=light] .hint.ok,[data-theme=light] .msg.good{color:#0a7a4b}[data-theme=light] .hint.bad,[data-theme=light] .msg{color:#c2321f}
 [data-theme=light] #toast{background:#1d1f21;color:#fff}[data-theme=light] .overlay{background:rgba(0,0,0,.4)}
@@ -249,7 +251,7 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
       <p id="u-msg" class="hint">3 to 16 letters, numbers or underscores. Keep it friendly.</p>
       <label for="u-pass">Password</label>
       <input id="u-pass" type="password" minlength="8" autocomplete="new-password" required>
-      <p class="hint">At least 8 characters. No email needed, so remember it: passwords can&#8217;t be reset.</p>
+      <p class="hint">At least 8 characters. No email needed. You can add one later in Settings.</p>
       <button id="b-up" class="btn" type="submit" disabled>Create account</button>
     </form>
     <form id="f-in" hidden>
@@ -290,7 +292,7 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
     </section>
   </div>
   <div id="p-settings" class="page" hidden>
-    <section class="panel"><h2>Settings</h2><h3>Theme</h3><div class="seg"><button id="th-light" class="btn ghost" type="button">Light</button><button id="th-dark" class="btn ghost" type="button">Dark</button></div></section>
+    <section class="panel"><h2>Settings</h2><h3>Theme</h3><div class="seg"><button id="th-light" class="btn ghost" type="button">Light</button><button id="th-dark" class="btn ghost" type="button">Dark</button></div><h3>Account</h3><form id="f-acct"><label for="s-mail">Email (optional)</label><input id="s-mail" type="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="you@example.com"><p class="hint">Not needed to play. We email you a link to confirm it.</p><label for="s-age">Age</label><input id="s-age" type="number" inputmode="numeric" min="5" max="120" step="1" placeholder="Your age"><p class="hint">Between 5 and 120. Leave empty to clear it.</p><button id="b-acct" class="btn" type="submit">Save</button><p id="s-msg" class="msg" role="status"></p></form></section>
   </div>
   <div id="p-friends" class="page" hidden>
     <section class="panel"><h2>Add a friend</h2>
@@ -429,13 +431,13 @@ async function sha(t){try{const b=await crypto.subtle.digest('SHA-256',new TextE
 function makeDemo(){
   function load(){try{return JSON.parse(store.get('brixblox-demo'))||{users:[],recs:{},session:null}}catch(e){return {users:[],recs:{},session:null}}}
   function save(d){store.set('brixblox-demo',JSON.stringify(d))}
-  function prof(u){return {id:u.id,username:u.username,color:u.color}}
+  function prof(u){return {id:u.id,username:u.username,color:u.color,email:u.contact||'',age:u.age||null}}
   return {
     demo:true,
     async checkUsername(n){const p=nameProblem(n);if(p)return p;return load().users.some(function(u){return u.username.toLowerCase()===n.toLowerCase()})?'That name is taken.':null},
     async signUp(f){const d=load();const p=await this.checkUsername(f.username);if(p)throw new Error(p);
       if(d.users.some(function(u){return u.email===f.email.toLowerCase()}))throw new Error('That email already has an account.');
-      const u={id:'u'+Date.now(),username:f.username,email:f.email.toLowerCase(),pw:await sha(f.password),color:'#ff6b57'};d.users.push(u);d.session=u.id;save(d);return {profile:prof(u)}},
+      const u={id:'u'+Date.now(),username:f.username,email:f.email.toLowerCase(),pw:await sha(f.password),color:'#ff6b57',contact:'',age:null};d.users.push(u);d.session=u.id;save(d);return {profile:prof(u)}},
     async logIn(f){const d=load();const h=await sha(f.password);const u=d.users.find(function(x){return x.email===f.email.toLowerCase()&&x.pw===h});if(!u)throw new Error('Wrong email or password.');d.session=u.id;save(d);return {profile:prof(u)}},
     async friends(id){const d=load();return (d.fr||[]).filter(f=>f.a===id||f.b===id).map(f=>{const o=d.users.find(u=>u.id===(f.a===id?f.b:f.a))||{};return {fid:f.id,name:o.username||'?',color:o.color||'#999',status:f.status,incoming:f.b===id}})},
     async addFriend(id,n){const d=load();d.fr=d.fr||[];const t=d.users.find(u=>u.username.toLowerCase()===n.toLowerCase());if(!t)return {ok:false,reason:'No player with that name.'};if(t.id===id)return {ok:false,reason:'You cannot add yourself.'};
@@ -447,6 +449,7 @@ function makeDemo(){
     async gameData(){return null},
     async logOut(){const d=load();d.session=null;save(d)},
     async restore(){const d=load();const u=d.users.find(function(x){return x.id===d.session});return u?prof(u):null},
+    async setAccount(id,a){const d=load();const u=d.users.find(function(x){return x.id===id});if(u){u.contact=a.email;u.age=a.age;save(d)}return {pending:false}},
     async setColor(id,c){const d=load();const u=d.users.find(function(x){return x.id===id});if(u){u.color=c;save(d)}},
     async submitRun(id,level,ms,coins){const d=load();const k=id+':'+level;const o=d.recs[k];const best=!o||ms<o.time;d.recs[k]={uid:id,level:level,time:o?Math.min(o.time,ms):ms,coins:Math.max(o?o.coins:0,coins)};save(d);return {new_best:best}},
     async records(id){const d=load(),r={};Object.keys(d.recs).forEach(function(k){const x=d.recs[k];if(x.uid===id)r[x.level]={time:x.time,coins:x.coins}});return r},
@@ -455,19 +458,22 @@ function makeDemo(){
 }
 function makeSupa(){
   const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,storage:{getItem:function(k){return store.get(k)},setItem:function(k,v){store.set(k,v)},removeItem:function(k){store.del(k)}}}});
-  async function profile(id){const r=await sb.from('profiles').select('id,username,avatar_color').eq('id',id).single();if(r.error)throw r.error;return {id:r.data.id,username:r.data.username,color:r.data.avatar_color}}
+  async function profile(id,user){const r=await sb.from('profiles').select('id,username,avatar_color').eq('id',id).single();if(r.error)throw r.error;const md=(user&&user.user_metadata)||{};const em=(user&&user.email)||'';return {id:r.data.id,username:r.data.username,color:r.data.avatar_color,email:em.endsWith('@'+MAIL_DOMAIN)?'':em,pending:(user&&user.new_email)||'',age:md.age||null}}
+  async function call(body){const r=await fetch(SUPABASE_URL+'/functions/v1/account',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY},body:JSON.stringify(body)});let j={};try{j=await r.json()}catch(e){}if(!r.ok||j.error)throw new Error(j.error||(r.status===404?'ACCOUNT_FN_MISSING':'Something went wrong.'));return j}
+  async function viaFn(body){const d=await call(body);const r=await sb.auth.setSession({access_token:d.access_token,refresh_token:d.refresh_token});if(r.error)throw r.error;return {profile:await profile(r.data.user.id,r.data.user)}}
   return {
     demo:false,
     async checkUsername(n){const p=nameProblem(n);if(p)return p;const r=await sb.rpc('check_username',{p_name:n});if(r.error)throw r.error;return r.data.ok?null:r.data.reason},
-    async signUp(f){const r=await sb.auth.signUp({email:f.email,password:f.password,options:{data:{username:f.username}}});if(r.error)throw r.error;if(!r.data.session)return {confirm:true};return {profile:await profile(r.data.user.id)}},
-    async logIn(f){const r=await sb.auth.signInWithPassword({email:f.email,password:f.password});if(r.error)throw r.error;return {profile:await profile(r.data.user.id)}},
+    async signUp(f){return viaFn({action:'signup',username:f.username,password:f.password})},
+    async logIn(f){if(f.username.indexOf('@')>=0){const r=await sb.auth.signInWithPassword({email:f.username,password:f.password});if(r.error)throw r.error;return {profile:await profile(r.data.user.id,r.data.user)}}return viaFn({action:'login',username:f.username,password:f.password})},
     async friends(id){const r=await sb.rpc('list_friends');if(r.error)throw r.error;return r.data.map(x=>({fid:x.fid,name:x.username,color:x.avatar_color,status:x.status,incoming:x.incoming}))},
     async addFriend(id,n){const r=await sb.rpc('send_friend_request',{p_username:n});if(r.error)throw r.error;return r.data},
     async answerFriend(id,fid,yes){const r=await sb.rpc('answer_friend',{p_id:fid,p_accept:yes});if(r.error)throw r.error},
     async listGames(id){const r=await sb.from('games').select('id,name,owner_id,owner_name,vis,updated_at').or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(60);if(r.error)throw r.error;return r.data},
     async gameData(id){const r=await sb.from('games').select('data').eq('id',id).single();if(r.error)throw r.error;return r.data.data},
     async logOut(){await sb.auth.signOut()},
-    async restore(){const r=await sb.auth.getSession();return r.data.session?await profile(r.data.session.user.id):null},
+    async restore(){const r=await sb.auth.getSession();return r.data.session?await profile(r.data.session.user.id,r.data.session.user):null},
+    async setAccount(id,a,cur){const change=!!a.email&&a.email.toLowerCase()!==(cur||'').toLowerCase();const upd={data:{age:a.age}};if(change)upd.email=a.email;const r=await sb.auth.updateUser(upd,change?{emailRedirectTo:location.origin+location.pathname}:undefined);if(r.error)throw r.error;return {pending:change}},
     async setColor(id,c){const r=await sb.from('profiles').update({avatar_color:c}).eq('id',id);if(r.error)throw r.error},
     async submitRun(id,level,ms,coins){const r=await sb.rpc('submit_run',{p_level:level,p_time_ms:ms,p_coins:coins});if(r.error)throw r.error;return r.data},
     async records(id){const r=await sb.from('level_records').select('level,best_time_ms,best_coins').eq('user_id',id);if(r.error)throw r.error;const o={};r.data.forEach(function(x){o[x.level]={time:x.best_time_ms,coins:x.best_coins}});return o},
@@ -488,7 +494,7 @@ function show(which){$('auth').hidden=which!=='auth';$('lobby').hidden=which!=='
 const MAIL_DOMAIN='brixblox.pages.dev';
 function fakeMail(n){return n.toLowerCase()+'@'+MAIL_DOMAIN}
 function loginMail(v){return v.indexOf('@')>=0?v:fakeMail(v)}
-function errText(e){const m=(e&&e.message)||'Something went wrong.';if(/error sending|confirmation email|rate limit/i.test(m))return 'Supabase is still trying to send a confirmation email. Turn off Confirm email in Supabase (Authentication, Sign In / Providers, Email).';if(/Database error saving new user/i.test(m))return 'That player name was not accepted. Try a different one.';if(/send_friend_request|list_friends|answer_friend/i.test(m))return 'Friends need the SQL setup in Supabase (brixblox-friends.sql).';if(/already registered/i.test(m))return 'That email already has an account.';return m}
+function errText(e){const m=(e&&e.message)||'Something went wrong.';if(m==='ACCOUNT_FN_MISSING')return 'Sign up and username log in need the \u201caccount\u201d function deployed in Supabase (see supabase-account-function.ts).';if(/error sending|confirmation email|rate limit/i.test(m))return 'Supabase could not send that email right now. Wait a bit and try again.';if(/Database error saving new user/i.test(m))return 'That player name was not accepted. Try a different one.';if(/send_friend_request|list_friends|answer_friend/i.test(m))return 'Friends need the SQL setup in Supabase (brixblox-friends.sql).';if(/already registered/i.test(m))return 'That email already has an account.';if(/email.*(invalid|not valid)/i.test(m))return 'That email address was not accepted.';return m}
 $('mode-note').textContent=api.demo?'Demo mode: accounts and times are saved in this browser only. Add your Supabase keys to share them.':'';
 
 let nameOk=false,chkT=0,chkSeq=0;
@@ -506,10 +512,10 @@ $('tab-up').onclick=function(){tab(true)};$('tab-in').onclick=function(){tab(fal
 function aMsg(t,good){const m=$('a-msg');m.textContent=t;m.className='msg'+(good?' good':'')}
 $('f-up').addEventListener('submit',async function(e){e.preventDefault();if($('b-up').disabled)return;$('b-up').disabled=true;aMsg('Creating your account...',true);
   try{const r=await api.signUp({username:$('u-name').value.trim(),email:fakeMail($('u-name').value.trim()),password:$('u-pass').value});
-    if(r.confirm){aMsg('Check your email to confirm your account, then log in.',true);tab(false);$('a-msg').textContent='Check your email to confirm your account, then log in.';$('a-msg').className='msg good'}
+    if(r.confirm){aMsg(errText({message:'confirmation email'}));updUp()}
     else await enter(r.profile)}catch(er){aMsg(errText(er));updUp()}});
 $('f-in').addEventListener('submit',async function(e){e.preventDefault();$('b-in').disabled=true;aMsg('Logging in...',true);
-  try{const r=await api.logIn({email:loginMail($('i-mail').value.trim()),password:$('i-pass').value});await enter(r.profile)}catch(er){aMsg(errText(er))}$('b-in').disabled=false});
+  try{const r=await api.logIn({email:loginMail($('i-mail').value.trim()),username:$('i-mail').value.trim(),password:$('i-pass').value});await enter(r.profile)}catch(er){aMsg(errText(er))}$('b-in').disabled=false});
 
 async function enter(p){me=p;store.set('brixblox-me',JSON.stringify({id:p.id,username:p.username,demo:!!api.demo}));$('a-msg').textContent='';$('f-up').reset();$('f-in').reset();nameOk=false;updUp();
   try{recs=await api.records(me.id)}catch(e){recs={};toast('Could not load your times.')}
@@ -520,13 +526,21 @@ function lobby(){
   show('lobby');$('l-name').textContent=me.username;$('l-name2').textContent=me.username;
   const sw=$('sw');sw.innerHTML='';
   COLORS.forEach(function(c){const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label','Color '+c);b.onclick=async function(){me.color=c;paintAvatar();try{await api.setColor(me.id,c)}catch(e){toast('Could not save your color.')}};sw.appendChild(b)});
-  paintAvatar();nav('home');loadFriends();loadGames()}
+  paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');loadFriends();loadGames()}
 const PAGES=['home','friends','avatar','settings'];
 function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p)})}
 const IC={home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
 document.querySelectorAll('.snav button').forEach(function(b){b.insertAdjacentHTML('afterbegin','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+IC[b.dataset.i]+'</svg>')});
 function theme(t){document.documentElement.dataset.theme=t;store.set('brixblox-theme',t);$('th-light').setAttribute('aria-pressed',String(t==='light'));$('th-dark').setAttribute('aria-pressed',String(t==='dark'))}
 $('th-light').onclick=function(){theme('light')};$('th-dark').onclick=function(){theme('dark')};theme(store.get('brixblox-theme')==='dark'?'dark':'light');
+function sMsg(t,good){const m=$('s-msg');m.textContent=t;m.className='msg'+(good?' good':'')}
+$('f-acct').addEventListener('submit',async function(e){e.preventDefault();
+  const email=$('s-mail').value.trim(),ageT=$('s-age').value.trim();let age=null;
+  if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){sMsg('That email does not look right.');return}
+  if(ageT){age=Number(ageT);if(!Number.isInteger(age)||age<5||age>120){sMsg('Age must be a whole number from 5 to 120.');return}}
+  $('b-acct').disabled=true;sMsg('Saving...',true);
+  try{const r=await api.setAccount(me.id,{email:email,age:age},me.email);me.age=age;if(r.pending){me.pending=email;sMsg('Saved. We sent a confirmation link to '+email+'. Open it to finish adding your email.',true)}else{if(api.demo)me.email=email;sMsg('Saved.',true)}}catch(er){sMsg(errText(er))}
+  $('b-acct').disabled=false});
 $('n-avatar').onclick=function(){nav('avatar')};$('n-settings').onclick=function(){nav('settings')};
 $('n-home').onclick=function(){nav('home');loadGames()};$('n-friends').onclick=function(){nav('friends');loadFriends()};
 function frow(r,btns,tag){const d=document.createElement('div');d.className='frow';const dot=document.createElement('span');dot.className='dot';dot.style.background=r.color;const n=document.createElement('span');n.className='nm';n.textContent=r.name+(tag||'');d.append(dot,n);
