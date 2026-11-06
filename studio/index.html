@@ -281,6 +281,17 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
 .an-menu button{display:block;width:100%;text-align:left;padding:7px 12px;border:0;border-radius:6px;background:none;color:var(--ink);font-weight:700;font-size:.85rem;cursor:pointer}
 .an-menu button:hover:not(:disabled){background:rgba(47,120,208,.35)}
 .an-menu button:disabled{opacity:.4;cursor:default}
+/* Smaller screens (Chromebooks): never clip the timeline, keep the joint list from eating the whole panel */
+.side{min-height:0}
+.pnl.anim{flex:1 0 auto;min-height:360px;overflow:auto}
+.an-top{gap:4px}.an-top #a-new{width:auto;flex:1 1 90px;max-width:150px;min-width:70px}.an-top select{max-width:150px}.an-top #a-len{width:52px}
+.an-body{min-height:180px;overscroll-behavior:contain}
+.an-names{width:clamp(150px,36%,210px)}
+.an-names .an-row input{width:34px;padding:0 2px;text-align:center}
+.an-nm{min-width:34px}
+.an-ruler,.kf{touch-action:none}
+@media(max-height:820px){.pnl.anim .hint{font-size:.72rem;line-height:1.25}.an-top .btn.small{min-height:28px;padding:0 8px}.an-top select,.an-top input{min-height:28px!important}.pnl.anim{padding:6px}}
+@media(max-width:1500px){.an-clock{min-width:44px}.an-top label{font-size:.72rem}}
 
 /* ===== Scratch-style board ===== */
 .ws{display:block;position:relative;padding:0;gap:0;--nbg:#191b1d;
@@ -465,6 +476,7 @@ const BD={
  start:{c:'ev',hat:1,l:'when start',a:[]},
  key:{c:'ev',hat:1,l:'when key _',a:['space'],raw:1},
  keydrop:{c:'ev',hat:1,l:'when player presses the key _',a:['space'],dd:{0:'keys'},tip:'Runs when the player presses the key you pick from the list. Works while you press Play or Run code.'},
+ keyheld:{c:'ev',hat:1,l:'when key held _',a:['space'],dd:{0:'keys'},tip:'Runs again and again while the player holds the key you pick, and stops when they let go. It will not start a second copy while the script is still running (for example during a wait block). Works while you press Play or Run code.'},
  touched:{c:'ev',hat:1,l:'when this block touched',a:[],tip:'Runs when a player starts touching the object this script belongs to. It works even when collision is false. The variable toucher holds the name of whoever touched it. Put the script on an object with the + next to it in the Explorer.'},
  clicked:{c:'ev',hat:1,l:'when this block is clicked from _ studs away',a:['20'],tip:'Runs when you click the object this script belongs to while playing (press Play). The number is how far away you can click from. The variable clicker holds your name.'},
  chat:{c:'ev',hat:1,l:'when player says _ in chat',a:['hello'],raw:1,tip:'Runs when a player types this in the chat box (press / while playing, type, then press Enter to send). It matches the whole message, or the start of it when the message continues after a space (so \"!kick Bob\" matches !kick). Type * to match every message. The variables speaker and message are filled in.'},
@@ -509,7 +521,7 @@ const BD={
  def:{c:'fn',hat:1,l:'define _',a:['spin'],raw:1},
  call:{c:'fn',l:'call _',a:['spin'],raw:1}
 };
-const EVH=['key','keydrop','touched','clicked','chat'];
+const EVH=['key','keydrop','keyheld','touched','clicked','chat'];
 function mk(t,a,k){return {t:t,a:a||BD[t].a.slice(),k:BD[t].k?(k||[]):null}}
 function starter(){return [[mk('start'),mk('say',['Hello!']),mk('repeat',['4'],[mk('move',['6']),mk('turn',['90']),mk('wait',['0.3'])])]]}
 /* Games only exist on disk once they are published. An unpublished game is a draft that is lost when the page closes. */
@@ -532,14 +544,32 @@ function thumbFor(d){return new Promise(function(res){try{const im=d&&d.assets&&
   const i=new Image();i.onload=function(){try{const c=document.createElement('canvas');c.width=320;c.height=180;const x=c.getContext('2d');
     const r=Math.max(320/i.width,180/i.height),w=i.width*r,h=i.height*r;x.fillStyle='#222';x.fillRect(0,0,320,180);x.drawImage(i,(320-w)/2,(180-h)/2,w,h);
     const o=c.toDataURL('image/jpeg',.8);thCache={s:src,o:o};res(o)}catch(e){res(null)}};i.onerror=function(){res(null)};i.src=src}catch(e){res(null)}})}
-function cloudData(id){const g=glib()[id];if(!g)return null;let d;try{d=JSON.parse(g.data)}catch(e){return null}try{Object.keys(d.assets.audio).forEach(function(k){if(bigRef(d.assets.audio[k]))delete d.assets.audio[k]})}catch(e){}return JSON.stringify(d)}
-function cloudPush(id){if(!sb||!ME)return;clearTimeout(cpT[id]);cpT[id]=setTimeout(async function(){const g=glib()[id];if(!g)return;const data=cloudData(id);if(!data)return;
+/* Big sounds live in this browser's file store, so other computers never had them. When a game is saved online its sounds are now uploaded too:
+   first to the Supabase Storage bucket "game-audio" (any size up to 64 MB), and if that bucket is not set up, small sounds (about 1.5 MB or less) are packed inside the game instead. */
+const AUDB='game-audio';let audWarn='';
+function audCache(){try{return JSON.parse(store.get('brixblox-audurl'))||{}}catch(e){return {}}}
+function audCacheSet(id,u){const c=audCache();c[id]=u;store.set('brixblox-audurl',JSON.stringify(c))}
+function blobUrl(b){return new Promise(function(res){const r=new FileReader();r.onload=function(){res(r.result)};r.onerror=function(){res(null)};r.readAsDataURL(b)})}
+async function cloudAudio(v,room){const id=bigId(v),c=audCache();if(c[id])return {u:c[id],inl:0};
+  let rec=null;try{rec=await idbDo('readonly',function(st){return st.get(id)})}catch(e){}
+  if(!rec||!rec.blob)return null;const b=rec.blob;
+  if(sb&&ME){try{const ext=(/\/(mpeg|mp3)/.test(b.type)?'mp3':/ogg/.test(b.type)?'ogg':/wav/.test(b.type)?'wav':/mp4|aac|m4a/.test(b.type)?'m4a':'bin'),path=ME.id+'/'+id+'.'+ext;
+      const up=await sb.storage.from(AUDB).upload(path,b,{contentType:b.type||'audio/mpeg',upsert:false});
+      if(!up.error||/exist|duplicate/i.test(String(up.error.message||''))||up.error.statusCode==409||up.error.status==409){const u=sb.storage.from(AUDB).getPublicUrl(path).data.publicUrl;if(u){audCacheSet(id,u);return {u:u,inl:0}}}}catch(e){}}
+  if(b.size<=1.5*1048576&&room>=b.size*1.4){const u=await blobUrl(b);if(u)return {u:u,inl:u.length}}
+  return null}
+async function cloudData(id){const g=glib()[id];if(!g)return null;let d;try{d=JSON.parse(g.data)}catch(e){return null}
+  try{const au=d.assets.audio;let room=4.2e6,bad=[];
+    for(const k of Object.keys(au)){const v=au[k];if(!bigRef(v))continue;const r=await cloudAudio(v,room);if(r){au[k]=r.u;room-=r.inl}else{delete au[k];bad.push(k)}}
+    audWarn=bad.length?('The sound'+(bad.length>1?'s ':' ')+bad.join(', ')+' could not be sent online, so other computers will not hear '+(bad.length>1?'them':'it')+'. Open this game on the computer you uploaded it on and run the one-time storage setup (see the note in the Assets list).'):''}catch(e){}
+  return JSON.stringify(d)}
+function cloudPush(id){if(!sb||!ME)return;clearTimeout(cpT[id]);cpT[id]=setTimeout(async function(){const g=glib()[id];if(!g)return;const data=await cloudData(id);if(!data)return;
   if(data.length>6e6){cloudErr=true;updateStat();return}
   try{let th=null;try{th=await thumbFor(JSON.parse(data))}catch(e){}
     const row={id:id,owner_id:ME.id,owner_name:ME.username,name:g.name,vis:g.vis,data:data,updated_at:new Date().toISOString()};
     let r=await sb.from('games').upsert(Object.assign({thumb:th},row));
     if(r.error&&/thumb/i.test(r.error.message||''))r=await sb.from('games').upsert(row);
-    cloudErr=!!r.error}catch(e){cloudErr=true}updateStat()},1500)}
+    cloudErr=!!r.error}catch(e){cloudErr=true}updateStat();if(audWarn)try{msg(audWarn)}catch(e){}},1500)}
 function cloudDel(id){if(!sb)return;sb.from('games').delete().eq('id',id).then(function(){},function(){})}
 /* In a real game your character looks like your BrixBlox avatar: yellow head and arms, your shirt colour, green legs. */
 function siteLook(Q){const T=(Q.parts||[]).find(function(p){return p.av&&p.name==='Torso'});
@@ -709,7 +739,7 @@ function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('p
 
 
 /* BricBloc as text */
-const KW={unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio'};
+const KW={unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
 
@@ -1455,15 +1485,24 @@ function copyKeys(){if(!aSelKeys.length)return;const A0=P.anims[curA];const t0=M
 function pasteKeys(t){const A=P.anims[curA];if(!A||!aClip.length)return;aSelKeys=[];
   aClip.forEach(function(c){const tt=Math.min(A.len,+(t+c.dt).toFixed(3));setKey(A,c.id,tt,c.r.slice(),c.p?c.p.slice():null);aSelKeys.push({id:c.id,k:A.keys[c.id].find(function(x){return Math.abs(x.t-tt)<.001})})});save();animUI();preview()}
 function closeMenu(){if(animMenu){animMenu.remove();animMenu=null}}
-function amenu(e,id,t){closeMenu();const A=P.anims[curA],j=id||aJ,m=el('div','an-menu');
-  m.style.left=Math.min(e.clientX,innerWidth-200)+'px';m.style.top=Math.min(e.clientY,innerHeight-190)+'px';
+/* Right-click menu: puts a keyframe on every joint of the rig at this time, so you do not have to add them one row at a time.
+   New Clear Keys = every joint reset to its start rotation and position. New Keys = every joint keeps the pose it has at this time. */
+function allKeys(A,t,clear){const po=evalPose(A,t),rd=function(v){return Math.round(v*10)/10};
+  rigJoints().forEach(function(j){const id=j.p.id,hasP=(A.keys[id]||[]).some(function(x){return x.p});
+    if(clear)setKey(A,id,t,[0,0,0],hasP?[0,0,0]:undefined);
+    else setKey(A,id,t,(po[id]||[0,0,0]).map(rd),hasP&&po['p:'+id]?po['p:'+id].map(rd):undefined)});
+  save();animUI();preview()}
+function amenu(e,id,t){closeMenu();const A=P.anims[curA],j=id||aJ,m=el('div','an-menu'),js=rigJoints();
+  m.style.left=Math.max(4,Math.min(e.clientX,innerWidth-210))+'px';m.style.top=Math.max(4,e.clientY)+'px';
   function item(txt,en,fn){const b=el('button','',txt);b.type='button';b.disabled=!en;b.onclick=function(){closeMenu();fn()};m.append(b)}
   item('Add Keyframe Here',!!j,function(){setKey(A,j,t,(evalPose(A,t)[j]||[0,0,0]).map(function(v){return Math.round(v*10)/10}));save();animUI();preview()});
   item('Delete Selected',aSelKeys.length>0,delKeys);
   item('Copy Selected',aSelKeys.length>0,copyKeys);
   item('Paste Keyframes',aClip.length>0,function(){pasteKeys(aT)});
-  item('Add Reset Keyframe Here',!!j,function(){setKey(A,j,t,[0,0,0]);save();animUI();preview()});
-  document.body.append(m);animMenu=m}
+  item('Add Reset Keyframe Here',!!j,function(){setKey(A,j,t,[0,0,0],[0,0,0]);save();animUI();preview()});
+  item('New Clear Keys',js.length>0,function(){allKeys(A,t,true)});
+  item('New Keys',js.length>0,function(){allKeys(A,t,false)});
+  document.body.append(m);animMenu=m;{const r=m.getBoundingClientRect();m.style.top=Math.max(4,Math.min(e.clientY,innerHeight-r.height-6))+'px'}}
 addEventListener('pointerdown',function(e){if(animMenu&&!animMenu.contains(e.target))closeMenu()},true);
 addEventListener('keydown',function(e){if(e.code==='Escape')closeMenu();
   if(playing||running||!animOn()||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
@@ -1790,6 +1829,10 @@ function bansUI(d){P.bans=P.bans.filter(function(b){return b.until===null||b.unt
 
 /* ===== Events: touch, click, chat and keys ===== */
 function fireScript(sc){if(!(running||playing))return;ex(sc.slice(1),S,sc[0].o).catch(function(e){log('Error: '+e)})}
+/* "when key held": run the script again and again while the key stays down. Only one copy runs at a time; the next round starts once the last one has finished. */
+const HL=new Map();
+function holdStart(sc){if(!(running||playing))return;const h=sc[0];let st=HL.get(h);if(!st){st={down:false,run:false};HL.set(h,st)}st.down=true;if(st.run)return;st.run=true;const my=S;
+  (async function(){try{while(st.down&&(running||playing)&&my===S&&!my.stop){try{await ex(sc.slice(1),my,h.o)}catch(e){log('Error: '+e);break}await sl(16)}}finally{st.run=false}})()}
 /* "when this block touched": checked every frame. It fires once when someone starts touching, and ignores the collision setting. */
 function touchTick(){const hs=P.scripts.filter(function(sc){return sc[0].t==='touched'});if(!hs.length)return;const T=byId(P.avId);if(!T)return;
   const R=1.15,f0=feet0(),ents=[{key:'main',name:P.player.name,x:T.pos[0]+S.x,z:T.pos[2]-S.y,fy:f0+S.h}];
@@ -1970,7 +2013,7 @@ function svcProps(d){const s=SV.find(function(x){return x.k===selSvc});if(!s)ret
   else if(s.k==='scripts'){P.scripts.forEach(function(sc){const h=sc[0],D=BD[h.t];d.append(el('p','note',(D.hat?(KW[h.t]||h.t)+' '+h.a.join(' '):'Loose blocks')+'  —  '+(sc.length-(D.hat?1:0))+' block(s)'))});
     if(!P.scripts.length)d.append(el('p','empty','No scripts yet.'))}
   else if(s.k==='assets'){const r=el('div','tb');r.append(mb('Upload image','',function(){pickFile('image')}),mb('Upload audio','',function(){pickFile('audio')}));d.append(r);
-    d.append(el('p','note','Images: up to 2 MB each. Audio: up to 64 MB per file and about 320 MB per game. Play sounds with the blocks "play _" (loops), "play _ once until done" and "stop audio _". Name an image Sun or Moon to change the sun or moon in the sky (the clouds are fixed and cannot be replaced). Other images are stored for objects and GUIs later.'));
+    d.append(el('p','note','Images: up to 2 MB each. Audio: up to 64 MB per file and about 320 MB per game. Play sounds with the blocks "play _" (loops), "play _ once until done" and "stop audio _". Name an image Sun or Moon to change the sun or moon in the sky (the clouds are fixed and cannot be replaced). Other images are stored for objects and GUIs later. Sounds are sent online with the game when it is saved so you can hear them on other computers (big sounds need the one-time Supabase storage bucket named game-audio).'));
     const rows=function(col,kind){const ks=Object.keys(P.assets[col]);if(!ks.length)d.append(el('p','empty','Nothing here yet.'));
       ks.forEach(function(n){const w=el('div','arow'),src=P.assets[col][n];
         if(kind==='image'){const im=el('img');im.src=src;im.alt=n;w.append(im)}
@@ -2020,6 +2063,7 @@ function addGroups(c){const O=[],Sx=[],A=[],k=c.k,own=c.t==='svc'?null:c.id;
     Sx.push(scr('Script: when start','start','Runs when the game starts'));
     Sx.push(scr('Script: when key','key','Runs when a key is pressed'));
     Sx.push(scr('Script: when player presses the key','keydrop','Pick the key from a list'));
+    Sx.push(scr('Script: when key held','keyheld','Runs again and again while a key is held down'));
     Sx.push(scr('Script: when this block touched','touched','Runs when a player touches it'));
     Sx.push(scr('Script: when this block is clicked','clicked','Runs when you click it while playing'));
     Sx.push(scr('Script: when player says in chat','chat','Runs when a player types a word in chat'));
@@ -2108,7 +2152,7 @@ function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing)}
 function setRun(v){running=v;sync()}
-function resetWorld(){S=fresh();RO={};RV={};RD={};RVY={};RY={};CO={};TM=new Map();RAG={};RSZ={};stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
+function resetWorld(){HL.forEach(function(st){st.down=false});HL.clear();S=fresh();RO={};RV={};RD={};RVY={};RY={};CO={};TM=new Map();RAG={};RSZ={};stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
 function boot(my){const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
   hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
   return {hs:hs,done:Promise.all(hs.filter(function(s){return s[0].t==='start'}).map(function(s){return ex(s.slice(1),my,s[0].o).catch(function(e){log('Error: '+e)})}))}}
@@ -2126,7 +2170,12 @@ addEventListener('keydown',function(e){if(!(running||playing)||/INPUT|TEXTAREA|S
   const k=e.key===' '?'space':e.key.toLowerCase(),kn=({ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',Enter:'enter',Shift:'shift',Control:'ctrl',Alt:'alt',Tab:'tab',Escape:'escape',Backspace:'backspace'})[e.key]||k;
   P.scripts.forEach(function(sc){const h=sc[0],w=String(h.a[0]).trim().toLowerCase();
     if(h.t==='key'&&w===k){e.preventDefault();fireScript(sc)}
-    else if(h.t==='keydrop'&&!e.repeat&&w===kn){e.preventDefault();fireScript(sc)}})});
+    else if(h.t==='keydrop'&&!e.repeat&&w===kn){e.preventDefault();fireScript(sc)}
+    else if(h.t==='keyheld'&&(w===kn||w===k)){e.preventDefault();holdStart(sc)}})});
+/* Releasing a key (or leaving the window) stops the "when key held" scripts that were waiting on it */
+function keyNames(e){const k=e.key===' '?'space':String(e.key).toLowerCase();return [k,({ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',Enter:'enter',Shift:'shift',Control:'ctrl',Alt:'alt',Tab:'tab',Escape:'escape',Backspace:'backspace'})[e.key]||k]}
+addEventListener('keyup',function(e){const n=keyNames(e);P.scripts.forEach(function(sc){const h=sc[0];if(h.t!=='keyheld')return;const st=HL.get(h),w=String(h.a[0]).trim().toLowerCase();if(st&&(w===n[0]||w===n[1]))st.down=false})});
+addEventListener('blur',function(){HL.forEach(function(st){st.down=false})});
 function animOn(){return curTab==='anim'&&!playing}
 function setTab(k){const was=animOn();curTab=k;
   ['out','code','parts','anim'].forEach(function(j){$('t-'+j).classList.toggle('on',j===k);$('s-'+j).hidden=fsOn?(j==='parts'?false:j!==k):j!==k});
@@ -2169,6 +2218,7 @@ if(!P.v11){P.v11=1;const av=function(n){return P.parts.find(function(p){return p
     const ST=P.parts.find(function(p){return p.av&&p.stab});if(ST)delete rig0[ST.id]}
   save()}
 applyEnv();rebuildParts();renderParts();anims();requestAnimationFrame(frame);loadBig();setTimeout(gcBig,4000);
+if(gameId&&!VIEWONLY&&sb&&Object.keys(P.assets.audio).some(function(n){return bigRef(P.assets.audio[n])}))setTimeout(function(){cloudPush(gameId)},3000);
 
 /* Undo / redo: Ctrl+Z undoes, Ctrl+Shift+Z or Ctrl+Y redoes (parts, models and animations) */
 const hist=[],redoS=[];let histLast=null,histT=0,histBusy=false;const saveRaw=save;
