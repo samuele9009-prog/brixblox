@@ -1227,9 +1227,9 @@ function canScale(){return sel.length>0&&scaleSet().length>0}
 function setTool(t){tool=t;if(t==='scale'&&(rigOn||!canScale()))lockWarn(rigOn?'Close the rig editor to resize.':'Select a part first, then press E to resize it.');buildEdit()}
 function scaleStart(o){const bx=scaleBox();if(!bx)return;const a=o.userData.axis.clone(),ax=a.x?0:a.y?1:2,s=a.getComponent(ax)>0?1:-1,
   ps=scaleSet().map(function(p){return {p:p,pos:p.pos.slice(),size:p.size.slice(),pv:p.pivot?p.pivot.slice():null}}),lo=bx.c[ax]-bx.h[ax],hi=bx.c[ax]+bx.h[ax];
-  let mn=1e9;ps.forEach(function(q){if(!q.p.stab)mn=Math.min(mn,q.size[ax])});
+  const uni=ps.length>1;let mn=1e9;ps.forEach(function(q){if(!q.p.stab)(uni?[0,1,2]:[ax]).forEach(function(i){mn=Math.min(mn,q.size[i])})});
   const rs={};ps.forEach(function(q){rs[rootOf(q.p).id]=1});
-  gd={sc:1,a:a,ax:ax,s:s,ps:ps,rs:Object.keys(rs),lo:lo,hi:hi,L0:hi-lo,c0:bx.c.slice(),h0:bx.h.slice(),mn:mn,acc:0}}
+  gd={sc:1,uni:uni,a:a,ax:ax,s:s,ps:ps,rs:Object.keys(rs),lo:lo,hi:hi,L0:hi-lo,c0:bx.c.slice(),h0:bx.h.slice(),mn:mn,acc:0}}
 function scaleDrag(e,dx,dy){const g=gd,ax=g.ax,pt=new THREE.Vector3(g.c0[0],g.c0[1],g.c0[2]).add(g.a.clone().multiplyScalar(g.h0[ax])),w=cv.getBoundingClientRect();
   const sc=function(q){const u=q.clone().project(camera);return new THREE.Vector2(u.x*w.width/2,-u.y*w.height/2)};
   const d=sc(pt.clone().add(g.a)).sub(sc(pt)),L=d.lengthSq();if(L<1)return;
@@ -1237,8 +1237,8 @@ function scaleDrag(e,dx,dy){const g=gd,ax=g.ax,pt=new THREE.Vector3(g.c0[0],g.c0
   const sym=e.ctrlKey||e.metaKey;let L1=g.L0+g.acc*(sym?2:1);
   if(!e.altKey)L1=Math.round(L1*2)/2;
   L1=Math.max(L1,g.L0*.2/g.mn);
-  const f=L1/g.L0,fixed=sym?(g.lo+g.hi)/2:(g.s>0?g.lo:g.hi),r3=function(v){return Math.round(v*1000)/1000};
-  g.ps.forEach(function(q){const p=q.p;p.size[ax]=r3(q.size[ax]*f);p.pos[ax]=r3(fixed+(q.pos[ax]-fixed)*f);if(q.pv&&p.pivot)p.pivot[ax]=r3(fixed+(q.pv[ax]-fixed)*f);
+  const f=L1/g.L0,fixed=sym?(g.lo+g.hi)/2:(g.s>0?g.lo:g.hi),r3=function(v){return Math.round(v*1000)/1000},axes=g.uni?[0,1,2]:[ax];
+  g.ps.forEach(function(q){const p=q.p;axes.forEach(function(i){const an=i===ax?fixed:g.c0[i];p.size[i]=r3(q.size[i]*f);p.pos[i]=r3(an+(q.pos[i]-an)*f);if(q.pv&&p.pivot)p.pivot[i]=r3(an+(q.pv[i]-an)*f)});
     const m=M[p.id];if(!m)return;const old=m.geometry,smooth=p.av||p.sm||(p.parent&&/^(Head|Torso|[RL](arm|leg))$/.test(p.name)),ng=smooth?avGeo(p):shapeGeo(p),md=MATS[p.mat]||MATS.plastic;
     if(!smooth&&TX[p.mat])boxUV(ng,md.ts||6);m.geometry=ng;if(old&&old!==ng&&!old.userData.keep)old.dispose()});
   g.rs.forEach(function(id){const r=byId(id);if(r&&kids(r).length){delete rig0[id];snapRig(r)}});
