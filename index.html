@@ -153,6 +153,52 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .avatar .l1,.avatar .l2{top:60px;width:15px;height:32px;background:#a4bd47}
 .avatar .l1{left:14px}.avatar .l2{left:31px}
 .av-panel .swatches{flex:none;max-width:280px;margin-top:8px}
+
+.av-wrap{display:grid;grid-template-columns:minmax(250px,350px) 1fr;gap:18px;align-items:start}
+@media(max-width:760px){.av-wrap{grid-template-columns:1fr}}
+.av-view{position:relative;border-radius:12px;overflow:hidden;background:#2b3a55;aspect-ratio:3/4;touch-action:none;cursor:grab;user-select:none}
+.av-view:active{cursor:grabbing}
+.av-view canvas{width:100%;height:100%;display:block}
+.av-tip{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-size:.8rem;color:#fff;opacity:.8;pointer-events:none}
+.av-tools{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.av-tools .btn{width:auto;margin:0}
+.av-tools .btn[aria-pressed=true]{background:#00b06f!important;color:#fff!important}
+.wallet{display:inline-flex;align-items:center;gap:6px;font-weight:800;padding:4px 12px;border-radius:99px;border:1px solid var(--line)}
+.wallet i{width:14px;height:14px;border-radius:50%;background:#ffc233;display:block;border:1px solid rgba(0,0,0,.35)}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}
+.item{border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.item.eq{outline:3px solid #00b06f;outline-offset:-1px}
+.item.tr{outline:3px dashed #3da5ff;outline-offset:-1px}
+.item .sw{width:100%;height:34px;border-radius:6px;border:1px solid rgba(0,0,0,.35)}
+.item b{font-size:.95rem}
+.item .pr{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:5px}
+.item .pr i{width:11px;height:11px;border-radius:50%;background:#ffc233;display:block}
+.item .row{display:flex;gap:6px}.item .row .btn{flex:1;margin:0;width:auto;padding:0 6px}
+.sh-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+
+.bb-top{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:600px){.bb-top{grid-template-columns:1fr}}
+.bb-box{border:1px solid var(--line);border-radius:12px;padding:14px}
+.bb-box small{display:block;color:var(--muted);font-weight:700}
+.bb-big{font-size:2rem;font-weight:900;line-height:1.1;margin-top:4px}
+.bb-bar{height:12px;border-radius:99px;background:rgba(128,128,128,.25);overflow:hidden;margin-top:10px}
+.bb-bar i{display:block;height:100%;width:0;background:#00b06f;border-radius:99px;transition:width .5s}
+.bb-earn{margin:8px 0 0;padding-left:20px;line-height:1.7}
+.bb-code{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;padding:12px;border:2px dashed #00b06f;border-radius:12px}
+.bb-code code{font-size:1.4rem;font-weight:900;letter-spacing:.08em}
+.bb-code .btn{width:auto;margin:0}
+.bb-log{margin:8px 0 0;padding:0;list-style:none}
+.bb-log li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:.9rem}
+.bb-log b.pos{color:#17a35b}.bb-log b.neg{color:#c2321f}
+.bb-ok{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:40;color:#fff;animation:bbfade .2s}
+.bb-circle{width:130px;height:130px;border-radius:50%;background:#00b06f;display:grid;place-items:center;animation:bbpop .45s cubic-bezier(.2,1.4,.4,1)}
+.bb-circle svg{width:72px;height:72px;fill:none;stroke:#fff;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.bb-circle path{stroke-dasharray:44;stroke-dashoffset:44;animation:bbdraw .45s .3s ease-out forwards}
+.bb-ok p{margin:0;font-size:1.3rem;font-weight:900}
+@keyframes bbpop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes bbdraw{to{stroke-dashoffset:0}}
+@keyframes bbfade{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.bb-circle,.bb-circle path,.bb-ok{animation-duration:.01s;animation-delay:0s}}
 .soon{border:2px dashed var(--line);border-radius:8px;padding:28px;text-align:center;color:var(--muted)}
 .soon b{display:block;color:#fff;font-size:1.1rem;margin-bottom:4px}
 .addrow{display:flex;gap:8px}.addrow .btn{width:auto;margin:0;white-space:nowrap}
@@ -274,6 +320,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       <button id="n-home" type="button" class="on" data-i="home">Home</button>
       <button id="n-friends" type="button" data-i="friends">Friends<em id="n-badge" hidden></em></button>
       <button id="n-avatar" type="button" data-i="avatar">Avatar</button>
+      <button id="n-bank" type="button" data-i="bank">Blockbank</button>
       <button id="n-studio" type="button" data-i="studio">Studio</button>
       <button id="n-settings" type="button" data-i="settings">Settings</button>
     </nav>
@@ -286,9 +333,50 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
     <section><h2>Your games</h2><div id="h-mine"></div><div class="seg"><button id="g-new" class="btn small" type="button">Create a new game</button><button id="g-studio" class="btn ghost small" type="button">Open BrixBlox Studio</button></div></section>
   </div>
   <div id="p-avatar" class="page" hidden>
-    <section class="panel av-panel">
-      <div id="av" class="avatar"><i class="hd"></i><i class="tr"></i><i class="a1"></i><i class="a2"></i><i class="l1"></i><i class="l2"></i></div>
-      <div><h2 id="l-name2"></h2><p class="note">Pick your shirt color</p><div id="sw" class="swatches"></div></div>
+    <section class="panel">
+      <div class="sh-head"><h2 id="l-name2" style="margin:0"></h2><span class="wallet" title="Coins you earned minus coins you spent"><i></i><span id="wal">0</span> coins</span></div>
+      <div class="av-wrap" style="margin-top:12px">
+        <div>
+          <div id="av-view" class="av-view"><canvas id="av3d" aria-label="Your avatar in 3D. Drag to turn it."></canvas><div class="av-tip">Drag to turn. Scroll or pinch to zoom.</div></div>
+          <div class="av-tools seg" id="av-tools">
+            <button class="btn ghost small" type="button" data-a="spin" aria-pressed="true">Spin</button>
+            <button class="btn ghost small" type="button" data-a="walk" aria-pressed="false">Walk</button>
+            <button class="btn ghost small" type="button" data-a="wave" aria-pressed="false">Wave</button>
+            <button class="btn ghost small" type="button" data-a="jump" aria-pressed="false">Jump</button>
+          </div>
+          <p class="note">Shirt color</p><div id="sw" class="swatches"></div>
+        </div>
+        <div>
+          <div class="seg" id="shop-tabs" style="margin-top:0;flex-wrap:wrap"></div>
+          <p id="shop-note" class="hint"></p>
+          <div id="shop" class="shop-grid"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div id="p-bank" class="page" hidden>
+    <section class="panel">
+      <h2>Blockbank</h2>
+      <div class="bb-top">
+        <div class="bb-box"><small>Saved in your Blockbank</small><div class="bb-big"><span id="bb-saved">0</span> blockbucks</div>
+          <div class="bb-bar"><i id="bb-bar"></i></div><p id="bb-need" class="hint"></p></div>
+        <div class="bb-box"><small>Your wallet (redeemed)</small><div class="bb-big"><span id="bb-wallet">0</span> blockbucks</div>
+          <p class="hint">Blockbucks you redeem land here.</p></div>
+      </div>
+      <h3>How you earn</h3>
+      <ul class="bb-earn">
+        <li>1 blockbuck for every new player who plays your game.</li>
+        <li>2 blockbucks for every hour you spend playing games.</li>
+        <li>100 plays of your game in one hour: 2 blockbucks for every play that hour (so 200 for 100 plays, 2,000 for 1,000 plays).</li>
+      </ul>
+      <h3>Redeem</h3>
+      <p class="hint">Redeem when you have 20 or more saved. Getting a code does not take any blockbucks out of your Blockbank. They only leave when you redeem the code.</p>
+      <div class="seg"><button id="bb-get" class="btn" type="button" disabled>Get my redeem code</button></div>
+      <div id="bb-code" class="bb-code" hidden><code id="bb-codev"></code><span class="hint" style="margin:0">for <b id="bb-codeamt">0</b> blockbucks</span><button id="bb-copy" class="btn ghost small" type="button">Copy</button></div>
+      <form id="f-bb" class="addrow" style="margin-top:12px"><input id="bb-in" type="text" maxlength="20" placeholder="Enter your code (BBX-XXXX-XXXX)" autocapitalize="characters" spellcheck="false" autocomplete="off" required><button class="btn" type="submit">Redeem</button></form>
+      <p id="bb-msg" class="msg" role="status"></p>
+      <h3>Recent activity</h3>
+      <ul id="bb-log" class="bb-log"></ul>
     </section>
   </div>
   <div id="p-settings" class="page" hidden>
@@ -416,6 +504,7 @@ function nameProblem(n){
 }
 
 /* ===== 4. Backends: Supabase when configured, otherwise a demo that saves in this browser only ===== */
+const BANK_MIN=20;
 const mem={};
 const store=(function(){
   function wn(){try{return JSON.parse(window.name)||{}}catch(e){return {}}}
@@ -428,10 +517,15 @@ const store=(function(){
     del:function(k){delete mem[k];try{localStorage.removeItem(k)}catch(e){}const o=wn();delete o['bb:'+k];wset(o)}};
 })();
 async function sha(t){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('')}catch(e){return btoa(t)}}
+function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:e.hat||null,face:e.face||null,back:e.back||null,neck:e.neck||null},spent:a.spent||0}}
 function makeDemo(){
   function load(){try{return JSON.parse(store.get('brixblox-demo'))||{users:[],recs:{},session:null}}catch(e){return {users:[],recs:{},session:null}}}
   function save(d){store.set('brixblox-demo',JSON.stringify(d))}
-  function prof(u){return {id:u.id,username:u.username,color:u.color,email:u.contact||'',age:u.age||null}}
+  function bk(d,id){d.bank=d.bank||{};return d.bank[id]||(d.bank[id]={saved:0,wallet:0,sec:0,paid:0,code:null,amt:0,log:[]})}
+  function badd(d,id,n,why){const b=bk(d,id);b.saved+=n;b.log.unshift({amount:n,reason:why,created_at:new Date().toISOString()});b.log=b.log.slice(0,15)}
+  function rc(){return Math.random().toString(36).slice(2,6).toUpperCase().padEnd(4,'X')}
+  function flushPlay(d,id){const s=parseInt(store.get('brixblox-playsec')||'0',10)||0;if(s>0){store.del('brixblox-playsec');const b=bk(d,id);b.sec+=s;const h=Math.floor(b.sec/3600)-b.paid;if(h>0){b.paid+=h;badd(d,id,2*h,'Played for an hour')}}}
+  function prof(u){return {id:u.id,username:u.username,color:u.color,av:normAv(u.av),email:u.contact||'',age:u.age||null}}
   return {
     demo:true,
     async checkUsername(n){const p=nameProblem(n);if(p)return p;return load().users.some(function(u){return u.username.toLowerCase()===n.toLowerCase()})?'That name is taken.':null},
@@ -449,6 +543,16 @@ function makeDemo(){
     async gameData(){return null},
     async logOut(){const d=load();d.session=null;save(d)},
     async restore(){const d=load();const u=d.users.find(function(x){return x.id===d.session});return u?prof(u):null},
+    async bankStatus(id){const d=load();flushPlay(d,id);save(d);const b=bk(d,id);return {saved:b.saved,wallet:b.wallet,code:b.code,codeAmt:b.amt,log:b.log}},
+    async recordPlay(id,gid,owner){const d=load();if(!owner||owner===id||!d.users.some(function(u){return u.id===owner}))return;d.pl=d.pl||[];const now=Date.now();
+      if(d.pl.some(function(x){return x.g===gid&&x.u===id&&now-x.t<3e5}))return;d.pl.push({g:gid,u:id,t:now});d.pl=d.pl.filter(function(x){return now-x.t<72e5});
+      d.seen=d.seen||{};const k=gid+':'+id;if(!d.seen[k]){d.seen[k]=1;badd(d,owner,1,'New player')}
+      const hs=Math.floor(now/36e5)*36e5,cnt=d.pl.filter(function(x){return x.g===gid&&x.t>=hs}).length;
+      if(cnt>=100){d.hp=d.hp||{};const hk=gid+':'+hs,paid=d.hp[hk]||0,tg=cnt*2;if(tg>paid){badd(d,owner,tg-paid,'Busy hour: '+cnt+' plays');d.hp[hk]=tg}}save(d)},
+    async bankCode(id){const d=load(),b=bk(d,id);if(b.saved<BANK_MIN)throw new Error('You need at least 20 blockbucks saved to redeem.');if(!b.code)b.code='BBX-'+rc()+'-'+rc();b.amt=b.saved;save(d);return {code:b.code,amount:b.amt}},
+    async bankRedeem(id,code){const d=load(),b=bk(d,id);if(!b.code||b.code!==String(code).trim().toUpperCase())throw new Error('That code is not valid or was already used.');if(b.saved<b.amt)throw new Error('Not enough blockbucks saved for that code.');
+      const n=b.amt;b.saved-=n;b.wallet+=n;b.code=null;b.amt=0;b.log.unshift({amount:-n,reason:'Redeemed to your wallet',created_at:new Date().toISOString()});save(d);return {amount:n,saved:b.saved,wallet:b.wallet}},
+    async setAvatar(id,a){const d=load();const u=d.users.find(function(x){return x.id===id});if(u){u.av=a;save(d)}},
     async setAccount(id,a){const d=load();const u=d.users.find(function(x){return x.id===id});if(u){u.contact=a.email;u.age=a.age;save(d)}return {pending:false}},
     async setColor(id,c){const d=load();const u=d.users.find(function(x){return x.id===id});if(u){u.color=c;save(d)}},
     async submitRun(id,level,ms,coins){const d=load();const k=id+':'+level;const o=d.recs[k];const best=!o||ms<o.time;d.recs[k]={uid:id,level:level,time:o?Math.min(o.time,ms):ms,coins:Math.max(o?o.coins:0,coins)};save(d);return {new_best:best}},
@@ -458,7 +562,7 @@ function makeDemo(){
 }
 function makeSupa(){
   const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,storage:{getItem:function(k){return store.get(k)},setItem:function(k,v){store.set(k,v)},removeItem:function(k){store.del(k)}}}});
-  async function profile(id,user){const r=await sb.from('profiles').select('id,username,avatar_color').eq('id',id).single();if(r.error)throw r.error;const md=(user&&user.user_metadata)||{};const em=(user&&user.email)||'';return {id:r.data.id,username:r.data.username,color:r.data.avatar_color,email:em.endsWith('@'+MAIL_DOMAIN)?'':em,pending:(user&&user.new_email)||'',age:md.age||null}}
+  async function profile(id,user){const r=await sb.from('profiles').select('id,username,avatar_color').eq('id',id).single();if(r.error)throw r.error;const md=(user&&user.user_metadata)||{};const em=(user&&user.email)||'';return {id:r.data.id,username:r.data.username,color:r.data.avatar_color,av:normAv(md.avatar),email:em.endsWith('@'+MAIL_DOMAIN)?'':em,pending:(user&&user.new_email)||'',age:md.age||null}}
   async function call(body){const r=await fetch(SUPABASE_URL+'/functions/v1/account',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY},body:JSON.stringify(body)});let j={};try{j=await r.json()}catch(e){}if(!r.ok||j.error)throw new Error(j.error||(r.status===404?'ACCOUNT_FN_MISSING':'Something went wrong.'));return j}
   async function viaFn(body){const d=await call(body);const r=await sb.auth.setSession({access_token:d.access_token,refresh_token:d.refresh_token});if(r.error)throw r.error;return {profile:await profile(r.data.user.id,r.data.user)}}
   return {
@@ -473,6 +577,11 @@ function makeSupa(){
     async gameData(id){const r=await sb.from('games').select('data').eq('id',id).single();if(r.error)throw r.error;return r.data.data},
     async logOut(){await sb.auth.signOut()},
     async restore(){const r=await sb.auth.getSession();return r.data.session?await profile(r.data.session.user.id,r.data.session.user):null},
+    async bankStatus(){const r=await sb.rpc('bank_status');if(r.error)throw r.error;const x=r.data||{};return {saved:x.saved||0,wallet:x.wallet||0,code:x.code||null,codeAmt:x.code_amount||0,log:x.log||[]}},
+    async recordPlay(id,gid){const r=await sb.rpc('record_play',{p_game:String(gid)});if(r.error)throw r.error},
+    async bankCode(){const r=await sb.rpc('bank_create_code');if(r.error)throw r.error;return r.data},
+    async bankRedeem(id,code){const r=await sb.rpc('bank_redeem',{p_code:code});if(r.error)throw r.error;return r.data},
+    async setAvatar(id,a){const r=await sb.auth.updateUser({data:{avatar:a}});if(r.error)throw r.error},
     async setAccount(id,a,cur){const change=!!a.email&&a.email.toLowerCase()!==(cur||'').toLowerCase();const upd={data:{age:a.age}};if(change)upd.email=a.email;const r=await sb.auth.updateUser(upd,change?{emailRedirectTo:location.origin+location.pathname}:undefined);if(r.error)throw r.error;return {pending:change}},
     async setColor(id,c){const r=await sb.from('profiles').update({avatar_color:c}).eq('id',id);if(r.error)throw r.error},
     async submitRun(id,level,ms,coins){const r=await sb.rpc('submit_run',{p_level:level,p_time_ms:ms,p_coins:coins});if(r.error)throw r.error;return r.data},
@@ -494,7 +603,7 @@ function show(which){$('auth').hidden=which!=='auth';$('lobby').hidden=which!=='
 const MAIL_DOMAIN='brixblox.pages.dev';
 function fakeMail(n){return n.toLowerCase()+'@'+MAIL_DOMAIN}
 function loginMail(v){return v.indexOf('@')>=0?v:fakeMail(v)}
-function errText(e){const m=(e&&e.message)||'Something went wrong.';if(m==='ACCOUNT_FN_MISSING')return 'Sign up and username log in need the \u201caccount\u201d function deployed in Supabase (see supabase-account-function.ts).';if(/error sending|confirmation email|rate limit/i.test(m))return 'Supabase could not send that email right now. Wait a bit and try again.';if(/Database error saving new user/i.test(m))return 'That player name was not accepted. Try a different one.';if(/send_friend_request|list_friends|answer_friend/i.test(m))return 'Friends need the SQL setup in Supabase (brixblox-friends.sql).';if(/already registered/i.test(m))return 'That email already has an account.';if(/email.*(invalid|not valid)/i.test(m))return 'That email address was not accepted.';return m}
+function errText(e){const m=(e&&e.message)||'Something went wrong.';if(m==='ACCOUNT_FN_MISSING')return 'Sign up and username log in need the \u201caccount\u201d function deployed in Supabase (see supabase-account-function.ts).';if(/error sending|confirmation email|rate limit/i.test(m))return 'Supabase could not send that email right now. Wait a bit and try again.';if(/Database error saving new user/i.test(m))return 'That player name was not accepted. Try a different one.';if(/bank_status|bank_create_code|bank_redeem|record_play|play_heartbeat/i.test(m))return 'Blockbank needs the SQL setup in Supabase (brixblox-blockbank.sql).';if(/send_friend_request|list_friends|answer_friend/i.test(m))return 'Friends need the SQL setup in Supabase (brixblox-friends.sql).';if(/already registered/i.test(m))return 'That email already has an account.';if(/email.*(invalid|not valid)/i.test(m))return 'That email address was not accepted.';return m}
 $('mode-note').textContent=api.demo?'Demo mode: accounts and times are saved in this browser only. Add your Supabase keys to share them.':'';
 
 let nameOk=false,chkT=0,chkSeq=0;
@@ -520,16 +629,16 @@ $('f-in').addEventListener('submit',async function(e){e.preventDefault();$('b-in
 async function enter(p){me=p;store.set('brixblox-me',JSON.stringify({id:p.id,username:p.username,demo:!!api.demo}));$('a-msg').textContent='';$('f-up').reset();$('f-in').reset();nameOk=false;updUp();
   try{recs=await api.records(me.id)}catch(e){recs={};toast('Could not load your times.')}
   lobby()}
-function paintAvatar(){$('av').style.setProperty('--c',me.color);$('sw').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.c===me.color))})}
+function paintAvatar(){if(typeof pvRebuild==='function')pvRebuild();$('sw').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.c===me.color))})}
 function unlocked(id){return id===1||!!recs[id-1]}
 function lobby(){
-  show('lobby');$('l-name').textContent=me.username;$('l-name2').textContent=me.username;
+  show('lobby');{const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}}$('l-name').textContent=me.username;$('l-name2').textContent=me.username;
   const sw=$('sw');sw.innerHTML='';
   COLORS.forEach(function(c){const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label','Color '+c);b.onclick=async function(){me.color=c;paintAvatar();try{await api.setColor(me.id,c)}catch(e){toast('Could not save your color.')}};sw.appendChild(b)});
-  paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');loadFriends();loadGames()}
-const PAGES=['home','friends','avatar','settings'];
+  paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');loadFriends();loadGames();loadBank()}
+const PAGES=['home','friends','avatar','bank','settings'];
 function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p)})}
-const IC={home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
+const IC={home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',bank:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 9l9-6 9 6M8 13v3M12 13v3M16 13v3"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
 document.querySelectorAll('.snav button').forEach(function(b){b.insertAdjacentHTML('afterbegin','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+IC[b.dataset.i]+'</svg>')});
 function theme(t){document.documentElement.dataset.theme=t;store.set('brixblox-theme',t);$('th-light').setAttribute('aria-pressed',String(t==='light'));$('th-dark').setAttribute('aria-pressed',String(t==='dark'))}
 $('th-light').onclick=function(){theme('light')};$('th-dark').onclick=function(){theme('dark')};theme(store.get('brixblox-theme')==='dark'?'dark':'light');
@@ -541,7 +650,7 @@ $('f-acct').addEventListener('submit',async function(e){e.preventDefault();
   $('b-acct').disabled=true;sMsg('Saving...',true);
   try{const r=await api.setAccount(me.id,{email:email,age:age},me.email);me.age=age;if(r.pending){me.pending=email;sMsg('Saved. We sent a confirmation link to '+email+'. Open it to finish adding your email.',true)}else{if(api.demo)me.email=email;sMsg('Saved.',true)}}catch(er){sMsg(errText(er))}
   $('b-acct').disabled=false});
-$('n-avatar').onclick=function(){nav('avatar')};$('n-settings').onclick=function(){nav('settings')};
+$('n-avatar').onclick=function(){nav('avatar');openAvatarPage()};$('n-bank').onclick=function(){nav('bank');loadBank()};$('n-settings').onclick=function(){nav('settings')};
 $('n-home').onclick=function(){nav('home');loadGames()};$('n-friends').onclick=function(){nav('friends');loadFriends()};
 function frow(r,btns,tag){const d=document.createElement('div');d.className='frow';const dot=document.createElement('span');dot.className='dot';dot.style.background=r.color;const n=document.createElement('span');n.className='nm';n.textContent=r.name+(tag||'');d.append(dot,n);
   btns.forEach(function(b){const x=document.createElement('button');x.type='button';x.className='btn small'+(b[2]?' ghost':'');x.textContent=b[0];x.onclick=async function(){try{await api.answerFriend(me.id,r.fid,b[1])}catch(e){toast(errText(e))}loadFriends()};d.append(x)});return d}
@@ -589,6 +698,7 @@ function gfill(box,list,empty){box.replaceChildren();if(!list.length){box.classN
     bd.append(row);c.append(th,bd);box.append(c)})}
 async function gameData(g){if(g.data)return g.data;try{return await api.gameData(g.id)}catch(e){return null}}
 async function playGame(g){const d=await gameData(g);if(!d){toast('Could not load that game.');return}
+  await Promise.race([Promise.resolve(api.recordPlay(me.id,g.id,g.ownerId)).catch(function(){}),new Promise(function(r){setTimeout(r,1500)})]);
   store.set('brixblox-play',JSON.stringify({id:g.id,data:d,owner:g.ownerName}));location.href=STUDIO_URL}
 async function editGame(g){const L=localGames();
   if(!L[g.id]){const d=await gameData(g);if(!d){toast('Could not load that game.');return}
@@ -596,6 +706,35 @@ async function editGame(g){const L=localGames();
   store.set('brixblox-pending',g.id);location.href=STUDIO_URL}
 $('n-studio').onclick=$('g-studio').onclick=function(){store.del('brixblox-pending');location.href=STUDIO_URL};
 $('g-new').onclick=function(){store.set('brixblox-pending','__new__');location.href=STUDIO_URL};
+
+
+/* ===== 5d. Blockbank ===== */
+let bank={saved:0,wallet:0,code:null,codeAmt:0,log:[]};
+function bbMsg(t,good){const m=$('bb-msg');m.textContent=t;m.className='msg'+(good?' good':'')}
+async function loadBank(){try{bank=await api.bankStatus(me.id);bbMsg('')}catch(e){bbMsg(errText(e))}paintBank()}
+function paintBank(){
+  $('bb-saved').textContent=bank.saved;$('bb-wallet').textContent=bank.wallet;
+  $('bb-bar').style.width=Math.min(100,bank.saved/BANK_MIN*100)+'%';
+  $('bb-need').textContent=bank.saved>=BANK_MIN?'You can redeem now.':'Save '+(BANK_MIN-bank.saved)+' more to redeem.';
+  $('bb-get').disabled=bank.saved<BANK_MIN;
+  $('bb-code').hidden=!bank.code;if(bank.code){$('bb-codev').textContent=bank.code;$('bb-codeamt').textContent=bank.codeAmt}
+  const ul=$('bb-log');ul.replaceChildren();
+  if(!bank.log.length){const li=document.createElement('li');li.textContent='Nothing yet. Publish a game and get players!';ul.append(li)}
+  bank.log.forEach(function(x){const li=document.createElement('li'),a=document.createElement('span'),b=document.createElement('b');
+    a.textContent=x.reason+'  -  '+new Date(x.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+    b.textContent=(x.amount>0?'+':'')+x.amount;b.className=x.amount>0?'pos':'neg';li.append(a,b);ul.append(li)})}
+function checkAnim(n){
+  const o=document.createElement('div');o.className='bb-ok';
+  o.innerHTML='<div class="bb-circle"><svg viewBox="0 0 52 52"><path d="M13 27l9 9 17-19"/></svg></div><p></p>';
+  o.querySelector('p').textContent=n+' blockbucks redeemed';
+  function close(){if(o.parentNode)o.remove()}o.onclick=close;document.body.append(o);setTimeout(close,2300)}
+$('bb-get').onclick=async function(){$('bb-get').disabled=true;
+  try{const r=await api.bankCode(me.id);bank.code=r.code;bank.codeAmt=r.amount;bbMsg('Here is your code. Enter it below to redeem.',true)}catch(e){bbMsg(errText(e))}
+  paintBank()};
+$('bb-copy').onclick=function(){try{navigator.clipboard.writeText(bank.code);toast('Code copied')}catch(e){$('bb-in').value=bank.code}};
+$('f-bb').addEventListener('submit',async function(e){e.preventDefault();const c=$('bb-in').value.trim();if(!c)return;
+  try{const r=await api.bankRedeem(me.id,c);$('bb-in').value='';checkAnim(r.amount);bbMsg('')}catch(er){bbMsg(errText(er));return}
+  await loadBank()});
 
 /* ===== 6. 3D view ===== */
 const renderer=new THREE.WebGLRenderer({canvas:$('gl'),antialias:true});
@@ -607,20 +746,55 @@ scene.add(hemi,sun,sun.target);
 function resize(){const w=innerWidth,h=innerHeight;renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
 addEventListener('resize',resize);resize();
 const lam=function(c){return new THREE.MeshLambertMaterial({color:c})};
-let camFocus=0,world=null,sim=null,platMeshes=[],coinMeshes=[],flagMats={},avatar=null,limbs=null,playing=false,yaw=0,pitch=.42,face=0,acc=0,last=0;
+let camFocus=0,world=null,sim=null,platMeshes=[],coinMeshes=[],flagMats={},avatar=null,limbs=null,gameFx={},playing=false,yaw=0,pitch=.42,face=0,acc=0,last=0;
 function disposeWorld(){if(!world)return;scene.remove(world);world.traverse(function(o){if(o.geometry)o.geometry.dispose();if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(function(m){m.dispose()})}});world=null}
 function faceTex(){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');x.fillStyle='#111';
   [44,84].forEach(function(ex){x.beginPath();x.ellipse(ex,44,7,12,0,0,7);x.fill()});
   x.strokeStyle='#111';x.lineWidth=7;x.lineCap='round';x.beginPath();x.arc(64,50,32,.25*Math.PI,.75*Math.PI);x.stroke();return new THREE.CanvasTexture(c)}
-function makeAvatar(color){
-  const g=new THREE.Group(),skin='#f5cd30',S=.34;
+/* Avatar items. Slots: hat, face, back, neck. Prices are in coins. */
+const ITEMS=[
+ {id:'cap',slot:'hat',name:'Red Cap',price:8,c:'#e0402f'},
+ {id:'party',slot:'hat',name:'Party Hat',price:8,c:'#ff7ab8'},
+ {id:'tophat',slot:'hat',name:'Top Hat',price:15,c:'#222'},
+ {id:'crown',slot:'hat',name:'Crown',price:30,c:'#ffc233'},
+ {id:'round',slot:'face',name:'Round Glasses',price:8,c:'#c9a227'},
+ {id:'shades',slot:'face',name:'Sunglasses',price:12,c:'#111'},
+ {id:'stache',slot:'face',name:'Mustache',price:10,c:'#4a2c17'},
+ {id:'pack',slot:'back',name:'Backpack',price:15,c:'#8a5a2b'},
+ {id:'cape',slot:'back',name:'Hero Cape',price:20,c:'#d62839'},
+ {id:'wings',slot:'back',name:'Wings',price:35,c:'#ffffff'},
+ {id:'bow',slot:'neck',name:'Bow Tie',price:6,c:'#d62839'},
+ {id:'scarf',slot:'neck',name:'Scarf',price:12,c:'#ff9f1c'}
+];
+const SLOTS=[['hat','Hats'],['face','Faces'],['back','Back'],['neck','Neck']];
+function itemById(id){return ITEMS.find(function(x){return x.id===id})}
+function addItem(g,id,fx){
+  const it=itemById(id);if(!it)return;
+  function box(w,h,d,c,x,y,z,par){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),lam(c));m.position.set(x,y,z);m.castShadow=true;(par||g).add(m);return m}
+  function cyl(rt,rb,h,c,x,y,z,seg){const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg||20),lam(c));m.position.set(x,y,z);m.castShadow=true;g.add(m);return m}
+  if(id==='tophat'){cyl(.34,.34,.04,'#222',0,1.75,0,24);cyl(.21,.21,.34,'#222',0,1.94,0,24);cyl(.215,.215,.07,'#d62839',0,1.82,0,24)}
+  else if(id==='cap'){const d=new THREE.Mesh(new THREE.SphereGeometry(.285,20,12,0,Math.PI*2,0,Math.PI/2),lam(it.c));d.position.y=1.68;d.castShadow=true;g.add(d);box(.3,.03,.24,'#b8301f',0,1.7,.3)}
+  else if(id==='crown'){cyl(.27,.27,.12,'#ffc233',0,1.79,0,24);for(let k=0;k<6;k++){const a=k/6*Math.PI*2;const m=new THREE.Mesh(new THREE.ConeGeometry(.055,.16,8),lam('#ffc233'));m.position.set(Math.sin(a)*.24,1.93,Math.cos(a)*.24);g.add(m)}const ge=new THREE.Mesh(new THREE.SphereGeometry(.04,10,8),lam('#d62839'));ge.position.set(0,1.8,.275);g.add(ge)}
+  else if(id==='party'){const m=new THREE.Mesh(new THREE.ConeGeometry(.2,.46,18),lam('#ff7ab8'));m.position.y=1.96;m.castShadow=true;g.add(m);const b=new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),lam('#ffc233'));b.position.y=2.2;g.add(b);cyl(.2,.2,.05,'#3da5ff',0,1.76,0,18)}
+  else if(id==='shades'){box(.15,.1,.025,'#111',-.09,1.6,.278);box(.15,.1,.025,'#111',.09,1.6,.278);box(.06,.02,.025,'#111',0,1.62,.278)}
+  else if(id==='round'){[-.09,.09].forEach(function(x){const t=new THREE.Mesh(new THREE.TorusGeometry(.07,.014,8,20),lam('#c9a227'));t.position.set(x,1.6,.275);g.add(t)});box(.05,.014,.014,'#c9a227',0,1.62,.275)}
+  else if(id==='stache'){box(.2,.045,.03,'#4a2c17',0,1.54,.275);box(.06,.05,.03,'#4a2c17',-.12,1.52,.272);box(.06,.05,.03,'#4a2c17',.12,1.52,.272)}
+  else if(id==='pack'){box(.46,.56,.2,'#8a5a2b',0,1.02,-.27);box(.46,.16,.22,'#6e4521',0,1.2,-.27);box(.06,.5,.04,'#5a371a',-.2,1.04,.19);box(.06,.5,.04,'#5a371a',.2,1.04,.19)}
+  else if(id==='cape'){const pv=new THREE.Group();pv.position.set(0,1.34,-.19);g.add(pv);box(.66,.95,.04,'#d62839',0,-.48,-.02,pv);box(.7,.08,.06,'#ffc233',0,-.02,0,pv);fx.cape=pv}
+  else if(id==='wings'){fx.wings=[];[-1,1].forEach(function(sd){const pv=new THREE.Group();pv.position.set(sd*.2,1.2,-.22);g.add(pv);box(.5,.12,.04,'#ffffff',sd*.28,.18,0,pv);box(.42,.12,.04,'#f1f5ff',sd*.24,.02,0,pv);box(.32,.12,.04,'#e3ebff',sd*.2,-.14,0,pv);pv.userData.sd=sd;fx.wings.push(pv)})}
+  else if(id==='bow'){box(.1,.1,.06,'#d62839',0,1.3,.2);const a=box(.15,.14,.05,'#d62839',-.12,1.3,.2);const b=box(.15,.14,.05,'#d62839',.12,1.3,.2);a.rotation.z=.4;b.rotation.z=-.4}
+  else if(id==='scarf'){box(.76,.11,.42,'#ff9f1c',0,1.33,0);box(.11,.42,.05,'#ff9f1c',.2,1.12,.2);box(.11,.1,.05,'#d97e00',.2,.9,.2)}
+}
+function makeAvatar(color,eq){
+  const g=new THREE.Group(),skin='#f5cd30',S=.34,fx={};
   function part(w,h,d,c,x,y,z,p){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),lam(c));m.position.set(x,y,z);m.castShadow=true;(p||g).add(m);return m}
   part(2*S,2*S,S,color,0,3*S,0);
   const head=new THREE.Mesh(new THREE.CylinderGeometry(.26,.26,.38,24),lam(skin));head.position.y=1.55;head.castShadow=true;g.add(head);
   const face=new THREE.Mesh(new THREE.PlaneGeometry(.34,.34),new THREE.MeshBasicMaterial({map:faceTex(),transparent:true}));face.position.set(0,1.55,.262);g.add(face);
   const L=[];
   [[-S/2,2*S,'#a4bd47'],[S/2,2*S,'#a4bd47'],[-1.5*S,4*S,skin],[1.5*S,4*S,skin]].forEach(function(a){const pv=new THREE.Group();pv.position.set(a[0],a[1],0);g.add(pv);part(S,2*S,S,a[2],0,-S,0,pv);L.push(pv)});
-  return {g:g,limbs:L}}
+  if(eq)Object.keys(eq).forEach(function(k){if(eq[k])addItem(g,eq[k],fx)});
+  return {g:g,limbs:L,fx:fx}}
 function buildScene(L){
   disposeWorld();world=new THREE.Group();scene.add(world);platMeshes=[];coinMeshes=[];flagMats={};
   const t=L.def.theme;scene.background=new THREE.Color(t.sky);scene.fog=new THREE.Fog(t.sky,50,140);
@@ -638,7 +812,7 @@ function buildScene(L){
   let seed=L.def.id*977;const rnd=function(){seed=(seed*16807)%2147483647;return seed/2147483647};
   for(let i=0;i<36;i++){const g=new THREE.Group(),cm=lam(t.deco),n=2+Math.floor(rnd()*3);for(let k=0;k<n;k++){const s=new THREE.Mesh(new THREE.BoxGeometry(2+rnd()*3,1+rnd()*1.2,2+rnd()*3),cm);s.position.set(k*2.2,rnd()*.6,rnd()*1.5);g.add(s)}
     const side=rnd()<.5?-1:1;g.position.set(side*(16+rnd()*30),(L.groundY+8)+rnd()*40,L.finish.z*rnd()-10);world.add(g)}
-  if(avatar)scene.remove(avatar);const av=makeAvatar(me.color);avatar=av.g;limbs=av.limbs;scene.add(avatar)}
+  if(avatar)scene.remove(avatar);const av=makeAvatar(me.color,me.av.eq);avatar=av.g;limbs=av.limbs;gameFx=av.fx;scene.add(avatar)}
 
 /* ===== 7. Controls ===== */
 const keys={};let jumpQ=false,stickX=0,stickY=0,drag=null;
@@ -672,8 +846,74 @@ async function finish(){
   try{const r=await api.submitRun(me.id,curLevel,ms,got);const o=recs[curLevel];recs[curLevel]={time:o?Math.min(o.time,ms):ms,coins:Math.max(o?o.coins:0,got)};
     $('d-badge').hidden=!r.new_best;$('d-msg').textContent=curLevel<LEVELS.length&&!recs[curLevel+1]?'Next course unlocked.':'Saved.'}
   catch(e){$('d-msg').textContent='Could not save this run: '+errText(e)}}
+
+/* ===== 6b. Avatar page: 3D preview and shop ===== */
+function fxAnim(fx,amt,now){
+  if(fx.cape)fx.cape.rotation.x=.12+Math.min(1,amt)*.55+Math.sin(now/250)*.04;
+  if(fx.wings)fx.wings.forEach(function(w){w.rotation.y=w.userData.sd*(.25+Math.sin(now/(amt>.3?90:420))*.18)})}
+const pv={r:null,sc:null,cam:null,av:null,limbs:null,fx:{},yaw:.5,pitch:.12,zoom:5.6,mode:'spin',lastDrag:0,dragging:false,px:0,py:0,w:0,h:0,pinch:0,tryEq:null,tab:'hat'};
+function pvInit(){
+  if(pv.r)return;
+  try{pv.r=new THREE.WebGLRenderer({canvas:$('av3d'),antialias:true,alpha:true})}catch(e){$('av-view').innerHTML='<p class="note" style="padding:20px;color:#fff">Your browser could not start 3D.</p>';return}
+  pv.sc=new THREE.Scene();pv.cam=new THREE.PerspectiveCamera(40,.75,.1,50);
+  pv.sc.add(new THREE.HemisphereLight(0xffffff,0x8899aa,.95));const dl=new THREE.DirectionalLight(0xfff3df,.8);dl.position.set(3,6,5);pv.sc.add(dl);
+  const fl=new THREE.Mesh(new THREE.CylinderGeometry(1,1,.05,40),new THREE.MeshLambertMaterial({color:'#3b4d70'}));fl.position.y=-.03;pv.sc.add(fl);
+  const v=$('av-view');
+  v.addEventListener('pointerdown',function(e){pv.dragging=true;pv.px=e.clientX;pv.py=e.clientY;pv.mode==='spin'&&pvMode('idle');v.setPointerCapture(e.pointerId)});
+  v.addEventListener('pointermove',function(e){if(!pv.dragging)return;pv.yaw+=(e.clientX-pv.px)*.012;pv.pitch=Math.max(-.3,Math.min(.9,pv.pitch+(e.clientY-pv.py)*.006));pv.px=e.clientX;pv.py=e.clientY});
+  ['pointerup','pointercancel'].forEach(function(n){v.addEventListener(n,function(){pv.dragging=false})});
+  v.addEventListener('wheel',function(e){e.preventDefault();pv.zoom=Math.max(3.2,Math.min(9,pv.zoom+e.deltaY*.004))},{passive:false});
+  $('av-tools').querySelectorAll('button').forEach(function(b){b.onclick=function(){pvMode(b.dataset.a)}});
+}
+function pvMode(m){pv.mode=pv.mode===m&&m!=='idle'?'idle':m;$('av-tools').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.a===pv.mode))})}
+function pvRebuild(){
+  if(!pv.sc||!me)return;
+  if(pv.av)pv.sc.remove(pv.av);
+  const a=makeAvatar(me.color,pv.tryEq||me.av.eq);pv.av=a.g;pv.limbs=a.limbs;pv.fx=a.fx;pv.sc.add(pv.av)}
+function pvTick(now){
+  if(!pv.r||!me||$('lobby').hidden||$('p-avatar').hidden||!pv.av)return;
+  const c=$('av3d'),w=c.clientWidth,h=c.clientHeight;
+  if(w&&h&&(w!==pv.w||h!==pv.h)){pv.w=w;pv.h=h;pv.r.setPixelRatio(Math.min(devicePixelRatio||1,2));pv.r.setSize(w,h,false);pv.cam.aspect=w/h;pv.cam.updateProjectionMatrix()}
+  const t=now/1000,L=pv.limbs;let by=0,amt=0;
+  L.forEach(function(x){x.rotation.x=0;x.rotation.z=0});
+  if(pv.mode==='spin'){pv.yaw+=.012}
+  if(pv.mode==='walk'){const sw=Math.sin(t*7)*.8;L[0].rotation.x=sw;L[1].rotation.x=-sw;L[2].rotation.x=-sw;L[3].rotation.x=sw;amt=.5}
+  if(pv.mode==='wave'){L[3].rotation.z=2.5+Math.sin(t*9)*.35}
+  if(pv.mode==='jump'){const k=Math.abs(Math.sin(t*3.2));by=k*.7;L[2].rotation.x=-2.6*k;L[3].rotation.x=-2.6*k;L[0].rotation.x=.4*k;L[1].rotation.x=-.4*k;amt=1}
+  if(pv.mode==='idle'||pv.mode==='spin'){by=Math.sin(t*2)*.015;L[2].rotation.z=-.05;L[3].rotation.z=.05}
+  pv.av.position.y=by;pv.av.rotation.y=pv.yaw;
+  fxAnim(pv.fx,amt,now);
+  pv.cam.position.set(0,1.1+Math.sin(pv.pitch)*pv.zoom,Math.cos(pv.pitch)*pv.zoom);pv.cam.lookAt(0,.95,0);
+  pv.r.render(pv.sc,pv.cam)}
+function coinsEarned(){let n=10;Object.keys(recs).forEach(function(k){n+=recs[k].coins||0});return n}
+function balance(){return coinsEarned()-(me.av.spent||0)}
+async function saveAv(){try{await api.setAvatar(me.id,me.av);return true}catch(e){toast('Could not save: '+errText(e));return false}}
+function paintShop(){
+  $('wal').textContent=balance();
+  const tabs=$('shop-tabs');tabs.innerHTML='';
+  SLOTS.forEach(function(s){const b=document.createElement('button');b.type='button';b.className='btn ghost small';b.textContent=s[1];b.setAttribute('aria-pressed',String(pv.tab===s[0]));b.onclick=function(){pv.tab=s[0];paintShop()};tabs.appendChild(b)});
+  const g=$('shop');g.innerHTML='';const eq=me.av.eq;
+  $('shop-note').textContent=pv.tryEq?'Trying on. This is not saved until you buy or equip it.':'Earn coins by collecting them in games. You get 10 to start.';
+  ITEMS.filter(function(x){return x.slot===pv.tab}).forEach(function(it){
+    const owned=me.av.owned.indexOf(it.id)>=0,worn=eq[it.slot]===it.id,trying=pv.tryEq&&pv.tryEq[it.slot]===it.id&&!worn;
+    const d=document.createElement('div');d.className='item'+(worn?' eq':'')+(trying?' tr':'');
+    const sw=document.createElement('div');sw.className='sw';sw.style.background=it.c;
+    const n=document.createElement('b');n.textContent=it.name;
+    const pr=document.createElement('div');pr.className='pr';pr.innerHTML=owned?'Owned':'<i></i>'+it.price;
+    const row=document.createElement('div');row.className='row';
+    function btn(t,f,ghost){const b=document.createElement('button');b.type='button';b.className='btn small'+(ghost?' ghost':'');b.textContent=t;b.onclick=f;row.appendChild(b)}
+    if(owned){btn(worn?'Remove':'Equip',async function(){const old=eq[it.slot];eq[it.slot]=worn?null:it.id;pv.tryEq=null;pvRebuild();paintShop();if(!await saveAv()){eq[it.slot]=old;pvRebuild();paintShop()}})}
+    else{
+      btn('Try',function(){pv.tryEq=Object.assign({},eq);pv.tryEq[it.slot]=trying?eq[it.slot]:it.id;pvRebuild();paintShop()},true);
+      btn('Buy',async function(){
+        if(balance()<it.price){toast('Not enough coins. You need '+(it.price-balance())+' more.');return}
+        const prev=JSON.stringify(me.av);me.av.owned.push(it.id);me.av.spent=(me.av.spent||0)+it.price;eq[it.slot]=it.id;pv.tryEq=null;pvRebuild();paintShop();
+        if(await saveAv())toast('Bought '+it.name+'!');else{me.av=JSON.parse(prev);pvRebuild();paintShop()}})}
+    d.append(sw,n,pr,row);g.appendChild(d)})}
+function openAvatarPage(){pvInit();pv.tryEq=null;pvRebuild();paintShop()}
 function frame(now){
   requestAnimationFrame(frame);
+  if(!playing)pvTick(now);
   if(!playing||!sim)return;
   const dt=Math.min(.1,(now-last)/1000);last=now;acc+=dt;
   const inp=readInput();
@@ -693,6 +933,7 @@ function frame(now){
   avatar.rotation.y=face;
   const sw=sim.grounded?Math.sin(now/90)*Math.min(1,sp/5)*.9:0;
   limbs[0].rotation.x=sw;limbs[1].rotation.x=-sw;limbs[2].rotation.x=sim.grounded?-sw:-2.6;limbs[3].rotation.x=sim.grounded?sw:-2.6;
+  fxAnim(gameFx,sim.grounded?sp*.04:.9,now);
   camFocus+=(sim.y-camFocus)*Math.min(1,dt*3);
   const dist=11;camera.position.set(sim.x,camFocus+1.4+Math.sin(pitch)*dist,sim.z+Math.cos(pitch)*dist);camera.lookAt(sim.x,camFocus+1.2,sim.z);
   sun.position.set(sim.x+8,sim.y+16,sim.z+6);sun.target.position.set(sim.x,sim.y,sim.z);
