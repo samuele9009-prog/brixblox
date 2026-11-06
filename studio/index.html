@@ -488,6 +488,9 @@ const BD={
  key:{c:'ev',hat:1,l:'when key _',a:['space'],raw:1},
  keydrop:{c:'ev',hat:1,l:'when player presses the key _',a:['space'],dd:{0:'keys'},tip:'Runs when the player presses the key you pick from the list. Works while you press Play or Run code.'},
  keyheld:{c:'ev',hat:1,l:'when key held _',a:['space'],dd:{0:'keys'},tip:'Runs again and again while the player holds the key you pick, and stops when they let go. It will not start a second copy while the script is still running (for example during a wait block). Works while you press Play or Run code.'},
+ recv:{c:'ev',hat:1,l:'when I receive _',a:['message1'],raw:1,tip:'Runs when a broadcast block sends this same message (any script can send it). It will not start again while it is still running from the last time.'},
+ broadcast:{c:'ev',l:'broadcast _',a:['message1'],tip:'Sends a message to every \"when I receive\" script with the same name, then keeps going straight away.'},
+ broadcastwait:{c:'ev',l:'broadcast _ and wait',a:['message1'],tip:'Sends a message to every \"when I receive\" script with the same name, and waits here until all of them have finished.'},
  touched:{c:'ev',hat:1,l:'when this block touched',a:[],tip:'Runs when a player starts touching the object this script belongs to. It works even when collision is false. The variable toucher holds the name of whoever touched it. Put the script on an object with the + next to it in the Explorer.'},
  clicked:{c:'ev',hat:1,l:'when this block is clicked from _ studs away',a:['20'],tip:'Runs when you click the object this script belongs to while playing (press Play). The number is how far away you can click from. The variable clicker holds your name.'},
  chat:{c:'ev',hat:1,l:'when player says _ in chat',a:['hello'],raw:1,tip:'Runs when a player types this in the chat box (press / while playing, type, then press Enter to send). It matches the whole message, or the start of it when the message continues after a space (so \"!kick Bob\" matches !kick). Type * to match every message. The variables speaker and message are filled in.'},
@@ -554,7 +557,7 @@ const BD={
  def:{c:'fn',hat:1,l:'define _',a:['spin'],raw:1},
  call:{c:'fn',l:'call _',a:['spin'],raw:1}
 };
-const EVH=['key','keydrop','keyheld','touched','clicked','chat'];
+const EVH=['key','keydrop','keyheld','recv','touched','clicked','chat'];
 function mk(t,a,k){return {t:t,a:a||BD[t].a.slice(),k:BD[t].k?(k||[]):null}}
 function starter(){return [[mk('start'),mk('say',['Hello!']),mk('repeat',['4'],[mk('move',['6']),mk('turn',['90']),mk('wait',['0.3'])])]]}
 /* Games only exist on disk once they are published. An unpublished game is a draft that is lost when the page closes. */
@@ -825,7 +828,7 @@ function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('p
 
 
 /* BricBloc as text */
-const KW={unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio'};
+const KW={unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
 
@@ -861,6 +864,11 @@ const sl=function(ms){return new Promise(function(r){const end=performance.now()
   tm=setTimeout(fin,ms);
   (function tick(){if(done)return;if(performance.now()>=end)fin();else requestAnimationFrame(tick)})()})},cl=function(v,m){return Math.max(-m,Math.min(m,v))};
 function log(m){const o=$('s-out');o.textContent+=m+'\n';o.scrollTop=1e9}
+/* Broadcasts: start every "when I receive" script with this message. A script that is still running from the last time is not started again. */
+const MR=new Set();
+function fireMsg(msg,S){const m=String(msg).trim().toLowerCase(),ps=[];
+  P.scripts.forEach(function(sc){const h=sc[0];if(h.t!=='recv'||String(h.a[0]).trim().toLowerCase()!==m||MR.has(h))return;MR.add(h);
+    ps.push(ex(sc.slice(1),S,h.o).catch(function(e){log('Error: '+e)}).then(function(){MR.delete(h)}))});return ps}
 async function ex(list,S,o){for(let i=0;i<list.length;i++){if(S.stop)return;await st(list[i],S,o)}}
 async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0};
   switch(b.t){
@@ -874,6 +882,8 @@ async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0
     case'wait':await sl(Math.max(0,n(0))*1000);break;
     case'set':S.v[a[0].trim()]=val(a[1],S);break;
     case'change':{const k=a[0].trim();S.v[k]=(Number(S.v[k])||0)+n(1);break}
+    case'broadcast':fireMsg(val(a[0],S),S);break;
+    case'broadcastwait':{const ps=fireMsg(val(a[0],S),S);if(ps.length)await Promise.all(ps);break}
     case'print':log(String(val(a[0],S)));break;
     case'repeat':for(let i=0,c=Math.min(n(0),10000);i<c&&!S.stop;i++){await ex(b.k,S,o);await sl(30)}break;
     case'forever':while(!S.stop){await ex(b.k,S,o);await sl(30)}break;
@@ -2163,6 +2173,7 @@ function addGroups(c){const O=[],Sx=[],A=[],k=c.k,own=c.t==='svc'?null:c.id;
     Sx.push(scr('Script: when key','key','Runs when a key is pressed'));
     Sx.push(scr('Script: when player presses the key','keydrop','Pick the key from a list'));
     Sx.push(scr('Script: when key held','keyheld','Runs again and again while a key is held down'));
+    Sx.push(scr('Script: when I receive','recv','Runs when a broadcast message arrives'));
     Sx.push(scr('Script: when this block touched','touched','Runs when a player touches it'));
     Sx.push(scr('Script: when this block is clicked','clicked','Runs when you click it while playing'));
     Sx.push(scr('Script: when player says in chat','chat','Runs when a player types a word in chat'));
@@ -2252,7 +2263,7 @@ function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing)}
 function setRun(v){running=v;sync()}
-function resetWorld(){KH.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();RO={};RV={};RD={};RVY={};RY={};CO={};TM=new Map();RAG={};RSZ={};stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
+function resetWorld(){KH.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();RO={};RV={};RD={};RVY={};RY={};CO={};TM=new Map();RAG={};RSZ={};stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
 function boot(my){reser();const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
   hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
   return {hs:hs,done:Promise.all(hs.filter(function(s){return s[0].t==='start'}).map(function(s){return ex(s.slice(1),my,s[0].o).catch(function(e){log('Error: '+e)})}))}}
