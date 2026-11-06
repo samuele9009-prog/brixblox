@@ -1116,23 +1116,28 @@ function boxUV(g,ts){const ps=g.attributes.position,nm=g.attributes.normal,uv=g.
     if(ax>=ay&&ax>=az){u=nx>0?-z:z;v=y}else if(ay>=az){u=x;v=ny>0?-z:z}else{u=nz>0?x:-x;v=y}
     uv.setXY(i,u/ts,v/ts)}uv.needsUpdate=true}
 function emi(p){return p.mat==='neon'?M[p.id].material.color.getHex():0}
-/* Selected parts get a solid blue outline: a copy of the shape pushed outwards along its surface, so it wraps rounded parts and rigs evenly.
-   Vertices that share a spot (box corners, cylinder rims) are pushed along the sum of their face directions so there are no gaps. */
-function outGeo(g,t){const c=g.userData.olg;if(c&&c.t===t)return c.g;const ps=g.attributes.position,nm=g.attributes.normal;if(!ps||!nm)return null;
+/* Selection outline: a thin line of constant on-screen width around the edge of whatever is selected. Nothing is enlarged: a second copy of each
+   selected shape is drawn behind it with its edge nudged a few pixels outward in screen space. A stencil mark keeps the line off the inside, so a
+   rig or model gets one clean edge instead of lines between its pieces. */
+const OLU={uRes:{value:new THREE.Vector2(1,1)},uPx:{value:3}};
+const OLV='uniform vec2 uRes;uniform float uPx;void main(){vec4 clip=projectionMatrix*modelViewMatrix*vec4(position,1.0);vec3 n=normalize(normalMatrix*normal);vec2 cn=(projectionMatrix*vec4(n,0.0)).xy;if(length(cn)>1e-5){vec2 d=normalize(cn*uRes);clip.xy+=d*(2.0*uPx/uRes)*clip.w;}gl_Position=clip;}',
+  OLF='void main(){gl_FragColor=vec4(0.239,0.647,1.0,1.0);}';
+/* Same shape, but each corner/edge point carries one outward direction (the average of the faces meeting there) so the line has no gaps */
+function outGeo(g){const c=g.userData.olg;if(c)return c;const ps=g.attributes.position,nm=g.attributes.normal;if(!ps||!nm)return null;
   const groups=new Map();for(let i=0;i<ps.count;i++){const k=Math.round(ps.getX(i)*400)+','+Math.round(ps.getY(i)*400)+','+Math.round(ps.getZ(i)*400);let r=groups.get(k);if(!r){r=[];groups.set(k,r)}r.push(i)}
-  const out=g.clone(),po=out.attributes.position;
+  const out=g.clone(),no=out.attributes.normal;
   groups.forEach(function(ix){const ds=[];ix.forEach(function(i){const v=new THREE.Vector3(nm.getX(i),nm.getY(i),nm.getZ(i));if(v.lengthSq()<1e-9)return;v.normalize();if(!ds.some(function(d){return d.dot(v)>.97}))ds.push(v)});
-    const o=new THREE.Vector3();ds.forEach(function(d){o.add(d)});if(o.length()>1.8)o.setLength(1.8);
-    ix.forEach(function(i){po.setXYZ(i,ps.getX(i)+o.x*t,ps.getY(i)+o.y*t,ps.getZ(i)+o.z*t)})});
-  po.needsUpdate=true;out.userData.keep=true;g.userData.olg={t:t,g:out};return out}
-/* Stencil trick: selected bodies mark the pixels they cover, and the outline only draws outside those pixels, so you get one clean edge around the whole selection and no lines in the gaps between pieces. */
+    if(!ds.length)return;const o=new THREE.Vector3();ds.forEach(function(d){o.add(d)});if(o.length()<.2)o.copy(ds[0]);o.normalize();
+    ix.forEach(function(i){no.setXYZ(i,o.x,o.y,o.z)})});
+  no.needsUpdate=true;out.userData.keep=true;g.userData.olg=out;return out}
 function hl(){P.parts.forEach(function(p){const m=M[p.id];if(!m)return;m.material.emissive.setHex(animOn()&&aJ===p.id?0x8a6a10:emi(p));
   if(m.userData.ol){m.remove(m.userData.ol);m.userData.ol.material.dispose();m.userData.ol=null}
   const on=sel.indexOf(p.id)>=0&&!p.stab,mt=m.material;
   if(mt.stencilWrite!==on){mt.stencilWrite=on;if(on){mt.stencilFunc=THREE.AlwaysStencilFunc;mt.stencilRef=1;mt.stencilZPass=THREE.ReplaceStencilOp}}
-  if(on){const z=p.size,t=.18,og=outGeo(m.geometry,t),
-      o=new THREE.Mesh(og||m.geometry,new THREE.MeshBasicMaterial({color:'#3da5ff',side:THREE.BackSide,fog:false,stencilWrite:true,stencilFunc:THREE.NotEqualStencilFunc,stencilRef:1,stencilFail:THREE.KeepStencilOp,stencilZFail:THREE.KeepStencilOp,stencilZPass:THREE.KeepStencilOp}));
-    if(!og)o.scale.set((z[0]+2*t)/z[0],(z[1]+2*t)/z[1],(z[2]+2*t)/z[2]);o.renderOrder=5;o.raycast=function(){};m.add(o);m.userData.ol=o}})}
+  if(on){const og=outGeo(m.geometry);if(!og)return;
+    const o=new THREE.Mesh(og,new THREE.ShaderMaterial({uniforms:{uRes:OLU.uRes,uPx:OLU.uPx},vertexShader:OLV,fragmentShader:OLF,side:THREE.BackSide,
+      stencilWrite:true,stencilFunc:THREE.NotEqualStencilFunc,stencilRef:1,stencilFail:THREE.KeepStencilOp,stencilZFail:THREE.KeepStencilOp,stencilZPass:THREE.KeepStencilOp}));
+    o.renderOrder=5;o.raycast=function(){};m.add(o);m.userData.ol=o}})}
 function matSel(cur,fn){const s=el('select');Object.keys(MATS).forEach(function(k){const o=el('option','',MATS[k].n);o.value=k;s.append(o)});s.value=MATS[cur]?cur:'plastic';s.onchange=function(){fn(s.value)};return s}
 function setMat(p,k){const old=MATS[p.mat]||MATS.plastic;if(!p.color||p.color.toLowerCase()===old.c.toLowerCase())p.color=MATS[k].c;p.mat=k}
 /* While dragging, only move the existing meshes (once per frame) instead of rebuilding every part, material and gizmo on each mouse event */
@@ -1531,7 +1536,7 @@ function buildAnimGizmo(){const t=animTarget();if(!t||!J[t.id])return;
     g.quaternion.setFromUnitVectors(AY,d);g.userData.off=d.clone().multiplyScalar(off);editG.add(g);gz.push(g)})}
 /* Tool handles (move arrows, resize balls, rotate rings, rig joints) keep the same size on screen at any distance */
 const GIZ=13;/* smaller number = bigger handles (was 22) */
-function gizmoFit(){const cp=new THREE.Vector3(cam.x,cam.y,cam.z),sf=function(v){return Math.max(.02,v.distanceTo(cp)/GIZ)};
+function gizmoFit(){OLU.uRes.value.set(cv.width,cv.height);OLU.uPx.value=3*cv.width/Math.max(1,cv.clientWidth);const cp=new THREE.Vector3(cam.x,cam.y,cam.z),sf=function(v){return Math.max(.02,v.distanceTo(cp)/GIZ)};
   editG.children.forEach(function(o){const f=o.userData.fx;
     if(f){const k=sf(f.b);o.scale.setScalar(k);o.position.copy(f.b).addScaledVector(f.d,f.off*k)}
     else if(o.userData.off||o.userData.ri!==undefined)o.scale.setScalar(sf(o.position))})}
