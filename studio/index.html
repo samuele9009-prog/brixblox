@@ -740,7 +740,7 @@ function rBlock(b,arr,ro){if(BD[b.t])for(let q=b.a.length;q<BD[b.t].a.length;q++
 function sizeCvs(){if(!CV)return;let mx=0,my=0;
   Array.from(CV.children).forEach(function(d){if(d._s){mx=Math.max(mx,d.offsetLeft+d.offsetWidth);my=Math.max(my,d.offsetTop+d.offsetHeight)}});
   CV.style.width=Math.max(WS.clientWidth,mx+260)+'px';CV.style.height=Math.max(WS.clientHeight,my+260)+'px'}
-function rend(ns){reser();WS.replaceChildren();conns=[];slots=[];slHl=null;CV=el('div','cvs');WS.append(CV);
+function rend(ns){reser();const sx=WS.scrollLeft,sy=WS.scrollTop;WS.replaceChildren();conns=[];slots=[];slHl=null;CV=el('div','cvs');WS.append(CV);
   if(selScr&&!P.scripts.some(function(s){return s[0]===selScr}))selScr=null;
   const opts=ownOpts(),all=[];
   P.scripts.forEach(function(s){const d=el('div','scr'+(s[0]===selScr?' sel':'')),hat=BD[s[0].t].hat;d._s=s;
@@ -752,7 +752,7 @@ function rend(ns){reser();WS.replaceChildren();conns=[];slots=[];slHl=null;CV=el
   all.forEach(function(q){const s=q[0],d=q[1];if(typeof s[0].x==='number')return;
     s[0].x=24;s[0].y=bot?bot+24:24;d.style.left=s[0].x+'px';d.style.top=s[0].y+'px';bot=s[0].y+d.offsetHeight});
   if(!P.scripts.length)CV.append(el('p','empty','Drag blocks from the left and drop them anywhere. Snap them together under a "when" block.'));
-  sizeCvs();if(!ns)save();view();buildVarPal()}
+  sizeCvs();WS.scrollLeft=sx;WS.scrollTop=sy;if(!ns)save();view();buildVarPal()}
 function markSel(){if(!CV)return;Array.from(CV.children).forEach(function(d){if(d._s)d.classList.toggle('sel',d._s[0]===selScr)})}
 function selScript(h){selScr=h;markSel();renderParts();
   const d=CV&&Array.from(CV.children).find(function(x){return x._s&&x._s[0]===h});if(d)d.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'})}
