@@ -1235,12 +1235,11 @@ function scaleDrag(e,dx,dy){const g=gd,ax=g.ax,pt=new THREE.Vector3(g.c0[0],g.c0
   const d=sc(pt.clone().add(g.a)).sub(sc(pt)),L=d.lengthSq();if(L<1)return;
   g.acc+=(dx*d.x+dy*d.y)/L;
   const sym=e.ctrlKey||e.metaKey;let L1=g.L0+g.acc*(sym?2:1);
-  if(!e.altKey)L1=Math.round(L1*2)/2;
+  if(e.altKey)L1=Math.round(L1*2)/2;
   L1=Math.max(L1,g.L0*.2/g.mn);
   const f=L1/g.L0,fixed=sym?(g.lo+g.hi)/2:(g.s>0?g.lo:g.hi),r3=function(v){return Math.round(v*1000)/1000},axes=g.uni?[0,1,2]:[ax];
   g.ps.forEach(function(q){const p=q.p;axes.forEach(function(i){const an=i===ax?fixed:g.c0[i];p.size[i]=r3(q.size[i]*f);p.pos[i]=r3(an+(q.pos[i]-an)*f);if(q.pv&&p.pivot)p.pivot[i]=r3(an+(q.pv[i]-an)*f)});
-    const m=M[p.id];if(!m)return;const old=m.geometry,smooth=p.av||p.sm||(p.parent&&/^(Head|Torso|[RL](arm|leg))$/.test(p.name)),ng=smooth?avGeo(p):shapeGeo(p),md=MATS[p.mat]||MATS.plastic;
-    if(!smooth&&TX[p.mat])boxUV(ng,md.ts||6);m.geometry=ng;if(old&&old!==ng&&!old.userData.keep)old.dispose()});
+    const m=M[p.id];if(m)m.scale.set(p.size[0]/q.size[0],p.size[1]/q.size[1],p.size[2]/q.size[2])});
   g.rs.forEach(function(id){const r=byId(id);if(r&&kids(r).length){delete rig0[id];snapRig(r)}});
   quickSync()}
 addEventListener('keydown',function(e){if(e.code!=='KeyE'||e.repeat||e.ctrlKey||e.metaKey||e.altKey||e.shiftKey||playing||running||VIEWONLY||document.getElementById('shome')||animOn()||!$('studio').getClientRects().length)return;
