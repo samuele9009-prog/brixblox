@@ -543,9 +543,9 @@ function cloudPush(id){if(!sb||!ME)return;clearTimeout(cpT[id]);cpT[id]=setTimeo
 function cloudDel(id){if(!sb)return;sb.from('games').delete().eq('id',id).then(function(){},function(){})}
 /* In a real game your character looks like your BrixBlox avatar: yellow head and arms, your shirt colour, green legs. */
 function siteLook(Q){const T=(Q.parts||[]).find(function(p){return p.av&&p.name==='Torso'});
-  if(T){const SH={Head:[[0,1.56,0],[1.53,1.12,1.53]],Rarm:[[1.5,0,0],[1,2,1]],Larm:[[-1.5,0,0],[1,2,1]],Rleg:[[.5,-2,0],[1,2,1]],Lleg:[[-.5,-2,0],[1,2,1]]};
-    T.size=[2,2,1];Q.parts.forEach(function(p){const q=p.av&&SH[p.name];if(!q)return;p.pos=[T.pos[0]+q[0][0],T.pos[1]+q[0][1],T.pos[2]+q[0][2]];p.size=q[1].slice();p.pivot=defPivot(p)})}
-const sk='#f5cd30',lg='#a4bd47',tc=(ME&&ME.color)||'#ff6b57';(Q.parts||[]).forEach(function(p){if(!p.av)return;if(p.name==='Head'||/arm$/.test(p.name))p.color=sk;else if(p.name==='Torso')p.color=tc;else if(/leg$/.test(p.name))p.color=lg})}
+  if(T){const SH={Head:[[0,1.65,0],[1.4,1.5,1.4]],Rarm:[[1.1,-.1,0],[.7,2,.7]],Larm:[[-1.1,-.1,0],[.7,2,.7]],Rleg:[[.4,-2,0],[.75,2,.75]],Lleg:[[-.4,-2,0],[.75,2,.75]]};
+    T.size=[1.6,2,.8];Q.parts.forEach(function(p){const q=p.av&&SH[p.name];if(!q)return;p.pos=[T.pos[0]+q[0][0],T.pos[1]+q[0][1],T.pos[2]+q[0][2]];p.size=q[1].slice();p.pivot=defPivot(p)})}
+const sk='#f0c49a',lg='#a4bd47',tc=(ME&&ME.color)||'#ff6b57';(Q.parts||[]).forEach(function(p){if(!p.av)return;if(p.name==='Head'||/arm$/.test(p.name))p.color=sk;else if(p.name==='Torso')p.color=tc;else if(/leg$/.test(p.name))p.color=lg})}
 const mineG=function(g){return !g.owner||!ME||g.owner.id===ME.id};
 (function(){const L=glib();
   if(PLAYREQ){try{const o=JSON.parse(PLAYREQ);P=JSON.parse(o.data);if(P&&Array.isArray(P.scripts)){VIEWONLY=true;PLAYINFO=o;P.player=P.player||{};P.player.name=ME.username;P.player.squad=P.player.squad||'';siteLook(P)}else P=null}catch(e){P=null}if(P)return}
@@ -961,7 +961,7 @@ function quickSync(){if(qsPend)return;qsPend=true;requestAnimationFrame(function
 function rebuildParts(){
   if(hline.parent)hline.parent.remove(hline);hov=null;if(PG){scene.remove(PG);PG.traverse(function(o){if(o.geometry&&!o.geometry.userData.keep)o.geometry.dispose();if(o.material)o.material.dispose()})}
   PG=new THREE.Group();scene.add(PG);J={};M={};
-  P.parts.forEach(function(p){const g=new THREE.Group(),v=piv(p),geo=(p.av||p.sm)?avGeo(p):cachedGeo(p,false,shapeGeo),md=MATS[p.mat]||MATS.plastic;if(TX[p.mat])boxUV(geo,md.ts||6);const m=new THREE.Mesh(geo,mkMat(p));m.receiveShadow=true;m.castShadow=!md.op&&!p.stab;
+  P.parts.forEach(function(p){const g=new THREE.Group(),v=piv(p),geo=(p.av||p.sm||(p.parent&&/^(Head|Torso|[RL](arm|leg))$/.test(p.name)))?avGeo(p):cachedGeo(p,false,shapeGeo),md=MATS[p.mat]||MATS.plastic;if(TX[p.mat])boxUV(geo,md.ts||6);const m=new THREE.Mesh(geo,mkMat(p));m.receiveShadow=true;m.castShadow=!md.op&&!p.stab;
     m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);m.userData.id=p.id;if(p.face)addFace(m,p);if(p.stab)m.visible=false;g.add(m);J[p.id]=g;M[p.id]=m});
   const hk={};P.parts.forEach(function(p){if(p.parent)hk[p.parent]=1});
   P.parts.forEach(function(p){const g=J[p.id],v=piv(p),pa=p.parent&&byId(p.parent);
@@ -1353,8 +1353,8 @@ function newRig(){const an=animOn();
   sel=partsOf(mid).map(function(q){return q.id});selModel=mid;msg('Added a new character-style rig in front of you. Shift+Y turns it into the blocky rig.');all()}
 /* The standard block character: red torso, head, two arms, two legs, all welded under the Stabilizer ST (centered on the torso) */
 function blockBody(ST,smooth){const x=ST.pos[0],y=ST.pos[1],z=ST.pos[2];
-  const T=mkPart('Torso',[x,y,z],[2,2,1],'#ff6b57');T.parent=ST.id;T.pivot=defPivot(T);if(smooth)T.sm=true;
-  [['Head',[0,1.56,0],[1.53,1.12,1.53],'#f5cd30'],['Rarm',[1.5,0,0],[1,2,1],'#f5cd30'],['Larm',[-1.5,0,0],[1,2,1],'#f5cd30'],['Rleg',[.5,-2,0],[1,2,1],'#a4bd47'],['Lleg',[-.5,-2,0],[1,2,1],'#a4bd47']].forEach(function(r){
+  const T=mkPart('Torso',[x,y,z],[1.6,2,.8],'#ff6b57');T.parent=ST.id;T.pivot=defPivot(T);if(smooth)T.sm=true;
+  [['Head',[0,1.65,0],[1.4,1.5,1.4],'#f0c49a'],['Rarm',[1.1,-.1,0],[.7,2,.7],'#f0c49a'],['Larm',[-1.1,-.1,0],[.7,2,.7],'#f0c49a'],['Rleg',[.4,-2,0],[.75,2,.75],'#a4bd47'],['Lleg',[-.4,-2,0],[.75,2,.75],'#a4bd47']].forEach(function(r){
     const c=mkPart(r[0],[x+r[1][0],y+r[1][1],z+r[1][2]],r[2].slice(),r[3]);c.parent=T.id;c.pivot=defPivot(c);if(smooth)c.sm=true;if(r[0]==='Head')c.face=true});return T}
 /* Shift+Y: turn the selected rig into the original blocky rig (same rig, so its scripts keep working) */
 function resetRig(){if(animOn()){$('a-hint').textContent='Go back to the Parts view, select a rig, then press Shift+Y to reset it.';return}
@@ -2153,9 +2153,9 @@ if(!P.v9){P.v9=1;const T=P.avId&&byId(P.avId);
     const ST=mkPart('Stabilizer',T.pos.slice(),[.6,.6,.6],'#9aa4ae');ST.stab=true;ST.av=true;if(T.model)ST.model=T.model;if(T.svc){ST.svc=T.svc;delete T.svc}
     T.parent=ST.id;T.pivot=defPivot(T);P.avId=ST.id;snapRig(ST)}
   save()}
-/* v10: back to the classic player body (wide yellow arms, green legs, 2x2x1 torso) */
-if(!P.v10){P.v10=1;const av=function(n){return P.parts.find(function(p){return p.av&&p.name===n})},T=av('Torso');
-  if(T){T.size=[2,2,1];[['Head',[0,1.56,0],[1.53,1.12,1.53],'#f5cd30'],['Rarm',[1.5,0,0],[1,2,1],'#f5cd30'],['Larm',[-1.5,0,0],[1,2,1],'#f5cd30'],['Rleg',[.5,-2,0],[1,2,1],'#a4bd47'],['Lleg',[-.5,-2,0],[1,2,1],'#a4bd47']].forEach(function(r){
+/* v11: slim player body with smooth rounded parts and tan skin */
+if(!P.v11){P.v11=1;const av=function(n){return P.parts.find(function(p){return p.av&&p.name===n})},T=av('Torso');
+  if(T){T.size=[1.6,2,.8];T.color=T.color||'#ff6b57';[['Head',[0,1.65,0],[1.4,1.5,1.4],'#f0c49a'],['Rarm',[1.1,-.1,0],[.7,2,.7],'#f0c49a'],['Larm',[-1.1,-.1,0],[.7,2,.7],'#f0c49a'],['Rleg',[.4,-2,0],[.75,2,.75],'#a4bd47'],['Lleg',[-.4,-2,0],[.75,2,.75],'#a4bd47']].forEach(function(r){
     const q=av(r[0]);if(!q)return;q.pos=[T.pos[0]+r[1][0],T.pos[1]+r[1][1],T.pos[2]+r[1][2]];q.size=r[2].slice();q.color=r[3];q.pivot=defPivot(q);if(r[0]==='Head')q.face=true});
     const ST=P.parts.find(function(p){return p.av&&p.stab});if(ST)delete rig0[ST.id]}
   save()}
