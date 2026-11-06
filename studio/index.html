@@ -822,11 +822,11 @@ function setHover(id){if(id===hov)return;hov=id;if(hline.parent)hline.parent.rem
   if(id&&M[id]){const g0=M[id].geometry;let eg=g0.userData.eg;if(!eg)eg=g0.userData.eg=new THREE.EdgesGeometry(g0,30);hline.geometry=eg;hline.scale.setScalar(1.004);M[id].add(hline)}}
 let FACE=null;
 /* Static smiley: two dot eyes and a smile, wrapped around the front of the cylinder head */
-function addFace(m,p){if(!FACE){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d'),ink='#111111';
-  x.fillStyle=ink;[44,84].forEach(function(ex){x.beginPath();x.ellipse(ex,44,7,12,0,0,7);x.fill()});
-  x.strokeStyle=ink;x.lineCap='round';x.lineWidth=7;x.beginPath();x.arc(64,50,32,.25*Math.PI,.75*Math.PI);x.stroke();
+function addFace(m,p){if(!FACE){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d'),ink='#2b1a12';
+  x.fillStyle=ink;[45,83].forEach(function(ex){x.beginPath();x.ellipse(ex,50,4.8,6.2,0,0,7);x.fill()});
+  x.strokeStyle=ink;x.lineCap='round';x.lineWidth=4.5;x.beginPath();x.arc(64,52,29,.24*Math.PI,.76*Math.PI);x.stroke();
   FACE=new THREE.CanvasTexture(c)}
-  const fp=.7,g=new THREE.CylinderGeometry(1.01,1.01,p.size[1]*.9,32,1,true,Math.PI-fp,fp*2);g.scale(p.size[0]/2,1,p.size[2]/2);
+  const fp=1,g=new THREE.CylinderGeometry(1.01,1.01,p.size[1]*.9,32,1,true,Math.PI-fp,fp*2);g.scale(p.size[0]/2,1,p.size[2]/2);
   m.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:FACE,transparent:true,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})))}
 // S is the avatar's offset from where it was placed. x right, y forward (toward -z), h height, dir 90 faces forward.
 function fresh(){return {oth:[],x:0,y:0,h:0,vy:0,gr:true,wt:0,jt:0,pvx:0,pvz:0,bp:{},air:false,mv:false,dir:90,col:null,say:'',v:{},fn:{},stop:false,d:0}}
