@@ -523,10 +523,22 @@ const SB_URL='https://ocgjqoeohuahyzhhfdie.supabase.co',SB_KEY='sb_publishable_8
 let sb=null,cloudErr=false;const cpT={};
 try{if(window.supabase&&ME&&!ME.demo)sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,storage:{getItem:function(k){return store.get(k)},setItem:function(k,v){store.set(k,v)},removeItem:function(k){store.del(k)}}}})}catch(e){sb=null}
 /* Published games are also copied to the cloud so other players can find and play them. Uploaded audio stays on this device. */
+/* Thumbnail: an image named Thumbnail becomes the game's card picture (shrunk to 320x180 so the game list stays light). */
+let thCache={s:null,o:null};
+function thumbFor(d){return new Promise(function(res){try{const im=d&&d.assets&&d.assets.images;if(!im)return res(null);
+  const k=Object.keys(im).find(function(x){return x.toLowerCase()==='thumbnail'});if(!k)return res(null);const src=im[k];
+  if(thCache.s===src)return res(thCache.o);
+  const i=new Image();i.onload=function(){try{const c=document.createElement('canvas');c.width=320;c.height=180;const x=c.getContext('2d');
+    const r=Math.max(320/i.width,180/i.height),w=i.width*r,h=i.height*r;x.fillStyle='#222';x.fillRect(0,0,320,180);x.drawImage(i,(320-w)/2,(180-h)/2,w,h);
+    const o=c.toDataURL('image/jpeg',.8);thCache={s:src,o:o};res(o)}catch(e){res(null)}};i.onerror=function(){res(null)};i.src=src}catch(e){res(null)}})}
 function cloudData(id){const g=glib()[id];if(!g)return null;let d;try{d=JSON.parse(g.data)}catch(e){return null}try{Object.keys(d.assets.audio).forEach(function(k){if(bigRef(d.assets.audio[k]))delete d.assets.audio[k]})}catch(e){}return JSON.stringify(d)}
 function cloudPush(id){if(!sb||!ME)return;clearTimeout(cpT[id]);cpT[id]=setTimeout(async function(){const g=glib()[id];if(!g)return;const data=cloudData(id);if(!data)return;
   if(data.length>6e6){cloudErr=true;updateStat();return}
-  try{const r=await sb.from('games').upsert({id:id,owner_id:ME.id,owner_name:ME.username,name:g.name,vis:g.vis,data:data,updated_at:new Date().toISOString()});cloudErr=!!r.error}catch(e){cloudErr=true}updateStat()},1500)}
+  try{let th=null;try{th=await thumbFor(JSON.parse(data))}catch(e){}
+    const row={id:id,owner_id:ME.id,owner_name:ME.username,name:g.name,vis:g.vis,data:data,updated_at:new Date().toISOString()};
+    let r=await sb.from('games').upsert(Object.assign({thumb:th},row));
+    if(r.error&&/thumb/i.test(r.error.message||''))r=await sb.from('games').upsert(row);
+    cloudErr=!!r.error}catch(e){cloudErr=true}updateStat()},1500)}
 function cloudDel(id){if(!sb)return;sb.from('games').delete().eq('id',id).then(function(){},function(){})}
 const mineG=function(g){return !g.owner||!ME||g.owner.id===ME.id};
 (function(){const L=glib();
@@ -537,7 +549,8 @@ const mineG=function(g){return !g.owner||!ME||g.owner.id===ME.id};
   if(want&&L[want]&&mineG(L[want])){try{P=JSON.parse(L[want].data);if(!P||!Array.isArray(P.scripts))throw 0;gameId=want;gameVis=L[want].vis||'private';store.set('brixblox-cur',want)}catch(e){P=null;gameId=null}}
   if(!P)P={name:pend==='__new__'?'My new game':'My first BrixBlox game',scripts:starter()}})();
 if(P.name==='My first BricBloc game')P.name='My first BrixBlox game';
-function persistGame(){const L=glib();L[gameId]={id:gameId,name:P.name,vis:gameVis||'private',at:Date.now(),owner:ME?{id:ME.id,name:ME.username}:undefined,data:JSON.stringify(P)};store.set(GKEY,JSON.stringify(L));cloudPush(gameId)}
+function persistGame(){const L=glib();L[gameId]={id:gameId,name:P.name,vis:gameVis||'private',at:Date.now(),owner:ME?{id:ME.id,name:ME.username}:undefined,data:JSON.stringify(P),thumb:(L[gameId]&&L[gameId].thumb)||undefined};store.set(GKEY,JSON.stringify(L));cloudPush(gameId);
+  const gid=gameId;thumbFor(P).then(function(th){const L2=glib();if(!L2[gid]||(L2[gid].thumb||null)===(th||null))return;if(th)L2[gid].thumb=th;else delete L2[gid].thumb;store.set(GKEY,JSON.stringify(L2))})}
 function save(){if(gameId)persistGame()}
 function clean(){P.scripts=P.scripts.filter(function(s){return s.length})}
 function inside(b,arr){return !!b.k&&(b.k===arr||b.k.some(function(x){return inside(x,arr)}))}
@@ -1190,11 +1203,12 @@ function addAsset(kind,f,inline){
     if(assetBytes()+rd.result.length>ASSET_TOTAL){msg('Your game is full. Delete an asset first (about 4 MB total).');return}
     let base=f.name.replace(/\.[^.]+$/,'').replace(/[^A-Za-z0-9_]/g,'').slice(0,20)||kind,nm=base,n=1;
     if(kind==='image'&&/^clouds?$/i.test(base)){msg('The clouds are already set, so an image cannot be named Clouds. Pick another name.');return}
-    const sm=kind==='image'&&/^(sun|moon)$/i.test(base)?base.toLowerCase():null;
-    if(sm){Object.keys(P.assets.images).forEach(function(k){if(k.toLowerCase()===sm)delete P.assets.images[k]});nm=sm==='sun'?'Sun':'Moon'}
+    const sm=kind==='image'&&/^(sun|moon)$/i.test(base)?base.toLowerCase():null,isTh=kind==='image'&&/^thumbnail$/i.test(base);
+    if(isTh){Object.keys(P.assets.images).forEach(function(k){if(k.toLowerCase()==='thumbnail')delete P.assets.images[k]});nm='Thumbnail'}
+    else if(sm){Object.keys(P.assets.images).forEach(function(k){if(k.toLowerCase()===sm)delete P.assets.images[k]});nm=sm==='sun'?'Sun':'Moon'}
     else while(P.assets.images[nm]||P.assets.audio[nm])nm=base+(++n);
     P.assets[col][nm]=rd.result;updSkyTex();save();selSvc='assets';sel=[];selModel=null;renderParts();
-    msg('Added '+kind+' "'+nm+'"'+(kind==='audio'?'. Use it with the play block.':(nm==='Sun'||nm==='Moon'?'. The '+nm.toLowerCase()+' in the sky now uses this image.':'.'))+(gameId?'':' Publish the game to keep it.'))};
+    msg('Added '+kind+' "'+nm+'"'+(kind==='audio'?'. Use it with the play block.':(nm==='Thumbnail'&&kind==='image'?'. It is now the thumbnail of your game.':nm==='Sun'||nm==='Moon'?'. The '+nm.toLowerCase()+' in the sky now uses this image.':'.'))+(gameId?'':' Publish the game to keep it.'))};
   rd.readAsDataURL(f)}
 function ac(){actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();return actx}
 function noise(){if(!nbuf){const n=actx.sampleRate;nbuf=actx.createBuffer(1,n,n);const d=nbuf.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1}const q=actx.createBufferSource();q.buffer=nbuf;q.loop=true;return q}
