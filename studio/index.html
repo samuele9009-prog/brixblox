@@ -396,6 +396,7 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 .gmk{margin:auto 0 0;padding-top:10px;border-top:1px solid var(--line);font-size:.75rem;color:var(--muted);line-height:1.6}
 .gmk kbd{background:rgba(127,127,127,.22);border-radius:5px;padding:1px 6px;font:inherit;font-weight:800;color:var(--ink)}
 /* Play-only view: games made by other players can be played, never opened or copied */
+#studio.vo .bar{display:none!important}
 #studio.vo .pal,#studio.vo .ws,#studio.vo .rz,#studio.vo .side>.note,#studio.vo .tabs,#studio.vo #s-parts,#studio.vo #s-out,#studio.vo #s-code,#studio.vo #s-anim,#studio.vo #s-name,#studio.vo .bar>span,#studio.vo #s-run,#studio.vo #s-view{display:none!important}
 #studio.vo .who>.btn:not(#s-play):not(#s-stop):not(#s-fs):not(#s-theme):not(#s-back){display:none!important}
 
@@ -540,9 +541,11 @@ function cloudPush(id){if(!sb||!ME)return;clearTimeout(cpT[id]);cpT[id]=setTimeo
     if(r.error&&/thumb/i.test(r.error.message||''))r=await sb.from('games').upsert(row);
     cloudErr=!!r.error}catch(e){cloudErr=true}updateStat()},1500)}
 function cloudDel(id){if(!sb)return;sb.from('games').delete().eq('id',id).then(function(){},function(){})}
+/* In a real game your character looks like your BrixBlox avatar: yellow head and arms, your shirt colour, green legs. */
+function siteLook(Q){const sk='#f5cd30',lg='#a4bd47',tc=(ME&&ME.color)||'#ff6b57';(Q.parts||[]).forEach(function(p){if(!p.av)return;if(p.name==='Head'||/arm$/.test(p.name))p.color=sk;else if(p.name==='Torso')p.color=tc;else if(/leg$/.test(p.name))p.color=lg})}
 const mineG=function(g){return !g.owner||!ME||g.owner.id===ME.id};
 (function(){const L=glib();
-  if(PLAYREQ){try{const o=JSON.parse(PLAYREQ);P=JSON.parse(o.data);if(P&&Array.isArray(P.scripts)){VIEWONLY=true;PLAYINFO=o}else P=null}catch(e){P=null}if(P)return}
+  if(PLAYREQ){try{const o=JSON.parse(PLAYREQ);P=JSON.parse(o.data);if(P&&Array.isArray(P.scripts)){VIEWONLY=true;PLAYINFO=o;P.player=P.player||{};P.player.name=ME.username;P.player.squad=P.player.squad||'';siteLook(P)}else P=null}catch(e){P=null}if(P)return}
   try{const old=store.get('brixblox-studio');if(old&&!Object.keys(L).length){const o=JSON.parse(old);if(o&&Array.isArray(o.scripts)){const id='g'+Date.now().toString(36);L[id]={id:id,name:o.name||'My game',vis:'private',at:Date.now(),data:old};store.set(GKEY,JSON.stringify(L));store.set('brixblox-cur',id)}}}catch(e){}
   const pend=store.get('brixblox-pending');if(pend)store.del('brixblox-pending');HOME=!pend;
   const want=pend==='__new__'?'':(pend||store.get('brixblox-cur')||'');
@@ -987,7 +990,7 @@ function spawnPlayer(name,S){const T=byId(P.avId),av=P.parts.filter(function(p){
   if(!T||!av.length){log('Error: there is no player character to copy.');return}
   const nm=String(name).trim().slice(0,16)||'Player'+(NP.length+2),n=NP.length,grp=new THREE.Group(),JJ={},dx=(n%2?-1:1)*(4+Math.floor(n/2)*3);
   av.forEach(function(p){const g=new THREE.Group(),v=piv(p),m=new THREE.Mesh(avGeo(p),mkMat(p));m.castShadow=!p.stab;m.receiveShadow=true;
-    if(p.name==='Torso')m.material.color.offsetHSL((n+1)*.17,0,0);
+    if(p.name==='Torso'){if(NETCOL)m.material.color.set(NETCOL);else m.material.color.offsetHSL((n+1)*.17,0,0)}
     m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);if(p.face)addFace(m,p);if(p.stab)m.visible=false;g.add(m);JJ[p.id]=g});
   av.forEach(function(p){const g=JJ[p.id],v=piv(p),pa=p.parent&&byId(p.parent);
     if(pa&&JJ[pa.id]){const q=piv(pa);g.position.set(v[0]-q[0],v[1]-q[1],v[2]-q[2]);JJ[pa.id].add(g)}else{g.position.set(v[0],v[1],v[2]);grp.add(g)}});
@@ -997,8 +1000,13 @@ function spawnPlayer(name,S){const T=byId(P.avId),av=P.parts.filter(function(p){
   const tag=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthTest:false}));tag.scale.set(6,1.5,1);tag.renderOrder=8;
   let top=0;av.forEach(function(p){top=Math.max(top,p.pos[1]+p.size[1]/2)});tag.position.set(T.pos[0]+dx,top+1.3,T.pos[2]);scene.add(tag);
   NP.push({g:grp,tag:tag,JJ:JJ,t:n*.7,dx:dx,name:nm,top:top});S.oth.push(nm);log(nm+' joined the game');renderParts()}
-function npTick(dt){if(!NP.length)return;const A=P.anims[S.idleA||'idle'];if(!A)return;
-  NP.forEach(function(q){q.t+=dt;const po=evalPose(A,q.t%A.len);for(const id in q.JJ){if(id===P.avId)continue;const r=po[id]||[0,0,0];q.JJ[id].rotation.set(r[0]*Math.PI/180,r[1]*Math.PI/180,r[2]*Math.PI/180)}})}
+function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
+  NP.forEach(function(q){q.t+=dt;
+    if(q.net&&q.tx!=null&&T){const k=1-Math.exp(-dt*14),g=q.g.position;g.x+=(q.tx-g.x)*k;g.y+=(q.th-g.y)*k;g.z+=(-q.ty-g.z)*k;
+      const J=q.JJ[P.avId];if(J){const a=(q.td-90)*Math.PI/180,df=((a-J.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;J.rotation.y+=df*k}
+      q.tag.position.set(T.pos[0]+g.x,q.top+1.3+g.y,T.pos[2]+g.z)}
+    const A=P.anims[(q.net&&q.mv&&P.anims.walk)?'walk':(S.idleA||'idle')];if(!A)return;
+    const po=evalPose(A,q.t%A.len);for(const id in q.JJ){if(id===P.avId)continue;const r=po[id]||[0,0,0];q.JJ[id].rotation.set(r[0]*Math.PI/180,r[1]*Math.PI/180,r[2]*Math.PI/180)}})}
 
 /* Rig editor: balls at anchor points, arrows to move them */
 function buildEdit(){while(editG.children.length)editG.remove(editG.children[0]);gizmo=[];balls=[];gz=[];agT=null;if(playing)return;if(animOn()){buildAnimGizmo();return}
@@ -1138,8 +1146,8 @@ $('p-weld').onclick=function(){if(sel.length<2){msg('Select the Torso first, the
   if(n){ensureRigModel(rootOf(t));cleanModels()}msg(n?'Welded '+n+' part(s) to '+t.name+'. The rig now lives in a model. Open the Rig editor to move anchor points.':'Nothing to weld.');all()};
 $('p-unweld').onclick=function(){sel.forEach(function(id){const c=byId(id);if(c){c.parent=null;c.pivot=null}});msg('Unwelded.');all()};
 $('p-del').onclick=function(){delSel(true)};
-function makeAvatar(){const ST=mkPart('Stabilizer',[0,3,0],[.6,.6,.6],'#9aa4ae'),T=mkPart('Torso',[0,3,0],[1.6,2,.8],'#ff6b57'),H=mkPart('Head',[0,4.65,0],[1.4,1.5,1.4],'#f0c49a'),
-  RA=mkPart('Rarm',[1.1,2.9,0],[.7,2,.7],'#f0c49a'),LA=mkPart('Larm',[-1.1,2.9,0],[.7,2,.7],'#f0c49a'),RL=mkPart('Rleg',[.4,1,0],[.75,2,.75],'#a4bd47'),LL=mkPart('Lleg',[-.4,1,0],[.75,2,.75],'#a4bd47');
+function makeAvatar(){const ST=mkPart('Stabilizer',[0,3,0],[.6,.6,.6],'#9aa4ae'),T=mkPart('Torso',[0,3,0],[1.6,2,.8],'#ff6b57'),H=mkPart('Head',[0,4.65,0],[1.4,1.5,1.4],'#f5cd30'),
+  RA=mkPart('Rarm',[1.1,2.9,0],[.7,2,.7],'#f5cd30'),LA=mkPart('Larm',[-1.1,2.9,0],[.7,2,.7],'#f5cd30'),RL=mkPart('Rleg',[.4,1,0],[.75,2,.75],'#a4bd47'),LL=mkPart('Lleg',[-.4,1,0],[.75,2,.75],'#a4bd47');
   H.face=true;ST.stab=true;[ST,T,H,RA,LA,RL,LL].forEach(function(q){q.av=true});T.parent=ST.id;T.pivot=defPivot(T);[H,RA,LA,RL,LL].forEach(function(c){c.parent=T.id;c.pivot=defPivot(c)});P.avId=ST.id;
   function ks(m){return [[0,0],[.25,35],[.5,0],[.75,-35],[1,0]].map(function(q){return {t:q[0],r:[q[1]*m,0,0]}})}
   const w={len:1,keys:{}};w.keys[RA.id]=ks(1);w.keys[LA.id]=ks(-1);w.keys[RL.id]=ks(-1);w.keys[LL.id]=ks(1);P.anims.walk=w;curA='walk';jumpAnim();idleAnim()}
@@ -1818,7 +1826,7 @@ function crossBad(raw){const now=performance.now();CHH=CHH.filter(function(x){re
   if(bad){CHH=[];return true}CHH.push({t:now,l:L,q:q});if(CHH.length>8)CHH.shift();return false}
 function censor(){const n=8+Math.floor(Math.random()*9);let o='';for(let i=0;i<n;i++)o+=CHATSYM[Math.floor(Math.random()*CHATSYM.length)];return o}
 function filt(t){t=String(t);return chatBad(t)?censor():t}
-function sendChat(txt){txt=String(txt).trim().slice(0,120);if(!txt||!(running||playing))return;{const raw=txt;txt=filt(raw);if(txt===raw&&crossBad(raw))txt=censor()}chatLine(P.player.name,txt);sayBubble(txt);const low=txt.toLowerCase();
+function sendChat(txt){txt=String(txt).trim().slice(0,120);if(!txt||!(running||playing))return;{const raw=txt;txt=filt(raw);if(txt===raw&&crossBad(raw))txt=censor()}chatLine(P.player.name,txt);netChat(txt);sayBubble(txt);const low=txt.toLowerCase();
   P.scripts.forEach(function(sc){const h=sc[0];if(h.t!=='chat')return;const w=String(h.a[0]).trim().toLowerCase();
     if(w==='*'||(w&&(low===w||low.slice(0,w.length+1)===w+' '))){S.v.speaker=P.player.name;S.v.message=txt;fireScript(sc)}})}
 $('chat-in').onkeydown=function(e){e.stopPropagation();if(e.key==='Enter'){const v=this.value;this.value='';this.blur();sendChat(v)}else if(e.key==='Escape'){this.value='';this.blur()}};
@@ -2097,7 +2105,7 @@ $('s-run').onclick=async function(){this.blur();if(banGate())return;S.stop=true;
   const b=boot(my);await b.done;
   if(my===S&&!b.hs.some(function(s){return EVH.indexOf(s[0].t)>=0}))setRun(false)};
 $('s-play').onclick=function(){this.blur();if(banGate())return;S.stop=true;sel=[];selModel=null;selSvc=null;selJ=null;resetWorld();cd=P.rules.cam;playing=true;sync();stageApply();buildEdit();$('s-out').textContent='';boot(S)};
-$('s-stop').onclick=function(){S.stop=true;running=false;playing=false;sync();resetWorld();if(VIEWONLY)location.href=SITE_URL};
+$('s-stop').onclick=function(){S.stop=true;running=false;playing=false;sync();resetWorld();if(VIEWONLY)leaveGame()};
 /* Ctrl+L: start testing the game (Play). Press it again to stop. */
 addEventListener('keydown',function(e){if(e.code!=='KeyL'||!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey||e.repeat)return;
   e.preventDefault();if($('studio').getClientRects().length===0)return;
@@ -2199,7 +2207,7 @@ updateStat();
 if(VIEWONLY){$('studio').classList.add('vo');setFs(true,true);
   document.querySelector('#studio .logo h1').textContent=P.name+(PLAYINFO&&PLAYINFO.owner?'  -  by '+PLAYINFO.owner:'');
   $('s-fs').onclick=function(){try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen()}catch(x){}};
-  $('s-fs').textContent='Fullscreen';setTimeout(function(){$('s-play').click()},60)}
+  $('s-fs').textContent='Fullscreen';setTimeout(function(){$('s-play').click();netJoin()},60);bbHud()}
 /* ===== Studio home: the page you land on from the BrixBlox "Studio" button. It lists every game you made. ===== */
 async function studioHome(){
   const ov=el('div','screen');ov.id='shome';ov.style.zIndex=200;
@@ -2207,9 +2215,9 @@ async function studioHome(){
   const who=el('div','who');who.append(mb('Create a new game','',function(){reloadInto('__new__')}),mb('← BrixBlox','ghost',function(){location.href=SITE_URL}));bar.append(lg,who);
   const pg=el('div','page');pg.style.maxWidth='1280px';pg.append(el('h2','big','Your games'));const box=el('div');pg.append(box);ov.append(bar,pg);document.body.append(ov);
   const map={},L=glib();
-  Object.keys(L).forEach(function(id){const g=L[id];if(mineG(g))map[id]={id:id,name:g.name||'Untitled',vis:g.vis||'private',at:g.at||0}});
+  Object.keys(L).forEach(function(id){const g=L[id];if(mineG(g)&&id.indexOf('acc_')!==0)map[id]={id:id,name:g.name||'Untitled',vis:g.vis||'private',at:g.at||0}});
   if(sb){try{const r=await sb.from('games').select('id,name,vis,updated_at').eq('owner_id',ME.id);
-    if(!r.error)r.data.forEach(function(x){const t=Date.parse(x.updated_at)||0,o=map[x.id];if(!o||t>o.at)map[x.id]={id:x.id,name:x.name||'Untitled',vis:x.vis,at:t,cloud:!o}})}catch(e){}}
+    if(!r.error)r.data.forEach(function(x){if(String(x.id).indexOf('acc_')===0)return;const t=Date.parse(x.updated_at)||0,o=map[x.id];if(!o||t>o.at)map[x.id]={id:x.id,name:x.name||'Untitled',vis:x.vis,at:t,cloud:!o}})}catch(e){}}
   const list=Object.keys(map).map(function(k){return map[k]}).sort(function(a,b){return b.at-a.at});
   if(!list.length){box.append(el('p','empty','You have not published any games yet. Press Create a new game, build it, then press Publish.'));return}
   box.className='gcards';
@@ -2224,6 +2232,42 @@ async function studioHome(){
     bd.append(row);c.append(th,bd);box.append(c)})}
 if(HOME&&!VIEWONLY)studioHome();
 addEventListener('beforeunload',function(e){if(!skipUnload&&dirty()){e.preventDefault();e.returnValue=''}});
+/* ===== Online play: everyone playing the same game is put in a server of up to 10. Joining picks a server that is already running, or starts a new one. ===== */
+const NETMAX=10,NET={id:Math.random().toString(36).slice(2,10),lob:null,ch:null,sid:'',on:false,fail:false,last:'',idle:0};let NETCOL=null;
+function leaveGame(){try{S.stop=true}catch(e){}netLeave();if(window.parent!==window)parent.postMessage({bb:'leave'},location.origin);else location.href=SITE_URL}
+function netLeave(){NET.on=false;try{if(NET.ch)sb.removeChannel(NET.ch);if(NET.lob)sb.removeChannel(NET.lob)}catch(e){}NET.ch=NET.lob=null}
+addEventListener('pagehide',netLeave);
+function netChat(t){if(NET.on)NET.ch.send({type:'broadcast',event:'c',payload:{id:NET.id,n:ME.username,t:t}})}
+async function netJoin(){
+  if(!sb||!PLAYINFO||!PLAYINFO.id){NET.fail=true;return}
+  const gid=String(PLAYINFO.id).replace(/[^A-Za-z0-9_-]/g,'').slice(0,40);setTimeout(function(){if(!NET.on)NET.fail=true},9000);
+  try{
+    const lob=NET.lob=sb.channel('bbl:'+gid,{config:{presence:{key:NET.id}}});
+    await new Promise(function(ok){let d=0;const fin=function(){if(!d){d=1;ok()}};lob.on('presence',{event:'sync'},function(){});
+      lob.subscribe(function(st){if(st==='SUBSCRIBED')setTimeout(fin,1200);else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')fin()});setTimeout(fin,4000)});
+    const cn={},ps=lob.presenceState();Object.keys(ps).forEach(function(k){ps[k].forEach(function(m){if(m.sid)cn[m.sid]=(cn[m.sid]||0)+1})});
+    let n=1;while((cn['s'+n]||0)>=NETMAX)n++;NET.sid='s'+n;await lob.track({sid:NET.sid});
+    const ch=NET.ch=sb.channel('bbs:'+gid+':'+NET.sid,{config:{presence:{key:NET.id},broadcast:{self:false}}});
+    ch.on('broadcast',{event:'p'},function(m){netRecv(m.payload)});
+    ch.on('broadcast',{event:'c'},function(m){const p=m.payload;if(p&&p.id!==NET.id&&(running||playing))chatLine(String(p.n).slice(0,16),filt(String(p.t).slice(0,120)))});
+    ch.on('presence',{event:'join'},function(){NET.last=''});
+    ch.on('presence',{event:'leave'},function(e){(e.leftPresences||[]).forEach(function(m){netDrop(m.id)})});
+    ch.subscribe(function(st){if(st==='SUBSCRIBED'){NET.on=true;NET.fail=false;ch.track({id:NET.id,n:ME.username})}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')NET.fail=true})
+  }catch(e){NET.fail=true}}
+function netRecv(q){if(!q||!q.id||q.id===NET.id||!NET.on||!(running||playing))return;
+  let e=NP.find(function(n){return n.net===q.id});
+  if(!e){NETCOL=/^#[0-9a-f]{6}$/i.test(q.c)?q.c:null;spawnPlayer(String(q.n),S);NETCOL=null;e=NP[NP.length-1];if(!e)return;e.net=q.id;e.g.position.set(q.x,q.h,-q.y)}
+  e.tx=q.x;e.ty=q.y;e.th=q.h;e.td=q.d;e.mv=q.m;e.seen=performance.now()}
+function netDrop(id){const i=NP.findIndex(function(n){return n.net===id});if(i<0)return;const n=NP[i];scene.remove(n.g);scene.remove(n.tag);
+  n.g.traverse(function(o){if(o.geometry&&!o.geometry.userData.keep)o.geometry.dispose();if(o.material)o.material.dispose()});n.tag.material.map.dispose();n.tag.material.dispose();
+  NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);chatSys(n.name+' left the game');renderParts()}
+setInterval(function(){if(!NET.on||!(running||playing))return;
+  const q={id:NET.id,n:ME.username,c:ME.color||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:Math.round(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0},j=[q.x,q.y,q.h,q.d,q.m].join();
+  if(j===NET.last&&++NET.idle<10)return;NET.last=j;NET.idle=0;NET.ch.send({type:'broadcast',event:'p',payload:q});
+  const now=performance.now();NP.slice().forEach(function(n){if(n.net&&now-n.seen>20000)netDrop(n.net)})},100);
+function bbHud(){const lb=el('button','btn ghost small','Leave game');lb.id='bb-leave';lb.style.cssText='position:fixed;top:10px;right:10px;z-index:60';lb.onclick=leaveGame;
+  const inf=el('div','chip');inf.style.cssText='position:fixed;top:10px;right:140px;z-index:60';document.body.append(lb,inf);
+  setInterval(function(){inf.textContent=P.name+' \u00b7 '+(NET.on?('Server '+NET.sid.slice(1)+' \u00b7 '+(1+NP.filter(function(n){return n.net}).length)+' online'):(NET.fail?'Solo (online unavailable)':'Connecting...'))},700)}
 /* Blockbank: while someone plays a game opened from the front page, report once a minute so they earn blockbucks for play time.
    Players who do nothing for 15 minutes are kicked back to the front page. */
 (function(){if(!VIEWONLY||!ME)return;
@@ -2232,7 +2276,7 @@ addEventListener('beforeunload',function(e){if(!skipUnload&&dirty()){e.preventDe
   setInterval(function(){try{
     if(!(running||playing))return;
     const idle=Date.now()-lastIn;
-    if(idle>=IDLE_MS){S.stop=true;store.set('brixblox-notice','You were kicked from the game for being inactive for 15 minutes.');location.href=SITE_URL;return}
+    if(idle>=IDLE_MS){S.stop=true;store.set('brixblox-notice','You were kicked from the game for being inactive for 15 minutes.');leaveGame();return}
     if(idle>=WARN_MS&&!warned){warned=true;try{msg('Still there? Move or press a key, or you will be kicked in 2 minutes.')}catch(e){}}
   }catch(e){}},5000);
   setInterval(function(){try{if(document.hidden||!(running||playing))return;
