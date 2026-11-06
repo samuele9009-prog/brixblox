@@ -728,7 +728,11 @@ function ev(src,S){
     if(k in S.v)return S.v[k];if(k==='x'||k==='y'||k==='dir')return S[k];throw 0}
   const v=lv(0);if(p<t.length)throw 0;return v}
 function val(s,S){try{return ev(s,S)}catch(e){return s}}
-const sl=function(ms){return new Promise(function(r){setTimeout(r,ms)})},cl=function(v,m){return Math.max(-m,Math.min(m,v))};
+/* Sleep that stays on time: the browser can stretch setTimeout (to a full second when the page is busy or not in front), so also count the time on animation frames and finish whichever comes first. */
+const sl=function(ms){return new Promise(function(r){const end=performance.now()+ms;let done=false,tm=0;
+  const fin=function(){if(done)return;done=true;clearTimeout(tm);r()};
+  tm=setTimeout(fin,ms);
+  (function tick(){if(done)return;if(performance.now()>=end)fin();else requestAnimationFrame(tick)})()})},cl=function(v,m){return Math.max(-m,Math.min(m,v))};
 function log(m){const o=$('s-out');o.textContent+=m+'\n';o.scrollTop=1e9}
 async function ex(list,S,o){for(let i=0;i<list.length;i++){if(S.stop)return;await st(list[i],S,o)}}
 async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0};
