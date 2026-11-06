@@ -984,8 +984,12 @@ function bubPaint(t,X,T){X=X||bx;T=T||bt;X.clearRect(0,0,512,192);bx.font=X.font
   X.lineTo(267,y0+bh);X.lineTo(256,y0+bh+15);X.lineTo(245,y0+bh);X.lineTo(x0+r,y0+bh);X.quadraticCurveTo(x0,y0+bh,x0,y0+bh-r);X.lineTo(x0,y0+r);X.quadraticCurveTo(x0,y0,x0+r,y0);X.closePath();X.fill();X.stroke();
   X.fillStyle='#16181a';X.textAlign='center';X.textBaseline='middle';show.forEach(function(l,i){X.fillText(l,256,y0+26+i*31)});T.needsUpdate=true}
 const hline=new THREE.LineSegments(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xffffff}));
+let hovO=null;
 function setHover(id){if(id===hov)return;hov=id;if(hline.parent)hline.parent.remove(hline);
-  if(id&&M[id]){const g0=M[id].geometry;let eg=g0.userData.eg;if(!eg)eg=g0.userData.eg=new THREE.EdgesGeometry(g0,30);hline.geometry=eg;hline.scale.setScalar(1.004);M[id].add(hline)}}
+  if(hovO){if(hovO.parent)hovO.parent.remove(hovO);hovO.material.dispose();hovO=null}
+  const m=id&&M[id],p=id&&byId(id);if(!m||!p||p.stab)return;const og=outGeo(m.geometry);if(!og)return;
+  hovO=new THREE.Mesh(og,new THREE.ShaderMaterial({uniforms:{uRes:OLU.uRes,uPx:OLU.uPx,uCol:{value:new THREE.Vector3(1,1,1)}},vertexShader:OLV,fragmentShader:OLF,side:THREE.BackSide}));
+  hovO.renderOrder=4;hovO.raycast=function(){};m.add(hovO)}
 let FACE=null;
 /* Static smiley: two dot eyes and a smile, wrapped around the front of the cylinder head */
 function addFace(m,p){if(!FACE){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d'),ink='#2b1a12';
@@ -1120,8 +1124,8 @@ function emi(p){return p.mat==='neon'?M[p.id].material.color.getHex():0}
    selected shape is drawn behind it with its edge nudged a few pixels outward in screen space. A stencil mark keeps the line off the inside, so a
    rig or model gets one clean edge instead of lines between its pieces. */
 const OLU={uRes:{value:new THREE.Vector2(1,1)},uPx:{value:3}};
-const OLV='uniform vec2 uRes;uniform float uPx;void main(){vec4 clip=projectionMatrix*modelViewMatrix*vec4(position,1.0);vec3 n=normalize(normalMatrix*normal);vec2 cn=(projectionMatrix*vec4(n,0.0)).xy;if(length(cn)>1e-5){vec2 d=normalize(cn*uRes);clip.xy+=d*(2.0*uPx/uRes)*clip.w;}gl_Position=clip;}',
-  OLF='void main(){gl_FragColor=vec4(0.239,0.647,1.0,1.0);}';
+const OLV='uniform vec2 uRes;uniform float uPx;void main(){vec4 mv=modelViewMatrix*vec4(position,1.0);vec4 c0=projectionMatrix*mv;vec3 n=normalize(normalMatrix*normal);vec4 c1=projectionMatrix*(mv+vec4(n*0.02,0.0));vec2 dd=(c1.xy/c1.w-c0.xy/c0.w)*uRes;vec4 clip=c0;if(length(dd)>1e-7){clip.xy+=normalize(dd)*(2.0*uPx/uRes)*c0.w;}gl_Position=clip;}',
+  OLF='uniform vec3 uCol;void main(){gl_FragColor=vec4(uCol,1.0);}';
 /* Same shape, but each corner/edge point carries one outward direction (the average of the faces meeting there) so the line has no gaps */
 function outGeo(g){const c=g.userData.olg;if(c)return c;const ps=g.attributes.position,nm=g.attributes.normal;if(!ps||!nm)return null;
   const groups=new Map();for(let i=0;i<ps.count;i++){const k=Math.round(ps.getX(i)*400)+','+Math.round(ps.getY(i)*400)+','+Math.round(ps.getZ(i)*400);let r=groups.get(k);if(!r){r=[];groups.set(k,r)}r.push(i)}
@@ -1135,7 +1139,7 @@ function hl(){P.parts.forEach(function(p){const m=M[p.id];if(!m)return;m.materia
   const on=sel.indexOf(p.id)>=0&&!p.stab,mt=m.material;
   if(mt.stencilWrite!==on){mt.stencilWrite=on;if(on){mt.stencilFunc=THREE.AlwaysStencilFunc;mt.stencilRef=1;mt.stencilZPass=THREE.ReplaceStencilOp}}
   if(on){const og=outGeo(m.geometry);if(!og)return;
-    const o=new THREE.Mesh(og,new THREE.ShaderMaterial({uniforms:{uRes:OLU.uRes,uPx:OLU.uPx},vertexShader:OLV,fragmentShader:OLF,side:THREE.BackSide,
+    const o=new THREE.Mesh(og,new THREE.ShaderMaterial({uniforms:{uRes:OLU.uRes,uPx:OLU.uPx,uCol:{value:new THREE.Vector3(.239,.647,1)}},vertexShader:OLV,fragmentShader:OLF,side:THREE.BackSide,
       stencilWrite:true,stencilFunc:THREE.NotEqualStencilFunc,stencilRef:1,stencilFail:THREE.KeepStencilOp,stencilZFail:THREE.KeepStencilOp,stencilZPass:THREE.KeepStencilOp}));
     o.renderOrder=5;o.raycast=function(){};m.add(o);m.userData.ol=o}})}
 function matSel(cur,fn){const s=el('select');Object.keys(MATS).forEach(function(k){const o=el('option','',MATS[k].n);o.value=k;s.append(o)});s.value=MATS[cur]?cur:'plastic';s.onchange=function(){fn(s.value)};return s}
