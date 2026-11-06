@@ -769,7 +769,7 @@ function faceTex(){const c=document.createElement('canvas');c.width=c.height=128
 /* Avatar accessories are FBX files uploaded by the brixblox account. Slots: hat, face, back, neck. Prices are in coins. */
 let ITEMS=[];const FBXC={};
 const SLOTS=[['hat','Hats'],['face','Faces'],['back','Back'],['neck','Neck']];
-const ISLOT={hat:{y:1.84,z:0,s:.55,base:1},face:{y:1.58,z:.26,s:.32},back:{y:1,z:-.24,s:.9},neck:{y:1.3,z:0,s:.6}};
+const ISLOT={hat:{y:1.74,z:0,s:.55,base:1},face:{y:1.55,z:.28,s:.32},back:{y:1,z:-.3,s:.9},neck:{y:1.3,z:0,s:.6}};
 function itemById(id){return ITEMS.find(function(x){return x.id===id})}
 function isBB(){return !!me&&me.username.toLowerCase()==='brixblox'}
 function addItem(g,id,fx){const it=itemById(id),o=it&&FBXC[id];if(!o)return;
@@ -783,18 +783,29 @@ async function loadItems(){
   try{const rows=await api.listAcc();if(rows.length){await ensureFbx();rows.forEach(function(it){if(FBXC[it.id])return;try{const b=atob(it.fbx),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);FBXC[it.id]=new THREE.FBXLoader().parse(u.buffer,'')}catch(e){}})}
     ITEMS=rows.filter(function(r){return FBXC[r.id]})}catch(e){ITEMS=[]}
   if(me){pvRebuild();if(!$('p-avatar').hidden)paintShop()}}
+/* Smooth shapes: a box with softly rounded edges and a cylinder with rounded top and bottom edges. Sizes are in studs; they are scaled down afterwards. */
+function rbox(w,h,d,r){r=Math.min(r,w/2*.99,h/2*.99,d/2*.99);const g=new THREE.BoxGeometry(w,h,d,Math.min(22,Math.ceil(w/.1)),Math.min(22,Math.ceil(h/.1)),Math.min(22,Math.ceil(d/.1))),ps=g.attributes.position,nm=g.attributes.normal,v=new THREE.Vector3(),c=new THREE.Vector3(),hx=w/2-r,hy=h/2-r,hz=d/2-r;
+  for(let i=0;i<ps.count;i++){v.fromBufferAttribute(ps,i);c.set(Math.max(-hx,Math.min(hx,v.x)),Math.max(-hy,Math.min(hy,v.y)),Math.max(-hz,Math.min(hz,v.z)));
+    v.sub(c);if(v.lengthSq()>1e-9){v.normalize();ps.setXYZ(i,c.x+v.x*r,c.y+v.y*r,c.z+v.z*r);nm.setXYZ(i,v.x,v.y,v.z)}}
+  return g}
+function cylGeo(w,h,d,b){b=Math.min(b,h/2*.99,w/2*.99,d/2*.99);const bx=b/(w/2),pts=[new THREE.Vector2(0,-h/2)],N=18;
+  for(let i=0;i<=N;i++){const a=i/N*Math.PI/2;pts.push(new THREE.Vector2(1-bx+Math.sin(a)*bx,-h/2+b-Math.cos(a)*b))}
+  for(let i=0;i<=N;i++){const a=i/N*Math.PI/2;pts.push(new THREE.Vector2(1-bx+Math.cos(a)*bx,h/2-b+Math.sin(a)*b))}
+  pts.push(new THREE.Vector2(0,h/2));const g=new THREE.LatheGeometry(pts,72);g.scale(w/2,1,d/2);return g}
+const AVG={};
+function avGeoC(k,mk){if(!AVG[k]){const g=mk();g.scale(.34,.34,.34);AVG[k]=g}return AVG[k]}
 function makeAvatar(color,eq){
-  /* The Studio character: 1.6x2x.8 torso, round 1.4x1.5 head with a smiley, .7 wide arms, .75 wide legs, matte */
-  const g=new THREE.Group(),skin='#f0c49a',S=.34,fx={};
+  const g=new THREE.Group(),skin='#f5cd30',S=.34,fx={};
+  /* Matte smooth blocks, a round-edged cylinder head and a smile wrapped around the front of it */
   const phg=function(c){return new THREE.MeshPhongMaterial({color:c,shininess:0,specular:0x000000})};
-  function part(w,h,d,c,x,y,z,p){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),phg(c));m.position.set(x,y,z);m.castShadow=true;(p||g).add(m);return m}
-  part(1.6*S,2*S,.8*S,color,0,3*S,0);
-  const hr=.7*S,hh=1.5*S,head=new THREE.Mesh(new THREE.CylinderGeometry(hr,hr,hh,32),phg(skin));head.position.y=(3+1.65)*S;head.castShadow=true;g.add(head);
+  function part(w,h,d,c,x,y,z,p){const m=new THREE.Mesh(avGeoC('b'+w+'|'+h+'|'+d,function(){return rbox(w/S,h/S,d/S,.18)}),phg(c));m.position.set(x,y,z);m.castShadow=true;(p||g).add(m);return m}
+  part(2*S,2*S,S,color,0,3*S,0);
+  const head=new THREE.Mesh(avGeoC('head',function(){return cylGeo(1.53,1.12,1.53,.14)}),phg(skin));head.position.y=1.55;head.castShadow=true;g.add(head);
   if(!faceTex.t)faceTex.t=faceTex();
-  const fp=.7,fg=new THREE.CylinderGeometry(1.01,1.01,hh*.9,32,1,true,-fp,fp*2);fg.scale(hr,1,hr);
+  const fp=.7,fg=new THREE.CylinderGeometry(1.01,1.01,.38*.78,32,1,true,-fp,fp*2);fg.scale(.26,1,.26);
   head.add(new THREE.Mesh(fg,new THREE.MeshBasicMaterial({map:faceTex.t,transparent:true,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})));
   const L=[];
-  [[-.4*S,2*S,'#a4bd47',.75],[.4*S,2*S,'#a4bd47',.75],[-1.1*S,3.9*S,skin,.7],[1.1*S,3.9*S,skin,.7]].forEach(function(a){const pv=new THREE.Group();pv.position.set(a[0],a[1],0);g.add(pv);part(a[3]*S,2*S,a[3]*S,a[2],0,-S,0,pv);L.push(pv)});
+  [[-S/2,2*S,'#a4bd47'],[S/2,2*S,'#a4bd47'],[-1.5*S,4*S,skin],[1.5*S,4*S,skin]].forEach(function(a){const pv=new THREE.Group();pv.position.set(a[0],a[1],0);g.add(pv);part(S,2*S,S,a[2],0,-S,0,pv);L.push(pv)});
   if(eq)Object.keys(eq).forEach(function(k){if(eq[k])addItem(g,eq[k],fx)});
   return {g:g,limbs:L,fx:fx}}
 function buildScene(L){
@@ -879,7 +890,7 @@ function pvTick(now){
   const t=now/1000,L=pv.limbs;let by=0,amt=0;
   L.forEach(function(x){x.rotation.x=0;x.rotation.z=0});
   if(pv.mode==='spin'){pv.yaw+=.012}
-  if(pv.mode==='walk'){const sw=Math.sin(t*7)*.8;L[0].rotation.x=sw;L[1].rotation.x=-sw;L[2].rotation.x=-sw;L[3].rotation.x=sw;amt=.5}
+  if(pv.mode==='walk'){const sw=Math.sin(t*6.2832)*.61;L[0].rotation.x=sw;L[1].rotation.x=-sw;L[2].rotation.x=-sw;L[3].rotation.x=sw;amt=.5}
   if(pv.mode==='wave'){L[3].rotation.z=2.5+Math.sin(t*9)*.35}
   if(pv.mode==='jump'){const k=Math.abs(Math.sin(t*3.2));by=k*.7;L[2].rotation.x=-2.6*k;L[3].rotation.x=-2.6*k;L[0].rotation.x=.4*k;L[1].rotation.x=-.4*k;amt=1}
   if(pv.mode==='idle'||pv.mode==='spin'){by=Math.sin(t*2)*.015;L[2].rotation.z=-.05;L[3].rotation.z=.05}
