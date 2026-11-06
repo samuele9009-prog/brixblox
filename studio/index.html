@@ -753,7 +753,7 @@ function rend(ns){reser();const sx=WS.scrollLeft,sy=WS.scrollTop;WS.replaceChild
   all.forEach(function(q){const s=q[0],d=q[1];if(typeof s[0].x==='number')return;
     s[0].x=24;s[0].y=bot?bot+24:24;d.style.left=s[0].x+'px';d.style.top=s[0].y+'px';bot=s[0].y+d.offsetHeight});
   if(!P.scripts.length)CV.append(el('p','empty','Drag blocks from the left and drop them anywhere. Snap them together under a "when" block.'));
-  sizeCvs();WS.scrollLeft=sx;WS.scrollTop=sy;if(!ns)save();view();buildVarPal()}
+  sizeCvs();CV.style.width=Math.max(parseFloat(CV.style.width)||0,sx+WS.clientWidth)+'px';CV.style.height=Math.max(parseFloat(CV.style.height)||0,sy+WS.clientHeight)+'px';WS.scrollLeft=sx;WS.scrollTop=sy;if(!ns)save();view();buildVarPal()}
 function markSel(){if(!CV)return;Array.from(CV.children).forEach(function(d){if(d._s)d.classList.toggle('sel',d._s[0]===selScr)})}
 function selScript(h){selScr=h;markSel();renderParts();
   const d=CV&&Array.from(CV.children).find(function(x){return x._s&&x._s[0]===h});if(d)d.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'})}
