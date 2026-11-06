@@ -873,8 +873,8 @@ function cachedGeo(p,smooth,mk){const ts=TX[p.mat]?((MATS[p.mat]||{}).ts||6):0,k
   let g=GCACHE[k];if(!g){if(gcN>300){Object.keys(GCACHE).forEach(function(x){GCACHE[x].dispose();delete GCACHE[x]});gcN=0}g=GCACHE[k]=mk(p);g.userData.keep=true;gcN++}return g}
 function avGeo(p){return cachedGeo(p,true,avGeo0)}
 function avGeo0(p){const w=p.size[0],h=p.size[1],d=p.size[2];
-  if(p.name==='Head'){const g=new THREE.CylinderGeometry(.5,.5,1,32);g.scale(w,h,d);return g}
-  return new THREE.BoxGeometry(w,h,d)}
+  if(p.name==='Head')return cylGeo(w,h,d,Math.min(w,h,d)*.22);
+  return rbox(w,h,d,Math.min(w,h,d)*.28)}
 /*TEX-START*/
 /* ===== Materials: procedural tileable textures, tinted by the part colour. Plastic = no texture, shiny. ===== */
 const RNG=function(n){let s=(n*2654435761)>>>0||1;return function(){s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296}};
