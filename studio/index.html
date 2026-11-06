@@ -429,6 +429,14 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 .gc b{overflow-wrap:anywhere}.gc small{color:var(--muted)}
 .gc .row{display:flex;gap:6px;margin-top:auto;padding-top:8px}.gc .row .btn{flex:1;padding:0 8px}
 #shome .bar{max-width:1280px}
+/* Studio fits the window exactly: the page itself never scrolls, only the panels inside it do */
+@media(min-width:981px){
+  #studio:not(.fs):not(.vo){overflow:hidden;display:flex;flex-direction:column;padding-top:max(10px,env(safe-area-inset-top,0px));padding-bottom:10px}
+  #studio:not(.fs):not(.vo) .bar{flex:none;width:100%;margin-bottom:10px}
+  #studio:not(.fs):not(.vo) .sgrid{flex:1 1 0;height:auto;min-height:0;width:100%}
+  #studio:not(.fs):not(.vo) .sgrid>*{min-height:0}
+}
+#studio::after{display:none}
 </style>
 </head>
 <body>
