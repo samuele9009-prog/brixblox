@@ -620,8 +620,8 @@ function makeSupa(){
     async answerFriend(id,fid,yes){const r=await sb.rpc('answer_friend',{p_id:fid,p_accept:yes});if(r.error)throw r.error},
     async listGames(id){let r=await sb.from('games').select('id,name,owner_id,owner_name,vis,updated_at,thumb').or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(60);if(r.error&&/thumb/i.test(r.error.message||''))r=await sb.from('games').select('id,name,owner_id,owner_name,vis,updated_at').or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(60);if(r.error)throw r.error;return r.data},
     async gameData(id){const r=await sb.from('games').select('data').eq('id',id).single();if(r.error)throw r.error;return r.data.data},
-    async listAcc(){const r=await sb.from('games').select('id,name,data').like('id','acc_%');if(r.error)throw r.error;return r.data.map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,slot:d.slot,price:d.price,scale:d.scale,fbx:d.fbx||'',tex:d.tex||'',tf:!!d.tf,px:d.px||0,py:d.py||0,pz:d.pz||0,rx:d.rx||0,ry:d.ry||0,rz:d.rz||0,sale:d.sale!==false,removed:!!d.removed,c:'#4a4c4e'}})},
-    async saveAcc(it){const r=await sb.from('games').upsert({id:it.id,owner_id:me.id,owner_name:me.username,name:it.name,vis:'public',data:JSON.stringify({slot:it.slot,price:it.price,scale:it.scale,fbx:it.fbx||'',tex:it.tex||'',tf:!!it.tf,px:it.px||0,py:it.py||0,pz:it.pz||0,rx:it.rx||0,ry:it.ry||0,rz:it.rz||0,sale:it.sale!==false,removed:!!it.removed}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
+    async listAcc(){const r=await sb.from('games').select('id,name,data').like('id','acc_%');if(r.error)throw r.error;return r.data.map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,slot:d.slot,price:d.price,scale:d.scale,fbx:d.fbx||'',tex:d.tex||'',tf:!!d.tf,sh:d.sh==null?null:d.sh,px:d.px||0,py:d.py||0,pz:d.pz||0,rx:d.rx||0,ry:d.ry||0,rz:d.rz||0,sale:d.sale!==false,removed:!!d.removed,c:'#4a4c4e'}})},
+    async saveAcc(it){const r=await sb.from('games').upsert({id:it.id,owner_id:me.id,owner_name:me.username,name:it.name,vis:'public',data:JSON.stringify({slot:it.slot,price:it.price,scale:it.scale,fbx:it.fbx||'',tex:it.tex||'',tf:!!it.tf,sh:it.sh==null?null:it.sh,px:it.px||0,py:it.py||0,pz:it.pz||0,rx:it.rx||0,ry:it.ry||0,rz:it.rz||0,sale:it.sale!==false,removed:!!it.removed}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
     async admins(){const r=await sb.from('games').select('data').eq('id','sys_admins').maybeSingle();if(r.error)throw r.error;let d=r.data&&r.data.data;if(typeof d==='string')d=JSON.parse(d);return d&&d.admins||[]},
     async delAcc(id){const r=await sb.from('games').delete().eq('id',id);if(r.error)throw r.error},
     async logOut(){await sb.auth.signOut()},
@@ -838,11 +838,14 @@ function isBB(){return !!me&&me.username.toLowerCase()==='brixblox'}
 let ADMS=[];
 function isAdm(){return isBB()||(!!me&&ADMS.indexOf(me.username.toLowerCase())>=0)}
 async function loadAdmins(){try{ADMS=(await api.admins()||[]).map(function(x){return String(x).toLowerCase()})}catch(e){}}
+function shineMat(mt,k){const n=mt.isMeshPhongMaterial?mt:new THREE.MeshPhongMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0});
+  n.shininess=1+k*149;n.specular=new THREE.Color().setScalar(k);n.needsUpdate=true;return n}
 function addItem(g,id,fx){const it=itemById(id),o=it&&FBXC[id];if(!o)return;
   const c=o.clone(true);c.position.set(0,0,0);
   if(it.tex){const tx=getTex(it.tex,it.tf);c.traverse(function(m){if(!m.isMesh)return;
     const ap=function(mt){const n=mt.clone();n.map=tx;if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true;return n};
     m.material=Array.isArray(m.material)?m.material.map(ap):ap(m.material)})}
+  if(it.sh!=null&&isFinite(it.sh)){const k=Math.max(0,Math.min(100,+it.sh))/100;c.traverse(function(m){if(!m.isMesh)return;const f=function(mt){return shineMat(mt.clone(),k)};m.material=Array.isArray(m.material)?m.material.map(f):f(m.material)})}
   c.updateMatrixWorld(true);
   const bx=new THREE.Box3().setFromObject(c),sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),sl=ISLOT[it.slot]||ISLOT.hat,k=sl.s*(it.scale||1)/(Math.max(sz.x,sz.y,sz.z)||1);
   const w=new THREE.Group();c.position.set(-ct.x,sl.base?-bx.min.y:-ct.y,-ct.z);w.add(c);w.scale.setScalar(k);const D=Math.PI/180;
@@ -1064,6 +1067,14 @@ function edRender(){
   rs.appendChild(mk('div','hn','X tilts nose up / down, Y turns left / right, Z rolls sideways'));
   /* size */
   const ss=sec('Size',['scale'],1);row(ss,'scale','s','S',.1,5,.05,'size');
+  /* shininess: empty = the model's own look */
+  const hs=sec('Shininess',['sh'],null),shr=mk('div','r'),shl=mk('button','ax s','Shine');shl.type='button';shl.title="Click to go back to the model's own shininess";
+  const shg=mk('input','s'),shn=mk('input'),shh=mk('div','hn');shg.type='range';shn.type='number';[shg,shn].forEach(function(i){i.min=0;i.max=100;i.step=1});
+  function shPaint(){const on=d.sh!=null;shg.value=on?d.sh:50;shn.value=on?d.sh:'';shh.textContent=on?"0 is matte, 100 is mirror-shiny. Press Shine to go back to the model's own look.":"Using the model's own shininess. Move the slider to set your own."}
+  shg.oninput=function(){d.sh=+shg.value;shn.value=d.sh;shPaint();edPreview()};
+  shn.oninput=function(){const v=parseFloat(shn.value);if(isNaN(v))return;d.sh=Math.max(0,Math.min(100,v));shg.value=d.sh;shPaint();edPreview()};
+  shl.onclick=function(){d.sh=null;shPaint();edPreview()};ctl.sh=function(v){d.sh=v;shPaint();edPreview()};
+  shr.append(shl,shg,shn);hs.append(shr,shh);shPaint();
   /* texture */
   const ts=sec('Texture'),tr=mk('div','texrow'),img=mk('img','texprev');img.alt='Texture preview';
   const file=mk('input');file.type='file';file.accept='image/*';file.style.display='none';
@@ -1078,7 +1089,7 @@ function edRender(){
   /* buttons */
   const bt=mk('div','btns');
   const save=btn(bt,'Save',async function(){save.disabled=true;try{await api.saveAcc(Object.assign({},d));ED=null;pv.tryEq=null;$('acc-ed').hidden=true;$('acc-ed').innerHTML='';await loadItems();toast('Saved '+d.name+'.')}catch(e){toast('Could not save: '+errText(e));save.disabled=false}});
-  btn(bt,'Reset all',function(){['px','py','pz','rx','ry','rz'].forEach(function(k){ctl[k](0)});ctl.scale(1)},true);
+  btn(bt,'Reset all',function(){['px','py','pz','rx','ry','rz'].forEach(function(k){ctl[k](0)});ctl.scale(1);ctl.sh(null)},true);
   btn(bt,'Cancel',closeEdit,true);
   el.appendChild(bt)}
 $('ac-go').onclick=async function(){const f=$('ac-file').files[0],nm=$('ac-name').value.trim(),m=$('ac-msg');
