@@ -520,6 +520,8 @@ const BD={
  broadcast:{c:'ev',l:'broadcast _',a:['message1'],tip:'Sends a message to every \"when I receive\" script with the same name, then keeps going straight away.'},
  broadcastwait:{c:'ev',l:'broadcast _ and wait',a:['message1'],tip:'Sends a message to every \"when I receive\" script with the same name, and waits here until all of them have finished.'},
  touched:{c:'ev',hat:1,l:'when this block touched',a:[],tip:'Runs when a player starts touching the object this script belongs to. It works even when collision is false. The variable toucher holds the name of whoever touched it. Put the script on an object with the + next to it in the Explorer.'},
+ pjoin:{c:'ev',hat:1,l:'when a player joins',a:[],tip:'Runs when another player joins the server, and once for you when the game starts. The variable joiner holds their name. Use the "number of players" block to see how many are in the game.'},
+ pleave:{c:'ev',hat:1,l:'when a player leaves',a:[],tip:'Runs when a player leaves, is kicked or banned. The variable leaver holds their name. "number of players" is already updated.'},
  clicked:{c:'ev',hat:1,l:'when this block is clicked from _ studs away',a:['20'],tip:'Runs when you click the object this script belongs to while playing (press Play). The number is how far away you can click from. The variable clicker holds your name.'},
  chat:{c:'ev',hat:1,l:'when player says _ in chat',a:['hello'],raw:1,tip:'Runs when a player types this in the chat box (press / while playing, type, then press Enter to send). It matches the whole message, or the start of it when the message continues after a space (so \"!kick Bob\" matches !kick). Type * to match every message. The variables speaker and message are filled in.'},
  move:{c:'mo',l:'move _ steps',a:['10']},
@@ -539,6 +541,9 @@ const BD={
  playercol:{c:'pl',l:'set player collisions to _',a:['true'],dd:{0:'bool'},tip:'true: players can not walk through each other, so you bump into the other players in the server. false: players walk straight through each other (the default). It goes back to false when the game restarts.'},
  givebadge:{c:'pl',l:'give badge _ to player _',a:['Winner','player'],tip:'Gives a player a badge you made under Assets in the Explorer (Badges). Type the badge name. The player is a name, a variable, or player (the first player in the server) (like toucher). The player sees a pop-up and the badge is saved to their account, once per badge per game. Anyone can earn a badge themselves; only the game owner or an admin can give one to another player.'},
  awardbadge:{c:'pl',l:'award badge _ to player _ icon _',a:['Winner','player','\uD83C\uDFC5'],tip:'Gives a player a badge and counts it in their profile. You do not need to make the badge first: it is created for you if it does not exist yet. Each badge is only given once per player per game, and every new badge adds 1 to their badge counter. Type the badge name, then the player (a name, a variable, or player for the first player in the server) and an icon. Anyone can earn a badge themselves; only the game owner or an admin can give one to another player.'},
+ getcount:{c:'pl',l:'get player count into _',a:['count'],dd:{0:'var'},tip:'Stores how many players are in the game right now (you included) in the variable.'},
+ accwear:{c:'pl',l:'put accessory _ on player _ slot _',a:['Cool Hat','player','auto'],dd:{2:'accslot'},tip:'Puts an accessory from the BrixBlox shop (including ones you made) on a player. They do NOT need to own it and nothing is added to their inventory. It is only worn during this game and other players see it. Type the accessory name exactly. Slot auto uses the slot the accessory was made for (or hat).'},
+ accstrip:{c:'pl',l:'take accessory _ off player _',a:['Cool Hat','player'],tip:'Takes off an accessory that was put on with the put accessory block.'},
  shiftlockon:{c:'pl',l:'enable shiftlock',a:[],tip:'Lets the player use shift lock while playing. It does not turn it on by itself: the player presses Shift to switch it on and off. When it is on, the camera moves over the shoulder, the mouse is locked so moving it turns the camera, and the character faces where the camera looks.'},
  shiftlockoff:{c:'pl',l:'disable shiftlock',a:[],tip:'Stops the player from using shift lock. If it is on, it switches off and the normal camera comes back.'},
  addplayer:{c:'pl',l:'add player to game _',a:['Friend'],raw:1,tip:'Adds another player to the server. They show up next to you with a name tag. A banned player can not join.'},
@@ -550,14 +555,18 @@ const BD={
  playonce:{c:'au',l:'play _ once until done',a:['music'],raw:1,tip:'Plays an uploaded sound one time and waits here until it has finished before the next block runs.'},
  stopaud:{c:'au',l:'stop audio _',a:['all'],raw:1,tip:'Stops one sound by name, or every sound if you type all.'},
  setvol:{c:'au',l:'set volume of _ to _',a:['music','50'],raw:1,tip:'Changes how loud a sound is while the game runs, from 0 (silent) to 100 (full). Type the sound name, or all for every sound. It takes effect straight away on a sound that is already playing and goes back to the Assets slider when the game restarts.'},
- guishow:{c:'gu',l:'show gui _',a:['Button1'],dd:{0:'gui'},tip:'Shows a GUI element you made under GUI in the Explorer.'},
- guihide:{c:'gu',l:'hide gui _',a:['Button1'],dd:{0:'gui'},tip:'Hides a GUI element until you show it again.'},
- guitext:{c:'gu',l:'set gui _ text to _',a:['Text1','Hello'],dd:{0:'gui'},tip:'Changes the words on a GUI text, button or frame. You can use a variable name (like score) to show its value.'},
+ guishow:{c:'gu',l:'show gui _',a:['Button1'],dd:{0:'guit'},tip:'Shows a GUI element you made under GUI in the Explorer.'},
+ guihide:{c:'gu',l:'hide gui _',a:['Button1'],dd:{0:'guit'},tip:'Hides a GUI element until you show it again.'},
+ guitext:{c:'gu',l:'set gui _ text to _',a:['Text1','Hello'],dd:{0:'guit'},tip:'Changes the words on a GUI text, button or frame. You can use a variable name (like score) to show its value.'},
  guiclick:{c:'gu',hat:1,l:'when gui _ clicked',a:['Button1'],dd:{0:'gui'},tip:'Runs when a player clicks that GUI button while playing (press Play). The variable clicker holds the player name.'},
+ guivis:{c:'gu',l:'set gui _ visible to _',a:['Frame1','true'],dd:{0:'guit',1:'bool'},tip:'Turns a GUI on (true) or off (false). Works on frames too: hiding a frame hides everything inside it. Pick "this GUI" inside a script that belongs to a GUI.'},
+ guitoggle:{c:'gu',l:'toggle gui _',a:['Frame1'],dd:{0:'guit'},tip:'If the GUI is showing it hides it, and if it is hidden it shows it. Great for a menu button that opens and closes a frame.'},
+ guithisclick:{c:'gu',hat:1,l:'when this gui clicked',a:[],tip:'Put this script inside a GUI (use the + on the GUI row in the Explorer, or the Scripts part of its properties). It runs when a player clicks that GUI while playing. The variable clicker holds the player name.'},
  nearplayer:{c:'en',l:'get nearest player range _ into _',a:['20','target'],dd:{1:'var'},tip:'Finds the closest player within range of this script\'s object (or of you) and stores their name in the variable. The variable is empty if nobody is close.'},
  nearrig:{c:'en',l:'get nearest rig range _ into _',a:['20','target'],dd:{1:'var'},tip:'Finds the closest rig within range and stores its name in the variable. A rig is named after its model.'},
  nearplayers:{c:'en',l:'get nearest players _ range _ into _',a:['3','20','targets'],dd:{2:'var'},tip:'Stores up to this many player names (nearest first, separated by commas) in the variable. The variable name plus _count holds how many were found.'},
  nearrigs:{c:'en',l:'get nearest rigs _ range _ into _',a:['3','20','targets'],dd:{2:'var'},tip:'Stores up to this many rig names (nearest first, separated by commas) in the variable. The variable name plus _count holds how many were found.'},
+ rigbeh:{c:'en',l:'set rig behavior to _ player _ speed _',a:['follow nearest','','8'],dd:{0:'behav'},tip:'Makes the rig this script belongs to move on its own with smart pathfinding around walls and objects. Idle stops it. Wander walks around randomly. Follow nearest player chases whoever is closest. Follow random player picks one player and sticks with them. Follow player (name) chases the player typed in the player box (a name, a variable like toucher, or player). Speed is studs per second. If the rig has animations named walk and idle it plays them. Needs a script that belongs to a rig.'},
  kill:{c:'en',l:'kill',a:[],tip:'Kills the object this script belongs to (or you, if the script belongs to nothing). It ragdolls, then a rig disappears and a player respawns.'},
  ragdoll:{c:'en',l:'ragdoll _',a:['target'],tip:'Makes a rig or player go limp and fall over for a few seconds. It stays down for as long as the block keeps running (for example inside a forever loop) and gets up a few seconds after. Type a name, a variable, or player (the first player in the server; player2 is the second, and so on) (a comma list from the get nearest blocks works too).'},
  unragdoll:{c:'en',l:'unragdoll _',a:['target'],tip:'Makes a ragdolled rig or player get back up right away. Type a name, a variable, or player (the first player in the server; player2 is the second, and so on). Does nothing if they are not ragdolled (and cannot save someone who was killed).'},
@@ -596,11 +605,12 @@ const BD={
  opmod:{c:'op',rep:1,l:'_ mod _',a:['',''],sk:'nn',f:function(x){return 'mod('+x[0]+', '+x[1]+')'}},
  opround:{c:'op',rep:1,l:'round _',a:[''],sk:'n',f:function(x){return 'round('+x[0]+')'}},
  opmath:{c:'op',rep:1,l:'_ of _',a:['abs',''],dd:{0:'mathf'},sk:'dn',f:function(x){return 'mathf('+x[0]+', '+x[1]+')'}},
+ opplayers:{c:'op',rep:1,l:'number of players',a:[],sk:'',f:function(x){return 'playercount()'}},
  var:{c:'rv',rep:1,l:'_',a:[''],sk:'',f:function(x){return x[0]}},
  def:{c:'fn',hat:1,l:'define _',a:['spin'],raw:1},
  call:{c:'fn',l:'call _',a:['spin'],raw:1}
 };
-const EVH=['key','keydrop','keyheld','keyrel','recv','touched','clicked','chat','guiclick'];
+const EVH=['key','keydrop','keyheld','keyrel','recv','touched','clicked','chat','guiclick','guithisclick','pjoin','pleave'];
 function mk(t,a,k){return {t:t,a:a||BD[t].a.slice(),k:BD[t].k?(k||[]):null}}
 function starter(){return [[mk('start'),mk('say',['Hello!']),mk('repeat',['4'],[mk('move',['6']),mk('turn',['90']),mk('wait',['0.3'])])]]}
 /* Games only exist on disk once they are published. An unpublished game is a draft that is lost when the page closes. */
@@ -706,18 +716,21 @@ function hasB(arr,b){return arr.some(function(x){return x===b||(x.k&&hasB(x.k,b)
 function varList(){const v=new Set((P&&Array.isArray(P.vars))?P.vars:[]);
   const w=function(arr){arr.forEach(function(b){if(!BD[b.t])return;
     if(b.t==='set'||b.t==='change'){const n=String(b.a[0]).trim();if(n)v.add(n)}
+    else if(b.t==='getcount'){const n=String(b.a[0]).trim();if(n)v.add(n)}
     else if(/^near(player|rig)s?$/.test(b.t)){const many=b.t.slice(-1)==='s',n=String(b.a[many?2:1]).trim();if(n){v.add(n);if(many)v.add(n+'_count')}}
     if(b.k)w(b.k)})};
   P.scripts.forEach(function(sc){w(sc)});
   const has=function(t){return P.scripts.some(function(sc){return sc[0].t===t})};
-  if(has('touched'))v.add('toucher');if(has('clicked'))v.add('clicker');if(has('chat')){v.add('speaker');v.add('message')}
+  if(has('touched'))v.add('toucher');if(has('pjoin'))v.add('joiner');if(has('pleave'))v.add('leaver');if(has('clicked')||has('guiclick')||has('guithisclick'))v.add('clicker');if(has('chat')){v.add('speaker');v.add('message')}
   return Array.from(v).sort()}
 const KEYOPT=(function(){const o=[];'abcdefghijklmnopqrstuvwxyz'.split('').forEach(function(c){o.push([c,c.toUpperCase()])});'0123456789'.split('').forEach(function(c){o.push([c,c])});
   [['space','Space'],['enter','Enter'],['shift','Shift'],['ctrl','Ctrl'],['alt','Alt'],['tab','Tab'],['escape','Escape'],['backspace','Backspace'],['up','Up arrow'],['down','Down arrow'],['left','Left arrow'],['right','Right arrow']].forEach(function(q){o.push(q)});
   for(let i=1;i<=12;i++)o.push(['f'+i,'F'+i]);return o})();
 const MATHOPT=['abs','floor','ceiling','sqrt','sin','cos','tan','asin','acos','atan','ln','log','e ^','10 ^'].map(function(q){return [q,q]});
 const DIROPT=[['front','Front'],['back','Back'],['left','Left'],['right','Right'],['up','Up'],['down','Down']];
-function ownerObj(o){return o?(byId(o)||byModel(o)||null):null}
+const BEHOPT=[['idle','Idle'],['wander','Wander'],['follow nearest','Follow nearest player'],['follow random','Follow random player'],['follow player','Follow player (name)']];
+const ACCSLOTOPT=[['auto','Auto'],['hat','Hat'],['face','Face'],['facc','Face accessory'],['neck','Neck'],['back','Back']];
+function ownerObj(o){return o?(byId(o)||byModel(o)||guiById(o)||null):null}
 function ownName(o){const x=ownerObj(o);return x?x.name:null}
 /* Dropdowns on blocks: keys, true/false and variables. A variable dropdown lists every variable made so far and has "New variable...". */
 function cleanVar(v){v=String(v).trim().replace(/[^A-Za-z0-9_]/g,'_').slice(0,24);if(!v)return '';if(/^\d/.test(v))v='v'+v;if(/^(true|false|not|and|or|x|y|dir)$/.test(v))v+='_';return v}
@@ -728,13 +741,13 @@ function newVarDlg(done){mdl('New variable',function(c,close){const n=el('input'
 function ddSel(b,i,kind,ro){
   if(ro){const n=el('input');n.value=b.a[i];n.readOnly=true;fit(n);return n}
   const s=el('select','ddsel');s.title=kind==='var'?'Pick a variable, or make a new one':'';
-  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='bool'?[['true','true'],['false','false']]:varList().map(function(v){return [v,v]});
+  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='bool'?[['true','true'],['false','false']]:varList().map(function(v){return [v,v]});
     const cur=String(b.a[i]);if(cur&&!o.some(function(q){return q[0]===cur}))o.unshift([cur,cur]);
     o.forEach(function(q){const op=el('option','',q[1]);op.value=q[0];s.append(op)});
     if(kind==='var'){const nw=el('option','','\uFF0B New variable\u2026');nw.value='\u0001new';s.append(nw)}
     s.value=cur};
   fill();
-  s.onpointerdown=function(e){e.stopPropagation();if(kind==='var'||kind==='gui')fill()};
+  s.onpointerdown=function(e){e.stopPropagation();if(kind==='var'||kind==='gui'||kind==='guit')fill()};
   s.onchange=function(){
     if(s.value==='\u0001new'){newVarDlg(function(v){if(v){b.a[i]=v;save();rend();renderParts()}else fill()});return}
     b.a[i]=s.value;reser();save();view()};
@@ -750,7 +763,7 @@ function varPick(n,b,i){const s=el('select','vpick');s.title='Insert a variable'
 /* Objects a script can belong to (models, and loose parts that are not the player) */
 function ownOpts(){const o=[['','No object (global)']];
   P.models.forEach(function(m){o.push([m.id,'\u25A3 '+m.name])});
-  P.parts.forEach(function(p){if(!p.parent)o.push([p.id,'\u25A2 '+p.name])});return o}
+  P.parts.forEach(function(p){if(!p.parent)o.push([p.id,'\u25A2 '+p.name])});(P.guis||[]).forEach(function(g){o.push([g.id,'\u25AD GUI: '+g.name])});return o}
 function chip(sc,opts){const h=sc[0],w=el('label','own'),s=el('select');w.append(el('span','','Object'));
   opts.forEach(function(q){const op=el('option','',q[1]);op.value=q[0];s.append(op)});
   if(h.o&&!opts.some(function(q){return q[0]===h.o})){const ob=ownerObj(h.o),op=el('option','',ob?'\u25A2 '+ob.name:'(deleted object)');op.value=h.o;s.append(op)}
@@ -915,7 +928,7 @@ function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('p
 
 
 /* BricBloc as text */
-const KW={setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
+const KW={pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
 
@@ -925,7 +938,7 @@ const KH=new Set(),KP=new Set();
 addEventListener('keydown',function(e){if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;keyNames(e).forEach(function(k){KH.add(k);if(running||playing)KP.add(k)})},true);
 addEventListener('keyup',function(e){keyNames(e).forEach(function(k){KH.delete(k)})},true);
 addEventListener('blur',function(){KH.clear();KP.clear()});
-const FN={keyheld:function(k){return KH.has(String(k).trim().toLowerCase())},join:function(a,b){return String(a)+String(b)},letter:function(n,s){return String(s).charAt(Math.floor(+n)-1)},length:function(s){return String(s).length},
+const FN={playercount:function(){return 1+S.oth.length},keyheld:function(k){return KH.has(String(k).trim().toLowerCase())},join:function(a,b){return String(a)+String(b)},letter:function(n,s){return String(s).charAt(Math.floor(+n)-1)},length:function(s){return String(s).length},
   contains:function(s,q){return String(s).toLowerCase().indexOf(String(q).toLowerCase())>=0},
   random:function(a,b){a=+a||0;b=+b||0;const lo=Math.min(a,b),hi=Math.max(a,b);return(Number.isInteger(a)&&Number.isInteger(b))?lo+Math.floor(Math.random()*(hi-lo+1)):lo+Math.random()*(hi-lo)},
   round:function(x){return Math.round(+x||0)},mod:function(a,b){a=+a||0;b=+b||0;return b?((a%b)+b)%b:0},
@@ -1061,11 +1074,22 @@ async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0
           NET.ch.send({type:'broadcast',event:'ga',payload:{id:NET.id,n:ME.username,t:q.net,a:it.id,m:add?1:0,nm:String(it.name).slice(0,24)}});
           log((add?'Sent "':'Asked to remove "')+it.name+(add?'" to ':'" from ')+t.name+'.')}}
       break}
+    case'getcount':{const vn=String(a[0]).trim();if(!vn){log('Error: type a variable name to store the count in.');break}S.v[vn]=1+S.oth.length;break}
+    case'rigbeh':{const rs=roots(o).filter(function(r){return kids(r).length>0});
+      if(!rs.length){log('Error: "set rig behavior" must be in a script that belongs to a rig (parts welded together). Use the + next to a rig in the Explorer.');break}
+      const md=String(a[0]).trim().toLowerCase(),tn=String(val(a[1]===undefined?'':a[1],S)).trim(),sp=Math.max(.5,Math.min(60,n(2)||8));
+      rs.forEach(function(r){rbSet(r,md,tn,sp)});break}
+    case'accwear':case'accstrip':{const nm=String(val(a[0],S)).trim(),tg=String(val(a[1],S)),wear=b.t==='accwear',sl0=String(a[2]===undefined?'auto':a[2]).trim().toLowerCase();
+      const it=await accFind(nm);if(!it){log('Error: no accessory named "'+nm+'". '+(accFind.info||'Type its name as it is in the shop.'));break}
+      const pl=playersOf(tg);if(!pl.length){log('Error: no player matches "'+tg+'".');break}
+      await accLoad([it.id]);const e=ACCI[it.id];if(wear&&!(e&&e.obj)){log('Error: the accessory "'+it.name+'" could not be loaded.');break}
+      let slot=sl0;if(!ACCS[slot]){const d=(e&&e.it)||{};slot=['slot','type','cat','kind','cls'].map(function(k){return String(d[k]||'').toLowerCase()}).find(function(v){return ACCS[v]})||'hat'}
+      pl.forEach(function(t){xeqSet(t,slot,it.id,wear)});break}
     case'setvol':{const nm=String(a[0]).trim(),key=nm.toLowerCase()==='all'?'all':nm;
       if(key!=='all'&&!P.assets.audio[key]){log('Error: no audio named "'+nm+'".');break}
       AVR[key]=Math.max(0,Math.min(100,n(1)))/100;liveVol();break}
-    case'guishow':case'guihide':case'guitext':{const gg=guiByName(a[0]);if(!gg.length){log('Error: no GUI named "'+String(a[0]).trim()+'". Add one under GUI in the Explorer.');break}
-      gg.forEach(function(g){const r=GR[g.id]=GR[g.id]||{};if(b.t==='guitext')r.text=String(val(a[1]===undefined?'':a[1],S));else r.vis=b.t==='guishow'});renderGui();break}
+    case'guishow':case'guihide':case'guitext':case'guivis':case'guitoggle':{const gg=(String(a[0]).trim().toLowerCase()==='this'&&guiById(o))?[guiById(o)]:guiByName(a[0]);if(!gg.length){log('Error: no GUI named "'+String(a[0]).trim()+'". Add one under GUI in the Explorer.');break}
+      gg.forEach(function(g){const r=GR[g.id]=GR[g.id]||{};if(b.t==='guitext')r.text=String(val(a[1]===undefined?'':a[1],S));else if(b.t==='guivis'){const tv=val(a[1],S);r.vis=!(tv===false||tv===0||tv===''||String(tv).toLowerCase()==='false')}else if(b.t==='guitoggle')r.vis=!guiState(g).vis;else r.vis=b.t==='guishow'});renderGui();break}
     case'stopaud':{const nm=a[0].trim();if(!nm||nm==='all')stopAudio();else if(!P.assets.audio[nm])log('Error: no audio named "'+nm+'".');else stopAudio(nm);break}}
   draw()}
 
@@ -1109,7 +1133,7 @@ function addFace(m,p){if(!FACE){const c=document.createElement('canvas');c.width
   m.add(new THREE.Mesh(g,depthNudge(new THREE.MeshBasicMaterial({map:FACE,transparent:true}),0.008,0.0002)))}
 // S is the avatar's offset from where it was placed. x right, y forward (toward -z), h height, dir 90 faces forward.
 function initVars(){const o={};((P&&P.vars)||[]).forEach(function(n){o[n]=0});return o}
-function fresh(){return {oth:[],x:0,y:0,h:0,vy:0,gr:true,wt:0,jt:0,pvx:0,pvz:0,bp:{},air:false,mv:false,dir:90,col:null,say:'',v:initVars(),fn:{},stop:false,d:0,sl:false,sla:false,slo:0,pcol:false}}
+function fresh(){return {oth:[],x:0,y:0,h:0,vy:0,gr:true,wt:0,jt:0,pvx:0,pvz:0,bp:{},air:false,mv:false,dir:90,col:null,say:'',v:initVars(),fn:{},stop:false,d:0,sl:false,sla:false,slo:0,pcol:false,xeq:{}}}
 let S=fresh(),running=false;let RV={},RD={},RVY={},NP=[],RY={},CO={},TM=new Map();
 function draw(){const T=byId(P.avId),g=T&&J[T.id];
   for(const id in RO){const r=byId(id);if(r&&J[id]&&id!==P.avId)J[id].position.set(r.pos[0]+RO[id][0],r.pos[1]+(RY[id]||0),r.pos[2]+RO[id][1])}
@@ -1447,9 +1471,9 @@ function badgeUI(d){const r=el('div','tb'),nm=el('input'),ic=el('input'),ds=el('
     w.append(mb('Delete','ghost',function(){P.badges=P.badges.filter(function(x){return x!==b});save();msg('Deleted the badge '+b.name+'.');renderParts()}));d.append(w)})}
 function accLocal(){/* put your own equipped items on your character */
   if(!ME||!ME.av)return;const H=P.parts.find(function(p){return p.av&&p.name==='Head'}),T=P.parts.find(function(p){return p.av&&p.name==='Torso'});
-  accDress({Head:H&&M[H.id],Torso:T&&M[T.id]},ME.av.eq,H?Math.max(.3,Math.min(3,H.size[1]/1.5)):1)}
+  accDress({Head:H&&M[H.id],Torso:T&&M[T.id]},Object.assign({},ME.av.eq||{},S.xeq||{}),H?Math.max(.3,Math.min(3,H.size[1]/1.5)):1)}
 function netEq(e,t){/* another player's items */
-  const H=P.parts.find(function(p){return p.av&&p.name==='Head'});accDress(e.MM||{},accParse(t),H?Math.max(.3,Math.min(3,H.size[1]/1.5)):1)}
+  const H=P.parts.find(function(p){return p.av&&p.name==='Head'});accDress(e.MM||{},Object.assign(accParse(t),e.xo||{}),H?Math.max(.3,Math.min(3,H.size[1]/1.5)):1)}
 /* Extra players: copies of your character with a name tag, standing next to you */
 function clearNP(){NP.slice().forEach(function(n){npFree(n)});NP.length=0}
 function spawnPlayer(name,S){const T=byId(P.avId),av=P.parts.filter(function(p){return p.av}),MM={};
@@ -1467,7 +1491,7 @@ function spawnPlayer(name,S){const T=byId(P.avId),av=P.parts.filter(function(p){
   x.fillStyle='rgba(20,22,24,.82)';x.fillRect(4,10,248,44);x.fillStyle='#fff';x.font='700 26px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(nm,128,33);
   const tag=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthTest:false}));tag.scale.set(3.2,.8,1);tag.renderOrder=8;
   let top=0;av.forEach(function(p){top=Math.max(top,p.pos[1]+p.size[1]/2)});tag.position.set(T.pos[0]+dx,top+1.3,T.pos[2]);scene.add(tag);
-  NP.push({g:grp,tag:tag,JJ:JJ,MM:MM,t:n*.7,dx:dx,name:nm,top:top});S.oth.push(nm);log(nm+' joined the game');renderParts();gmPlRefresh()}
+  NP.push({g:grp,tag:tag,JJ:JJ,MM:MM,t:n*.7,dx:dx,name:nm,top:top});S.oth.push(nm);log(nm+' joined the game');firePJ('pjoin',nm);renderParts();gmPlRefresh()}
 function npAnim(n){return(typeof n==='string'&&n&&Object.prototype.hasOwnProperty.call(P.anims,n))?P.anims[n]:null}
 function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
   NP.forEach(function(q){q.t+=dt;
@@ -2489,8 +2513,8 @@ function rotPush(q,o,cx,fy,cz){const R=1.1,h=[q.size[0]/2,q.size[1]/2,q.size[2]/
     const k=Math.min(1.5,r.pen/nh);px+=nx/nh*k;pz+=nz/nh*k});
   return (px||pz)?[px,pz]:null}
 /* Highest surface under the feet that is no more than STEP above them */
-function groundAt(cx,cz,fy){let best=-1e9;
-  P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;const rq=rootOf(q);if(!solid(rq))return;const o=RO[rq.id]||[0,0],eq=eh(q);
+function groundAt(cx,cz,fy,skipId){let best=-1e9;
+  P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;const rq=rootOf(q);if(!solid(rq)||(skipId&&rq.id===skipId))return;const o=RO[rq.id]||[0,0],eq=eh(q);
     if(Math.abs(cx-(q.pos[0]+o[0]))>eq[0]+.6||Math.abs(cz-(q.pos[2]+o[1]))>eq[2]+.6)return;
     if(hasRot(q)){const t=rotTop(q,o,cx,cz,fy);if(t!==null&&t>best)best=t;return}/* tilted parts: the real surface, so ramps work */
     const top=q.pos[1]+(RY[rq.id]||0)+eq[1];if(top>fy+STEP)return;
@@ -2517,7 +2541,7 @@ function physics(dt){const T=byId(P.avId);if(!T)return;const f0=feet0(),g=ground
 
 /* ===== Atmosphere: sky colour, time of day, brightness, fog ===== */
 /* ===== Entities: nearest players and rigs, ragdoll, kill, push, size ===== */
-let RAG={},RSZ={};
+let RAG={},RSZ={},RYAW={},RB={};
 function goneKey(k){const e=RAG[k];return !!(e&&e.gone)}
 function gone(p){return goneKey('rig:'+rootOf(p).id)}
 function plist(){const T=byId(P.avId);if(!T)return [];
@@ -2544,7 +2568,7 @@ function startRag(key,dead){if(!key||goneKey(key))return;if(key==='main'&&!byId(
 /* Unit direction (world space) for a push: front/back/left/right follow the way the thing faces, up/down are vertical */
 function dirOf(key,nm){nm=String(nm==null?'front':nm).trim().toLowerCase();let fx=0,fz=-1;
   if(key==='main'){const r=S.dir*Math.PI/180;fx=Math.cos(r);fz=-Math.sin(r)}
-  else if(key&&key.slice(0,4)==='rig:'){const r=byId(key.slice(4)),an=((r&&r.ry)||0)*Math.PI/180;fx=-Math.sin(an);fz=-Math.cos(an)}
+  else if(key&&key.slice(0,4)==='rig:'){const r=byId(key.slice(4)),an=((r&&r.ry)||0)*Math.PI/180+((r&&RYAW[r.id])||0);fx=-Math.sin(an);fz=-Math.cos(an)}
   switch(nm){case'back':case'backward':case'backwards':return {x:-fx,y:0,z:-fz};case'right':return {x:-fz,y:0,z:fx};case'left':return {x:fz,y:0,z:-fx};case'up':return {x:0,y:1,z:0};case'down':return {x:0,y:-1,z:0};default:return {x:fx,y:0,z:fz}}}
 function pushKey(key,f,dur,dn){dur=dur==null?.5:Math.max(.05,dur);const dv=dirOf(key,dn),rg=RAG[key];if(rg&&!rg.gone&&(rg.dead||rg.t<rg.end)){if(rg.sim)ragPush(rg,key,f,dur,dv);else{rg.pf=f;rg.pd=dur;rg.pv=dv}return}if(key==='main'){if(!S.pd){S.pd={dx:dv.x*f,dy:-dv.z*f,dur:dur,el:0,ep:0};if(dv.y){const H=dv.y*f;S.vy=Math.sign(H)*Math.sqrt(2*P.rules.grav*Math.abs(H));if(H>0)S.gr=false}}}
   else if(key.slice(0,4)==='rig:'){const id=key.slice(4);if(!RD[id])RD[id]={dx:dv.x*f,dy:dv.y*f,dz:dv.z*f,dur:dur,el:0,ep:0}}
@@ -2668,6 +2692,97 @@ function entTick(dt){Object.keys(Object.assign({},RAG,RSZ)).forEach(function(key
     e.u=u;simPose(key,T,e,u,arm);return}
   g.position.y=(key==='main'?g.position.y:r.pos[1]+(RY[r.id]||0))+(s-1)*arm})}
 
+/* ===== Rig behaviour and pathfinding =====
+   A* on a 2-stud grid. Solid parts that are taller than the rig can step over (and lower than its head) become blocked cells, grown by the rig's width.
+   The path is then straightened (string pulling), re-planned while the target moves, and the rig slides along walls and sidesteps if it gets stuck. */
+const PF={cs:2,R:1.3,MAX:84};
+function rigH(r){let lo=1e9,hi=-1e9;rigParts(r).forEach(function(q){if(q.stab)return;lo=Math.min(lo,q.pos[1]-q.size[1]/2);hi=Math.max(hi,q.pos[1]+q.size[1]/2)});return hi>lo?hi-lo:4}
+function pfObst(r,fy,hg){const out=[];P.parts.forEach(function(q){if(q.av||q.stab||!inW(q)||gone(q))return;const rq=rootOf(q);if(rq===r||!solid(rq))return;
+  const o=RO[rq.id]||[0,0],e=eh(q),cy=q.pos[1]+(RY[rq.id]||0);if(cy+e[1]<=fy+STEP+.01||cy-e[1]>=fy+hg)return;
+  const bx=q.pos[0]+o[0],bz=q.pos[2]+o[1];out.push([bx-e[0]-PF.R,bx+e[0]+PF.R,bz-e[2]-PF.R,bz+e[2]+PF.R])});return out}
+function pfFind(sx,sz,gx,gz,obs){const cs=PF.cs,pad=26;let x0=Math.min(sx,gx)-pad,z0=Math.min(sz,gz)-pad,W=Math.ceil((Math.max(sx,gx)+pad-x0)/cs),H=Math.ceil((Math.max(sz,gz)+pad-z0)/cs);
+  if(W>PF.MAX||H>PF.MAX){W=H=PF.MAX;x0=sx-W*cs/2;z0=sz-H*cs/2}
+  const blk=new Uint8Array(W*H),cl=function(v,m){return v<0?0:v>m?m:v};
+  obs.forEach(function(b){if(b[1]<x0||b[0]>x0+W*cs||b[3]<z0||b[2]>z0+H*cs)return;
+    const i0=cl(Math.ceil((b[0]-x0)/cs-.5),W-1),i1=cl(Math.floor((b[1]-x0)/cs-.5),W-1),j0=cl(Math.ceil((b[2]-z0)/cs-.5),H-1),j1=cl(Math.floor((b[3]-z0)/cs-.5),H-1);
+    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++)blk[j*W+i]=1});
+  const ci=function(v,o,m){return cl(Math.floor((v-o)/cs),m-1)};
+  const si=ci(sx,x0,W),sj=ci(sz,z0,H);
+  for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){const a=si+di,c=sj+dj;if(a>=0&&c>=0&&a<W&&c<H)blk[c*W+a]=0}
+  let gi=ci(gx,x0,W),gj=ci(gz,z0,H),exact=gx>=x0&&gx<=x0+W*cs&&gz>=z0&&gz<=z0+H*cs;
+  if(blk[gj*W+gi]){let f=null;
+    for(let rr=1;rr<=8&&!f;rr++)for(let dj=-rr;dj<=rr&&!f;dj++)for(let di=-rr;di<=rr;di++){if(Math.max(Math.abs(di),Math.abs(dj))!==rr)continue;const a=gi+di,c=gj+dj;if(a<0||c<0||a>=W||c>=H||blk[c*W+a])continue;f=[a,c];break}
+    if(!f)return null;gi=f[0];gj=f[1];exact=false}
+  const N=W*H,g=new Float32Array(N).fill(1e9),par=new Int32Array(N).fill(-1),cls=new Uint8Array(N),hp=[];
+  const hf=function(i,j){const dx=Math.abs(i-gi),dz=Math.abs(j-gj);return dx+dz-.586*Math.min(dx,dz)};
+  const push=function(k,f){hp.push([f,k]);let c=hp.length-1;while(c>0){const p=(c-1)>>1;if(hp[p][0]<=hp[c][0])break;const t=hp[p];hp[p]=hp[c];hp[c]=t;c=p}};
+  const pop=function(){const top=hp[0],last=hp.pop();if(hp.length){hp[0]=last;let c=0;for(;;){const l=c*2+1,r=l+1;let m=c;if(l<hp.length&&hp[l][0]<hp[m][0])m=l;if(r<hp.length&&hp[r][0]<hp[m][0])m=r;if(m===c)break;const t=hp[m];hp[m]=hp[c];hp[c]=t;c=m}}return top};
+  const s0=sj*W+si,goal=gj*W+gi;g[s0]=0;push(s0,hf(si,sj));let it=0,found=false,best=s0,bh=hf(si,sj);
+  while(hp.length&&it++<7000){const k=pop()[1];if(cls[k])continue;cls[k]=1;if(k===goal){found=true;break}
+    const ki=k%W,kj=(k/W)|0,h=hf(ki,kj);if(h<bh){bh=h;best=k}
+    for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){if(!di&&!dj)continue;const a=ki+di,c=kj+dj;if(a<0||c<0||a>=W||c>=H)continue;const n=c*W+a;if(blk[n]||cls[n])continue;
+      if(di&&dj&&(blk[kj*W+a]||blk[c*W+ki]))continue;
+      const ng=g[k]+(di&&dj?1.414:1);if(ng<g[n]){g[n]=ng;par[n]=k;push(n,ng+hf(a,c))}}}
+  const end=found?goal:best;if(end===s0)return null;
+  const cells=[];for(let k=end;k>=0;k=par[k])cells.push(k);cells.reverse();
+  const pts=cells.map(function(k){return [x0+((k%W)+.5)*cs,z0+(((k/W)|0)+.5)*cs]});
+  pts[0]=[sx,sz];if(found&&exact)pts[pts.length-1]=[gx,gz];
+  const vis=function(a,b){const dx=b[0]-a[0],dz=b[1]-a[1],n=Math.ceil(Math.hypot(dx,dz)/(cs*.45));
+    for(let t=1;t<n;t++){const x=a[0]+dx*t/n,z=a[1]+dz*t/n,i=Math.floor((x-x0)/cs),j=Math.floor((z-z0)/cs);if(i<0||j<0||i>=W||j>=H||blk[j*W+i])return false}return true};
+  const out=[pts[0]];let i=0;while(i<pts.length-1){let j=pts.length-1;while(j>i+1&&!vis(pts[i],pts[j]))j--;out.push(pts[j]);i=j}
+  return {pts:out}}
+function rbSet(r,md,tn,sp){const id=r.id;
+  if(md==='idle'){delete RB[id];return}
+  if(['wander','follow nearest','follow random','follow player'].indexOf(md)<0){log('Error: unknown behavior "'+md+'".');return}
+  const cur=RB[id];if(cur&&cur.md===md&&cur.tn===tn){cur.sp=sp;return}
+  const o=RO[id]||[0,0];
+  RB[id]={md:md,tn:tn,sp:sp,hx:r.pos[0]+o[0],hz:r.pos[2]+o[1],yaw:((r.ry||0)*Math.PI/180)+(RYAW[id]||0),path:null,pi:0,pt:0,pg:null,wp:null,wait:0,at:0,lx:r.pos[0]+o[0],lz:r.pos[2]+o[1],lt:performance.now(),stuck:0,side:0,sd:1,obs:[],ids:null,was:false}}
+function rbPose(r,b,name,t){const A=P.anims[name];if(!A)return false;if(!b.ids){b.ids={};rigParts(r).forEach(function(q){b.ids[q.id]=1})}
+  if(!Object.keys(A.keys).some(function(k){return b.ids[k]}))return false;
+  const po=evalPose(A,A.len>0?t%A.len:0),o={};for(const k in po){if(b.ids[k.slice(0,2)==='p:'?k.slice(2):k])o[k]=po[k]}applyKeyed(o);return true}
+function rigAI(dt){const ids=Object.keys(RB);if(!ids.length)return;const now=performance.now(),D=Math.PI/180;
+  ids.forEach(function(id){const b=RB[id],r=byId(id);if(!r||gone(r)){delete RB[id];return}
+    const key='rig:'+id,rg=RAG[key];if(rg&&!rg.gone&&(rg.dead||rg.t<rg.end+RRISE)){b.path=null;return}
+    const o=RO[id]||(RO[id]=[0,0]),px=r.pos[0]+o[0],pz=r.pos[2]+o[1];let tg=null,stop=3.2,move=false,dx=0,dz=0;
+    if(b.md==='wander'){
+      if(b.wait>0)b.wait-=dt;
+      else{if(!b.wp){const an=Math.random()*6.283,d=6+Math.random()*18;b.wp={x:b.hx+Math.cos(an)*d,z:b.hz+Math.sin(an)*d};b.path=null}tg=b.wp;stop=1.2}}
+    else{const pl=plist();let q=null;
+      if(b.md==='follow nearest'){let bd=1e9;pl.forEach(function(x){const d=Math.hypot(x.x-px,x.z-pz);if(d<bd){bd=d;q=x}})}
+      else if(b.md==='follow random'){if(!b.rp||!pl.some(function(x){return x.key===b.rp}))b.rp=pl.length?pl[Math.floor(Math.random()*pl.length)].key:null;q=pl.find(function(x){return x.key===b.rp})||null}
+      else{const nm=String(b.tn).trim().toLowerCase();q=pl.find(function(x){return x.name.toLowerCase()===nm})||null;if(!q){const m=/^player(\d*)$/.exec(nm);if(m)q=pl[m[1]?+m[1]-1:0]||null}}
+      if(q)tg={x:q.x,z:q.z}}
+    b.face=false;
+    if(tg){const dist=Math.hypot(tg.x-px,tg.z-pz);
+      if(dist<=stop){if(b.md==='wander'){b.wp=null;b.wait=1+Math.random()*2.5;b.path=null}else{b.fx=tg.x-px;b.fz=tg.z-pz;b.face=true;b.path=null}}
+      else{
+        const need=!b.path||now-b.pt>(b.md==='wander'?1200:400)||(b.pg&&Math.hypot(tg.x-b.pg[0],tg.z-b.pg[1])>2.5);
+        if(need){const fy=feetOf(r)+(RY[id]||0);b.obs=pfObst(r,fy,rigH(r));const res=pfFind(px,pz,tg.x,tg.z,b.obs);b.pt=now;b.pg=[tg.x,tg.z];
+          if(res){b.path=res.pts;b.pi=1}else{b.path=null;if(b.md==='wander'){b.wp=null;b.wait=.8}}}
+        if(b.path){while(b.pi<b.path.length-1&&Math.hypot(b.path[b.pi][0]-px,b.path[b.pi][1]-pz)<1)b.pi++;
+          const w=b.path[Math.min(b.pi,b.path.length-1)];dx=w[0]-px;dz=w[1]-pz;move=Math.hypot(dx,dz)>.05}
+        else if(b.md!=='wander'){dx=tg.x-px;dz=tg.z-pz;move=true}}}
+    if(move){const L=Math.hypot(dx,dz)||1;let ux=dx/L,uz=dz/L;
+      if(b.side>0){b.side-=dt;const sx=-uz*b.sd,sz=ux*b.sd;ux=ux*.4+sx*.9;uz=uz*.4+sz*.9;const m=Math.hypot(ux,uz)||1;ux/=m;uz/=m}
+      const st=Math.min(b.sp*dt,L),nx=px+ux*st,nz=pz+uz*st,ob=b.obs||[];
+      const hit=function(x,z){return ob.some(function(q){return x>q[0]+.9&&x<q[1]-.9&&z>q[2]+.9&&z<q[3]-.9})};
+      let mx=nx,mz=nz;if(hit(nx,nz)){if(!hit(nx,pz))mz=pz;else if(!hit(px,nz))mx=px;else{mx=px;mz=pz}}
+      o[0]+=mx-px;o[1]+=mz-pz;b.fx=ux;b.fz=uz;b.face=true;
+      if(now-b.lt>600){const mv=Math.hypot(px-b.lx,pz-b.lz);if(mv<b.sp*.6*.3){b.stuck++;b.path=null;b.side=.6;b.sd=Math.random()<.5?1:-1;if(b.stuck>3){b.wp=null;b.stuck=0;b.rp=null}}else b.stuck=0;b.lx=px;b.lz=pz;b.lt=now}}
+    else{b.lx=px;b.lz=pz;b.lt=now}
+    const nx2=r.pos[0]+o[0],nz2=r.pos[2]+o[1],fy0=feetOf(r),g2=groundAt(nx2,nz2,fy0+(RY[id]||0),id);
+    if(g2>-1e8&&!RVY[id]&&move)RY[id]=(RY[id]||0)+((g2-fy0)-(RY[id]||0))*(1-Math.exp(-dt*12));
+    if(b.face){const ty=Math.atan2(-b.fx,-b.fz);let df=ty-b.yaw;df=df-2*Math.PI*Math.floor((df+Math.PI)/(2*Math.PI));b.yaw+=df*(1-Math.exp(-dt*10));
+      RYAW[id]=b.yaw-(r.ry||0)*D;const g=J[id];if(g){g.userData.gry=b.yaw;g.rotation.y=b.yaw}}
+    b.at+=dt*(move?Math.min(1.6,b.sp/8):1);
+    if(!rbPose(r,b,move?'walk':'idle',b.at)&&b.was&&!move){const z={};if(!b.ids){b.ids={};rigParts(r).forEach(function(q){b.ids[q.id]=1})}Object.keys(b.ids).forEach(function(k){z[k]=[0,0,0]});applyKeyed(z)}
+    b.was=move})}
+function xeqSet(t,slot,id,wear){
+  if(t.key==='main'){S.xeq=S.xeq||{};if(wear)S.xeq[slot]=id;else Object.keys(S.xeq).forEach(function(k){if(S.xeq[k]===id)delete S.xeq[k]});try{accLocal()}catch(e){}return}
+  const n=NP.find(function(x){return 'np:'+x.name===t.key});if(!n)return;
+  n.xo=n.xo||{};if(wear)n.xo[slot]=id;else Object.keys(n.xo).forEach(function(k){if(n.xo[k]===id)delete n.xo[k]});
+  try{netEq(n,n.eqs||'')}catch(e){}
+  if(n.net&&NET.on&&NET.ch)NET.ch.send({type:'broadcast',event:'gw',payload:{id:NET.id,t:n.net,a:id,s:slot,m:wear?1:0}})}
 /* ===== Teleport, kick, ban ===== */
 function feetOf(r){let lo=1e9;rigParts(r).forEach(function(p){lo=Math.min(lo,p.pos[1]-p.size[1]/2)});return lo}
 function npTag(n){const T=byId(P.avId);if(!T)return;const q=n.g.position;n.tag.position.set(T.pos[0]+q.x,n.top+1.3+q.y,T.pos[2]+q.z)}
@@ -2696,7 +2811,7 @@ function npFree(n){try{scene.remove(n.g);scene.remove(n.tag)}catch(e){}
   try{if(n.tag&&n.tag.material){if(n.tag.material.map)n.tag.material.map.dispose();n.tag.material.dispose()}}catch(e){}
   try{if(n.bub){scene.remove(n.bub.sp);n.bub.t.dispose();n.bub.sp.material.dispose()}}catch(e){}}
 function dropNP(n){npFree(n);
-  const i=NP.indexOf(n);if(i>=0)NP.splice(i,1);S.oth=S.oth.filter(function(x){return x!==n.name});delete RAG['np:'+n.name];delete RSZ['np:'+n.name];TM.forEach(function(st){st.delete('np:'+n.name)});renderParts();gmPlRefresh()}
+  const i=NP.indexOf(n);if(i>=0)NP.splice(i,1);S.oth=S.oth.filter(function(x){return x!==n.name});delete RAG['np:'+n.name];delete RSZ['np:'+n.name];TM.forEach(function(st){st.delete('np:'+n.name)});renderParts();gmPlRefresh();firePJ('pleave',n.name)}
 function endGameFor(kind,why,b){S.stop=true;running=false;playing=false;sync();resetWorld();
   mdl(kind==='banned'?'You were banned from this game':'You were kicked from this game',function(c,close){
     c.append(el('p','','Reason: '+(why||'No reason given')));
@@ -2716,6 +2831,7 @@ function bansUI(d){P.bans=P.bans.filter(function(b){return b.until===null||b.unt
 
 /* ===== Events: touch, click, chat and keys ===== */
 function fireScript(sc){if(!(running||playing))return;ex(sc.slice(1),S,sc[0].o).catch(function(e){log('Error: '+e)})}
+function firePJ(kind,name){if(!(running||playing))return;P.scripts.forEach(function(sc){if(sc[0].t!==kind)return;S.v[kind==='pjoin'?'joiner':'leaver']=String(name);fireScript(sc)})}
 /* "when key held": run the script again and again while the key stays down. Only one copy runs at a time; the next round starts once the last one has finished. */
 const HL=new Map();
 function holdStart(sc){if(!(running||playing))return;const h=sc[0];let st=HL.get(h);if(!st){st={down:false,run:false};HL.set(h,st)}st.down=true;if(st.run)return;st.run=true;const my=S;
@@ -2858,8 +2974,9 @@ const GED={grid:0,mag:true,top:false},GE={},openG={};let SB=null,gKeyT=0,GDRAG=n
 function hexA(h,a){const m=/^#?([0-9a-f]{6})$/i.exec(h||''),n=m?parseInt(m[1],16):0;return 'rgba('+(n>>16&255)+','+(n>>8&255)+','+(n&255)+','+a+')'}
 function guiState(g){const r=GR[g.id]||{};return {vis:r.vis!==undefined?r.vis:g.vis!==false,text:r.text!==undefined?r.text:g.text}}
 function guiByName(n){const k=String(n).trim().toLowerCase();return P.guis.filter(function(g){return g.name.toLowerCase()===k})}
+function guiClickable(g){const k=g.name.toLowerCase();return g.type==='button'||P.scripts.some(function(sc){const h=sc[0];return (h.t==='guiclick'&&String(h.a[0]).trim().toLowerCase()===k)||(h.t==='guithisclick'&&h.o===g.id)})}
 function guiClick(g){if(!(running||playing))return;S.v.clicker=P.player.name;const k=g.name.toLowerCase();
-  P.scripts.forEach(function(sc){const h=sc[0];if(h.t==='guiclick'&&String(h.a[0]).trim().toLowerCase()===k)fireScript(sc)})}
+  P.scripts.forEach(function(sc){const h=sc[0];if((h.t==='guiclick'&&String(h.a[0]).trim().toLowerCase()===k)||(h.t==='guithisclick'&&h.o===g.id))fireScript(sc)})}
 /* GUI edit mode is ON only while the GUI folder is open in the Explorer (and you are not playing). Then the stage only talks to the GUI. */
 function guiEdit(){return !!openS.gui&&!running&&!playing&&!VIEWONLY&&!animOn()}
 function guiById(id){return id?P.guis.find(function(x){return x.id===id}):null}
@@ -2899,7 +3016,7 @@ function guiBuild(pid,host,k,ed,live){guiKids(pid).forEach(function(g){const st=
     const t=document.createElement('span');t.className='gtx';t.textContent=ed?(g.text||''):(st.text||'');e.append(t);e._t=t;
     if(ed){s.pointerEvents='auto';s.cursor=g.lock?'not-allowed':'move';s.userSelect='none';s.outline='1px dashed rgba(255,255,255,.5)';s.outlineOffset='-1px';
       e.onpointerdown=function(ev){guiDown(ev,g)};e.ondblclick=function(ev){ev.stopPropagation();guiInline(g)}}
-    else if(g.type==='button'&&live){s.pointerEvents='auto';s.cursor='pointer';e.tabIndex=-1;e.onmousedown=function(ev){ev.preventDefault()};e.onclick=function(){guiClick(g)}}
+    else if(live&&guiClickable(g)){s.pointerEvents='auto';s.cursor='pointer';e.tabIndex=-1;e.onmousedown=function(ev){ev.preventDefault()};e.onclick=function(){guiClick(g)}}
     GE[g.id]=e;host.append(e);guiBuild(g.id,e,k,ed,live)})}
 function renderGui(){const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
   const ed=guiEdit(),live=running||playing,k=w/480;
@@ -2986,7 +3103,7 @@ function dupGui(g){let first=null;const cp=function(o,par){const c=JSON.parse(JS
     guiKids(o.id).forEach(function(k){cp(k,c.id)})};
   cp(g,guiPar(g));selGui=first.id;save();renderParts();msg('Copied to '+first.name+'.')}
 function delGui(g){const dead=P.guis.filter(function(x){return guiIsIn(x.id,g.id)}).map(function(x){return x.id});
-  P.guis=P.guis.filter(function(x){return dead.indexOf(x.id)<0});if(dead.indexOf(selGui)>=0)selGui=null;save();rend();renderParts()}
+  P.guis=P.guis.filter(function(x){return dead.indexOf(x.id)<0});P.scripts=P.scripts.filter(function(sc){return dead.indexOf(sc[0].o)<0});if(selScr&&!P.scripts.some(function(sc){return sc[0]===selScr}))selScr=null;if(dead.indexOf(selGui)>=0)selGui=null;save();rend();renderParts()}
 function guiMove(g,dir){const sib=guiKids(guiPar(g)),t=sib[sib.indexOf(g)+dir];if(!t)return;const i=P.guis.indexOf(g),j=P.guis.indexOf(t);P.guis[i]=t;P.guis[j]=g;save();renderParts()}
 /* the little toolbar that floats on the stage in GUI edit mode */
 function guiBar(ed){GB.replaceChildren();if(!ed){GB.hidden=true;return}GB.hidden=false;const g=guiCur();
@@ -3048,6 +3165,8 @@ function guiProps(d,g){const T=GTYPE[g.type]||GTYPE.frame;
   ac.onclick=function(){P.guis.forEach(function(x){x.rc=g.rc;x.round=g.round;x.cn=g.cn?g.cn.slice():[1,1,1,1]});save();renderGui();msg('Applied to all GUI.')};d.append(ac);
   if(g.type==='image'){head('Picture');const is=el('select');[['','None']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})).forEach(function(o){const op=el('option','',o[1]);op.value=o[0];is.append(op)});
     is.value=P.assets.images[g.img]?g.img:'';is.onchange=function(){g.img=is.value;save();renderGui()};d.append(lab('Picture (upload under Assets first)',is))}
+  head('Scripts');
+  guiScripts(d,g);
   head('Behaviour');
   chk('Visible at the start',function(){return g.vis!==false},function(v){g.vis=v});
   chk('Locked (cannot be dragged on the stage)',function(){return g.lock},function(v){g.lock=v});
@@ -3055,8 +3174,12 @@ function guiProps(d,g){const T=GTYPE[g.type]||GTYPE.frame;
   [['Bring forward',function(){guiMove(g,1)}],['Send back',function(){guiMove(g,-1)}],['Copy',function(){dupGui(g)}]].forEach(function(q){const b=el('button','btn ghost small',q[0]);b.type='button';b.onclick=q[1];row.append(b)});d.append(row);
   const del=el('button','btn ghost small','Delete this GUI'+(guiKids(g.id).length?' and what is inside':''));del.type='button';del.style.marginTop='10px';del.onclick=function(){delGui(g)};d.append(del)}
 $('p-gui').onchange=function(){if(this.value)addGui(this.value);this.value=''};
+function guiScripts(d,g){const mine=P.scripts.filter(function(sc){return sc[0].o===g.id});
+  d.append(el('p','note',mine.length?'Scripts inside this GUI. Click one to open it.':'No scripts in this GUI yet. Add one, then drag blocks under it. Inside it, pick "this GUI" in the show / hide / set visible / toggle blocks.'));
+  mine.forEach(function(sc){const h=sc[0],b=el('button','btn ghost small',(KW[h.t]||h.t)+(h.a.length?' '+h.a.join(' '):''));b.type='button';b.style.cssText='display:block;margin:2px 0';b.onclick=function(){selScript(h)};d.append(b)});
+  const row=el('div','tb');[['+ When clicked','guithisclick'],['+ When start','start'],['+ Function','def']].forEach(function(q){const b=el('button','btn small',q[0]);b.type='button';b.onclick=function(){addScript(g.id,q[1])};row.append(b)});d.append(row)}
 /* Explorer helpers for the GUI tree: rows can be dragged onto a Frame (or any GUI) to put them inside it, or onto "GUI" to take them out */
-function guiTreeRows(pid,d){guiKids(pid).forEach(function(g){const T=GTYPE[g.type]||GTYPE.frame,ks=guiKids(g.id),open=openG[g.id]!==false;
+function guiTreeRows(pid,d,scrRows){guiKids(pid).forEach(function(g){const T=GTYPE[g.type]||GTYPE.frame,ks=guiKids(g.id),open=openG[g.id]!==false;
     const r=xrow({d:d,ic:T.i,icc:T.c,nm:g.name,bd:[T.n+(ks.length?' · '+ks.length:'')],open:ks.length?open:undefined,onTg:ks.length?function(){openG[g.id]=!open;renderParts()}:null,
       on:selGui===g.id,go:function(){if(animOn())return;guiSelect(g.id)},plus:{t:'gui',id:g.id}});
     r.draggable=true;r.ondragstart=function(e){GDRAG=g.id;try{e.dataTransfer.setData('text/plain',g.id);e.dataTransfer.effectAllowed='move'}catch(x){}};
@@ -3064,7 +3187,7 @@ function guiTreeRows(pid,d){guiKids(pid).forEach(function(g){const T=GTYPE[g.typ
     r.ondragover=function(e){if(GDRAG&&GDRAG!==g.id&&!guiIsIn(g.id,GDRAG)){e.preventDefault();r.classList.add('gdrop')}};
     r.ondragleave=function(){r.classList.remove('gdrop')};
     r.ondrop=function(e){e.preventDefault();r.classList.remove('gdrop');const m=guiById(GDRAG);GDRAG=null;if(m)guiSetParent(m,g.id)};
-    if(ks.length&&open)guiTreeRows(g.id,d+1)})}
+    if(scrRows)scrRows(g.id,d+1);if(ks.length&&open)guiTreeRows(g.id,d+1,scrRows)})}
 function guiRootDrop(r){r.ondragover=function(e){if(GDRAG){e.preventDefault();r.classList.add('gdrop')}};r.ondragleave=function(){r.classList.remove('gdrop')};
   r.ondrop=function(e){e.preventDefault();r.classList.remove('gdrop');const m=guiById(GDRAG);GDRAG=null;if(m)guiSetParent(m,'')}}
 /* ===== Explorer: services in the game tree ===== */
@@ -3171,7 +3294,8 @@ function isRigCtx(c){if(c.t==='model')return partsOf(c.id).some(function(p){retu
 function ctxName(c){if(c.t==='gui'){const gg=guiById(c.id);return gg?gg.name:''}if(c.t==='svc'){const s=SV.find(function(x){return x.k===c.k});return s?s.n:''}
   const o=c.t==='model'?byModel(c.id):byId(c.id);return o?o.name:''}
 function mi(ic,c,t,d,fn){return {ic:ic,c:c,t:t,d:d,fn:fn}}
-function addGroups(c){if(c.t==='gui'){const O2=[];[['text','Text','A text label inside this GUI'],['button','Button','A button inside this GUI'],['frame','Frame','A box inside this GUI'],['image','Image','A picture inside this GUI']].forEach(function(q){const T=GTYPE[q[0]];O2.push(mi(T.i,T.c,q[1],q[2],function(){addGui(q[0],c.id)}))});return [{g:'Put inside this GUI',items:O2}]}
+function addGroups(c){if(c.t==='gui'){const O2=[];[['text','Text','A text label inside this GUI'],['button','Button','A button inside this GUI'],['frame','Frame','A box inside this GUI'],['image','Image','A picture inside this GUI']].forEach(function(q){const T=GTYPE[q[0]];O2.push(mi(T.i,T.c,q[1],q[2],function(){addGui(q[0],c.id)}))});const S2=[['When this GUI is clicked','guithisclick','Runs when a player clicks this GUI'],['When start','start','Runs when the game starts'],['When I receive','recv','Runs when a broadcast message arrives'],['When key held','keyheld','Runs again and again while a key is held down'],['Function','def','A reusable set of blocks']].map(function(q){return mi('\u270E','#c9822b','Script: '+q[0],q[2],function(){addScript(c.id,q[1])})});
+    return [{g:'Put inside this GUI',items:O2},{g:'Scripts inside this GUI',items:S2}]}
   const O=[],Sx=[],A=[],k=c.k,own=c.t==='svc'?null:c.id;
   const scr=function(g,t,d){return mi('\u270E','#c9822b',g,d,function(){addScript(own,t)})};
   if(c.t==='svc'){
@@ -3259,7 +3383,7 @@ function renderParts(){const l=$('p-list');l.replaceChildren();
     if(s.k==='world'||s.k==='shared'||s.k==='vault'){if(!listIn(s.k)&&s.k!=='world')plain('(empty)',go)}
     else if(s.k==='roster'){const q=P.squads.find(function(z){return z.id===P.player.squad});plain(P.player.name+' (you)'+(q?'  \u2014  '+q.name:''),function(){pick((avTorso()||byId(P.avId)||{}).id,false,true)},'\u263A','#2fa95a');
       S.oth.forEach(function(n){plain(n,go,'\u263A','#3b82f6')})}
-    else if(s.k==='gui'){guiTreeRows('',1);if(!P.guis.length)plain('(no GUI yet)',go)}
+    else if(s.k==='gui'){guiTreeRows('',1,scrRows);if(!P.guis.length)plain('(no GUI yet)',go)}
     else if(s.k==='squads')P.squads.forEach(function(q){plain(q.name,go,'\u25A0',q.color)});
     else if(s.k==='tags'){const m=tagMap();Object.keys(m).forEach(function(t){plain('# '+t+'   ('+m[t].length+')',function(){pickTag(t)})});if(!Object.keys(m).length)plain('(no tags yet)',go)}
     else if(s.k==='scripts'){P.scripts.forEach(function(sc){scrRow(sc,1,true)});if(!P.scripts.length)plain('(no scripts yet)',go)}
@@ -3288,7 +3412,7 @@ function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.
   if(playing)play(dt,f);
   else{const sp=(keys.ShiftLeft?36:12)*dt,r=[Math.cos(cam.yaw),0,Math.sin(cam.yaw)],go=function(v,k){cam.x+=v[0]*k;cam.y+=v[1]*k;cam.z+=v[2]*k};
     if(keys.KeyW)go(f,sp);if(keys.KeyS)go(f,-sp);if(keys.KeyD)go(r,sp);if(keys.KeyA)go(r,-sp);if(keys.KeyQ)cam.y-=sp;if(keys.KeyE)cam.y+=sp;if(Math.abs(zq)>.001){const zs=zq*(1-Math.exp(-dt*12));zq-=zs;go(f,zs)}else zq=0}
-  if(playing||running){collide();pcollide();physics(dt);objMove(dt);npPhys(dt);touchTick()}npTick(dt);
+  if(playing||running){collide();pcollide();physics(dt);objMove(dt);rigAI(dt);npPhys(dt);touchTick()}npTick(dt);
   draw();entTick(dt);
   if(playing){const T=byId(P.avId);if(T){S.ch=S.ch===undefined?S.h:S.ch+(S.h-S.ch)*(1-Math.exp(-dt*9));
     const fx=T.pos[0]+S.x,fy=T.pos[1]+S.ch+1,fz=T.pos[2]-S.y;cd+=(cdT-cd)*(1-Math.exp(-dt*10));if(Math.abs(cdT-cd)<.002)cd=cdT;
@@ -3312,9 +3436,10 @@ function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing);try{renderGui()}catch(e){}}
 function setRun(v){running=v;sync()}
-function resetWorld(){KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();RO={};RV={};RD={};RVY={};RY={};CO={};TM=new Map();RAG={};RSZ={};GR={};for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
+function resetWorld(){KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();RO={};RV={};RD={};RVY={};RY={};CO={};TM=new Map();RAG={};RSZ={};GR={};RB={};RYAW={};for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
 function boot(my){reser();const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
   hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
+  setTimeout(function(){if(my===S&&(running||playing))firePJ('pjoin',P.player.name)},120);
   return {hs:hs,done:Promise.all(hs.filter(function(s){return s[0].t==='start'}).map(function(s){return ex(s.slice(1),my,s[0].o).catch(function(e){log('Error: '+e)})}))}}
 $('s-run').onclick=async function(){this.blur();if(banGate())return;S.stop=true;resetWorld();const my=S;$('s-out').textContent='';setRun(true);
   const b=boot(my);await b.done;
@@ -3421,9 +3546,10 @@ function updateStat(){statEl.textContent=gameId?'Published ('+(gameVis==='public
 function publish(v){if(!gameId)gameId='g'+Date.now().toString(36)+Math.floor(Math.random()*1e3).toString(36);gameVis=v;persistGame();cloudPush(gameId,true);store.set('brixblox-cur',gameId);baseStr=JSON.stringify(P);updateStat()}
 function updateLive(){if(!gameId||!sb||!ME||upBusy)return;upBusy=true;cloudErr=false;updateStat();cloudPush(gameId,true)}
 function publishDlg(){mdl(gameId?'Publish settings':'Publish game',function(c,close){
+  const mxp=el('input');mxp.type='number';mxp.min=1;mxp.max=30;mxp.value=P.maxp||10;mxp.style.cssText='min-height:32px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);width:100%';
   const nm=el('input');nm.value=P.name;nm.maxLength=30;nm.style.cssText='min-height:32px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink)';
-  c.append(el('p','note',gameId?'This game is published. Your changes save here in BrixBlox Studio automatically, but they only go live on BrixBlox when you press Update (or Publish again).':'This game is not saved yet. Publish it to keep it.'),lab('Game name',nm));
-  const go=function(v){P.name=nm.value.trim()||P.name;$('s-name').value=P.name;publish(v);close()};
+  c.append(el('p','note',gameId?'This game is published. Your changes save here in BrixBlox Studio automatically, but they only go live on BrixBlox when you press Update (or Publish again).':'This game is not saved yet. Publish it to keep it.'),lab('Game name',nm),lab('Max players per server (1-30)',mxp),el('p','note','How many players fit in one server of this game. When a server is full, new players are put in a new server. Default 10, max 30.'));
+  const go=function(v){P.maxp=Math.max(1,Math.min(30,Math.round(+mxp.value)||10));P.name=nm.value.trim()||P.name;$('s-name').value=P.name;publish(v);close()};
   const r=el('div','tb');r.append(mb('Publish as Private','',function(){go('private')}),mb('Publish as Public','',function(){go('public')}),mb('Cancel','ghost',close));c.append(r);setTimeout(function(){nm.focus()},0)})}
 function reloadInto(v){skipUnload=true;store.set('brixblox-pending',v);location.reload()}
 function openGame(id){if(dirty())ask('This game is not published, so it will be lost. Open another game anyway?','Open anyway',function(){reloadInto(id)});else reloadInto(id)}
@@ -3762,7 +3888,7 @@ async function netJoin(){
     await new Promise(function(ok){let d=0;const fin=function(){if(!d){d=1;ok()}};lob.on('presence',{event:'sync'},function(){});
       lob.subscribe(function(st){if(st==='SUBSCRIBED')setTimeout(fin,1200);else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')fin()});setTimeout(fin,4000)});
     const cn={},ps=lob.presenceState();Object.keys(ps).forEach(function(k){ps[k].forEach(function(m){if(m.sid)cn[m.sid]=(cn[m.sid]||0)+1})});
-    let n=1;while((cn['s'+n]||0)>=NETMAX)n++;NET.sid='s'+n;await lob.track({sid:NET.sid});
+    let n=1;const mxs=Math.max(1,Math.min(30,Math.round(+P.maxp)||NETMAX));while((cn['s'+n]||0)>=mxs)n++;NET.sid='s'+n;await lob.track({sid:NET.sid});
     const ch=NET.ch=sb.channel('bbs:'+gid+':'+NET.sid,{config:{presence:{key:NET.id},broadcast:{self:false}}});
     ch.on('broadcast',{event:'p'},function(m){netRecv(m.payload)});
     ch.on('broadcast',{event:'bye'},function(m){const p=m.payload;if(p&&p.id&&p.id!==NET.id)netDrop(p.id)});/* a player pressed Leave: drop them right away */
@@ -3781,6 +3907,9 @@ async function netJoin(){
       const add=!!p.m,nm=String(p.nm||'an accessory').slice(0,24);
       invChange(id,add).then(function(r){if(r&&r.ok&&!r.same)chatSys('Admin '+by+(add?' added the accessory "'+nm+'" to your inventory. Wear it from your avatar page.':' removed the accessory "'+nm+'" from your inventory.'))}).catch(function(){})});
     ch.on('broadcast',{event:'ar'},function(){if(Date.now()-ADMT>3000)admLoad()});
+    ch.on('broadcast',{event:'gw'},function(m){const p=m.payload;if(!p||p.t!==NET.id||p.id===NET.id||!(running||playing))return;const sl=String(p.s||''),ac=String(p.a||'');
+      if(!ACCS[sl]||!/^acc_[a-z0-9]{1,16}$/.test(ac))return;S.xeq=S.xeq||{};
+      if(p.m)S.xeq[sl]=ac;else Object.keys(S.xeq).forEach(function(k){if(S.xeq[k]===ac)delete S.xeq[k]});try{accLocal()}catch(e){}});
     ch.on('presence',{event:'sync'},function(){NET.synced=true});
     ch.on('presence',{event:'join'},function(){NET.last=''});
     ch.on('presence',{event:'leave'},function(e){(e.leftPresences||[]).forEach(function(m){netDrop(m.id)})});
@@ -3805,9 +3934,9 @@ function netSay(id,t){const e=NP.find(function(n){return n.net===id});if(!e)retu
   e.say=t.slice(0,90);e.sayAt=performance.now();bubPaint(e.say,e.bub.x,e.bub.t)}
 function netDrop(id){const i=NP.findIndex(function(n){return n.net===id});if(i<0)return;const n=NP[i];
   NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);/* remove them first, so nothing below can stop it */
-  chatSys(n.name+' left the game');npFree(n);delete RAG['np:'+n.name];delete RSZ['np:'+n.name];try{renderParts()}catch(e){}gmPlRefresh()}
+  chatSys(n.name+' left the game');npFree(n);delete RAG['np:'+n.name];delete RSZ['np:'+n.name];try{renderParts()}catch(e){}gmPlRefresh();firePJ('pleave',n.name)}
 setInterval(function(){if(!NET.on||!(running||playing))return;
-  const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,e:accStr(ME&&ME.av&&ME.av.eq)},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.an,q.ac,q.rc,q.e].join()+(rgo?JSON.stringify(rgo):'');
+  const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,e:accStr(Object.assign({},(ME&&ME.av&&ME.av.eq)||{},S.xeq||{}))},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.an,q.ac,q.rc,q.e].join()+(rgo?JSON.stringify(rgo):'');
   const nowT=performance.now();if(j===NET.last&&nowT-(NET.lt||0)<1500)return;NET.last=j;NET.idle=0;NET.lt=nowT;NET.ch.send({type:'broadcast',event:'p',payload:q})},100);
 /* Ghost sweep, runs on every player's own game (so it works even if the player who left has an old version):
    the server's list of who is online is the truth. Someone who is not on it and has gone quiet is removed. */
