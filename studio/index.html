@@ -3247,6 +3247,210 @@ function gamesDlg(){mdl('My games',function(c,close){const L=glib(),ids=Object.k
   c.append(mb('New game (Shift+N, G)','',function(){close();newGame()}),mb('Close','ghost',close))})}
 {const bk=$('s-back'),pb=mb('Publish','',publishDlg),gb=mb('My games','ghost',gamesDlg);upBtn=mb('Update','',updateLive);upBtn.title='Send your latest changes to normal BrixBlox. Until you press this, changes only save here in BrixBlox Studio.';upBtn.hidden=true;$('s-name').insertAdjacentElement('afterend',statEl);bk.parentNode.insertBefore(pb,bk);bk.parentNode.insertBefore(upBtn,bk);bk.parentNode.insertBefore(gb,bk)}
 updateStat();
+/* ===== Co-op editing =====
+   One person hosts a session and shares a code; friends join and everyone edits the same game at once.
+   The game is split into small pieces (each part, model, animation, script, image...). When you change a piece it is sent to everyone
+   over Supabase Realtime, and the newest change to a piece wins. Joining copies the host's game into the guest's Studio (the guest's own
+   saved games are never touched and guests cannot publish). */
+const COP={on:false,joining:false,starting:false,detached:false,host:false,code:'',ch:null,id:Math.random().toString(36).slice(2,10),at:0,last:{},stamp:{},clock:0,
+  out:new Map(),cq:[],rx:{},inq:[],pre:[],tm:0,kick:0,qs:0,mk:{},base:1e7+Math.floor(Math.random()*9e4)*1e4,next:0,prevGid:null,hostName:'',ui:null,joinDone:null,gotSS:false};
+let coPtr=false,coMid=0,coSidN=0;
+const COCH=40000,COSKIP=/^(parts|models|anims|scripts|assets|nid)$/;
+const coBad=function(x){return x==='__proto__'||x==='constructor'||x==='prototype'};
+const coSid=function(){return COP.id+Math.random().toString(36).slice(2,6)+(coSidN++)};
+const coHue=function(id){let h=7;for(let i=0;i<id.length;i++)h=(h*31+id.charCodeAt(i))%360;return 'hsl('+h+',70%,58%)'};
+function coTime(){const t=Math.max(Date.now(),COP.clock+1);COP.clock=t;return t}
+function coMembers(){const o=[];try{const s=COP.ch.presenceState();Object.keys(s).forEach(function(k){const m=(s[k]||[])[0];if(m)o.push({id:k,n:String(m.n||'?').slice(0,24),at:+m.at||0,h:!!m.h})})}catch(e){}return o}
+function coLeader(){const m=coMembers().filter(function(x){return x.id!==COP.id||COP.on});if(!m.length)return true;const h=m.find(function(x){return x.h});if(h)return h.id===COP.id;
+  m.sort(function(a,b){return a.at-b.at||(a.id<b.id?-1:1)});return m[0].id===COP.id}
+function coNorm(){P.parts=P.parts||[];P.models=P.models||[];P.anims=P.anims||{};P.scripts=P.scripts||[];P.vars=Array.isArray(P.vars)?P.vars:[];P.assets=P.assets||{};
+  ['images','audio','meshes','avol'].forEach(function(c){P.assets[c]=P.assets[c]||{}});P.badges=Array.isArray(P.badges)?P.badges:[];P.guis=Array.isArray(P.guis)?P.guis:[];P.bans=Array.isArray(P.bans)?P.bans:[];
+  P.env=Object.assign({sky:'#8fd3ff',tod:14,bright:1,sun:1,fog:0},P.env||{});P.rules=Object.assign({grav:190,jump:48,speed:16,cam:14,fov:70},P.rules||{});P.audio=Object.assign({vol:.5,mute:false},P.audio||{});
+  P.squads=P.squads||[{id:'q1',name:'Red Squad',color:'#e5484d'},{id:'q2',name:'Blue Squad',color:'#3b82f6'}];P.player=P.player||{name:'Player1',squad:''}}
+
+/* The game as a flat list of pieces: key -> text. Two pieces with the same key are the same thing. */
+function coMap(){const m={},seen={};
+  P.parts.forEach(function(p){m['part:'+p.id]=JSON.stringify(p)});
+  P.models.forEach(function(p){m['model:'+p.id]=JSON.stringify(p)});
+  Object.keys(P.anims).forEach(function(k){m['anim:'+k]=JSON.stringify(P.anims[k])});
+  P.scripts.forEach(function(sc){if(!sc||!sc.length)return;const h=sc[0];if(!h||typeof h!=='object')return;if(!h.sid||seen[h.sid])h.sid=coSid();seen[h.sid]=1;m['script:'+h.sid]=JSON.stringify(sc)});
+  ['images','audio','meshes'].forEach(function(c){const o=P.assets[c]||{};Object.keys(o).forEach(function(n){const v=o[n];if(typeof v==='string'&&!bigRef(v))m['asset:'+c+':'+n]=v})});
+  const av=P.assets.avol||{};Object.keys(av).forEach(function(n){m['asset:avol:'+n]=String(av[n])});
+  Object.keys(P).forEach(function(k){if(!COSKIP.test(k)&&P[k]!==undefined)m['meta:'+k]=JSON.stringify(P[k])});
+  return m}
+
+/* Put one received piece into the game. Returns what kind of thing changed. */
+function coApplyKV(k,v){const i=k.indexOf(':'),kind=k.slice(0,i),id=k.slice(i+1);
+  if(kind==='part'||kind==='model'){const arr=kind==='part'?P.parts:P.models,ix=arr.findIndex(function(x){return x&&x.id===id});
+    if(v===null){if(ix>=0)arr.splice(ix,1);return 'p'}
+    const o=JSON.parse(v);if(!o||typeof o!=='object'||o.id!==id)return null;
+    if(ix>=0){const t=arr[ix];Object.keys(t).forEach(function(x){delete t[x]});Object.assign(t,o)}else arr.push(o);return 'p'}
+  if(kind==='anim'){if(coBad(id)||!id)return null;if(v===null)delete P.anims[id];else P.anims[id]=JSON.parse(v);return 'a'}
+  if(kind==='script'){const ix=P.scripts.findIndex(function(s){return s&&s.length&&s[0]&&s[0].sid===id});
+    if(v===null){if(ix>=0)P.scripts.splice(ix,1);return 's'}
+    const o=JSON.parse(v);if(!Array.isArray(o)||!o.length)return null;
+    if(ix>=0){const t=P.scripts[ix];t.length=0;o.forEach(function(b){t.push(b)})}else P.scripts.push(o);return 's'}
+  if(kind==='asset'){const j=id.indexOf(':'),c=id.slice(0,j),n=id.slice(j+1);if(!/^(images|audio|meshes|avol)$/.test(c)||!n||coBad(n))return null;
+    const o=P.assets[c]=P.assets[c]||{};if(v===null){delete o[n];if(c==='audio'){try{stopAudio(n)}catch(e){}}}else o[n]=c==='avol'?(+v||0):v;return 'i'}
+  if(kind==='meta'){if(COSKIP.test(id)||coBad(id)||!id)return null;if(v===null)delete P[id];else P[id]=JSON.parse(v);COP.mk[id]=1;return 'm'}
+  return null}
+
+/* Redraw whatever the incoming changes touched (same steps Undo uses) */
+function coRefresh(f){
+  try{if(f.p||f.a){sel=sel.filter(function(id){return byId(id)});if(selModel&&!byModel(selModel))selModel=null;if(selJ&&!byId(selJ))selJ=null;fixA();aJFix()}}catch(e){}
+  try{if(f.p||f.a||f.i)rebuildParts()}catch(e){}
+  try{if(f.i)updSkyTex()}catch(e){}
+  try{if(f.s)rend()}catch(e){}
+  try{if(f.m){if(COP.mk.env)applyEnv();if(COP.mk.guis)renderGui();if(COP.mk.name){const n=$('s-name');if(n&&document.activeElement!==n)n.value=P.name}}}catch(e){}
+  try{renderParts()}catch(e){}
+  try{if(animOn())animUI();else if(f.p||f.a||f.m)props()}catch(e){}
+  try{histLast=snapState();saveRaw()}catch(e){}
+  COP.mk={};coUi()}
+
+/* ---- sending ---- */
+function coPieces(k,v,t,extra){const base=Object.assign({e:'d',by:COP.id,k:k,t:t},extra||{});
+  if(v===null)return [Object.assign(base,{del:1})];
+  const n=Math.max(1,Math.ceil(v.length/COCH)),mid=COP.id+':'+(++coMid),a=[];
+  for(let i=0;i<n;i++)a.push(Object.assign({},base,{mid:mid,i:i,n:n,s:v.slice(i*COCH,(i+1)*COCH)}));return a}
+function coPump(){if(!COP.ch)return;let p=COP.cq.shift();
+  if(!p&&COP.on&&!COP.joining){const e=COP.out.entries().next();if(!e.done){const k=e.value[0],o=e.value[1];COP.out.delete(k);const a=coPieces(k,o.v,o.t);p=a.shift();COP.cq.push.apply(COP.cq,a)}}
+  if(p){try{COP.ch.send({type:'broadcast',event:'co',payload:p})}catch(e){}}}
+setInterval(coPump,30);
+function coFixNid(){if(COP.on){COP.next=Math.max(COP.next||0,P.nid||0);if(!(P.nid>=COP.next))P.nid=COP.next}}
+/* Work out what this person changed since the last sync and queue it (newest value per piece only) */
+function coDiff(){COP.tm=0;if(!COP.on||COP.joining||running||playing)return;coFixNid();
+  const m=coMap(),now=coTime();
+  Object.keys(m).forEach(function(k){if(COP.last[k]!==m[k]){COP.last[k]=m[k];COP.stamp[k]={t:now,by:COP.id};COP.out.set(k,{v:m[k],t:now})}});
+  Object.keys(COP.last).forEach(function(k){if(!(k in m)){delete COP.last[k];COP.stamp[k]={t:now,by:COP.id};COP.out.set(k,{v:null,t:now})}})}
+function coSchedule(){if(!COP.on||COP.joining||COP.tm)return;COP.tm=setTimeout(coDiff,80)}
+function coSnapshot(to){coDiff();const m=coMap(),ks=Object.keys(m);
+  COP.cq.push({e:'ss',by:COP.id,to:to,n:ks.length,hn:COP.hostName||ME.username});
+  ks.forEach(function(k){const st=COP.stamp[k];COP.cq.push.apply(COP.cq,coPieces(k,m[k],st?st.t:0,{to:to,snap:1}))});
+  COP.cq.push({e:'se',by:COP.id,to:to})}
+
+/* ---- receiving ---- */
+function coRecv(p){if(!p||typeof p!=='object'||p.by===COP.id)return;if(p.to&&p.to!==COP.id)return;
+  switch(p.e){
+    case 'need':if(COP.on&&!COP.joining&&coLeader())coSnapshot(String(p.by));break;
+    case 'ss':if(COP.joining&&p.to===COP.id)coBeginJoin(p);break;
+    case 'se':if(COP.joining&&p.to===COP.id&&COP.gotSS)coEndJoin();break;
+    case 'end':if(!COP.host&&(COP.on||COP.joining)){const h=coMembers().find(function(x){return x.id===p.by});if(!h||h.h)coEnded()}break;
+    case 'd':coRecvD(p);break}}
+function coRecvD(p){const k=String(p.k||'');if(!/^(part|model|anim|script|asset|meta):/.test(k))return;let v=null;
+  if(!p.del){const n=p.n|0;if(n>1){const r=COP.rx[p.mid]||(COP.rx[p.mid]={a:new Array(n),c:0});if(r.a[p.i|0]===undefined){r.a[p.i|0]=String(p.s);r.c++}if(r.c<n)return;v=r.a.join('');delete COP.rx[p.mid]}else v=String(p.s)}
+  COP.rxAt=Date.now();const it={k:k,v:v,t:+p.t||0,by:String(p.by),snap:!!p.snap};COP.clock=Math.max(COP.clock,it.t);
+  if(COP.joining){if(it.snap){if(COP.gotSS){try{coApplyKV(it.k,it.v)}catch(e){}COP.stamp[it.k]={t:it.t,by:it.by}}}else COP.pre.push(it);return}
+  if(it.snap||!COP.on)return;if(!COP.inq.length)COP.qs=Date.now();COP.inq.push(it);coKick()}
+function coKick(){if(COP.kick)return;COP.kick=setTimeout(coFlush,90)}
+const coOlder=function(it){const st=COP.stamp[it.k];return !!st&&(it.t<st.t||(it.t===st.t&&it.by<st.by))};
+function coFlush(){COP.kick=0;if(!COP.on||COP.joining||!COP.inq.length)return;
+  const a=document.activeElement,typing=!!a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName);
+  if(running||playing||coPtr||(typing&&Date.now()-COP.qs<2500)){COP.kick=setTimeout(coFlush,250);return}
+  coDiff();/* our own unsent edits go out first */
+  const q=COP.inq.splice(0),f={},done=[];COP.mk={};
+  q.forEach(function(it){if(coOlder(it))return;let r=null;try{r=coApplyKV(it.k,it.v)}catch(e){}if(r){f[r]=1;done.push(it)}COP.stamp[it.k]={t:it.t,by:it.by}});
+  const m=coMap();done.forEach(function(it){if(m[it.k]===undefined)delete COP.last[it.k];else COP.last[it.k]=m[it.k]});
+  coRefresh(f)}
+
+/* ---- joining ---- */
+function coBeginJoin(p){COP.gotSS=true;COP.rxAt=Date.now();COP.hostName=String(p.hn||'').slice(0,24);if(COP.prevGid===null)COP.prevGid=gameId||'';
+  gameId=null;gameVis=null;/* the guest's copy is never saved over one of the guest's own games */
+  P.parts=[];P.models=[];P.anims={};P.scripts=[];P.assets.images={};P.assets.audio={};P.assets.meshes={};P.assets.avol={};
+  ['avId','init','avCustom'].forEach(function(k){delete P[k]});sel=[];selModel=null;selJ=null;
+  const h=document.getElementById('shome');if(h)h.remove()}
+function coEndJoin(){COP.joining=false;COP.mk={};
+  COP.pre.splice(0).forEach(function(it){if(coOlder(it))return;try{coApplyKV(it.k,it.v)}catch(e){}COP.stamp[it.k]={t:it.t,by:it.by}});
+  coNorm();P.nid=COP.base;COP.next=P.nid;COP.on=true;COP.last=coMap();Object.keys(P.env||{});COP.mk={env:1,guis:1,name:1};
+  coRefresh({p:1,s:1,a:1,i:1,m:1});try{updateStat()}catch(e){}
+  if(COP.joinDone){const d=COP.joinDone;COP.joinDone=null;d()}}
+function coStart(code,host){return new Promise(function(res,rej){
+  if(!sb||!ME||ME.demo){rej(new Error('Co-op needs a signed-in online account (not demo mode).'));return}
+  const ch=sb.channel('bbco:'+code,{config:{presence:{key:COP.id},broadcast:{self:false}}});let done=0;
+  COP.ch=ch;COP.code=code;COP.host=host;COP.at=Date.now();COP.starting=true;
+  ch.on('broadcast',{event:'co'},function(m){coRecv(m&&m.payload)});
+  ch.on('presence',{event:'sync'},function(){coUi()});
+  ch.subscribe(function(st){if(done)return;
+    if(st==='SUBSCRIBED'){done=1;Promise.resolve(ch.track({n:ME.username,at:COP.at,h:host?1:0})).then(function(){COP.starting=false;res()},function(){COP.starting=false;res()})}
+    else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED'){done=1;COP.starting=false;rej(new Error('Could not connect to the co-op server.'))}});
+  setTimeout(function(){if(!done){done=1;COP.starting=false;rej(new Error('The connection timed out.'))}},9000)})}
+function coStop(){const ch=COP.ch;COP.ch=null;COP.on=false;COP.joining=false;COP.starting=false;COP.gotSS=false;COP.out.clear();COP.cq.length=0;COP.inq.length=0;COP.pre.length=0;COP.rx={};COP.joinDone=null;
+  try{if(ch)sb.removeChannel(ch)}catch(e){}coUi()}
+const coWait=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
+async function coCheck(){if(!sb||!ME||ME.demo)throw new Error('Co-op needs a signed-in online account (not demo mode).');if(VIEWONLY)throw new Error('Co-op is for the editor, not for playing.');
+  if(COP.ch||COP.on||COP.joining)throw new Error('You are already in a co-op session.');if(running||playing)throw new Error('Stop the game test first.');if(animOn())throw new Error('Close the animator first.')}
+async function coHostStart(){await coCheck();const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let code='';for(let i=0;i<8;i++)code+=A[Math.floor(Math.random()*A.length)];
+  COP.hostName=ME.username;COP.detached=false;COP.prevGid=null;
+  try{await coStart(code,true)}catch(e){coStop();throw e}
+  P.nid=Math.max(P.nid||1,COP.base);COP.next=P.nid;COP.last=coMap();COP.stamp={};COP.on=true;coUi()}
+async function coJoin(code){code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length<6)throw new Error('That code is too short.');await coCheck();
+  COP.detached=false;COP.prevGid=null;COP.gotSS=false;
+  try{await coStart(code,false)}catch(e){coStop();throw e}
+  await coWait(1400);
+  if(!coMembers().some(function(m){return m.id!==COP.id})){coStop();throw new Error('Nobody is in that session. Check the code and make sure the host has started it.')}
+  COP.joining=true;COP.pre=[];COP.cq.push({e:'need',by:COP.id});
+  try{await new Promise(function(ok,bad){COP.joinDone=ok;
+    setTimeout(function(){if(COP.joining&&!COP.gotSS)bad(new Error('The host did not send the game. Try again.'))},9000);
+    const w=setInterval(function(){if(!COP.joining){clearInterval(w);return}if(COP.gotSS&&Date.now()-(COP.rxAt||0)>25000){clearInterval(w);bad(new Error('The game stopped arriving. Try again.'))}},2000)})}
+  catch(e){const was=COP.gotSS;COP.joining=false;coStop();if(was){reloadInto(COP.prevGid||'__new__')}throw e}}
+function coEnded(){const wasOn=COP.on||COP.joining;COP.detached=true;coStop();if(!wasOn)return;
+  mdl('The session ended',function(c,close){c.append(el('p','','The host ended the co-op session. The copy in your Studio is no longer connected, so changes you make now stay only on your screen.'));
+    const r=el('div','tb');r.append(mb('Leave (back to my games)','',function(){close();coLeave()}),mb('Keep looking','ghost',close));c.append(r)})}
+function coLeave(){const g=COP.prevGid;try{if(COP.ch&&COP.on)COP.ch.untrack()}catch(e){}coStop();COP.detached=false;if(g!==null)reloadInto(g||'__new__');else coUi()}
+function coEndHost(){try{COP.ch.send({type:'broadcast',event:'co',payload:{e:'end',by:COP.id}})}catch(e){}setTimeout(coStop,500)}
+
+/* ---- buttons and windows ---- */
+const coBtn=mb('Co-op','ghost',function(){coDlg()});coBtn.title='Edit this game together with friends, live';
+const coChip=el('div');coChip.style.cssText='position:fixed;left:12px;bottom:12px;z-index:250;display:none;align-items:center;gap:8px;max-width:70vw;flex-wrap:wrap;padding:6px 12px;border-radius:12px;background:#232527;color:#fff;font:700 .78rem Montserrat,system-ui,sans-serif;cursor:pointer;border:1px solid rgba(255,255,255,.2)';
+coChip.onclick=function(){coDlg()};document.body.append(coChip);
+{const bk=$('s-back');if(bk&&!VIEWONLY)bk.parentNode.insertBefore(coBtn,bk)}
+function coUi(){const mem=COP.ch?coMembers():[];coBtn.textContent=COP.on?'Co-op ('+Math.max(1,mem.length)+')':'Co-op';
+  coChip.style.display=(COP.on||COP.detached)?'flex':'none';coChip.replaceChildren();
+  if(COP.detached&&!COP.on){coChip.append(el('span','','Session ended - this copy is not synced. Click to leave.'))}
+  else{const code=el('span','','Co-op '+COP.code);coChip.append(code);mem.forEach(function(m){const d=el('span','',(m.h?'\u2605 ':'')+m.n+(m.id===COP.id?' (you)':''));d.style.cssText='display:inline-flex;align-items:center;gap:5px';
+      const dot=el('i');dot.style.cssText='width:9px;height:9px;border-radius:50%;background:'+coHue(m.id);d.prepend(dot);coChip.append(d)});
+    if(!COP.host&&COP.on&&mem.length&&!mem.some(function(m){return m.h}))coChip.append(el('span','','(host left)'))}
+  if(COP.ui)try{COP.ui()}catch(e){}}
+function coDlg(pre){mdl('Co-op editing',function(c,close){
+  const body=el('div'),err=el('p','');err.style.cssText='color:#c2321f;min-height:1.2em;margin:0;font-size:.85rem';body.style.cssText='display:flex;flex-direction:column;gap:10px';c.append(body,err);
+  const inp=function(){const i=el('input');i.type='text';i.style.cssText='min-height:34px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);width:100%';return i};
+  const draw=function(){if(!body.isConnected)return;body.replaceChildren();
+    if(!COP.on&&!COP.joining&&!COP.starting&&!COP.detached){
+      if(!sb||!ME||ME.demo||VIEWONLY){body.append(el('p','note','Co-op needs a signed-in online account, in the editor.'));return}
+      body.append(el('p','note','Edit a game with friends at the same time and see each other\'s changes live. One person hosts and shares a code.'));
+      const hb=mb('Start a session (I am the host)','',async function(){hb.disabled=true;err.textContent='Starting...';try{await coHostStart();err.textContent='';draw()}catch(e){err.textContent=(e&&e.message)||String(e);hb.disabled=false}});
+      const t=el('p','note','Or join a friend\'s session. Joining opens their game in your Studio; your own games are not touched and you cannot publish theirs.');
+      const ci=inp();ci.placeholder='Session code';ci.maxLength=14;ci.value=pre||'';ci.style.textTransform='uppercase';
+      const jb=mb('Join','',async function(){jb.disabled=true;err.textContent='Joining...';try{await coJoin(ci.value);err.textContent='';close()}catch(e){err.textContent=(e&&e.message)||String(e);jb.disabled=false}});
+      const row=el('div');row.style.cssText='display:flex;gap:6px';row.append(ci,jb);body.append(hb,t,row);return}
+    if(COP.detached&&!COP.on){body.append(el('p','note','The session ended. This copy is no longer synced.'));const lb=mb('Leave (back to my games)','',function(){close();coLeave()});body.append(lb);return}
+    const big=el('div','',COP.code);big.style.cssText='font:800 1.8rem Montserrat,system-ui,sans-serif;letter-spacing:.12em';
+    const link=location.origin+location.pathname+'?coop='+COP.code,li=inp();li.readOnly=true;li.value=link;
+    const cp=mb('Copy link','ghost',function(){try{navigator.clipboard.writeText(link).then(function(){cp.textContent='Copied'},function(){li.select()})}catch(e){li.select()}});
+    const cc=mb('Copy code','ghost',function(){try{navigator.clipboard.writeText(COP.code).then(function(){cc.textContent='Copied'},function(){})}catch(e){}});
+    const lr=el('div');lr.style.cssText='display:flex;gap:6px';lr.append(li,cp,cc);
+    const ls=el('div');ls.style.cssText='display:flex;flex-direction:column;gap:4px';coMembers().forEach(function(m){const d=el('div','',(m.h?'\u2605 ':'')+m.n+(m.id===COP.id?' (you)':'')+(m.h?'  host':''));d.style.cssText='display:flex;align-items:center;gap:8px';
+      const dot=el('i');dot.style.cssText='width:10px;height:10px;border-radius:50%;background:'+coHue(m.id);d.prepend(dot);ls.append(d)});
+    body.append(el('p','note',COP.host?'Share this code or link with friends who are signed in to BrixBlox. Anyone with it can join and edit, so only share it with people you trust.':'You are editing '+(COP.hostName||'the host')+'\'s game.'),big);
+    if(COP.host)body.append(lr);
+    body.append(el('p','note','In this session:'),ls,
+      el('p','note','Everything syncs live: parts, models, animations, scripts, images, settings. Sounds and meshes that are too big to send stay on the computer they were uploaded on. Undo (Ctrl+Z) can also undo a friend\'s change made after yours. Only the host can publish.'));
+    const r=el('div','tb');
+    if(COP.host)r.append(mb('End session','',function(){ask('End the session for everyone? Your game stays as it is on your screen.','End session',function(){coEndHost();close()})}));
+    else r.append(mb('Leave session','',function(){ask('Leave the session? The copy in your Studio is closed and your own games come back.','Leave',function(){close();coLeave()})}));
+    r.append(mb('Close','ghost',close));body.append(r)};
+  COP.ui=draw;draw()})}
+coChip.onclick=function(){coDlg()};
+
+/* ---- hooks into the Studio ---- */
+{const saveUndo=save;save=function(){saveUndo();coSchedule()}}
+{const ur=undoRedo;undoRedo=function(r){ur(r);try{coFixNid();coSchedule()}catch(e){}}}
+{const us=updateStat;updateStat=function(){us();if(COP.on&&!COP.host){statEl.textContent='Co-op: editing '+(COP.hostName||'host')+'\'s game (not saved to your games)';statEl.style.color='#4be3a0'}}}
+{const pu=publish;publish=function(v){if((COP.on||COP.joining||COP.detached)&&!COP.host){msg('Only the host can publish a co-op game.');return}pu(v)}}
+addEventListener('pointerdown',function(){coPtr=true},true);
+addEventListener('pointerup',function(){coPtr=false;coSchedule();if(COP.inq.length)coKick()},true);
+addEventListener('pointercancel',function(){coPtr=false},true);addEventListener('blur',function(){coPtr=false});
+addEventListener('pagehide',function(){try{if(COP.ch)sb.removeChannel(COP.ch)}catch(e){}});
+try{const u=new URL(location.href),cd=u.searchParams.get('coop');if(cd&&!VIEWONLY&&ME&&!ME.demo){u.searchParams.delete('coop');history.replaceState(null,'',u.pathname+u.search+u.hash);setTimeout(function(){coDlg(cd)},700)}}catch(e){}
 if(VIEWONLY){$('studio').classList.add('vo');setFs(true,true);
   document.querySelector('#studio .logo h1').textContent=P.name+(PLAYINFO&&PLAYINFO.owner?'  -  by '+PLAYINFO.owner:'');
   $('s-fs').onclick=function(){try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen()}catch(x){}};
