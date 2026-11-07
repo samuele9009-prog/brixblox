@@ -630,14 +630,23 @@ async function cloudData(id){const g=glib()[id];if(!g)return null;let d;try{d=JS
    g.lh remembers a fingerprint of the version that is live, so the Studio can tell when you have changes that are not live yet. */
 function hsh(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return h+':'+s.length}
 function calcPend(){if(!sb||!ME||!gameId||VIEWONLY)return false;const g=glib()[gameId];return !!(g&&g.lh!==undefined&&g.lh!==hsh(g.data))}
-function cloudPush(id,now){if(!sb||!ME)return;clearTimeout(cpT[id]);cpT[id]=setTimeout(async function(){const done=function(){if(id===gameId)upBusy=false;updateStat()};
-  const g=glib()[id];if(!g){done();return}const hs=hsh(g.data);const data=await cloudData(id);if(!data){done();return}
-  if(data.length>6e6){cloudErr=true;done();return}
-  try{let th=null;try{th=await thumbFor(JSON.parse(data))}catch(e){}
+let cloudWhy='';
+function cloudPush(id,now){if(!sb||!ME)return;clearTimeout(cpT[id]);cpT[id]=setTimeout(async function(){
+  const done=function(){if(id===gameId)upBusy=false;updateStat()};
+  try{
+    const g=glib()[id];if(!g)return;const hs=hsh(g.data);const data=await cloudData(id);
+    if(!data){cloudErr=true;cloudWhy='could not read the game data';return}
+    if(data.length>6e6){cloudErr=true;cloudWhy='game is too big to upload ('+(data.length/1e6).toFixed(1)+' MB, limit is 6 MB) - remove large images, sounds or meshes';return}
+    let th=null;try{th=await thumbFor(JSON.parse(data))}catch(e){}
     const row={id:id,owner_id:(g.owner&&g.owner.id)||ME.id,owner_name:(g.owner&&g.owner.name)||ME.username,name:g.name,vis:g.vis,data:data,updated_at:new Date().toISOString()};
     let r=await sb.from('games').upsert(Object.assign({thumb:th},row));
     if(r.error&&/thumb/i.test(r.error.message||''))r=await sb.from('games').upsert(row);
-    cloudErr=!!r.error;if(!r.error){const L2=glib();if(L2[id]){L2[id].lh=hs;store.set(GKEY,JSON.stringify(L2))}}}catch(e){cloudErr=true}PEND=calcPend();done();if(audWarn)try{msg(audWarn)}catch(e){}},now?0:1500)}
+    cloudErr=!!r.error;cloudWhy=r.error?String(r.error.message||r.error.code||'unknown error'):'';
+    if(r.error)console.error('BrixBlox cloud save failed:',r.error);
+    else{const L2=glib();if(L2[id]){L2[id].lh=hs;store.set(GKEY,JSON.stringify(L2))}}
+  }catch(e){cloudErr=true;cloudWhy=String((e&&e.message)||e);console.error('BrixBlox cloud save failed:',e)}
+  finally{PEND=calcPend();done();if(audWarn)try{msg(audWarn)}catch(e){}}
+  },now?0:1500)}
 /* Changing only Public / Private updates just that setting online, not the rest of your changes */
 function cloudVis(id,v){if(!sb||!ME)return;sb.from('games').update({vis:v,updated_at:new Date().toISOString()}).eq('id',id).then(function(r){if(r&&r.error)cloudPush(id,true)},function(){cloudPush(id,true)})}
 function cloudDel(id){if(!sb)return;sb.from('games').delete().eq('id',id).then(function(){},function(){})}
@@ -3216,7 +3225,7 @@ function mdl(title,build){const ov=document.createElement('div');ov.style.cssTex
 function mb(t,cls,fn){const b=el('button','btn small '+cls,t);b.type='button';b.onclick=fn;return b}
 function ask(text,yes,fn){mdl('Are you sure?',function(c,close){c.append(el('p','',text));const r=el('div','tb');r.append(mb(yes,'',function(){close();fn()}),mb('Cancel','ghost',close));c.append(r)})}
 const statEl=el('span','','');statEl.style.cssText='font-size:.8rem;font-weight:700;white-space:nowrap';
-function updateStat(){statEl.textContent=gameId?'Published ('+(gameVis==='public'?'Public':'Private')+')'+(cloudErr?' - saved on this device only':PEND?' - saved here, not live yet':''):'Unpublished - not saved';statEl.style.color=gameId&&!cloudErr&&!PEND?'#4be3a0':'#ffb347';
+function updateStat(){statEl.textContent=gameId?'Published ('+(gameVis==='public'?'Public':'Private')+')'+(cloudErr?' - NOT live, upload failed'+(cloudWhy?': '+cloudWhy:''):PEND?' - saved here, not live yet':''):'Unpublished - not saved';statEl.style.color=gameId&&!cloudErr&&!PEND?'#4be3a0':'#ffb347';
   if(upBtn){upBtn.hidden=!(gameId&&sb&&ME);upBtn.disabled=upBusy||!(PEND||cloudErr);upBtn.textContent=upBusy?'Updating...':'Update'}}
 function publish(v){if(!gameId)gameId='g'+Date.now().toString(36)+Math.floor(Math.random()*1e3).toString(36);gameVis=v;persistGame();cloudPush(gameId,true);store.set('brixblox-cur',gameId);baseStr=JSON.stringify(P);updateStat()}
 function updateLive(){if(!gameId||!sb||!ME||upBusy)return;upBusy=true;cloudErr=false;updateStat();cloudPush(gameId,true)}
