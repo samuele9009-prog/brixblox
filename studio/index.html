@@ -1007,7 +1007,7 @@ async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0
       break}
     case'accadd':case'accrem':{if(!adminGame()){log('Error: admin blocks only work in games made by an admin.');break}
       const add=b.t==='accadd',nm=String(val(a[0],S)).trim(),tg=String(val(a[1],S)),it=await accFind(nm);
-      if(!it){log('Error: no accessory named "'+nm+'". Type its name exactly as it is in the shop.');break}
+      if(!it){log('Error: no accessory named "'+nm+'". '+(accFind.info||'Type its name as it is in the shop.'));break}
       const pl=playersOf(tg);if(!pl.length){log('Error: no player matches "'+tg+'".');break}
       for(const t of pl){
         if(t.key==='main'){const r=await invChange(it.id,add);
@@ -1333,12 +1333,19 @@ function accDress(meshes,eq,hs){
 /* ===== Admin blocks: accessories in a player's inventory (the BrixBlox shop keeps it in the account: owned items and what is worn) =====
    They only work in games made by an admin. You can change your own inventory in such a game; changing another player's needs you to be an admin yourself. */
 function adminGame(){return VIEWONLY?isAdminName(PLAYINFO&&PLAYINFO.owner):amAdmin()}
-async function accFind(q){q=String(q||'').trim().toLowerCase();if(!q)return null;let rows=[];
-  if(sb){try{const r=await sb.from('games').select('id,name').like('id','acc_%');if(!r.error)rows=r.data||[]}catch(e){}}
-  else{try{rows=(JSON.parse(store.get('brixblox-acc'))||[]).filter(function(x){return !x.removed})}catch(e){}}
-  const m=rows.filter(function(x){return String(x.id).toLowerCase()===q})[0]||rows.filter(function(x){return String(x.name||'').trim().toLowerCase()===q})[0];
-  if(!m)return null;
-  if(sb){try{const r=await sb.from('games').select('data').eq('id',m.id).maybeSingle();let d=r.data&&r.data.data;if(typeof d==='string')d=JSON.parse(d);if(d&&d.removed)return null}catch(e){}}
+/* Finds an accessory by name. Spaces, capital letters, invisible characters and punctuation do not matter ("3d glasses" finds "3D Glasses").
+   If nothing matches, accFind.info says why (a server error, or the names that do exist) so the error message can be useful. */
+async function accFind(q){accFind.info='';const norm=function(t){return String(t||'').normalize('NFKC').replace(/[\u200b-\u200d\ufeff]/g,'').replace(/\s+/g,' ').trim().toLowerCase()},
+    loose=function(t){return norm(t).replace(/[^\p{L}\p{N}]/gu,'')};
+  q=norm(q);if(!q){accFind.info='The name is empty.';return null}let rows=[],why='';
+  if(sb){try{const r=await sb.from('games').select('id,name').like('id','acc_%').limit(2000);if(r.error)throw r.error;rows=r.data||[]}catch(e){why='The shop list could not be loaded ('+String((e&&e.message)||e)+'). '}}
+  if(!rows.length){try{rows=(JSON.parse(store.get('brixblox-acc'))||[]).filter(function(x){return !x.removed})}catch(e){}}
+  const lq=loose(q);
+  let m=rows.filter(function(x){return norm(x.id)===q})[0]||rows.filter(function(x){return norm(x.name)===q})[0]||rows.filter(function(x){return lq&&loose(x.name)===lq})[0];
+  if(!m){const part=rows.filter(function(x){return lq&&loose(x.name).indexOf(lq)>=0});if(part.length===1)m=part[0]}/* only one item contains what you typed */
+  if(!m){const names=rows.map(function(x){return String(x.name||x.id)}).slice(0,10);
+    accFind.info=why+(names.length?'Accessories I can see: '+names.join(', ')+(rows.length>10?', ...':'')+'.':'I can not see any accessories at all.');return null}
+  if(sb){try{const r=await sb.from('games').select('data').eq('id',m.id).maybeSingle();let d=r.data&&r.data.data;if(typeof d==='string')d=JSON.parse(d);if(d&&d.removed){accFind.info='That accessory was removed from the shop.';return null}}catch(e){}}
   return {id:m.id,name:m.name||m.id}}
 async function invChange(id,add){if(!ME)return {ok:false,why:'not signed in'};let av=null;
   /* An online account must be changed on the server. If the server is not reachable we say so, instead of pretending it worked (the shop would never see the item). */
