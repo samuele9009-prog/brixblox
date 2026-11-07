@@ -1893,7 +1893,27 @@ cv.onpointerdown=function(e){cv.setPointerCapture(e.pointerId);lx=e.clientX;ly=e
   if(h&&h.object.userData.scale){scaleStart(h.object);return}
   if(h){snapSel();gd={a:h.object.userData.axis.clone(),rig:rigOn,p:rigOn?byId(selJ):byId(sel[0])};return}
   if(rigOn){h=ray.intersectObjects(balls,false)[0];if(h){selJ=h.object.userData.joint;buildEdit();return}}
+  if(e.shiftKey&&!rigOn){marqueeSel(e);return}
   h=ray.intersectObjects(pickSel(),false)[0];pick(h?h.object.userData.id:null,e.ctrlKey||e.shiftKey||e.metaKey,e.altKey)};
+/* Shift + drag in the 3D view draws a box and selects every part whose middle is inside it (hold Ctrl as well to add to the current selection).
+   Shift + a plain click still adds or removes one part. */
+function marqueeSel(e){const x0=e.clientX,y0=e.clientY,add0=e.ctrlKey||e.metaKey,alt0=e.altKey;let moved=false,box=null;
+  const rc=function(ev){return {l:Math.min(x0,ev.clientX),t:Math.min(y0,ev.clientY),r:Math.max(x0,ev.clientX),b:Math.max(y0,ev.clientY)}};
+  const mv=function(ev){if(!moved&&Math.hypot(ev.clientX-x0,ev.clientY-y0)<4)return;moved=true;
+    if(!box){box=el('div');box.style.cssText='position:fixed;z-index:60;pointer-events:none;border:1px solid #4da3ff;background:rgba(77,163,255,.2)';document.body.append(box)}
+    const q=rc(ev);box.style.left=q.l+'px';box.style.top=q.t+'px';box.style.width=(q.r-q.l)+'px';box.style.height=(q.b-q.t)+'px'};
+  const up=function(ev){removeEventListener('pointermove',mv);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);if(box)box.remove();
+    if(ev.type==='pointercancel')return;
+    if(!moved){ray.setFromCamera(ndc({clientX:x0,clientY:y0}),camera);const h=ray.intersectObjects(pickSel(),false)[0];pick(h?h.object.userData.id:null,true,alt0);return}
+    const q=rc(ev),dir=camera.getWorldDirection(new THREE.Vector3()),set={};scene.updateMatrixWorld(true);
+    pickSel().forEach(function(m){const w=m.getWorldPosition(new THREE.Vector3());if(w.clone().sub(camera.position).dot(dir)<=0)return;
+      const sc=animScr(w);if(sc.x<q.l||sc.x>q.r||sc.y<q.t||sc.y>q.b)return;
+      const p=byId(m.userData.id);if(!p)return;const r=rootOf(p);
+      (p.model?partsOf(p.model):kids(r).length?treeOf(r):[p]).forEach(function(z){if(!z.av&&!z.stab&&!z.locked)set[z.id]=1})});
+    const ids=Object.keys(set);let out=add0?sel.slice():[];ids.forEach(function(id){if(out.indexOf(id)<0)out.push(id)});
+    sel=out;selSvc=null;{const ms={};out.forEach(function(id){const p=byId(id);ms[p&&p.model||'']=1});const k=Object.keys(ms);selModel=k.length===1&&k[0]&&partsOf(k[0]).length===out.length?k[0]:null}
+    hl();buildEdit();renderParts();msg(ids.length?'Selected '+out.length+' part'+(out.length>1?'s':'')+'.':'Nothing inside the box.')};
+  addEventListener('pointermove',mv);addEventListener('pointerup',up);addEventListener('pointercancel',up)}
 cv.ondblclick=function(e){if(playing||rigOn||animOn())return;ray.setFromCamera(ndc(e),camera);{const gh=ray.intersectObjects(gizmo,false)[0];if(gh&&gh.object.userData.rotAx!==undefined){rotReset();return}}const h=ray.intersectObjects(pickSel(),false)[0];if(h)pick(h.object.userData.id,false,true)};
 cv.onpointermove=function(e){if(playing&&!look)playHover(e);const pl=document.pointerLockElement===cv,big=pl&&(Math.abs(e.movementX)>250||Math.abs(e.movementY)>250),dx=big?0:pl?e.movementX:e.clientX-lx,dy=big?0:pl?e.movementY:e.clientY-ly;lx=e.clientX;ly=e.clientY;
   if(look||(playing&&cdT<=.01&&pl)){cam.yaw+=dx*.005;cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.005))}
@@ -2672,7 +2692,15 @@ async function studioHome(){
       reloadInto(g.id)}));
     bd.append(row);c.append(th,bd);box.append(c)})}
 if(HOME&&!VIEWONLY)studioHome();
-addEventListener('beforeunload',function(e){if(!skipUnload&&dirty()){e.preventDefault();e.returnValue=''}});
+/* Ctrl+S would save the web page as a file, and Ctrl+W would close the tab. Ctrl+S is blocked and just tells you how saving works. Browsers do not let a page cancel
+   Ctrl+W outright, so it is blocked where the browser allows it, and otherwise the browser asks "Leave site?" so you can stay. */
+let ctlW=0;
+addEventListener('keydown',function(e){if(!(e.ctrlKey||e.metaKey)||e.altKey)return;
+  if(e.code==='KeyS'){e.preventDefault();e.stopPropagation();if(e.repeat||VIEWONLY)return;
+    const t=gameId?(PEND?'Saved here. Press Update to send your changes live.':'Everything is already saved.'):'Not saved yet. Press Publish to keep this game.';
+    try{if(gameId)persistGame()}catch(x){}lockWarn(t)}
+  else if(e.code==='KeyW'){e.preventDefault();e.stopPropagation();ctlW=performance.now()}},true);
+addEventListener('beforeunload',function(e){if(skipUnload)return;if(dirty()||performance.now()-ctlW<1500){e.preventDefault();e.returnValue=''}});
 /* ===== Online play: everyone playing the same game is put in a server of up to 10. Joining picks a server that is already running, or starts a new one. ===== */
 const NETMAX=10,NET={id:Math.random().toString(36).slice(2,10),lob:null,ch:null,sid:'',on:false,fail:false,last:'',idle:0};let NETCOL=null;
 function leaveGame(){try{S.stop=true}catch(e){}netLeave();if(window.parent!==window)parent.postMessage({bb:'leave'},location.origin);else location.href=SITE_URL}
