@@ -1298,6 +1298,18 @@ const TOOLS=[['move','Move'],['scale','Resize'],['rotate','Rotate']];
 function cycleTool(d){if(VIEWONLY||document.getElementById('shome')||playing||running||animOn())return;
   const i=Math.max(0,TOOLS.findIndex(function(q){return q[0]===tool})),n=TOOLS[(i+d+TOOLS.length)%TOOLS.length];
   setTool(n[0]);lockWarn('Tool: '+n[1]+(n[0]==='move'?' (drag the arrows)':n[0]==='scale'?' (drag a ball, Ctrl = both sides)':' (drag a ring, Shift = snap 15 degrees, double-click a ring to reset)')+'  \u00B7  R for next, Shift+R for previous')}
+/* Ctrl+R: mirror the rotation of the selected parts (30 degrees becomes -30). Each part stays where it is. */
+function mirrorRot(){const rs=rotRoots();if(!rs.length){msg('Select a part first, then press Ctrl+R to mirror its rotation.');return}
+  let n=0;rs.forEach(function(p){let ch=false;
+    if(hasRot(p)){p.rot=[p.rot[0],-p.rot[1],-p.rot[2]].map(function(v){return Math.round(v*1000)/1000+0});ch=true}
+    if(p.ry){p.ry=(((-p.ry)%360)+360)%360;ch=true}
+    if(ch){n++;if(kids(p).length){delete rig0[p.id];snapRig(p)}}});
+  if(!n){msg('Nothing to mirror: the selection is not rotated.');return}
+  msg('Mirrored the rotation of '+n+' item'+(n>1?'s':'')+'.');all()}
+addEventListener('keydown',function(e){if(e.code!=='KeyR'||!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey)return;
+  e.preventDefault();if(e.repeat||VIEWONLY||document.getElementById('shome')||playing||running||animOn())return;
+  const a=document.activeElement;if(a&&(/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a.isContentEditable))return;
+  if($('studio').getClientRects().length===0)return;mirrorRot()},true);
 /* 2 = move, 3 = resize, 4 = rotate */
 addEventListener('keydown',function(e){const t=({Digit2:'move',Numpad2:'move',Digit3:'scale',Numpad3:'scale',Digit4:'rotate',Numpad4:'rotate'})[e.code];
   if(!t||e.ctrlKey||e.metaKey||e.altKey||e.shiftKey||e.repeat||VIEWONLY||document.getElementById('shome')||playing||running||animOn()||menuEl)return;
