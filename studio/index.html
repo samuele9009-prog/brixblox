@@ -586,6 +586,8 @@ const BD={
  repeat:{c:'ct',l:'repeat _',a:['4'],k:1},
  forever:{c:'ct',l:'forever',a:[],k:1},
  'if':{c:'ct',l:'if _',a:['x > 100'],k:1},
+ repeatuntil:{c:'ct',l:'repeat until _',a:['x > 100'],k:1,tip:'Repeats the blocks inside again and again until the condition becomes true (like Scratch). The condition is checked before each go, so if it is already true nothing inside runs.'},
+ waituntil:{c:'ct',l:'wait until _',a:['x > 100'],tip:'Waits here until the condition becomes true, then the next block runs.'},
  'elseif':{c:'ct',l:'else if _',a:['x > 50'],k:1,tip:'Put this right under an \"if\" or another \"else if\" block. It only runs if none of the blocks above it in the chain ran and its own condition is true.'},
  'else':{c:'ct',l:'else',a:[],k:1,tip:'Put this right under an \"if\" or \"else if\" block. It runs only when none of the blocks above it in the chain ran.'},
  set:{c:'vr',l:'set _ to _',a:['score','0'],raw:1,dd:{0:'var'}},
@@ -1006,6 +1008,8 @@ async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0
     case'print':log(String(val(a[0],S)));break;
     case'repeat':for(let i=0,c=Math.min(n(0),10000);i<c&&!S.stop;i++){await ex(b.k,S,o);await sl(30)}break;
     case'forever':while(!S.stop){await ex(b.k,S,o);await sl(30)}break;
+    case'repeatuntil':case'waituntil':{const ck=function(){try{return ev(a[0],S)}catch(e){log('Error: cannot read the condition "'+a[0]+'"');S.stop=true;return true}};
+      if(b.t==='waituntil'){while(!S.stop&&!ck())await sl(30)}else{while(!S.stop&&!ck()){await ex(b.k,S,o);await sl(30)}}break}
     case'if':{let c;try{c=ev(a[0],S)}catch(e){log('Error: cannot read the condition "'+a[0]+'"');break}if(c)await ex(b.k,S,o);break}
     case'call':{const f=S.fn[a[0].trim()];if(!f){log('Error: no function named "'+a[0].trim()+'"');break}
       if(S.d>40){log('Error: calls nested too deep');S.stop=true;break}S.d++;await ex(f,S,o);S.d--;break}
@@ -3794,12 +3798,18 @@ function coNorm(){P.parts=P.parts||[];P.models=P.models||[];P.anims=P.anims||{};
   P.squads=P.squads||[{id:'q1',name:'Red Squad',color:'#e5484d'},{id:'q2',name:'Blue Squad',color:'#3b82f6'}];P.player=P.player||{name:'Player1',squad:''}}
 
 /* The game as a flat list of pieces: key -> text. Two pieces with the same key are the same thing. */
+/* Big meshes live in this browser's file store, so they are read out once and sent to everyone in the session as data. */
+const COBIG={},COBIGP={};
+function coBigUrl(v){const id=bigId(v);if(COBIG[id])return COBIG[id];coBigLoad(v);return null}
+function coBigLoad(v){const id=bigId(v);if(COBIG[id])return Promise.resolve(COBIG[id]);if(COBIGP[id])return COBIGP[id];
+  return COBIGP[id]=idbDo('readonly',function(st){return st.get(id)}).then(function(rec){return rec&&rec.blob?blobUrl(rec.blob):null}).then(function(u){delete COBIGP[id];if(u){COBIG[id]=u;try{coSchedule()}catch(e){}}return u}).catch(function(){delete COBIGP[id];return null})}
 function coMap(){const m={},seen={};
   P.parts.forEach(function(p){m['part:'+p.id]=JSON.stringify(p)});
   P.models.forEach(function(p){m['model:'+p.id]=JSON.stringify(p)});
   Object.keys(P.anims).forEach(function(k){m['anim:'+k]=JSON.stringify(P.anims[k])});
   P.scripts.forEach(function(sc){if(!sc||!sc.length)return;const h=sc[0];if(!h||typeof h!=='object')return;if(!h.sid||seen[h.sid])h.sid=coSid();seen[h.sid]=1;m['script:'+h.sid]=JSON.stringify(sc)});
-  ['images','audio','meshes'].forEach(function(c){const o=P.assets[c]||{};Object.keys(o).forEach(function(n){const v=o[n];if(typeof v==='string'&&!bigRef(v))m['asset:'+c+':'+n]=v})});
+  ['images','audio','meshes'].forEach(function(c){const o=P.assets[c]||{};Object.keys(o).forEach(function(n){const v=o[n];if(typeof v!=='string')return;if(!bigRef(v)){m['asset:'+c+':'+n]=v;return}
+    if(c==='meshes'){const u=coBigUrl(v);if(u)m['asset:'+c+':'+n]=u}})});
   const av=P.assets.avol||{};Object.keys(av).forEach(function(n){m['asset:avol:'+n]=String(av[n])});
   Object.keys(P).forEach(function(k){if(!COSKIP.test(k)&&P[k]!==undefined)m['meta:'+k]=JSON.stringify(P[k])});
   return m}
@@ -3904,7 +3914,7 @@ function coStop(){const ch=COP.ch;COP.ch=null;COP.on=false;COP.joining=false;COP
 const coWait=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
 async function coCheck(){if(!sb||!ME||ME.demo)throw new Error('Co-op needs a signed-in online account (not demo mode).');if(VIEWONLY)throw new Error('Co-op is for the editor, not for playing.');
   if(COP.ch||COP.on||COP.joining)throw new Error('You are already in a co-op session.');if(running||playing)throw new Error('Stop the game test first.');if(animOn())throw new Error('Close the animator first.')}
-async function coHostStart(){await coCheck();const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let code='';for(let i=0;i<8;i++)code+=A[Math.floor(Math.random()*A.length)];
+async function coHostStart(){await coCheck();try{const ms=P.assets.meshes||{};await Promise.all(Object.keys(ms).filter(function(n){return bigRef(ms[n])}).map(function(n){return coBigLoad(ms[n])}))}catch(e){}const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let code='';for(let i=0;i<8;i++)code+=A[Math.floor(Math.random()*A.length)];
   COP.hostName=ME.username;COP.detached=false;COP.prevGid=null;
   try{await coStart(code,true)}catch(e){coStop();throw e}
   P.nid=Math.max(P.nid||1,COP.base);COP.next=P.nid;COP.last=coMap();COP.stamp={};COP.on=true;coUi()}
