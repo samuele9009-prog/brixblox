@@ -359,7 +359,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
   </div>
   <div id="p-avatar" class="page" hidden>
     <section class="panel">
-      <div class="sh-head"><h2 id="l-name2" style="margin:0"></h2><span class="wallet" title="Coins you earned minus coins you spent"><i></i><span id="wal">0</span> coins</span></div>
+      <div class="sh-head"><h2 id="l-name2" style="margin:0"></h2><span class="wallet" title="Blockbucks you earned and redeemed, minus blockbucks you spent"><i></i><span id="wal">0</span> blockbucks</span></div>
       <div class="av-wrap" style="margin-top:12px">
         <div>
           <div id="av-view" class="av-view"><canvas id="av3d" aria-label="Your avatar in 3D. Drag to turn it."></canvas><div class="av-tip">Drag to turn. Scroll or pinch to zoom.</div></div>
@@ -378,7 +378,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
           <div id="shop" class="shop-grid"></div>
           <div id="acc-ed" class="ed" hidden></div>
           <div id="acc-up" hidden><h3>Upload accessory (FBX)</h3>
-            <div class="addrow" style="flex-wrap:wrap"><input id="ac-name" type="text" maxlength="24" placeholder="Name"><select id="ac-slot" class="sname"><option value="hat">Hat</option><option value="face">Face</option><option value="facc">Face accessory (glasses, mask, mustache)</option><option value="back">Back</option><option value="neck">Neck</option></select><input id="ac-price" type="number" min="0" max="999" value="10" style="width:90px" title="Price in coins"><input id="ac-scale" type="number" min=".1" max="5" step=".1" value="1" style="width:90px" title="Size multiplier"></div>
+            <div class="addrow" style="flex-wrap:wrap"><input id="ac-name" type="text" maxlength="24" placeholder="Name"><select id="ac-slot" class="sname"><option value="hat">Hat</option><option value="face">Face</option><option value="facc">Face accessory (glasses, mask, mustache)</option><option value="back">Back</option><option value="neck">Neck</option></select><input id="ac-price" type="number" min="0" max="999" value="10" style="width:90px" title="Price in blockbucks"><input id="ac-scale" type="number" min=".1" max="5" step=".1" value="1" style="width:90px" title="Size multiplier"></div>
             <input id="ac-file" type="file" accept=".fbx" style="margin-top:8px"><div class="seg"><button id="ac-go" class="btn small" type="button">Upload accessory</button></div><p id="ac-msg" class="hint"></p></div>
         </div>
       </div>
@@ -408,7 +408,9 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       <div id="bb-owner" hidden>
         <h3>Take out (brixblox)</h3>
         <p class="hint">Your Blockbank never runs out. Take out as many blockbucks as you want and they land in your wallet.</p>
-        <form id="f-bbo" class="addrow"><input id="bbo-n" type="number" min="1" max="1000000000" step="1" placeholder="Amount" required><button class="btn" type="submit">Take out</button></form>
+        <form id="f-bbo" class="addrow"><input id="bbo-n" type="number" min="1" max="1000000000" step="1" placeholder="Amount" required><button class="btn" type="submit">Take out</button><button id="bbo-gift" class="btn ghost" type="button">Make gift code</button></form>
+        <p class="hint">Make gift code gives you a code for that amount. Send it to a friend and they enter it in Redeem on their own Blockbank page.</p>
+        <div id="bbo-code" class="bb-code" hidden><code id="bbo-codev"></code><span class="hint" style="margin:0">for <b id="bbo-codeamt">0</b> blockbucks</span><button id="bbo-copy" class="btn ghost small" type="button">Copy</button></div>
       </div>
       <h3>Recent activity</h3>
       <ul id="bb-log" class="bb-log"></ul>
@@ -431,7 +433,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 <div id="hud" hidden>
   <div class="hud-top">
     <div class="chip"><b id="h-level"></b><span id="h-time">0:00.00</span></div>
-    <div class="chip"><b>Coins</b><span id="h-coins">0 / 0</span></div>
+    <div class="chip"><b>Blockbucks</b><span id="h-coins">0 / 0</span></div>
     <button id="b-exit" class="btn ghost small" type="button">Exit</button>
   </div>
   <div id="hint" class="hint-box">WASD or arrows to move · Space to jump</div>
@@ -442,7 +444,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
   <div class="card" role="dialog" aria-labelledby="d-title">
     <h2 id="d-title">Course clear!</h2>
     <span id="d-badge" class="badge" hidden>New best time</span>
-    <dl><div><dt>Time</dt><dd id="d-time"></dd></div><div><dt>Coins</dt><dd id="d-coins"></dd></div></dl>
+    <dl><div><dt>Time</dt><dd id="d-time"></dd></div><div><dt>Blockbucks</dt><dd id="d-coins"></dd></div></dl>
     <p id="d-msg" class="note"></p>
     <div class="row"><button id="d-again" class="btn" type="button">Play again</button><button id="d-lobby" class="btn ghost" type="button">Lobby</button></div>
   </div>
@@ -590,7 +592,10 @@ function makeDemo(){
       if(cnt>=100){d.hp=d.hp||{};const hk=gid+':'+hs,paid=d.hp[hk]||0,tg=cnt*2;if(tg>paid){badd(d,owner,tg-paid,'Busy hour: '+cnt+' plays');d.hp[hk]=tg}}save(d)},
     async bankTake(id,n){const d=load(),b=bk(d,id);b.wallet+=n;b.log.unshift({amount:n,reason:'Taken out of the Blockbank',created_at:new Date().toISOString()});save(d);return {amount:n,wallet:b.wallet}},
     async bankCode(id,x){const d=load(),b=bk(d,id);if(b.saved<BANK_MIN)throw new Error('You need at least 20 blockbucks saved to redeem.');if(!b.code)b.code='BBX-'+rc()+'-'+rc();b.amt=b.saved;save(d);return {code:b.code,amount:b.amt}},
-    async bankRedeem(id,code){const d=load(),b=bk(d,id);if(!b.code||b.code!==String(code).trim().toUpperCase())throw new Error('That code is not valid or was already used.');if(b.saved<b.amt)throw new Error('Not enough blockbucks saved for that code.');
+    async bankGift(id,n){const d=load();d.gifts=d.gifts||{};let c;do{c='GFT-'+rc()+'-'+rc()}while(d.gifts[c]);d.gifts[c]=n;save(d);return {code:c,amount:n}},
+    async bankRedeem(id,code){const d=load(),b=bk(d,id),gc=String(code).trim().toUpperCase();
+      if(/^GFT-/.test(gc)){const n=d.gifts&&d.gifts[gc];if(!n)throw new Error('That code is not valid or was already used.');delete d.gifts[gc];b.wallet+=n;b.log.unshift({amount:n,reason:'Gift code redeemed',created_at:new Date().toISOString()});save(d);return {amount:n,saved:b.saved,wallet:b.wallet}}
+      if(!b.code||b.code!==String(code).trim().toUpperCase())throw new Error('That code is not valid or was already used.');if(b.saved<b.amt)throw new Error('Not enough blockbucks saved for that code.');
       const n=b.amt;b.saved-=n;b.wallet+=n;b.code=null;b.amt=0;b.log.unshift({amount:-n,reason:'Redeemed to your wallet',created_at:new Date().toISOString()});save(d);return {amount:n,saved:b.saved,wallet:b.wallet}},
     async setAvatar(id,a){const d=load();const u=d.users.find(function(x){return x.id===id});if(u){u.av=a;save(d)}},
     async setAccount(id,a){const d=load();const u=d.users.find(function(x){return x.id===id});if(u){u.contact=a.email;u.age=a.age;save(d)}return {pending:false}},
@@ -624,7 +629,8 @@ function makeSupa(){
     async bankStatus(){const r=await sb.rpc('bank_status');if(r.error)throw r.error;const x=r.data||{};return {saved:x.saved||0,wallet:x.wallet||0,code:x.code||null,codeAmt:x.code_amount||0,log:x.log||[]}},
     async recordPlay(id,gid){const r=await sb.rpc('record_play',{p_game:String(gid)});if(r.error)throw r.error},
     async bankCode(){const r=await sb.rpc('bank_create_code');if(r.error)throw r.error;return r.data},
-    async bankRedeem(id,code){const r=await sb.rpc('bank_redeem',{p_code:code});if(r.error)throw r.error;return r.data},
+    async bankRedeem(id,code){const gift=/^GFT-/i.test(String(code).trim()),r=await sb.rpc(gift?'bank_redeem_gift':'bank_redeem',{p_code:code});if(r.error)throw r.error;return r.data},
+    async bankGift(id,n){const r=await sb.rpc('bank_admin_gift',{p_amount:n});if(r.error)throw r.error;return r.data},
     async bankTake(id,n){const r=await sb.rpc('bank_admin_take',{p_amount:n});if(r.error)throw r.error;return r.data},
     async setAvatar(id,a){const r=await sb.auth.updateUser({data:{avatar:a}});if(r.error)throw r.error},
     async setAccount(id,a,cur){const change=!!a.email&&a.email.toLowerCase()!==(cur||'').toLowerCase();const upd={data:{age:a.age}};if(change)upd.email=a.email;const r=await sb.auth.updateUser(upd,change?{emailRedirectTo:location.origin+location.pathname}:undefined);if(r.error)throw r.error;return {pending:change}},
@@ -768,7 +774,7 @@ function paintBank(){
   $('bb-saved').textContent=inf?'\u221E':bank.saved;$('bb-wallet').textContent=bank.wallet;
   $('bb-bar').style.width=inf?'100%':Math.min(100,bank.saved/BANK_MIN*100)+'%';
   $('bb-need').textContent=inf?'Unlimited. Use Take out below.':bank.saved>=BANK_MIN?'You can redeem now.':'Save '+(BANK_MIN-bank.saved)+' more to redeem.';
-  $('bb-get').disabled=!inf&&bank.saved<BANK_MIN;
+  $('bb-get').hidden=inf;$('bb-get').disabled=inf||bank.saved<BANK_MIN;
   $('bb-code').hidden=!bank.code;if(bank.code){$('bb-codev').textContent=bank.code;$('bb-codeamt').textContent=bank.codeAmt}
   const ul=$('bb-log');ul.replaceChildren();
   if(!bank.log.length){const li=document.createElement('li');li.textContent='Nothing yet. Publish a game and get players!';ul.append(li)}
@@ -787,6 +793,10 @@ $('f-bbo').addEventListener('submit',async function(e){e.preventDefault();if(!is
   if(!(n>=1)||n>1e9){bbMsg('Enter a whole number from 1 to 1,000,000,000.');return}
   try{await api.bankTake(me.id,n);$('bbo-n').value='';checkAnim(n);bbMsg('')}catch(er){bbMsg(errText(er));return}
   await loadBank()});
+$('bbo-gift').onclick=async function(){if(!isBB())return;const n=Math.floor(+$('bbo-n').value);
+  if(!(n>=1)||n>1e9){bbMsg('Enter a whole number from 1 to 1,000,000,000.');return}
+  try{const r=await api.bankGift(me.id,n);$('bbo-codev').textContent=r.code;$('bbo-codeamt').textContent=r.amount;$('bbo-code').hidden=false;bbMsg('Gift code made. Send it to your friend.',true)}catch(er){bbMsg(errText(er))}};
+$('bbo-copy').onclick=function(){const c=$('bbo-codev').textContent;try{navigator.clipboard.writeText(c);toast('Code copied')}catch(e){$('bb-in').value=c}};
 $('bb-copy').onclick=function(){try{navigator.clipboard.writeText(bank.code);toast('Code copied')}catch(e){$('bb-in').value=bank.code}};
 $('f-bb').addEventListener('submit',async function(e){e.preventDefault();const c=$('bb-in').value.trim();if(!c)return;
   try{const r=await api.bankRedeem(me.id,c);$('bb-in').value='';checkAnim(r.amount);bbMsg('')}catch(er){bbMsg(errText(er));return}
@@ -973,14 +983,14 @@ function pvTick(now){
   pv.cam.position.set(0,pv.ly+.15+Math.sin(pv.pitch)*pv.zoom,Math.cos(pv.pitch)*pv.zoom);pv.cam.lookAt(0,pv.ly,0);
   pv.r.render(pv.sc,pv.cam)}
 function coinsEarned(){let n=10;Object.keys(recs).forEach(function(k){n+=recs[k].coins||0});return n}
-function balance(){return coinsEarned()-(me.av.spent||0)}
+function balance(){return isBB()?Infinity:coinsEarned()+(bank&&bank.wallet||0)-(me.av.spent||0)}
 async function saveAv(){try{await api.setAvatar(me.id,me.av);syncMe();return true}catch(e){toast('Could not save: '+errText(e));return false}}
 function paintShop(){
-  $('wal').textContent=balance();
+  $('wal').textContent=isBB()?'\u221E':balance();
   const tabs=$('shop-tabs');tabs.innerHTML='';
   SLOTS.forEach(function(s){const b=document.createElement('button');b.type='button';b.className='btn ghost small';b.textContent=s[1];b.setAttribute('aria-pressed',String(pv.tab===s[0]));b.onclick=function(){pv.tab=s[0];paintShop()};tabs.appendChild(b)});
   const g=$('shop');g.innerHTML='';const eq=me.av.eq;
-  $('shop-note').textContent=pv.tryEq?'Trying on. This is not saved until you buy or equip it.':'Earn coins by collecting them in games. You get 10 to start.';
+  $('shop-note').textContent=pv.tryEq?'Trying on. This is not saved until you buy or equip it.':'Earn blockbucks by collecting them in games or redeeming them in your Blockbank. You get 10 to start.';
   ITEMS.filter(function(x){return x.slot===pv.tab&&(x.sale!==false||me.av.owned.indexOf(x.id)>=0||isAdm())}).forEach(function(it){
     const owned=me.av.owned.indexOf(it.id)>=0,worn=eq[it.slot]===it.id,trying=pv.tryEq&&pv.tryEq[it.slot]===it.id&&!worn,off=it.sale===false;
     const d=document.createElement('div');d.className='item'+(worn?' eq':'')+(trying?' tr':'')+(off?' off':'');
@@ -995,7 +1005,7 @@ function paintShop(){
       btn('Try',function(){pv.tryEq=Object.assign({},eq);pv.tryEq[it.slot]=trying?eq[it.slot]:it.id;pvRebuild();paintShop()},true);
       if(!off)btn('Buy',async function(){
         if(it.sale===false){toast('This item is no longer on sale.');return}
-        if(balance()<it.price){toast('Not enough coins. You need '+(it.price-balance())+' more.');return}
+        if(balance()<it.price){toast('Not enough blockbucks. You need '+(it.price-balance())+' more.');return}
         const prev=JSON.stringify(me.av);me.av.owned.push(it.id);me.av.spent=(me.av.spent||0)+it.price;eq[it.slot]=it.id;pv.tryEq=null;pvRebuild();paintShop();
         if(await saveAv())toast('Bought '+it.name+'!');else{me.av=JSON.parse(prev);pvRebuild();paintShop()}})}
     d.append(sw,n,pr,row);
@@ -1003,7 +1013,7 @@ function paintShop(){
       function ab(t,f){const b=document.createElement('button');b.type='button';b.className='btn small ghost';b.textContent=t;b.onclick=f;r2.appendChild(b)}
       ab('Adjust',function(){openEdit(it)});
       ab(off?'Put on sale':'Take off sale',async function(){try{await api.saveAcc(Object.assign({},it,{sale:off}));await loadItems();toast(it.name+(off?' is on sale again.':' is off sale. Owners keep it.'))}catch(e){toast('Could not update: '+errText(e))}});
-      ab('Remove',async function(){if(!confirm('Remove '+it.name+' from the shop AND from every player\'s inventory?'+(REFUND_REMOVED?' Players who bought it get their coins back.':'')))return;
+      ab('Remove',async function(){if(!confirm('Remove '+it.name+' from the shop AND from every player\'s inventory?'+(REFUND_REMOVED?' Players who bought it get their blockbucks back.':'')))return;
         try{if(ED&&ED.id===it.id)closeEdit();await api.saveAcc({id:it.id,name:it.name,slot:it.slot,price:it.price,scale:it.scale,fbx:'',removed:true});delete FBXC[it.id];await loadItems();toast(it.name+' was removed.')}catch(e){toast('Could not remove: '+errText(e))}});
       d.appendChild(r2)}
     g.appendChild(d)})}
@@ -1080,7 +1090,7 @@ $('ac-go').onclick=async function(){const f=$('ac-file').files[0],nm=$('ac-name'
     const it={id:'acc_'+Date.now().toString(36),name:nm,slot:$('ac-slot').value,price:Math.max(0,Math.min(999,parseInt($('ac-price').value,10)||0)),scale:Math.max(.1,Math.min(5,parseFloat($('ac-scale').value)||1)),fbx:btoa(s)};
     await api.saveAcc(it);say('Uploaded '+nm+'.',true);$('ac-name').value='';$('ac-file').value='';await loadItems()}catch(e){say('Could not upload: '+((e&&e.message)||e))}
   $('ac-go').disabled=false};
-function openAvatarPage(){$('acc-up').hidden=!isAdm();loadAdmins().then(function(){$('acc-up').hidden=!isAdm();paintShop()});pvInit();ED=null;$('acc-ed').hidden=true;facePreview(false);pv.tryEq=null;pvRebuild();paintShop()}
+function openAvatarPage(){$('acc-up').hidden=!isAdm();loadAdmins().then(function(){$('acc-up').hidden=!isAdm();paintShop()});loadBank().then(paintShop);pvInit();ED=null;$('acc-ed').hidden=true;facePreview(false);pv.tryEq=null;pvRebuild();paintShop()}
 function frame(now){
   requestAnimationFrame(frame);
   if(!playing)pvTick(now);
