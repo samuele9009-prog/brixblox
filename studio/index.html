@@ -1872,11 +1872,27 @@ function newMeshPart(nm){if(animOn()||!(P.assets.meshes||{})[nm])return;const p=
   meshLoad(nm).then(function(E){if(!E||!E.obj){P.parts=P.parts.filter(function(q){return q!==p});sel=[];all();return}
     const nz=E.obj.userData.nz,k=4/(Math.max(nz[0],nz[1],nz[2])||1);p.size=nz.map(function(x){return Math.max(.2,Math.round(x*k*20)/20)});p.pos[1]=Math.max(p.pos[1],p.size[1]/2);
     msg('Added mesh "'+nm+'" in front of you. Use Position and Size to adjust it.');all()})}
+/* Upload a picture straight onto a mesh: it is saved in Assets (Images) and used as this mesh's texture, and the mesh stays selected */
+function meshTexFile(p,f){
+  if(!f)return;if(f.type&&f.type.indexOf('image/')!==0){msg('That is not a picture. Pick a png, jpg, webp or gif.');return}
+  if(f.size>ASSET_FILE){msg('That picture is over 2 MB. Try a smaller one.');return}
+  const rd=new FileReader();rd.onerror=function(){msg('Could not read that file.')};
+  rd.onload=function(){if(assetBytes()+rd.result.length>ASSET_TOTAL){msg('Your game is full. Delete an asset first (about 4 MB total).');return}
+    let base=f.name.replace(/\.[^.]+$/,'').replace(/[^A-Za-z0-9_]/g,'').slice(0,20)||'Texture';
+    if(/^(clouds?|sun|moon|thumbnail)$/i.test(base))base='Tex'+base;/* those names are special (sky and game picture) */
+    let nm=base,n=1;while(P.assets.images[nm]||P.assets.audio[nm])nm=base+(++n);
+    P.assets.images[nm]=rd.result;p.mtex=nm;save();
+    try{rebuildParts()}catch(e){}try{renderParts()}catch(e){}try{props()}catch(e){}
+    msg('Texture "'+nm+'" added and put on the mesh.'+(gameId?'':' Publish the game to keep it.'))};
+  rd.readAsDataURL(f)}
 function meshProps(d,p){
   d.append(el('p','note','Imported mesh "'+(p.mesh||'?')+'". Standing on it, bumping into it and clicking it all use its box (the Size above).'));
   const ts=el('select');[['','Original texture']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})).forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ts.append(op)});
   ts.value=p.mtex&&P.assets.images[p.mtex]?p.mtex:'';ts.onchange=function(){if(ts.value)p.mtex=ts.value;else delete p.mtex;save();rebuildParts()};
   d.append(lab('Texture (the mesh\'s own, or any image from Assets)',ts));
+  const up=el('button','btn ghost small','Upload a texture picture for this mesh');up.type='button';
+  up.onclick=function(){const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=function(){meshTexFile(p,i.files&&i.files[0])};i.click()};
+  d.append(up);
   const rb=el('button','btn ghost small','Reset size to the mesh\'s own shape');rb.type='button';
   rb.onclick=function(){const E=MESHI[meshKey((P.assets.meshes||{})[p.mesh]||'')];if(!E||!E.obj){msg('The mesh is still loading.');return}const nz=E.obj.userData.nz,k=Math.max(p.size[0],p.size[1],p.size[2])/(Math.max(nz[0],nz[1],nz[2])||1);p.size=nz.map(function(x){return Math.max(.2,Math.round(x*k*20)/20)});all();props()};
   d.append(rb)}
