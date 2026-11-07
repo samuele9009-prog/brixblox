@@ -1074,7 +1074,7 @@ function addFace(m,p){if(!FACE){const c=document.createElement('canvas');c.width
   x.strokeStyle=ink;x.lineCap='round';x.lineWidth=4.5;x.beginPath();x.arc(64,58,22,.24*Math.PI,.76*Math.PI);x.stroke();
   FACE=new THREE.CanvasTexture(c)}
   const fp=1,g=new THREE.CylinderGeometry(1.01,1.01,p.size[1]*.9,32,1,true,Math.PI-fp,fp*2);g.scale(p.size[0]/2,1,p.size[2]/2);
-  m.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:FACE,transparent:true,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})))}
+  m.add(new THREE.Mesh(g,depthNudge(new THREE.MeshBasicMaterial({map:FACE,transparent:true}),0.008,0.0002)))}
 // S is the avatar's offset from where it was placed. x right, y forward (toward -z), h height, dir 90 faces forward.
 function initVars(){const o={};((P&&P.vars)||[]).forEach(function(n){o[n]=0});return o}
 function fresh(){return {oth:[],x:0,y:0,h:0,vy:0,gr:true,wt:0,jt:0,pvx:0,pvz:0,bp:{},air:false,mv:false,dir:90,col:null,say:'',v:initVars(),fn:{},stop:false,d:0,sl:false,sla:false,slo:0,pcol:false}}
@@ -1317,7 +1317,13 @@ function accStatic(o){const sk=[];o.traverse(function(m){if(m.isSkinnedMesh)sk.p
   const bad=[];o.traverse(function(m){if(m===o)return;if(m.isLight||m.isCamera||m.isLine||m.isPoints||m.isSprite){bad.push(m);return}
     if(m.isMesh){const g=m.geometry,pa=g&&g.attributes&&g.attributes.position;if(!pa||!pa.count){bad.push(m);return}const a=pa.array;for(let i=0;i<a.length;i++)if(!isFinite(a[i])){bad.push(m);return}}});
   bad.forEach(function(m){if(m.parent)m.parent.remove(m)});return o}
-function accMat(n){n.side=THREE.DoubleSide;n.polygonOffset=true;n.polygonOffsetFactor=0;n.polygonOffsetUnits=-1;/* factor 0: a slope-based pull made thin parts seen edge-on (glasses arms) show through the head as lines */n.depthWrite=true;if('skinning' in n)n.skinning=false;return n}
+/* Depth nudge: pulls a surface toward the camera by a FIXED distance in the world (plus a tiny bit more the farther away it is).
+   This replaces polygonOffset, whose pull grows with the square of the distance and made accessories (and the face) show through bodies when far away,
+   and whose slope part made thin parts seen edge-on (hair strands, glasses arms) show through the head as lines. */
+function depthNudge(n,base,k){n.polygonOffset=false;n.polygonOffsetFactor=0;n.polygonOffsetUnits=0;
+  n.onBeforeCompile=function(sh){sh.vertexShader=sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\n{vec4 nv=mvPosition;nv.z+=0.02+(-mvPosition.z)*0.0004;gl_Position=projectionMatrix*nv;}')};
+  n.customProgramCacheKey=function(){return 'nudge0.02_0.0004'};n.needsUpdate=true;return n}
+function accMat(n){n.side=THREE.DoubleSide;n.depthWrite=true;if('skinning' in n)n.skinning=false;return depthNudge(n,0.02,0.0004)}
 function accFreeze(c,w){c.traverse(function(o){o.updateMatrix();o.matrixAutoUpdate=false});w.updateMatrix();w.matrixAutoUpdate=false}
 function accTex(url,flip){const k=(flip?'f':'n')+url;if(ACCT[k])return ACCT[k];const t=new THREE.TextureLoader().load(url);t.flipY=!flip;t.wrapS=t.wrapT=THREE.RepeatWrapping;return ACCT[k]=t}
 function shineMat(mt,k){const n=mt.isMeshPhongMaterial?mt:new THREE.MeshPhongMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0});
