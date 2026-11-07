@@ -1551,6 +1551,7 @@ function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
     else{const A=P.anims[S.idleA||'idle'];if(A)po=evalPose(A,q.t%A.len)}
     /* an animation this player started with a block overrides the parts it has keyframes for, on this player only */
     if(q.net&&q.hi){const HA=P.anims['hold item'];if(HA)po=Object.assign({},po,evalPose(HA,q.t%(HA.len||1)))}
+    if(q.net&&q.hi&&!q.itemObj&&!q.hiBusy&&performance.now()>(q.hiRetry||0)){q.hiRetry=performance.now()+1500;try{netItem(q,1)}catch(x){}}
     let fp=po;
     if(q.net&&q.an){const AN=npAnim(q.an);if(!AN)q.an='';else{q.at=(q.at||0)+dt;
       if(q.at>=AN.len+.05)q.an='';
@@ -4269,19 +4270,21 @@ function netRecv(q){if(!q||!q.id||q.id===NET.id||!NET.on||!(running||playing))re
   e.rc=q.rc;if(q.rg&&typeof q.rg==='object'){const t={};Object.keys(q.rg).forEach(function(id){const a=q.rg[id];if(e.JJ[id]&&Array.isArray(a)&&a.length===4&&a.every(Number.isFinite))t[id]=a});e.rgT=t;e.rgAt=performance.now()}/* they were ragdolled: show it on this screen too (never as a kill, they respawn on their own screen) */
   if(e.ac===undefined)e.ac=q.ac;/* first packet: do not replay an old animation */
   else if(q.ac!==e.ac){e.ac=q.ac;if(nm(q.an)){e.an=nm(q.an);e.at=0}}}
-function netItem(e,tries){
-  if(e.itemObj){if(e.itemObj.parent)e.itemObj.parent.remove(e.itemObj);e.itemObj=null}
-  if(!e.hi)return;
-  const want=e.hi,who=e.un||e.name,it=itemsL().find(function(x){return x.id===want});
-  if(!it){log('Item debug: '+who+' holds an item this copy of the game does not have. Press Update on the game, then reload.');return}
+function netItem(e,retry){
+  if(!retry){if(e.itemObj){if(e.itemObj.parent)e.itemObj.parent.remove(e.itemObj);e.itemObj=null}e.hiLog=''}
+  if(!e.hi||e.itemObj||e.hiBusy)return;
+  const want=e.hi,who=e.un||e.name,say=function(t){if(e.hiLog!==t){e.hiLog=t;log('Item debug: '+t)}},
+    it=itemsL().find(function(x){return x.id===want});
+  if(!it){say(who+' holds an item this copy of the game does not have. Press Update on the game, then reload.');return}
   const R=P.parts.find(function(p){return p.av&&p.name==='Rarm'&&!p.acc}),g=R&&e.JJ[R.id],m=g&&g.children[0];
-  if(!m){log('Item debug: could not find the right arm on '+who+'.');return}
+  if(!m){say('could not find the right arm on '+who+'.');return}
+  const put=function(o){o.traverse(function(x){x.visible=true;x.frustumCulled=false});m.add(o);e.itemObj=o};
+  e.hiBusy=true;
   meshLoad(it.mesh).then(function(E){
-    if(e.hi!==want)return;
-    if(!E||!E.obj){log('Item debug: the mesh "'+it.mesh+'" for "'+it.name+'" is not available on this computer'+(E&&E.fail?' ('+E.fail+')':'')+'. Re-import it and press Update.');return}
-    if(e.itemObj&&e.itemObj.parent)e.itemObj.parent.remove(e.itemObj);
-    const o=itemMake(E,it);o.traverse(function(x){x.visible=true;x.frustumCulled=false});m.add(o);e.itemObj=o;
-    log('Item debug: showing "'+it.name+'" on '+who+'.')}).catch(function(err){log('Item debug: '+String((err&&err.message)||err))})}
+    e.hiBusy=false;if(e.hi!==want||e.itemObj)return;
+    if(!E||!E.obj){say('the mesh "'+it.mesh+'" for "'+it.name+'" is not available on this computer'+(E&&E.fail?' ('+E.fail+')':'')+'. Showing a placeholder box instead. Re-import the mesh and press Update.');
+      const b=new THREE.Mesh(new THREE.BoxGeometry(.5,.5,.5),new THREE.MeshStandardMaterial({color:0xff9900}));const gg=new THREE.Group();gg.add(b);gg.position.set(+it.px||0,+it.py||0,+it.pz||0);put(gg);return}
+    put(itemMake(E,it));say('showing "'+it.name+'" on '+who+'.')}).catch(function(err){e.hiBusy=false;say(String((err&&err.message)||err))})}
 function netSay(id,t){const e=NP.find(function(n){return n.net===id});if(!e)return;
   if(!e.bub){const c=document.createElement('canvas');c.width=1024;c.height=384;const x=c.getContext('2d');x.scale(2,2);const tx=new THREE.CanvasTexture(c);tx.minFilter=THREE.LinearFilter;tx.generateMipmaps=false;
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthTest:false}));sp.renderOrder=9;sp.visible=false;scene.add(sp);e.bub={x:x,t:tx,sp:sp}}
