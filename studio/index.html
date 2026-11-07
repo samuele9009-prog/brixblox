@@ -1547,6 +1547,7 @@ function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
       else{const A=(q.mv&&(npAnim(q.wa)||npAnim('walk')))||npAnim(q.ia)||npAnim('idle');if(A)po=evalPose(A,q.t%A.len)}}
     else{const A=P.anims[S.idleA||'idle'];if(A)po=evalPose(A,q.t%A.len)}
     /* an animation this player started with a block overrides the parts it has keyframes for, on this player only */
+    if(q.net&&q.hi){const HA=P.anims['hold item'];if(HA)po=Object.assign({},po,evalPose(HA,q.t%(HA.len||1)))}
     let fp=po;
     if(q.net&&q.an){const AN=npAnim(q.an);if(!AN)q.an='';else{q.at=(q.at||0)+dt;
       if(q.at>=AN.len+.05)q.an='';
@@ -4254,11 +4255,21 @@ function netRecv(q){if(!q||!q.id||q.id===NET.id||!NET.on||!(running||playing))re
     NP.slice().forEach(function(o){if(o!==e&&o.net&&String(o.un||o.name)===String(q.n)&&performance.now()-(o.seen||0)>1500)netDrop(o.net)})}
   e.tx=q.x;e.ty=q.y;e.th=q.h;e.td=(q.d!=null&&isFinite(+q.d))?+q.d:(e.td||0);e.mv=q.m;e.seen=performance.now();
   const nm=function(v){return typeof v==='string'?v.slice(0,40):''};
-  e.un=String(q.n||e.name).slice(0,24);e.air=!!q.g;e.wa=nm(q.wa);e.ia=nm(q.ia);e.ja=nm(q.ja);
+  e.un=String(q.n||e.name).slice(0,24);{const hi=typeof q.hi==='string'?q.hi.slice(0,40):'';if(hi!==(e.hi||'')){e.hi=hi;netItem(e)}}e.air=!!q.g;e.wa=nm(q.wa);e.ia=nm(q.ia);e.ja=nm(q.ja);
   {const es=typeof q.e==='string'?q.e.slice(0,200):'';if(es!==e.eqs){e.eqs=es;try{netEq(e,es)}catch(x){}}}
   e.rc=q.rc;if(q.rg&&typeof q.rg==='object'){const t={};Object.keys(q.rg).forEach(function(id){const a=q.rg[id];if(e.JJ[id]&&Array.isArray(a)&&a.length===4&&a.every(Number.isFinite))t[id]=a});e.rgT=t;e.rgAt=performance.now()}/* they were ragdolled: show it on this screen too (never as a kill, they respawn on their own screen) */
   if(e.ac===undefined)e.ac=q.ac;/* first packet: do not replay an old animation */
   else if(q.ac!==e.ac){e.ac=q.ac;if(nm(q.an)){e.an=nm(q.an);e.at=0}}}
+function netItem(e){
+  if(e.itemObj){if(e.itemObj.parent)e.itemObj.parent.remove(e.itemObj);e.itemObj=null}
+  if(!e.hi)return;
+  const it=itemsL().find(function(x){return x.id===e.hi});if(!it)return;
+  const R=P.parts.find(function(p){return p.av&&p.name==='Rarm'&&!p.acc}),g=R&&e.JJ[R.id],m=g&&g.children[0];if(!m)return;
+  const want=e.hi;
+  meshLoad(it.mesh).then(function(E){
+    if(e.hi!==want||!E||!E.obj)return;
+    if(e.itemObj&&e.itemObj.parent)e.itemObj.parent.remove(e.itemObj);
+    const o=itemMake(E,it);m.add(o);e.itemObj=o}).catch(function(){})}
 function netSay(id,t){const e=NP.find(function(n){return n.net===id});if(!e)return;
   if(!e.bub){const c=document.createElement('canvas');c.width=1024;c.height=384;const x=c.getContext('2d');x.scale(2,2);const tx=new THREE.CanvasTexture(c);tx.minFilter=THREE.LinearFilter;tx.generateMipmaps=false;
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthTest:false}));sp.renderOrder=9;sp.visible=false;scene.add(sp);e.bub={x:x,t:tx,sp:sp}}
@@ -4267,7 +4278,7 @@ function netDrop(id){const i=NP.findIndex(function(n){return n.net===id});if(i<0
   NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);/* remove them first, so nothing below can stop it */
   chatSys(n.name+' left the game');npFree(n);delete RAG['np:'+n.name];delete RSZ['np:'+n.name];try{renderParts()}catch(e){}gmPlRefresh();firePJ('pleave',n.name)}
 setInterval(function(){if(!NET.on||!(running||playing))return;
-  const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,e:accStr(Object.assign({},(ME&&ME.av&&ME.av.eq)||{},S.xeq||{}))},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.an,q.ac,q.rc,q.e].join()+(rgo?JSON.stringify(rgo):'');
+  const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,hi:S.heldItem||'',e:accStr(Object.assign({},(ME&&ME.av&&ME.av.eq)||{},S.xeq||{}))},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.an,q.ac,q.rc,q.e,q.hi].join()+(rgo?JSON.stringify(rgo):'');
   const nowT=performance.now();if(j===NET.last&&nowT-(NET.lt||0)<1500)return;NET.last=j;NET.idle=0;NET.lt=nowT;NET.ch.send({type:'broadcast',event:'p',payload:q})},100);
 /* Ghost sweep, runs on every player's own game (so it works even if the player who left has an old version):
    the server's list of who is online is the truth. Someone who is not on it and has gone quiet is removed. */
