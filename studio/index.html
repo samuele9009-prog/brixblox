@@ -1248,18 +1248,25 @@ function accLoad(ids){/* resolves once every id is loaded (or known to be unavai
   if(miss.length){const pr=accRows(miss).then(function(rows){return accFbx().then(function(){
       miss.forEach(function(id){const r=rows.find(function(x){return x.id===id});ACCI[id]={it:null,obj:null};if(!r||r.removed||!r.fbx)return;
         try{const b=atob(r.fbx),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);const o=new THREE.FBXLoader().parse(u.buffer,'');
-          o.traverse(function(m){if(m.geometry)m.geometry.userData.keep=true});ACCI[id]={it:r,obj:o}}catch(e){}})})}).catch(function(){miss.forEach(function(id){if(!ACCI[id])ACCI[id]={it:null,obj:null}})});
+          accStatic(o);o.traverse(function(m){if(m.geometry)m.geometry.userData.keep=true});ACCI[id]={it:r,obj:o}}catch(e){}})})}).catch(function(){miss.forEach(function(id){if(!ACCI[id])ACCI[id]={it:null,obj:null}})});
     miss.forEach(function(id){ACCP[id]=pr})}
   return Promise.all(ids.map(function(id){return ACCP[id]||Promise.resolve()}))}
 const ACCT={};
+/* Accessory fixes: items are flattened to plain meshes (a cloned skeleton pointed at the wrong bones, which made items look cut open or glitched), drawn on both sides,
+   never frustum-culled, pulled slightly toward the camera so they do not z-fight with the head, and frozen so they stay locked to the part they are worn on. */
+function accStatic(o){const sk=[];o.traverse(function(m){if(m.isSkinnedMesh)sk.push(m)});
+  sk.forEach(function(m){const s=new THREE.Mesh(m.geometry,m.material);s.name=m.name;m.matrix.decompose(s.position,s.quaternion,s.scale);s.userData=m.userData;s.visible=m.visible;if(m.parent){m.parent.add(s);m.parent.remove(m)}});
+  o.traverse(function(m){if(!m.isMesh)return;(Array.isArray(m.material)?m.material:[m.material]).forEach(function(mt){if(mt&&'skinning' in mt)mt.skinning=false})});return o}
+function accMat(n){n.side=THREE.DoubleSide;n.polygonOffset=true;n.polygonOffsetFactor=-2;n.polygonOffsetUnits=-2;n.depthWrite=true;if('skinning' in n)n.skinning=false;return n}
+function accFreeze(c,w){c.traverse(function(o){o.updateMatrix();o.matrixAutoUpdate=false});w.updateMatrix();w.matrixAutoUpdate=false}
 function accTex(url,flip){const k=(flip?'f':'n')+url;if(ACCT[k])return ACCT[k];const t=new THREE.TextureLoader().load(url);t.flipY=!flip;t.wrapS=t.wrapT=THREE.RepeatWrapping;return ACCT[k]=t}
 function shineMat(mt,k){const n=mt.isMeshPhongMaterial?mt:new THREE.MeshPhongMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0});
   n.shininess=1+k*149;n.specular=new THREE.Color().setScalar(k);n.needsUpdate=true;return n}
 function accMake(slot,id,hs){/* hs: head height scale, so items still fit a resized head */
   const e=ACCI[id];if(!e||!e.obj)return null;const it=e.it,sl=ACCS[slot];if(!sl)return null;
   const c=e.obj.clone(true);c.position.set(0,0,0);
-  c.traverse(function(m){if(!m.isMesh)return;m.castShadow=false;/* own copies of the materials: hiding your avatar in first person must not hide anyone else's item */
-    const ap=function(mt){let n=mt.clone();if(it.tex){n.map=accTex(it.tex,it.tf);if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true}if(it.sh!=null&&isFinite(it.sh))n=shineMat(n,Math.max(0,Math.min(100,+it.sh))/100);return n};
+  c.traverse(function(m){if(!m.isMesh)return;m.castShadow=false;m.frustumCulled=false;/* own copies of the materials: hiding your avatar in first person must not hide anyone else's item */
+    const ap=function(mt){let n=mt.clone();if(it.tex){n.map=accTex(it.tex,it.tf);if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true}if(it.sh!=null&&isFinite(it.sh))n=shineMat(n,Math.max(0,Math.min(100,+it.sh))/100);return accMat(n)};
     m.material=Array.isArray(m.material)?m.material.map(ap):ap(m.material)});
   c.updateMatrixWorld(true);
   const bx=new THREE.Box3().setFromObject(c),sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),k=sl.s*(it.scale||1)/(Math.max(sz.x,sz.y,sz.z)||1),D=Math.PI/180;
@@ -1267,13 +1274,14 @@ function accMake(slot,id,hs){/* hs: head height scale, so items still fit a resi
   w.rotation.set((it.rx||0)*D,(it.ry||0)*D,(it.rz||0)*D);
   w.position.set(it.px||0,sl.y+(it.py||0)-ACCC[sl.at]*ACCU,sl.z+(it.pz||0));
   /* The shop avatar faces +z and is measured in .34 units; the game character faces -z and is measured in studs. */
-  const F=new THREE.Group();F.rotation.y=Math.PI;F.scale.setScalar(hs/ACCU);F.add(w);F.userData.acc=1;return F}
+  accFreeze(c,w);const F=new THREE.Group();F.rotation.y=Math.PI;F.scale.setScalar(hs/ACCU);F.add(w);F.userData.acc=1;F.updateMatrix();F.matrixAutoUpdate=false;return F}
 /* Dress a character. meshes = {Head:mesh,Torso:mesh} of one rig, eq = {slot:itemId} */
+function accMine(m){const T=byId(P.avId),g=T&&J[T.id];for(let o=m;o;o=o.parent)if(o===g)return true;return false}
 function accDress(meshes,eq,hs){
   eq=accClean(eq);const tok=++ACCTOK;
   function clear(){Object.keys(meshes).forEach(function(n){const m=meshes[n];if(!m)return;(m.userData.accs||[]).forEach(function(a){m.remove(a)});m.userData.accs=[];m.userData.accTok=tok})}
   clear();const ids=Object.keys(eq).map(function(k){return eq[k]});if(!ids.length)return;
-  function put(){clear();Object.keys(eq).forEach(function(slot){const at=ACCS[slot].at,m=meshes[at];if(!m)return;const f=accMake(slot,eq[slot],hs||1);if(f){m.add(f);m.userData.accs.push(f)}})}
+  function put(){clear();Object.keys(eq).forEach(function(slot){const at=ACCS[slot].at,m=meshes[at];if(!m)return;const f=accMake(slot,eq[slot],hs||1);if(f){if(avHid&&accMine(m))f.visible=false;m.add(f);m.userData.accs.push(f)}})}
   if(ids.every(function(id){return ACCI[id]}))put();
   else accLoad(ids).then(function(){const m0=meshes.Head||meshes.Torso;if(m0&&m0.userData.accTok!==tok)return;put()})}
 function accLocal(){/* put your own equipped items on your character */
@@ -2687,7 +2695,7 @@ function camLimit(fx,fy,fz,f,want){
     const h=CRAY.intersectObjects(CAMM,false)[0];if(h)best=Math.min(best,Math.max(0,h.distance-.45))});
   return best}
 /* Hides your own character (but keeps its shadow) while the camera is inside it */
-function avVis(v){const T=byId(P.avId),g=T&&J[T.id];if(!g)return;g.traverse(function(o){if(o.isMesh&&o.material&&!Array.isArray(o.material)){o.material.colorWrite=v;o.material.depthWrite=v}})}
+function avVis(v){const T=byId(P.avId),g=T&&J[T.id];if(!g)return;g.traverse(function(o){if(o.userData&&o.userData.acc)o.visible=v;if(o.isMesh&&o.material&&!Array.isArray(o.material)){o.material.colorWrite=v;o.material.depthWrite=v}})}
 let lt=performance.now(),camF=null;
 function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.1,(now-lt)/1000);lt=now;const f=fwd();
   if(playing)play(dt,f);
