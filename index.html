@@ -846,17 +846,25 @@ function addItem(g,id,fx){const it=itemById(id),o=it&&FBXC[id];if(!o)return;
     const ap=function(mt){const n=mt.clone();n.map=tx;if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true;return n};
     m.material=Array.isArray(m.material)?m.material.map(ap):ap(m.material)})}
   if(it.sh!=null&&isFinite(it.sh)){const k=Math.max(0,Math.min(100,+it.sh))/100;c.traverse(function(m){if(!m.isMesh)return;const f=function(mt){return shineMat(mt.clone(),k)};m.material=Array.isArray(m.material)?m.material.map(f):f(m.material)})}
+  c.traverse(function(m){if(!m.isMesh)return;m.frustumCulled=false;const f=function(mt){return accMat(mt.clone())};m.material=Array.isArray(m.material)?m.material.map(f):f(m.material)});
   c.updateMatrixWorld(true);
   const bx=new THREE.Box3().setFromObject(c),sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),sl=ISLOT[it.slot]||ISLOT.hat,k=sl.s*(it.scale||1)/(Math.max(sz.x,sz.y,sz.z)||1);
   const w=new THREE.Group();c.position.set(-ct.x,sl.base?-bx.min.y:-ct.y,-ct.z);w.add(c);w.scale.setScalar(k);const D=Math.PI/180;
   w.rotation.set((it.rx||0)*D,(it.ry||0)*D,(it.rz||0)*D);
-  w.position.set(it.px||0,sl.y+(it.py||0),sl.z+(it.pz||0));g.add(w);
+  w.position.set(it.px||0,sl.y+(it.py||0),sl.z+(it.pz||0));accFreeze(c,w);g.add(w);
   if(ED&&ED.id===id&&ED.guides){/* editor guides: item bounds, the item's own axes (bold) and the avatar's axes (faint) */
     const bm=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(sz.x,sz.y,sz.z)),new THREE.LineBasicMaterial({color:0xffe14d,depthTest:false,transparent:true}));
     bm.position.set(0,sl.base?sz.y/2:0,0);bm.renderOrder=998;w.add(bm);
     const la=mkAxes(.5,.012,1,true);la.position.copy(w.position);la.rotation.copy(w.rotation);g.add(la);
     const wa=mkAxes(.42,.004,.4,false);wa.position.copy(w.position);g.add(wa)}}
 const TEXC={};
+/* Accessory fixes: items are flattened to plain meshes (a cloned skeleton pointed at the wrong bones, which made items look cut open or glitched), drawn on both sides,
+   never frustum-culled, pulled slightly toward the camera so they do not z-fight with the head, and frozen so they stay locked to the part they are worn on. */
+function accStatic(o){const sk=[];o.traverse(function(m){if(m.isSkinnedMesh)sk.push(m)});
+  sk.forEach(function(m){const s=new THREE.Mesh(m.geometry,m.material);s.name=m.name;m.matrix.decompose(s.position,s.quaternion,s.scale);s.userData=m.userData;s.visible=m.visible;if(m.parent){m.parent.add(s);m.parent.remove(m)}});
+  o.traverse(function(m){if(!m.isMesh)return;(Array.isArray(m.material)?m.material:[m.material]).forEach(function(mt){if(mt&&'skinning' in mt)mt.skinning=false})});return o}
+function accMat(n){n.side=THREE.DoubleSide;n.polygonOffset=true;n.polygonOffsetFactor=-2;n.polygonOffsetUnits=-2;n.depthWrite=true;if('skinning' in n)n.skinning=false;return n}
+function accFreeze(c,w){c.traverse(function(o){o.updateMatrix();o.matrixAutoUpdate=false});w.updateMatrix();w.matrixAutoUpdate=false}
 function getTex(url,flip){const k=(flip?'f':'n')+url;if(TEXC[k])return TEXC[k];const t=new THREE.TextureLoader().load(url);t.flipY=!flip;t.wrapS=t.wrapT=THREE.RepeatWrapping;return TEXC[k]=t}
 function labelSprite(t,col){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.fillStyle='#'+('000000'+col.toString(16)).slice(-6);x.font='bold 46px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(t,32,34);
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true}));sp.scale.set(.13,.13,1);sp.renderOrder=1001;return sp}
@@ -871,7 +879,7 @@ function ensureFbx(){return new Promise(function(ok,no){if(THREE.FBXLoader)retur
   const L=['https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js','https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js'];let i=0;
   (function nx(){if(i>=L.length){THREE.FBXLoader?ok():no(new Error('Could not load the FBX loader.'));return}const s=document.createElement('script');s.src=L[i++];s.onload=nx;s.onerror=nx;document.head.append(s)})()})}
 async function loadItems(){
-  try{const all=await api.listAcc(),rows=all.filter(function(r){return !r.removed});if(rows.length){await ensureFbx();rows.forEach(function(it){if(FBXC[it.id])return;try{const b=atob(it.fbx),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);FBXC[it.id]=new THREE.FBXLoader().parse(u.buffer,'')}catch(e){}})}
+  try{const all=await api.listAcc(),rows=all.filter(function(r){return !r.removed});if(rows.length){await ensureFbx();rows.forEach(function(it){if(FBXC[it.id])return;try{const b=atob(it.fbx),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);FBXC[it.id]=accStatic(new THREE.FBXLoader().parse(u.buffer,''))}catch(e){}})}
     ITEMS=rows.filter(function(r){return FBXC[r.id]});
     /* Items taken out of circulation are removed from this player's inventory (and refunded). Only runs when the list loaded OK. */
     if(me){let ch=false;const av=me.av;
