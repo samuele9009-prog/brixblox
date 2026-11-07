@@ -532,6 +532,7 @@ const BD={
  playaud:{c:'au',l:'play _',a:['music'],raw:1,tip:'Plays an uploaded sound and keeps looping it until you stop it. The script moves on straight away. Upload sounds under Assets in the Explorer.'},
  playonce:{c:'au',l:'play _ once until done',a:['music'],raw:1,tip:'Plays an uploaded sound one time and waits here until it has finished before the next block runs.'},
  stopaud:{c:'au',l:'stop audio _',a:['all'],raw:1,tip:'Stops one sound by name, or every sound if you type all.'},
+ setvol:{c:'au',l:'set volume of _ to _',a:['music','50'],raw:1,tip:'Changes how loud a sound is while the game runs, from 0 (silent) to 100 (full). Type the sound name, or all for every sound. It takes effect straight away on a sound that is already playing and goes back to the Assets slider when the game restarts.'},
  guishow:{c:'gu',l:'show gui _',a:['Button1'],dd:{0:'gui'},tip:'Shows a GUI element you made under GUI in the Explorer.'},
  guihide:{c:'gu',l:'hide gui _',a:['Button1'],dd:{0:'gui'},tip:'Hides a GUI element until you show it again.'},
  guitext:{c:'gu',l:'set gui _ text to _',a:['Text1','Hello'],dd:{0:'gui'},tip:'Changes the words on a GUI text, button or frame. You can use a variable name (like score) to show its value.'},
@@ -882,7 +883,7 @@ function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('p
 
 
 /* BricBloc as text */
-const KW={transparency:'set transparency',guishow:'show gui',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
+const KW={setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
 
@@ -1028,6 +1029,9 @@ async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0
           NET.ch.send({type:'broadcast',event:'ga',payload:{id:NET.id,n:ME.username,t:q.net,a:it.id,m:add?1:0,nm:String(it.name).slice(0,24)}});
           log((add?'Sent "':'Asked to remove "')+it.name+(add?'" to ':'" from ')+t.name+'.')}}
       break}
+    case'setvol':{const nm=String(a[0]).trim(),key=nm.toLowerCase()==='all'?'all':nm;
+      if(key!=='all'&&!P.assets.audio[key]){log('Error: no audio named "'+nm+'".');break}
+      AVR[key]=Math.max(0,Math.min(100,n(1)))/100;liveVol();break}
     case'guishow':case'guihide':case'guitext':{const gg=guiByName(a[0]);if(!gg.length){log('Error: no GUI named "'+String(a[0]).trim()+'". Add one under GUI in the Explorer.');break}
       gg.forEach(function(g){const r=GR[g.id]=GR[g.id]||{};if(b.t==='guitext')r.text=String(val(a[1]===undefined?'':a[1],S));else r.vis=b.t==='guishow'});renderGui();break}
     case'stopaud':{const nm=a[0].trim();if(!nm||nm==='all')stopAudio();else if(!P.assets.audio[nm])log('Error: no audio named "'+nm+'".');else stopAudio(nm);break}}
@@ -1086,7 +1090,7 @@ function draw(){const T=byId(P.avId),g=T&&J[T.id];
 
 /* ===== Parts, welds, rig editor, animator ===== */
 P.parts=P.parts||[];P.models=P.models||[];P.anims=P.anims||{};P.nid=P.nid||1;
-P.vars=Array.isArray(P.vars)?P.vars:[];P.assets=P.assets||{};P.assets.images=P.assets.images||{};P.assets.audio=P.assets.audio||{};P.assets.meshes=P.assets.meshes||{};P.badges=Array.isArray(P.badges)?P.badges:[];P.guis=Array.isArray(P.guis)?P.guis:[];P.bans=Array.isArray(P.bans)?P.bans:[];
+P.vars=Array.isArray(P.vars)?P.vars:[];P.assets=P.assets||{};P.assets.images=P.assets.images||{};P.assets.audio=P.assets.audio||{};P.assets.meshes=P.assets.meshes||{};P.assets.avol=P.assets.avol||{};P.badges=Array.isArray(P.badges)?P.badges:[];P.guis=Array.isArray(P.guis)?P.guis:[];P.bans=Array.isArray(P.bans)?P.bans:[];
 P.env=Object.assign({sky:'#8fd3ff',tod:14,bright:1,sun:1,fog:0},P.env||{});P.rules=Object.assign({grav:190,jump:48,speed:16,cam:14,fov:70},P.rules||{});P.audio=Object.assign({vol:.5,mute:false},P.audio||{});
 P.squads=P.squads||[{id:'q1',name:'Red Squad',color:'#e5484d'},{id:'q2',name:'Blue Squad',color:'#3b82f6'}];P.player=P.player||{name:'Player1',squad:''};
 const byId=function(id){return P.parts.find(function(p){return p.id===id})};
@@ -1754,12 +1758,14 @@ function idleAnim(){const by=function(n){const q=P.parts.find(function(p){return
 let actx=null;
 let nbuf=null;
 /* ===== Uploaded audio and images: stored inside the game as data URLs, so they save with it ===== */
-const AUD={};
+const AUD={},AVR={};
+/* Volume of one sound = game volume x that sound's own volume (slider under Assets) x what the "set volume of _ to _" block set while the game runs */
+function audVol(nm){if(P.audio.mute)return 0;const b=P.assets.avol&&P.assets.avol[nm]!==undefined?P.assets.avol[nm]:1,r=AVR[nm]!==undefined?AVR[nm]:1,g=AVR.all!==undefined?AVR.all:1;return Math.max(0,Math.min(1,P.audio.vol*2*b*r*g))}
 function audioFor(nm){if(!P.assets.audio[nm]){log('Error: no audio named "'+nm+'". Upload it under Assets in the Explorer.');return null}
   const src=audioSrc(nm);if(!src){log('Error: the audio "'+nm+'" is still loading from storage. Try again in a moment.');return null}
-  let a=AUD[nm];if(!a||a._src!==src){a=new Audio(src);a._src=src;AUD[nm]=a}a.volume=P.audio.mute?0:Math.min(1,P.audio.vol*2);return a}
+  let a=AUD[nm];if(!a||a._src!==src){a=new Audio(src);a._src=src;AUD[nm]=a}a.volume=audVol(nm);return a}
 function stopAudio(nm){for(const k in AUD)if(!nm||k===nm){AUD[k].onended=null;AUD[k].pause();try{AUD[k].currentTime=0}catch(e){}}}
-function liveVol(){for(const k in AUD)AUD[k].volume=P.audio.mute?0:Math.min(1,P.audio.vol*2)}
+function liveVol(){for(const k in AUD)AUD[k].volume=audVol(k)}
 const ASSET_FILE=2*1024*1024,ASSET_TOTAL=4.5*1024*1024;
 /* Big audio: sounds live in IndexedDB (the browser's file store). The game only remembers "idb:<id>:<bytes>", so the small game-save limit does not apply to them. */
 const AUDIO_FILE=64*1024*1024,AUDIO_TOTAL=320*1024*1024,AURL={};let IDBP=null;
@@ -2258,7 +2264,7 @@ function lockWarn(t){if(!lockWarnEl){lockWarnEl=document.createElement('div');lo
 cv.addEventListener('mouseup',function(e){if(e.button===2){look=false;if(document.pointerLockElement===cv&&!lockMode())document.exitPointerLock()}});
 cv.addEventListener('mousedown',function(e){if(e.button===0&&lockMode()&&document.pointerLockElement!==cv)lockPtr()});
 cv.style.touchAction='none';cv.oncontextmenu=function(e){e.preventDefault()};
-cv.onpointerdown=function(e){cv.setPointerCapture(e.pointerId);lx=e.clientX;ly=e.clientY;if(e.button===2){look=true;return}if(e.button===0&&playing){playClick(e);return}if(e.button!==0||playing)return;if(animOn()){ray.setFromCamera(ndc(e),camera);const gh=ray.intersectObjects(gizmo,false)[0];if(gh){animGizStart(gh.object,e);return}animClick(e);return}
+cv.onpointerdown=function(e){if(VIEWONLY&&!playing)return;cv.setPointerCapture(e.pointerId);lx=e.clientX;ly=e.clientY;if(e.button===2){look=true;return}if(e.button===0&&playing){playClick(e);return}if(e.button!==0||playing)return;if(animOn()){ray.setFromCamera(ndc(e),camera);const gh=ray.intersectObjects(gizmo,false)[0];if(gh){animGizStart(gh.object,e);return}animClick(e);return}
   ray.setFromCamera(ndc(e),camera);let h=ray.intersectObjects(gizmo,false)[0];
   if(h&&h.object.userData.rotAx!==undefined){snapSel();const rs=rotStart(h.object.userData.rotAx,e);if(rs)gd=rs;return}
   if(h&&h.object.userData.scale){scaleStart(h.object);return}
@@ -2596,7 +2602,7 @@ function endGameFor(kind,why,b){S.stop=true;running=false;playing=false;sync();r
   mdl(kind==='banned'?'You were banned from this game':'You were kicked from this game',function(c,close){
     c.append(el('p','','Reason: '+(why||'No reason given')));
     if(kind==='banned')c.append(el('p','note','Ban length: '+(b.until===null?'forever':leftText(b))+'. You own this game, so you can lift the ban under Roster in the Explorer.'));
-    const r=el('div','tb');r.append(mb('OK','',close));c.append(r)})}
+    const r=el('div','tb');r.append(mb('OK','',function(){close();if(VIEWONLY)leaveGame()}));c.append(r)})}
 function kickKey(key,why,banned,b){why=String(why||'').trim();
   if(key==='main'){chatSys(P.player.name+(banned?' was banned: ':' was kicked: ')+(why||'no reason given'));endGameFor(banned?'banned':'kicked',why,b);return}
   const n=NP.find(function(q){return 'np:'+q.name===key});if(!n)return;
@@ -2605,7 +2611,7 @@ function banKey(t,why,mins){const name=t.name;P.bans=P.bans.filter(function(b){r
   const b={name:name,reason:String(why||'').trim(),until:mins>0?Date.now()+mins*60000:null,at:Date.now()};P.bans.push(b);save();kickKey(t.key,b.reason,true,b)}
 function banGate(){const b=banOf(P.player.name);if(!b)return false;
   mdl('You are banned from this game',function(c,close){c.append(el('p','','Reason: '+(b.reason||'No reason given')),el('p','note','Time left: '+leftText(b)+'.'));
-    const r=el('div','tb');r.append(mb('Lift the ban (I own this game)','',function(){P.bans=P.bans.filter(function(x){return x!==b});save();close();renderParts()}),mb('Close','ghost',close));c.append(r)});return true}
+    const r=el('div','tb');r.append(mb('Lift the ban (I own this game)','',function(){P.bans=P.bans.filter(function(x){return x!==b});save();close();renderParts()}),mb('Close','ghost',function(){close();if(VIEWONLY)leaveGame()}));c.append(r)});return true}
 function bansUI(d){P.bans=P.bans.filter(function(b){return b.until===null||b.until>Date.now()});if(!P.bans.length)return;d.append(el('p','note','Banned players'));
   P.bans.forEach(function(b){const w=el('div','arow');w.append(el('span','nm',b.name+' - '+(b.reason||'no reason')+' ('+(b.until===null?'forever':leftText(b)+' left')+')'),mb('Unban','ghost',function(){P.bans=P.bans.filter(function(x){return x!==b});save();props()}));d.append(w)})}
 
@@ -2862,7 +2868,8 @@ function svcProps(d){const s=SV.find(function(x){return x.k===selSvc});if(!s)ret
         if(kind==='image'){const im=el('img');im.src=src;im.alt=n;w.append(im)}
         w.append(el('span','nm',n+(kind==='audio'&&bigRef(src)?'  ('+(bigSize(src)/1048576).toFixed(1)+' MB)':'')));
         if(kind==='audio'){const au=el('audio'),as=audioSrc(n);au.controls=true;au.preload='none';if(as)au.src=as;else w.append(el('span','note','loading...'));w.append(au)}
-        w.append(mb('Delete','ghost',function(){delete P.assets[col][n];if(kind==='audio'){stopAudio(n);delete AUD[n];dropBig(src)}updSkyTex();save();msg('Deleted '+n+'.');renderParts()}));d.append(w)})};
+        if(kind==='audio'){const vr=el('input');vr.type='range';vr.min=0;vr.max=1;vr.step=.05;vr.value=P.assets.avol[n]!==undefined?P.assets.avol[n]:1;vr.title='Volume of this sound';vr.setAttribute('aria-label','Volume of '+n);vr.style.cssText='width:90px;min-height:0;padding:0';vr.oninput=function(){P.assets.avol[n]=+vr.value;save();liveVol()};w.append(vr)}
+        w.append(mb('Delete','ghost',function(){delete P.assets[col][n];if(kind==='audio'){delete P.assets.avol[n];stopAudio(n);delete AUD[n];dropBig(src)}updSkyTex();save();msg('Deleted '+n+'.');renderParts()}));d.append(w)})};
     d.append(el('p','note','Images'));rows('images','image');d.append(el('p','note','Audio'));rows('audio','audio');d.append(el('p','note','Meshes'));meshRows(d);d.append(el('p','note','Badges (give them with the "give badge" block)'));badgeUI(d)}
   else if(s.k==='gui'){const r=el('div','tb');[['text','Text'],['button','Button'],['frame','Frame'],['image','Image']].forEach(function(q){r.append(mb('+ '+q[1],'',function(){addGui(q[0])}))});d.append(r);
     d.append(el('p','note','GUI sits on top of the stage and is sized in percent, so it fits any window. Click one in the list to edit it. Blocks: "show gui", "hide gui", "set gui text to" and "when gui clicked" (for buttons).'))}
@@ -3024,7 +3031,7 @@ function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing);try{renderGui()}catch(e){}}
 function setRun(v){running=v;sync()}
-function resetWorld(){KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();RO={};RV={};RD={};RVY={};RY={};CO={};TM=new Map();RAG={};RSZ={};GR={};stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
+function resetWorld(){KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();RO={};RV={};RD={};RVY={};RY={};CO={};TM=new Map();RAG={};RSZ={};GR={};for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
 function boot(my){reser();const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
   hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
   return {hs:hs,done:Promise.all(hs.filter(function(s){return s[0].t==='start'}).map(function(s){return ex(s.slice(1),my,s[0].o).catch(function(e){log('Error: '+e)})}))}}
@@ -3032,7 +3039,7 @@ $('s-run').onclick=async function(){this.blur();if(banGate())return;S.stop=true;
   const b=boot(my);await b.done;
   if(my===S&&!b.hs.some(function(s){return EVH.indexOf(s[0].t)>=0}))setRun(false)};
 $('s-play').onclick=function(){this.blur();if(banGate())return;S.stop=true;sel=[];selModel=null;selSvc=null;selJ=null;resetWorld();cd=cdT=P.rules.cam;CAMN=0;camD=null;avHid=false;playing=true;sync();stageApply();buildEdit();$('s-out').textContent='';boot(S)};
-$('s-stop').onclick=function(){S.stop=true;running=false;playing=false;sync();resetWorld();if(VIEWONLY)leaveGame()};
+$('s-stop').onclick=function(){if(VIEWONLY)showLeaving();S.stop=true;running=false;playing=false;sync();resetWorld();if(VIEWONLY)leaveGame()};
 /* Ctrl+L: start testing the game (Play). Press it again to stop. */
 addEventListener('keydown',function(e){if(e.code!=='KeyL'||!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey||e.repeat)return;
   e.preventDefault();if($('studio').getClientRects().length===0)return;
@@ -3205,7 +3212,12 @@ addEventListener('beforeunload',function(e){if(skipUnload)return;if(dirty()||per
 const NRAG={c:0};/* counts how many times this player was ragdolled, so other players see it too */
 const NANIM={n:'',c:0};/* the last animation this player started on their own character, and a counter so other players never miss it */
 const NETMAX=10,NET={id:Math.random().toString(36).slice(2,10),lob:null,ch:null,sid:'',on:false,fail:false,last:'',idle:0};let NETCOL=null;
-function leaveGame(){try{S.stop=true}catch(e){}netLeave();if(window.parent!==window)parent.postMessage({bb:'leave'},location.origin);else location.href=SITE_URL}
+/* Leaving a game you only play: cover the screen at once, so the editor behind it can never be seen or used while the page is closing */
+let leavingEl=null;
+function showLeaving(){if(leavingEl)return;const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:9999;background:#232527;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font:700 1.1rem Montserrat,system-ui,sans-serif';
+  o.textContent='Leaving game...';leavingEl=o;document.body.append(o);try{if(document.pointerLockElement)document.exitPointerLock()}catch(e){}
+  setTimeout(function(){const b=document.createElement('button');b.type='button';b.className='btn';b.textContent='Back to BrixBlox';b.onclick=function(){location.href=SITE_URL};o.append(b)},3000)}
+function leaveGame(){showLeaving();try{S.stop=true}catch(e){}netLeave();if(window.parent!==window)parent.postMessage({bb:'leave'},location.origin);else location.href=SITE_URL}
 function netLeave(){NET.on=false;try{if(NET.ch)sb.removeChannel(NET.ch);if(NET.lob)sb.removeChannel(NET.lob)}catch(e){}NET.ch=NET.lob=null}
 addEventListener('pagehide',netLeave);
 function netChat(t){if(NET.on)NET.ch.send({type:'broadcast',event:'c',payload:{id:NET.id,n:ME.username,t:t}})}
