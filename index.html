@@ -65,6 +65,7 @@ form .btn{width:100%;margin-top:16px}
 .swatches{display:flex;gap:6px;flex-wrap:wrap;flex:1 1 160px}
 .swatches button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);cursor:pointer;padding:0}
 .swatches button[aria-pressed=true]{outline:3px solid var(--berry);outline-offset:2px}
+.swatches button:disabled{cursor:not-allowed;opacity:.35;background-image:linear-gradient(135deg,transparent 45%,rgba(0,0,0,.55) 45% 55%,transparent 55%)}
 .avatar{--c:#ff6b57;width:38px;height:52px;position:relative;flex:none}
 .avatar i{position:absolute;display:block;border:1px solid var(--line);border-radius:3px}
 .avatar .hd{left:10px;top:0;width:18px;height:16px;background:#ffd9a8}
@@ -371,6 +372,9 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
             <button class="btn ghost small" type="button" id="av-face">Face close-up</button>
           </div>
           <p class="note">Shirt color</p><div id="sw" class="swatches"></div>
+          <p class="note">Skin color</p><div id="sw-skin" class="swatches"></div>
+          <p class="note">Pants color</p><div id="sw-pants" class="swatches"></div>
+          <p id="look-hint" class="hint" role="status"></p>
         </div>
         <div>
           <div class="seg" id="shop-tabs" style="margin-top:0;flex-wrap:wrap"></div>
@@ -554,7 +558,17 @@ const store=(function(){
     del:function(k){delete mem[k];try{localStorage.removeItem(k)}catch(e){}const o=wn();delete o['bb:'+k];wset(o)}};
 })();
 async function sha(t){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('')}catch(e){return btoa(t)}}
-function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:e.hat||null,face:e.face||null,facc:e.facc||null,back:e.back||null,neck:e.neck||null},spent:a.spent||0}}
+/* Skin and pants palettes. A skin tone and a pants colour can't be picked if they look too alike, so the legs never vanish into the arms and head. */
+const DEF_SKIN='#f0c49a',DEF_PANTS='#a4bd47';
+const SKINS=['#ffe0c7','#f0c49a','#e0a878','#c68642','#a0682f','#8d5524','#5c3a1e','#3b2314'];
+const PANTS=['#a4bd47','#2b3a67','#1d1f21','#7a4cff','#ff6b57','#1fc8b4','#ff7ab8','#f5f0e6'];
+function toLab(h){const n=parseInt(h.slice(1),16);const c=[n>>16&255,n>>8&255,n&255].map(function(v){v/=255;return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4)});
+  const x=(c[0]*.4124+c[1]*.3576+c[2]*.1805)/.95047,y=c[0]*.2126+c[1]*.7152+c[2]*.0722,z=(c[0]*.0193+c[1]*.1192+c[2]*.9505)/1.08883;
+  const f=function(t){return t>.008856?Math.cbrt(t):7.787*t+16/116};return [116*f(y)-16,500*(f(x)-f(y)),200*(f(y)-f(z))]}
+function colorDist(a,b){const p=toLab(a),q=toLab(b);return Math.sqrt(Math.pow(p[0]-q[0],2)+Math.pow(p[1]-q[1],2)+Math.pow(p[2]-q[2],2))}
+const MIN_LOOK_DIST=30;
+function tooAlike(a,b){return colorDist(a,b)<MIN_LOOK_DIST}
+function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:e.hat||null,face:e.face||null,facc:e.facc||null,back:e.back||null,neck:e.neck||null},spent:a.spent||0,skin:a.skin||DEF_SKIN,pants:a.pants||DEF_PANTS}}
 function makeDemo(){
   function load(){try{return JSON.parse(store.get('brixblox-demo'))||{users:[],recs:{},session:null}}catch(e){return {users:[],recs:{},session:null}}}
   function save(d){store.set('brixblox-demo',JSON.stringify(d))}
@@ -682,12 +696,31 @@ function syncMe(){if(me)store.set('brixblox-me',JSON.stringify({id:me.id,usernam
 async function enter(p){me=p;syncMe();$('a-msg').textContent='';$('f-up').reset();$('f-in').reset();nameOk=false;updUp();
   try{recs=await api.records(me.id)}catch(e){recs={};toast('Could not load your times.')}
   lobby()}
-function paintAvatar(){if(typeof pvRebuild==='function')pvRebuild();$('sw').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.c===me.color))})}
+function paintLook(){
+  const a=me.av;
+  /* A saved combination that is too close (older account, edited data) gets a safe pants colour */
+  if(tooAlike(a.skin,a.pants)){const ok=PANTS.find(function(c){return !tooAlike(a.skin,c)});if(ok)a.pants=ok}
+  [['sw-skin','skin','pants'],['sw-pants','pants','skin']].forEach(function(r){
+    $(r[0]).querySelectorAll('button').forEach(function(b){
+      const clash=tooAlike(b.dataset.c,a[r[2]]);
+      b.disabled=clash&&b.dataset.c!==a[r[1]];
+      b.title=b.disabled?'Too close to your '+(r[2])+' color':'';
+      b.setAttribute('aria-pressed',String(b.dataset.c===a[r[1]]))})})}
+function setLook(key,c){
+  const other=key==='skin'?'pants':'skin';
+  if(tooAlike(c,me.av[other])){$('look-hint').className='hint bad';$('look-hint').textContent="Skin and pants colors can't be too close. Pick one that stands out.";return}
+  $('look-hint').textContent='';
+  const old=me.av[key];me.av[key]=c;pvRebuild();paintLook();
+  saveAv().then(function(ok){if(!ok){me.av[key]=old;pvRebuild();paintLook()}})}
+function paintAvatar(){if(typeof pvRebuild==='function')pvRebuild();if($('sw-skin').children.length)paintLook();$('sw').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.c===me.color))})}
 function unlocked(id){return id===1||!!recs[id-1]}
 function lobby(){
   show('lobby');{const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}}$('l-name').textContent=me.username;$('l-name2').textContent=me.username;
   const sw=$('sw');sw.innerHTML='';
   COLORS.forEach(function(c){const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label','Color '+c);b.onclick=async function(){me.color=c;syncMe();paintAvatar();try{await api.setColor(me.id,c)}catch(e){toast('Could not save your color.')}};sw.appendChild(b)});
+  [['sw-skin','skin',SKINS],['sw-pants','pants',PANTS]].forEach(function(r){const box=$(r[0]);box.innerHTML='';
+    r[2].forEach(function(c){const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label',(r[1]==='skin'?'Skin ':'Pants ')+'color '+c);b.onclick=function(){setLook(r[1],c)};box.appendChild(b)})});
+  $('look-hint').textContent='';
   paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');loadFriends();loadGames();loadBank();loadItems()}
 const PAGES=['home','friends','avatar','bank','settings'];
 function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p)})}
@@ -889,8 +922,8 @@ async function loadItems(){
       if(ch){if(pv.tryEq)pv.tryEq=null;await saveAv()}}
   }catch(e){ITEMS=[]}
   if(me){pvRebuild();if(!$('p-avatar').hidden)paintShop()}}
-function makeAvatar(color,eq){
-  const g=new THREE.Group(),skin='#f0c49a',leg='#a4bd47',S=.34,fx={};
+function makeAvatar(color,eq,look){
+  look=look||{};const g=new THREE.Group(),skin=look.skin||DEF_SKIN,leg=look.pants||DEF_PANTS,S=.34,fx={};
   /* Same body as the Studio character: sizes are in studs, then scaled by S */
   function body(geo,c){geo.scale(S,S,S);const m=new THREE.Mesh(geo,new THREE.MeshPhongMaterial({color:c,shininess:40,specular:new THREE.Color('#4a4a4a')}));m.castShadow=true;return m}
   const torso=body(rbox(1.6,2,.8,.224),color);torso.position.y=3*S;g.add(torso);
@@ -919,7 +952,7 @@ function buildScene(L){
   let seed=L.def.id*977;const rnd=function(){seed=(seed*16807)%2147483647;return seed/2147483647};
   for(let i=0;i<36;i++){const g=new THREE.Group(),cm=lam(t.deco),n=2+Math.floor(rnd()*3);for(let k=0;k<n;k++){const s=new THREE.Mesh(new THREE.BoxGeometry(2+rnd()*3,1+rnd()*1.2,2+rnd()*3),cm);s.position.set(k*2.2,rnd()*.6,rnd()*1.5);g.add(s)}
     const side=rnd()<.5?-1:1;g.position.set(side*(16+rnd()*30),(L.groundY+8)+rnd()*40,L.finish.z*rnd()-10);world.add(g)}
-  if(avatar)scene.remove(avatar);const av=makeAvatar(me.color,me.av.eq);avatar=av.g;limbs=av.limbs;gameFx=av.fx;scene.add(avatar)}
+  if(avatar)scene.remove(avatar);const av=makeAvatar(me.color,me.av.eq,me.av);avatar=av.g;limbs=av.limbs;gameFx=av.fx;scene.add(avatar)}
 
 /* ===== 7. Controls ===== */
 const keys={};let jumpQ=false,stickX=0,stickY=0,drag=null;
@@ -977,7 +1010,7 @@ function pvMode(m){pv.mode=pv.mode===m&&m!=='idle'?'idle':m;$('av-tools').queryS
 function pvRebuild(){
   if(!pv.sc||!me)return;
   if(pv.av)pv.sc.remove(pv.av);
-  const a=makeAvatar(me.color,pv.tryEq||me.av.eq);pv.av=a.g;pv.limbs=a.limbs;pv.fx=a.fx;pv.sc.add(pv.av)}
+  const a=makeAvatar(me.color,pv.tryEq||me.av.eq,me.av);pv.av=a.g;pv.limbs=a.limbs;pv.fx=a.fx;pv.sc.add(pv.av)}
 function pvTick(now){
   if(!pv.r||!me||$('lobby').hidden||$('p-avatar').hidden||!pv.av)return;
   const c=$('av3d'),w=c.clientWidth,h=c.clientHeight;
