@@ -542,6 +542,7 @@ const BD={
  givebadge:{c:'pl',l:'give badge _ to player _',a:['Winner','player'],tip:'Gives a player a badge you made under Assets in the Explorer (Badges). Type the badge name. The player is a name, a variable, or player (the first player in the server) (like toucher). The player sees a pop-up and the badge is saved to their account, once per badge per game. Anyone can earn a badge themselves; only the game owner or an admin can give one to another player.'},
  awardbadge:{c:'pl',l:'award badge _ to player _ icon _',a:['Winner','player','\uD83C\uDFC5'],tip:'Gives a player a badge and counts it in their profile. You do not need to make the badge first: it is created for you if it does not exist yet. Each badge is only given once per player per game, and every new badge adds 1 to their badge counter. Type the badge name, then the player (a name, a variable, or player for the first player in the server) and an icon. Anyone can earn a badge themselves; only the game owner or an admin can give one to another player.'},
  randplayer:{c:'pl',l:'get random player into _',a:['target'],dd:{0:'var'},tip:'Picks one player in the game at random (you included) and stores their name in the variable. Use it with blocks like kick, teleport or ragdoll.'},
+ forplayer:{c:'pl',l:'only for player _ do',a:['target'],k:1,tip:'Put blocks inside and they only happen for the player you name (type a name, a variable like target from "get random player", or player). GUI blocks (show, hide, set text, set colour, visible, toggle) are sent to that player\'s screen, so nobody else sees the change. Blocks that already have a player slot (kick, teleport, ragdoll) still use their own slot.'},
  getcount:{c:'pl',l:'get player count into _',a:['count'],dd:{0:'var'},tip:'Stores how many players are in the game right now (you included) in the variable.'},
  accwear:{c:'pl',l:'put accessory _ on player _ slot _',a:['Cool Hat','player','auto'],dd:{2:'accslot'},tip:'Puts an accessory from the BrixBlox shop (including ones you made) on a player. They do NOT need to own it and nothing is added to their inventory. It is only worn during this game and other players see it. Type the accessory name exactly. Slot auto uses the slot the accessory was made for (or hat).'},
  accstrip:{c:'pl',l:'take accessory _ off player _',a:['Cool Hat','player'],tip:'Takes off an accessory that was put on with the put accessory block.'},
@@ -931,7 +932,7 @@ function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('p
 
 
 /* BricBloc as text */
-const KW={randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
+const KW={forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
 
@@ -986,6 +987,7 @@ async function ex(list,S,o){let ch=null;
       continue}
     ch=null;await st(b,S,o)}}
 async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0};
+  if(S.only&&ONLYB[b.t]){await onlyDo(b,S,o);return}
   switch(b.t){
     case'move':{const r=S.dir*Math.PI/180;S.x=cl(S.x+Math.cos(r)*n(0),250);S.y=cl(S.y+Math.sin(r)*n(0),250);break}
     case'turn':S.dir=(S.dir-n(0))%360;break;
@@ -1087,6 +1089,8 @@ async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0
           log((add?'Sent "':'Asked to remove "')+it.name+(add?'" to ':'" from ')+t.name+'.')}}
       break}
     case'randplayer':{const vn=String(a[0]).trim();if(!vn){log('Error: type a variable name to store the player in.');break}const pl=plist();S.v[vn]=pl.length?pl[Math.floor(Math.random()*pl.length)].name:String(P.player.name);break}
+    case'forplayer':{const ts=playersOf(String(val(a[0],S)));if(!ts.length){log('Error: no player named "'+String(val(a[0],S)).trim()+'" for the "only for player" block.');break}
+      const prev=S.only;S.only=ts;try{await ex(b.k,S,o)}finally{S.only=prev}break}
     case'getcount':{const vn=String(a[0]).trim();if(!vn){log('Error: type a variable name to store the count in.');break}S.v[vn]=1+S.oth.length;break}
     case'rigbeh':{const rs=roots(o).filter(function(r){return kids(r).length>0});
       if(!rs.length){log('Error: "set rig behavior" must be in a script that belongs to a rig (parts welded together). Use the + next to a rig in the Explorer.');break}
@@ -3680,6 +3684,19 @@ function dropOn(d,t){if(!dropOK(d,t))return;const ps=dragParts(d);let msg0='';
     foldItems(ps).forEach(function(q){delete q.fold});msg0='Taken out of its model, folder and parent.'}
   cleanModels();msg(msg0);all()}
 
+
+/* ===== "only for player": GUI blocks inside it run on the chosen player's own screen ===== */
+const ONLYB={guishow:1,guihide:1,guitext:1,guivis:1,guitoggle:1,guicolor:1};
+async function onlyDo(b,S,o){const ts=S.only;S.only=null;
+  try{for(const t of ts){if(t.key==='main')await st(b,S,o);else sendCmd(t,b,S,o)}}finally{S.only=ts}}
+function sendCmd(t,b,S,o){if(!NET.on||!NET.ch)return;const nm=String(t.key).slice(3),e=NP.find(function(n){return n.net&&n.name===nm});if(!e)return;
+  let g0=String(b.a[0]).trim();if(g0.toLowerCase()==='this'){const og=guiById(o);if(!og)return;g0=og.name}
+  const ev=function(i){return String(val(b.a[i]===undefined?'':b.a[i],S)).slice(0,120)};let a=[g0];
+  if(b.t==='guivis')a.push(ev(1));else if(b.t==='guitext')a.push('"'+ev(1).replace(/"/g,"'")+'"');else if(b.t==='guicolor')a.push(ev(1),ev(2));
+  try{NET.ch.send({type:'broadcast',event:'cmd',payload:{id:NET.id,t:e.net,b:b.t,a:a}})}catch(x){}}
+function netCmd(p){if(!p||p.t!==NET.id||p.id===NET.id||!(running||playing)||!ONLYB[p.b]||!Array.isArray(p.a))return;
+  const a=p.a.slice(0,3).map(function(x){return String(x).slice(0,200)});st({t:p.b,a:a},S,null).catch(function(){})}
+
 /* Undo / redo: Ctrl+Z undoes, Ctrl+Shift+Z or Ctrl+Y redoes (parts, models and animations) */
 const hist=[],redoS=[];let histLast=null,histT=0,histBusy=false;const saveRaw=save;
 function snapState(){return JSON.stringify({parts:P.parts,models:P.models,anims:P.anims,guis:P.guis,folders:P.folders||[],nid:P.nid,avId:P.avId})}
@@ -4087,6 +4104,7 @@ async function netJoin(){
       const by=String(p.n||'').slice(0,24),id=String(p.a||'');if(!isAdminName(by)||!/^acc_[a-z0-9]{1,16}$/.test(id))return;
       const add=!!p.m,nm=String(p.nm||'an accessory').slice(0,24);
       invChange(id,add).then(function(r){if(r&&r.ok&&!r.same)chatSys('Admin '+by+(add?' added the accessory "'+nm+'" to your inventory. Wear it from your avatar page.':' removed the accessory "'+nm+'" from your inventory.'))}).catch(function(){})});
+    ch.on('broadcast',{event:'cmd'},function(m){netCmd(m.payload)});
     ch.on('broadcast',{event:'ar'},function(){if(Date.now()-ADMT>3000)admLoad()});
     ch.on('broadcast',{event:'gw'},function(m){const p=m.payload;if(!p||p.t!==NET.id||p.id===NET.id||!(running||playing))return;const sl=String(p.s||''),ac=String(p.a||'');
       if(!ACCS[sl]||!/^acc_[a-z0-9]{1,16}$/.test(ac))return;S.xeq=S.xeq||{};
