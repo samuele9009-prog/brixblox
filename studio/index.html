@@ -1014,8 +1014,8 @@ P.squads=P.squads||[{id:'q1',name:'Red Squad',color:'#e5484d'},{id:'q2',name:'Bl
 const byId=function(id){return P.parts.find(function(p){return p.id===id})};
 const piv=function(p){return p.parent?p.pivot:p.pos};
 const kids=function(p){return P.parts.filter(function(c){return c.parent===p.id})};
-let selSvc=null,openS={},curTab='out',fsOn=false,animT=null,PG=null,J={},M={},sel=[],selModel=null,openM={},rigOn=false,rig0={},aGM='move',agT=null,selJ=null,balls=[],gizmo=[],curA='',aT=0,aPlay=false,live={},RO={},playing=false,hov=null,gz=[],cd=14;
-let tool='move';const editG=new THREE.Group();scene.add(editG);const ray=new THREE.Raycaster();
+let selSvc=null,openS={},curTab='out',fsOn=false,animT=null,PG=null,J={},M={},sel=[],selModel=null,openM={},rigOn=false,rig0={},aGM='move',agT=null,selJ=null,balls=[],gizmo=[],curA='',aT=0,aPlay=false,live={},RO={},playing=false,hov=null,gz=[],cd=14,cdT=14,zq=0,camD=null,avHid=false,CAMM=[],CAMN=0;
+let tool='move';const editG=new THREE.Group();scene.add(editG);const ray=new THREE.Raycaster(),CRAY=new THREE.Raycaster();
 function msg(t){$('p-msg').textContent=t}
 /* Cylinder with smoothly rounded top and bottom edges (b = edge rounding) */
 function cylGeo(w,h,d,b){b=Math.min(b,h/2*.99,w/2*.99,d/2*.99);const bx=b/(w/2),pts=[new THREE.Vector2(0,-h/2)],N=18;
@@ -1866,7 +1866,7 @@ cv.onpointermove=function(e){if(playing&&!look)playHover(e);const pl=document.po
 cv.onpointerleave=function(){setHover(null);animHover(null);cv.style.cursor=''};
 document.addEventListener('pointerlockchange',function(){lockPend=false;if(document.pointerLockElement!==cv){look=false;cv.style.cursor=''}});
 cv.onpointerup=cv.onpointercancel=function(e){if(e&&e.type==='pointercancel'&&(lockPend||document.pointerLockElement===cv))return;look=false;cv.style.cursor='';if(document.pointerLockElement===cv)document.exitPointerLock();if(gd){const g0=gd;gd=null;if(g0.an&&(g0.mode==='rot'||g0.pos))animRotEnd(g0);save();if(!g0.an){rebuildParts();props()}else if(!g0.pos&&g0.mode==='move')rebuildParts()}};
-cv.onwheel=function(e){e.preventDefault();if(playing){cd=Math.max(4,Math.min(60,cd+e.deltaY*.02));return}const f=fwd(),k=-e.deltaY*.02;cam.x+=f[0]*k;cam.y+=f[1]*k;cam.z+=f[2]*k};
+cv.onwheel=function(e){e.preventDefault();if(playing){if(cdT<=.01&&e.deltaY>0)cdT=2.5;else{cdT*=Math.exp(e.deltaY*.0015);if(e.deltaY<0&&cdT<1.4)cdT=0}cdT=Math.max(0,Math.min(60,cdT));return}zq+=-e.deltaY*.02};
 addEventListener('keydown',function(e){if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;if(playing&&e.code==='Space')e.preventDefault();keys[e.code]=true});
 addEventListener('keyup',function(e){keys[e.code]=false});
 addEventListener('blur',function(){for(const k in keys)keys[k]=false});
@@ -2192,17 +2192,17 @@ function openGM(){if(menuEl||!(running||playing))return;for(const k in keys)keys
   const ov=el('div','gm'),pn=el('div','gmp');ov.append(pn);
   const hd=el('div','gmh'),tt=el('div');tt.append(el('h3','','Game menu'),el('small','',P.name));const x=el('button','gmx','✕');x.type='button';x.setAttribute('aria-label','Close menu');x.onclick=closeGM;hd.append(tt,x);pn.append(hd);
   const bt=el('div','gmc');
-  bt.append(mb('▶  Resume','',closeGM),mb('↻  Respawn character','ghost',function(){closeGM();respawnMe()}),mb('◎  Reset camera','ghost',function(){cd=P.rules.cam}),mb('■  Leave game  (L)','danger',function(){closeGM();$('s-stop').click()}));pn.append(bt);
+  bt.append(mb('▶  Resume','',closeGM),mb('↻  Respawn character','ghost',function(){closeGM();respawnMe()}),mb('◎  Reset camera','ghost',function(){cdT=P.rules.cam}),mb('■  Leave game  (L)','danger',function(){closeGM();$('s-stop').click()}));pn.append(bt);
   pn.append(el('div','gmt','Players'));
   const q=P.squads.find(function(z){return z.id===P.player.squad}),pl=[[P.player.name+' (you)',q?q.color:'#2fa95a']].concat(S.oth.map(function(n){return [n,'#3b82f6']}));
   pl.forEach(function(p){const r=el('div','arow'),dt=el('i');dt.style.cssText='width:12px;height:12px;border-radius:4px;flex:none;background:'+p[1];r.append(dt,el('span','nm',p[0]));pn.append(r)});
   pn.append(el('div','gmt','Settings'));
   slider(pn,'Volume',P.audio,'vol',0,1,.05,function(v){return Math.round(v*100)+'%'},liveVol);
   const mt=el('input');mt.type='checkbox';mt.checked=P.audio.mute;mt.onchange=function(){P.audio.mute=mt.checked;save();liveVol()};pn.append(lab('Mute all sounds',mt));
-  slider(pn,'Camera distance',P.rules,'cam',4,60,1,null,function(){cd=P.rules.cam});slider(pn,'Field of view',P.rules,'fov',30,120,1);
+  slider(pn,'Camera distance',P.rules,'cam',4,60,1,null,function(){cdT=P.rules.cam});slider(pn,'Field of view',P.rules,'fov',30,120,1);
   const ct=el('input');ct.type='checkbox';ct.checked=!$('chat').classList.contains('min');ct.onchange=function(){$('chat').classList.toggle('min',!ct.checked)};pn.append(lab('Show chat',ct));
   const fb=mb(fsOn?'Exit fullscreen':'Fullscreen','ghost',function(){$('s-fs').click();closeGM()});fb.style.marginTop='6px';pn.append(fb);
-  const k=el('p','gmk');k.innerHTML='<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move &middot; <kbd>Space</kbd> jump<br><kbd>/</kbd> chat &middot; <kbd>Esc</kbd> this menu &middot; <kbd>Esc</kbd> then <kbd>L</kbd> leave game<br>Hold right mouse and drag to look';pn.append(k);
+  const k=el('p','gmk');k.innerHTML='<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move &middot; <kbd>Space</kbd> jump &middot; scroll to zoom (all the way in = first person)<br><kbd>/</kbd> chat &middot; <kbd>Esc</kbd> this menu &middot; <kbd>Esc</kbd> then <kbd>L</kbd> leave game<br>Hold right mouse and drag to look';pn.append(k);
   ov.onpointerdown=function(e){if(e.target===ov)closeGM()};document.body.append(ov);menuEl=ov;const f=pn.querySelector('.btn');if(f)f.focus()}
 /* Capture phase: Esc opens/closes the menu, and while it is open the game ignores the keyboard */
 addEventListener('keydown',function(e){
@@ -2283,7 +2283,7 @@ function svcProps(d){const s=SV.find(function(x){return x.k===selSvc});if(!s)ret
     slider(d,'Time of day',P.env,'tod',0,24,.25,clock,applyEnv);slider(d,'Brightness',P.env,'bright',.2,2,.05,pct,applyEnv);
     slider(d,'Sun strength',P.env,'sun',0,1.5,.05,pct,applyEnv);slider(d,'Fog',P.env,'fog',0,100,1,null,applyEnv)}
   else if(s.k==='rules'){slider(d,'Gravity',P.rules,'grav',20,400,5);slider(d,'Jump power',P.rules,'jump',10,120,1);slider(d,'Walk speed',P.rules,'speed',4,40,1);
-    slider(d,'Camera distance',P.rules,'cam',4,60,1,null,function(){cd=P.rules.cam});slider(d,'Field of view',P.rules,'fov',30,120,1);
+    slider(d,'Camera distance',P.rules,'cam',4,60,1,null,function(){cdT=P.rules.cam});slider(d,'Field of view',P.rules,'fov',30,120,1);
     const b=el('button','btn ghost small','Reset to defaults');b.type='button';b.style.marginTop='10px';b.onclick=function(){Object.assign(P.rules,{grav:190,jump:48,speed:16,cam:14});save();props()};d.append(b);
     d.append(el('p','note','Default gravity is 190. Lower it for a moon level. Jump height is about jump power squared divided by twice the gravity.'))}
   else if(s.k==='audio'){slider(d,'Volume',P.audio,'vol',0,1,.05,function(v){return Math.round(v*100)+'%'},liveVol);
@@ -2430,14 +2430,29 @@ function renderParts(){const l=$('p-list');l.replaceChildren();
     else if(s.k==='assets'){const im=Object.keys(P.assets.images),au=Object.keys(P.assets.audio);im.forEach(function(n){plain(n,go,'\u25A7','#2f78d0')});au.forEach(function(n){plain(n,go,'\u266A','#a3a31c')});if(!im.length&&!au.length)plain('(nothing uploaded yet)',go)}});
   props();joints()}
 
+/* Play camera: it never goes through solid parts (it slides in at once and eases back out), and zooming all the way in is first person */
+function camLimit(fx,fy,fz,f,want){
+  if(--CAMN<=0){CAMN=15;CAMM=Object.keys(M).filter(function(k){const p=byId(k);if(!p||p.av||p.stab||!inW(p)||gone(p)||!solid(rootOf(p)))return false;return !((MATS[p.mat]||MATS.plastic).op)}).map(function(k){return M[k]})}
+  const d=new THREE.Vector3(-f[0],-f[1],-f[2]).normalize(),r=new THREE.Vector3(Math.cos(cam.yaw),0,Math.sin(cam.yaw)),u=new THREE.Vector3(0,1,0),o=new THREE.Vector3(fx,fy,fz);let best=want;
+  CRAY.far=want+.6;
+  [[0,0],[1,0],[-1,0],[0,1],[0,-1]].forEach(function(a){CRAY.set(o.clone().addScaledVector(r,a[0]*.35).addScaledVector(u,a[1]*.35),d);
+    const h=CRAY.intersectObjects(CAMM,false)[0];if(h)best=Math.min(best,Math.max(0,h.distance-.45))});
+  return best}
+/* Hides your own character (but keeps its shadow) while the camera is inside it */
+function avVis(v){const T=byId(P.avId),g=T&&J[T.id];if(!g)return;g.traverse(function(o){if(o.isMesh&&o.material&&!Array.isArray(o.material)){o.material.colorWrite=v;o.material.depthWrite=v}})}
 let lt=performance.now(),camF=null;
 function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.1,(now-lt)/1000);lt=now;const f=fwd();
   if(playing)play(dt,f);
   else{const sp=(keys.ShiftLeft?36:12)*dt,r=[Math.cos(cam.yaw),0,Math.sin(cam.yaw)],go=function(v,k){cam.x+=v[0]*k;cam.y+=v[1]*k;cam.z+=v[2]*k};
-    if(keys.KeyW)go(f,sp);if(keys.KeyS)go(f,-sp);if(keys.KeyD)go(r,sp);if(keys.KeyA)go(r,-sp);if(keys.KeyQ)cam.y-=sp;if(keys.KeyE)cam.y+=sp}
+    if(keys.KeyW)go(f,sp);if(keys.KeyS)go(f,-sp);if(keys.KeyD)go(r,sp);if(keys.KeyA)go(r,-sp);if(keys.KeyQ)cam.y-=sp;if(keys.KeyE)cam.y+=sp;if(Math.abs(zq)>.001){const zs=zq*(1-Math.exp(-dt*12));zq-=zs;go(f,zs)}else zq=0}
   if(playing||running){collide();physics(dt);objMove(dt);npPhys(dt);touchTick()}npTick(dt);
   draw();entTick(dt);
-  if(playing){const T=byId(P.avId);if(T){cam.x=T.pos[0]+S.x-f[0]*cd;S.ch=S.ch===undefined?S.h:S.ch+(S.h-S.ch)*(1-Math.exp(-dt*9));cam.y=T.pos[1]+S.ch+1-f[1]*cd;cam.z=T.pos[2]-S.y-f[2]*cd}}else camF=null;
+  if(playing){const T=byId(P.avId);if(T){S.ch=S.ch===undefined?S.h:S.ch+(S.h-S.ch)*(1-Math.exp(-dt*9));
+    const fx=T.pos[0]+S.x,fy=T.pos[1]+S.ch+1,fz=T.pos[2]-S.y;cd+=(cdT-cd)*(1-Math.exp(-dt*10));if(Math.abs(cdT-cd)<.002)cd=cdT;
+    const want=cd<.05?0:cd,lim=want>0?camLimit(fx,fy,fz,f,want):0;
+    if(camD===null||lim<camD)camD=lim;else camD+=(lim-camD)*(1-Math.exp(-dt*7));if(camD>want)camD=want;
+    const hide=camD<(avHid?1.5:1.1);if(hide!==avHid){avHid=hide;avVis(!hide)}
+    cam.x=fx-f[0]*camD;cam.y=fy-f[1]*camD;cam.z=fz-f[2]*camD}}else{camF=null;camD=null;if(avHid){avHid=false;avVis(true)}}
   if(aPlay&&!playing&&!rigOn){const A=P.anims[curA];if(A){aT+=dt;if(aT>=A.len){if(aLoop)aT%=A.len;else{aT=A.len;aPlay=false;animPlayBtn()}}animTick();applyPose(evalPose(A,aT))}}
   stageTick(dt);animBox();animGizUpdate();gizmoFit();
   const w=cv.clientWidth,h=fsOn?cv.clientHeight:Math.round(w*.75),pr=Math.min(window.devicePixelRatio||1,2);
@@ -2455,7 +2470,7 @@ function boot(my){reser();const hs=P.scripts.filter(function(s){return BD[s[0].t
 $('s-run').onclick=async function(){this.blur();if(banGate())return;S.stop=true;resetWorld();const my=S;$('s-out').textContent='';setRun(true);
   const b=boot(my);await b.done;
   if(my===S&&!b.hs.some(function(s){return EVH.indexOf(s[0].t)>=0}))setRun(false)};
-$('s-play').onclick=function(){this.blur();if(banGate())return;S.stop=true;sel=[];selModel=null;selSvc=null;selJ=null;resetWorld();cd=P.rules.cam;playing=true;sync();stageApply();buildEdit();$('s-out').textContent='';boot(S)};
+$('s-play').onclick=function(){this.blur();if(banGate())return;S.stop=true;sel=[];selModel=null;selSvc=null;selJ=null;resetWorld();cd=cdT=P.rules.cam;CAMN=0;camD=null;avHid=false;playing=true;sync();stageApply();buildEdit();$('s-out').textContent='';boot(S)};
 $('s-stop').onclick=function(){S.stop=true;running=false;playing=false;sync();resetWorld();if(VIEWONLY)leaveGame()};
 /* Ctrl+L: start testing the game (Play). Press it again to stop. */
 addEventListener('keydown',function(e){if(e.code!=='KeyL'||!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey||e.repeat)return;
