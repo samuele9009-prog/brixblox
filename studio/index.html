@@ -646,6 +646,11 @@ function siteLook(Q){const T=(Q.parts||[]).find(function(p){return p.av&&p.name=
   if(T){const SH={Head:[[0,1.65,0],[1.4,1.5,1.4]],Rarm:[[1.1,-.1,0],[.7,2,.7]],Larm:[[-1.1,-.1,0],[.7,2,.7]],Rleg:[[.4,-2,0],[.75,2,.75]],Lleg:[[-.4,-2,0],[.75,2,.75]]};
     T.size=[1.6,2,.8];Q.parts.forEach(function(p){const q=p.av&&!p.acc&&SH[p.name];if(!q)return;p.pos=[T.pos[0]+q[0][0],T.pos[1]+q[0][1],T.pos[2]+q[0][2]];p.size=q[1].slice();p.pivot=defPivot(p)})}
 const AVX=(ME&&ME.av)||{},sk=/^#[0-9a-f]{6}$/i.test(AVX.skin)?AVX.skin:'#f0c49a',lg=/^#[0-9a-f]{6}$/i.test(AVX.pants)?AVX.pants:'#a4bd47',tc=(ME&&ME.color)||'#ff6b57';(Q.parts||[]).forEach(function(p){if(!p.av||p.acc)return;if(p.name==='Head'||/arm$/.test(p.name))p.color=sk;else if(p.name==='Torso')p.color=tc;else if(/leg$/.test(p.name))p.color=lg})}
+/* In the Studio editor your character wears the colours you picked on your avatar page (skin, shirt, pants). If you change a character part's colour yourself in the editor,
+   P.avCustom is set and your own colours are kept from then on. */
+function siteColors(Q){if(!Q||!ME||Q.avCustom)return;const AVX=ME.av||{},sk=/^#[0-9a-f]{6}$/i.test(AVX.skin)?AVX.skin:null,lg=/^#[0-9a-f]{6}$/i.test(AVX.pants)?AVX.pants:null,tc=/^#[0-9a-f]{6}$/i.test(ME.color)?ME.color:null;
+  (Q.parts||[]).forEach(function(p){if(!p.av||p.acc)return;if((p.name==='Head'||/arm$/.test(p.name))&&sk)p.color=sk;else if(p.name==='Torso'&&tc)p.color=tc;else if(/leg$/.test(p.name)&&lg)p.color=lg})}
+function avTouch(ps){try{(Array.isArray(ps)?ps:[ps]).forEach(function(q){if(q&&q.av&&!q.acc)P.avCustom=true})}catch(e){}}
 /* The BrixBlox account is the admin: it can open and edit every game. (The database has to allow it too, see the SQL I gave you.) */
 const ADMIN=!!(ME&&!ME.demo&&String(ME.username).trim().toLowerCase()==='brixblox');
 const mineG=function(g){return ADMIN||!g.owner||!ME||g.owner.id===ME.id};
@@ -1090,6 +1095,7 @@ function draw(){const T=byId(P.avId),g=T&&J[T.id];
 
 /* ===== Parts, welds, rig editor, animator ===== */
 P.parts=P.parts||[];P.models=P.models||[];P.anims=P.anims||{};P.nid=P.nid||1;
+if(!VIEWONLY)siteColors(P);
 P.vars=Array.isArray(P.vars)?P.vars:[];P.assets=P.assets||{};P.assets.images=P.assets.images||{};P.assets.audio=P.assets.audio||{};P.assets.meshes=P.assets.meshes||{};P.assets.avol=P.assets.avol||{};P.badges=Array.isArray(P.badges)?P.badges:[];P.guis=Array.isArray(P.guis)?P.guis:[];P.bans=Array.isArray(P.bans)?P.bans:[];
 P.env=Object.assign({sky:'#8fd3ff',tod:14,bright:1,sun:1,fog:0},P.env||{});P.rules=Object.assign({grav:190,jump:48,speed:16,cam:14,fov:70},P.rules||{});P.audio=Object.assign({vol:.5,mute:false},P.audio||{});
 P.squads=P.squads||[{id:'q1',name:'Red Squad',color:'#e5484d'},{id:'q2',name:'Blue Squad',color:'#3b82f6'}];P.player=P.player||{name:'Player1',squad:''};
@@ -1717,18 +1723,18 @@ function vec(t,a,mv){const w=el('div','v3');a.forEach(function(v,i){const n=el('
   n.oninput=function(){const x=Number(n.value);if(isNaN(x))return;if(mv){const d=[0,0,0];d[i]=x-a[i];moveBy(byId(sel[0]),d)}else a[i]=Math.max(.2,x);save();rebuildParts()};w.append(n)});return lab(t,w)}
 function modelProps(d,m){const ps=partsOf(m.id),nm=el('input');nm.value=m.name;nm.oninput=function(){m.name=nm.value;save()};nm.onchange=function(){renderParts()};
   const ms=matSel(ps[0]&&ps[0].mat,function(k){ps.forEach(function(q){setMat(q,k)});all()}),col=el('input');col.type='color';col.value=ps[0]?ps[0].color:'#ffffff';
-  col.oninput=function(){ps.forEach(function(q){q.color=col.value;M[q.id].material.color.set(col.value)});hl();save()};
+  col.oninput=function(){avTouch(ps);ps.forEach(function(q){q.color=col.value;M[q.id].material.color.set(col.value)});hl();save()};
   d.append(lab('Model name',nm),lab('Material (all pieces)',ms),lab('Color (all pieces)',col),el('p','note','Model with '+ps.length+' pieces. Drag the arrows to move all of it. To move one piece, Alt+click it, double-click it, or pick it in the list above.'));if(ps.length)trAll(d,ps,'Transparency (all pieces)');contSel(d)}
 /* Several parts picked at once (Shift/Ctrl-click or a Shift-drag box): material and colour apply to every one of them */
 function multiProps(d,ps){const ms=el('select'),ph=el('option','','Choose a material for all...');ph.value='';ms.append(ph);
   Object.keys(MATS).forEach(function(k){const o=el('option','',MATS[k].n);o.value=k;ms.append(o)});ms.value='';
   ms.onchange=function(){const k=ms.value;if(!k)return;ps.forEach(function(q){setMat(q,k)});msg('Set the material of '+ps.length+' parts to '+MATS[k].n+'.');all()};
   const col=el('input');col.type='color';col.value=ps[0].color;
-  col.oninput=function(){ps.forEach(function(q){q.color=col.value;const m=M[q.id];if(m){m.material.color.set(col.value);if(q.mat==='neon')m.material.emissive.set(col.value)}});hl();save()};
+  col.oninput=function(){avTouch(ps);ps.forEach(function(q){q.color=col.value;const m=M[q.id];if(m){m.material.color.set(col.value);if(q.mat==='neon')m.material.emissive.set(col.value)}});hl();save()};
   d.append(el('p','note',ps.length+' parts selected. Material and colour below change all of them at once.'),lab('Material (all selected)',ms),lab('Color (all selected)',col));trAll(d,ps,'Transparency (all selected)');contSel(d)}
 function props(){const d=$('p-props');d.replaceChildren();{const gg=selGui&&!sel.length&&!selModel&&P.guis.find(function(x){return x.id===selGui});if(gg){guiProps(d,gg);return}}if(!selModel&&!sel.length&&selSvc){svcProps(d);return}if(selModel){const mm=byModel(selModel);if(mm){modelProps(d,mm);return}}{const mp=sel.map(function(id){return byId(id)}).filter(function(q){return q&&!q.stab});if(mp.length>1){multiProps(d,mp);return}}const p=byId(sel[0]);if(!p)return;
   const nm=el('input');nm.value=p.name;nm.oninput=function(){p.name=nm.value;save()};nm.onchange=function(){renderParts()};
-  const col=el('input');col.type='color';col.value=p.color;col.oninput=function(){p.color=col.value;M[p.id].material.color.set(col.value);hl();save()};
+  const col=el('input');col.type='color';col.value=p.color;col.oninput=function(){avTouch(p);p.color=col.value;M[p.id].material.color.set(col.value);hl();save()};
   d.append(lab('Name (arms must be Rarm and Larm)',nm),lab('Material',matSel(p.mat,function(k){setMat(p,k);all()})),lab('Color',col),vec('Position',p.pos,true),vec('Size',p.size,false));
   if(!p.stab)trAll(d,[p],'Transparency');
   if(!p.parent){const c=el('input');c.type='checkbox';c.checked=!!p.movable;c.onchange=function(){p.movable=c.checked;save()};const l=el('label','','Movable (push it with your character)');l.append(c);d.append(l);
@@ -2397,6 +2403,7 @@ function collide(){const T=byId(P.avId);if(!T)return;const R=1.1,fy=feet0()+S.h;
   for(let it=0;it<2;it++)P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;
     const r=rootOf(q);if(!solid(r))return;const eq=eh(q),hx=eq[0],hy=eq[1],hz=eq[2],qy=q.pos[1]+(RY[r.id]||0);if(qy+hy<=fy+STEP||qy-hy>=fy+6)return;
     const o=RO[r.id]||[0,0],cx=T.pos[0]+S.x,cz=T.pos[2]-S.y,bx=q.pos[0]+o[0],bz=q.pos[2]+o[1];
+    if(hasRot(q)){const pp=rotPush(q,o,cx,fy,cz);if(pp){if(r.movable)RO[r.id]=[o[0]-pp[0],o[1]-pp[1]];else{S.x+=pp[0];S.y-=pp[1]}}return}
     let dx=cx-Math.max(bx-hx,Math.min(bx+hx,cx)),dz=cz-Math.max(bz-hz,Math.min(bz+hz,cz));const d2=dx*dx+dz*dz;if(d2>=R*R)return;
     let d=Math.sqrt(d2),pen;
     if(d>1e-4){pen=R-d;dx/=d;dz/=d}
@@ -2430,17 +2437,45 @@ addEventListener('keydown',function(e){if(e.code!=='KeyL'||e.ctrlKey||e.metaKey|
   e.preventDefault();toggleLock()});
 function vv(x){return Math.max(.0002,x*P.audio.vol*2)}
 function feet0(){let m=1e9;P.parts.forEach(function(p){if(p.av&&!p.acc)m=Math.min(m,p.pos[1]-p.size[1]/2)});return m===1e9?0:m}
+/* ===== Rotated parts: collide with the real tilted box, not its (bigger) axis-aligned bounding box ===== */
+const ORM={};
+function rotM(q){const k=q.rot.join();let c=ORM[q.id];if(c&&c.k===k)return c.m;const D=Math.PI/180,m=new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(q.rot[0]*D,q.rot[1]*D,q.rot[2]*D,'XYZ')).elements.slice();ORM[q.id]={k:k,m:m};return m}
+/* The part of a straight vertical line (at x,z) that is inside a rotated part: returns [lowest y, highest y], or null when the line misses it */
+function rotSeg(q,o,x,z){const m=rotM(q),c0=q.pos[0]+o[0],c2=q.pos[2]+o[1],c1=q.pos[1]+(RY[q.id]||0),wx=x-c0,wz=z-c2;let t0=-1e9,t1=1e9;
+  for(let i=0;i<3;i++){const oi=m[i*4]*wx+m[i*4+2]*wz,di=m[i*4+1],h=q.size[i]/2;
+    if(Math.abs(di)<1e-9){if(Math.abs(oi)>h)return null}
+    else{let a=(-h-oi)/di,b=(h-oi)/di;if(a>b){const t=a;a=b;b=t}if(a>t0)t0=a;if(b<t1)t1=b;if(t0>t1)return null}}
+  return [c1+t0,c1+t1]}
+/* Highest surface of a rotated part under (cx,cz) that is no more than STEP above fy (a few nearby points are checked, so ledges feel like they do for plain boxes) */
+function rotTop(q,o,cx,cz,fy){let best=null;[[0,0],[.6,0],[-.6,0],[0,.6],[0,-.6]].forEach(function(a){const sg=rotSeg(q,o,cx+a[0],cz+a[1]);if(sg&&sg[1]<=fy+STEP&&(best===null||sg[1]>best))best=sg[1]});return best}
+/* A sphere against a box (m = the box's rotation, or null for an unrotated box). Returns {n: push direction (world), pen: how deep} or null. */
+function boxSph(c0,c1,c2,h,m,x,y,z,R){const wx=x-c0,wy=y-c1,wz=z-c2,l=m?[m[0]*wx+m[1]*wy+m[2]*wz,m[4]*wx+m[5]*wy+m[6]*wz,m[8]*wx+m[9]*wy+m[10]*wz]:[wx,wy,wz];
+  const cl=[Math.max(-h[0],Math.min(h[0],l[0])),Math.max(-h[1],Math.min(h[1],l[1])),Math.max(-h[2],Math.min(h[2],l[2]))];
+  let d=[l[0]-cl[0],l[1]-cl[1],l[2]-cl[2]];const dist=Math.hypot(d[0],d[1],d[2]);let pen;if(dist>=R)return null;
+  if(dist>1e-5){d=[d[0]/dist,d[1]/dist,d[2]/dist];pen=R-dist}
+  else{let k=0,bst=1e9;for(let i=0;i<3;i++){const e=h[i]-Math.abs(l[i]);if(e<bst){bst=e;k=i}}d=[0,0,0];d[k]=l[k]<0?-1:1;pen=bst+R}
+  const n=m?[m[0]*d[0]+m[4]*d[1]+m[8]*d[2],m[1]*d[0]+m[5]*d[1]+m[9]*d[2],m[2]*d[0]+m[6]*d[1]+m[10]*d[2]]:d;return {n:n,pen:pen}}
+/* How far to push the player sideways out of a rotated part (the player is a few stacked spheres), or null */
+function rotPush(q,o,cx,fy,cz){const R=1.1,h=[q.size[0]/2,q.size[1]/2,q.size[2]/2],m=rotM(q),c0=q.pos[0]+o[0],c1=q.pos[1]+(RY[q.id]||0),c2=q.pos[2]+o[1];let px=0,pz=0;
+  [fy+3,fy+4.6].forEach(function(sy){const r=boxSph(c0,c1,c2,h,m,cx+px,sy,cz+pz,R);if(!r)return;const nx=r.n[0],nz=r.n[2],nh=Math.hypot(nx,nz);
+    if(nh<.3)return;/* mostly a floor or ceiling: standing on it is handled by the ground code */
+    const k=Math.min(1.5,r.pen/nh);px+=nx/nh*k;pz+=nz/nh*k});
+  return (px||pz)?[px,pz]:null}
 /* Highest surface under the feet that is no more than STEP above them */
 function groundAt(cx,cz,fy){let best=-1e9;
-  P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;const rq=rootOf(q);if(!solid(rq))return;const o=RO[rq.id]||[0,0],eq=eh(q),top=q.pos[1]+(RY[rq.id]||0)+eq[1];
-    if(top>fy+STEP||Math.abs(cx-(q.pos[0]+o[0]))>eq[0]+.6||Math.abs(cz-(q.pos[2]+o[1]))>eq[2]+.6)return;
+  P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;const rq=rootOf(q);if(!solid(rq))return;const o=RO[rq.id]||[0,0],eq=eh(q);
+    if(Math.abs(cx-(q.pos[0]+o[0]))>eq[0]+.6||Math.abs(cz-(q.pos[2]+o[1]))>eq[2]+.6)return;
+    if(hasRot(q)){const t=rotTop(q,o,cx,cz,fy);if(t!==null&&t>best)best=t;return}/* tilted parts: the real surface, so ramps work */
+    const top=q.pos[1]+(RY[rq.id]||0)+eq[1];if(top>fy+STEP)return;
     if(top>best)best=top});
   return best}
 /* Head bump: a solid part above you stops your head instead of being treated as a wall (which threw you sideways to its edge).
    Returns the highest feet height that keeps your head just under the lowest part above you, or null when nothing is in the way. */
 function headStop(cx,cz,f0,h0,nh){const R=1.1,PH=6,head0=f0+h0+PH,head1=f0+nh+PH;let best=Infinity;
   P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;const rq=rootOf(q);if(!solid(rq))return;
-    const o=RO[rq.id]||[0,0],eq=eh(q),by=q.pos[1]+(RY[rq.id]||0)-eq[1];if(by<head0-.05||by>=best)return;
+    const o=RO[rq.id]||[0,0];
+    if(hasRot(q)){let bb=Infinity;[[0,0],[.7,0],[-.7,0],[0,.7],[0,-.7]].forEach(function(a){const sg=rotSeg(q,o,cx+a[0],cz+a[1]);if(sg&&sg[0]>=head0-.05&&sg[0]<bb)bb=sg[0]});if(bb<best)best=bb;return}
+    const eq=eh(q),by=q.pos[1]+(RY[rq.id]||0)-eq[1];if(by<head0-.05||by>=best)return;
     const bx=q.pos[0]+o[0],bz=q.pos[2]+o[1],dx=cx-Math.max(bx-eq[0],Math.min(bx+eq[0],cx)),dz=cz-Math.max(bz-eq[2],Math.min(bz+eq[2],cz));
     if(dx*dx+dz*dz>=R*R)return;best=by});
   return head1>best-.01?best-.01-PH-f0:null}
@@ -2539,7 +2574,10 @@ function simStep(sm,dt){dt=Math.min(dt,1/30);sm.t=(sm.t||0)+dt;
   let dvx=0,dvy=0,dvz=0;
   if(sm.drive){const d=sm.drive;d.el+=dt;const u=Math.min(1,d.el/d.dur),e=u*u*(3-2*u),dl=e-d.ep;d.ep=e;dvx=d.dx*dl/dt;dvy=(d.dy||0)*dl/dt;dvz=d.dz*dl/dt;if(u>=1)sm.drive=null}
   const pushing=!!(dvx||dvy||dvz),B=sm.bodies,N=5,h=dt/N,mu=pushing?0:.1,gr=sm.g;
-  B.forEach(function(b){b.fl=groundAt(b.x[0],b.x[2],b.x[1]+1.5)});
+  /* Only surfaces up to about a stud above a body's centre count as floor. (It used to count anything up to 4 studs above, so a body touching the SIDE of an object
+     was snapped onto its top in one step, and that jump became a huge launch speed.) Taller things are walls: see ragWalls. */
+  B.forEach(function(b){b.fl=groundAt(b.x[0],b.x[2],b.x[1]-1.5)});
+  const W=ragWalls(B);
   for(let st=0;st<N;st++){
     B.forEach(function(b){b.v[1]-=gr*h;b.xp=b.x.slice();b.qp=b.q.slice();b.x=[b.x[0]+b.v[0]*h,b.x[1]+b.v[1]*h,b.x[2]+b.v[2]*h];b.q=addRot(b.q,[b.w[0]*h,b.w[1]*h,b.w[2]*h]);b.hit=false});
     for(let it=0;it<3;it++){
@@ -2555,16 +2593,26 @@ function simStep(sm,dt){dt=Math.min(dt,1/30);sm.t=(sm.t||0)+dt;
         if(b.sp){const tt=sm.t||0,u=Math.min(1,tt/.55),ee=u*u*(3-2*u),tg=qS([0,0,0,1],b.sp,ee),q2=qm(qc(pa.q),b.q),e=qm(tg,qc(q2)),sg=e[3]<0?-1:1,w=qR(pa.q,[2*e[0]*sg,2*e[1]*sg,2*e[2]*sg]),km=.3*Math.max(0,Math.min(1,(1.5-tt)/.8));b.q=addRot(b.q,[w[0]*km,w[1]*km,w[2]*km])}});
       B.forEach(function(b){if(b.p.stab||b.fl<-1e8)return;
         for(let k=0;k<8;k++){const lc=[(k&1?1:-1)*b.hs[0],(k&2?1:-1)*b.hs[1],(k&4?1:-1)*b.hs[2]],r=qR(b.q,lc),y=b.x[1]+r[1];
-          if(y<b.fl){const pr=qR(b.qp,lc),before=[b.xp[0]+pr[0],b.xp[2]+pr[2]];b.hit=true;moveAt(b,r,[0,b.fl-y,0]);
-            const r2=qR(b.q,lc),dx=b.x[0]+r2[0]-before[0],dz=b.x[2]+r2[2]-before[1];moveAt(b,r2,[-dx*mu,0,-dz*mu])}}})}
+          if(y<b.fl){const pr=qR(b.qp,lc),before=[b.xp[0]+pr[0],b.xp[2]+pr[2]];b.hit=true;moveAt(b,r,[0,Math.min(b.fl-y,Math.abs(b.v[1])*h*2+.02),0]);/* capped: no sudden big lifts */
+            const r2=qR(b.q,lc),dx=b.x[0]+r2[0]-before[0],dz=b.x[2]+r2[2]-before[1];moveAt(b,r2,[-dx*mu,0,-dz*mu])}}});
+      if(W.length)B.forEach(function(b){if(b.p.stab)return;const rs=Math.max(b.hs[0],b.hs[1],b.hs[2])*.8;
+        W.forEach(function(w){const q=w.q,r=boxSph(w.bx,w.cy,w.bz,w.rot?[q.size[0]/2,q.size[1]/2,q.size[2]/2]:w.h,w.rot?rotM(q):null,b.x[0],b.x[1],b.x[2],rs);
+          if(!r||r.n[1]>.6)return;/* a floor-like contact: the floor code handles it */
+          const sp=Math.hypot(b.v[0],b.v[1],b.v[2]),pen=Math.min(r.pen,Math.max(.04,sp*h*1.5+.04));b.x=[b.x[0]+r.n[0]*pen,b.x[1]+r.n[1]*pen,b.x[2]+r.n[2]*pen]})})}
     if(dvx||dvy||dvz)B.forEach(function(b){b.x[0]+=dvx*h;b.x[1]+=dvy*h;b.x[2]+=dvz*h});
     B.forEach(function(b){b.v=[(b.x[0]-b.xp[0])/h-dvx,(b.x[1]-b.xp[1])/h-dvy,(b.x[2]-b.xp[2])/h-dvz];
       const dq=qm(b.q,qc(b.qp)),sg=dq[3]<0?-1:1;b.w=[2*dq[0]*sg/h,2*dq[1]*sg/h,2*dq[2]*sg/h];
-      const kl=1-(b.hit?.8:.3)*h,ka=1-(b.hit?4:(b.sp&&sm.t<1.5?5:1.2))*h;b.v=b.v.map(function(z){return z*kl});b.w=b.w.map(function(z){return z*ka})})}}
+      const kl=1-(b.hit?.8:.3)*h,ka=1-(b.hit?4:(b.sp&&sm.t<1.5?5:1.2))*h;b.v=b.v.map(function(z){return z*kl});b.w=b.w.map(function(z){return z*ka});
+      /* safety limits: a collision can never throw a body at crazy speed */
+      const hs2=Math.hypot(b.v[0],b.v[2]);if(hs2>70){b.v[0]*=70/hs2;b.v[2]*=70/hs2}if(b.v[1]>60)b.v[1]=60;const ws=Math.hypot(b.w[0],b.w[1],b.w[2]);if(ws>30)b.w=b.w.map(function(z){return z*30/ws})})}}
+/* Solid parts near the ragdoll, so its bodies bump into the sides of things instead of only landing on top of them */
+function ragWalls(B){let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;B.forEach(function(b){x0=Math.min(x0,b.x[0]);x1=Math.max(x1,b.x[0]);z0=Math.min(z0,b.x[2]);z1=Math.max(z1,b.x[2])});x0-=8;x1+=8;z0-=8;z1+=8;
+  const W=[];P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;const rq=rootOf(q);if(!solid(rq))return;const o=RO[rq.id]||[0,0],eq=eh(q),bx=q.pos[0]+o[0],bz=q.pos[2]+o[1];
+    if(bx+eq[0]<x0||bx-eq[0]>x1||bz+eq[2]<z0||bz-eq[2]>z1)return;W.push({q:q,bx:bx,bz:bz,cy:q.pos[1]+(RY[rq.id]||0),h:eq,rot:hasRot(q)})});return W}
 function ragPush(e,key,f,dur,dv){dur=dur==null?.5:Math.max(.05,dur);dv=dv||dirOf(key,'front');const dx=dv.x,dz=dv.z,dy=dv.y;
   const sm=e.sim;if(!sm.drive)sm.drive={dx:dx*f,dy:dy*f,dz:dz*f,dur:dur,el:0,ep:0}}
 /* Where the body would stand: under the body, feet on the floor */
-function simStand(sm,arm){const o=sm.bodies[0].x,fl=groundAt(o[0],o[2],o[1]+5);return [o[0],(fl>-1e8?fl:sm.y0-arm)+arm,o[2]]}
+function simStand(sm,arm){const o=sm.bodies[0].x,fl=groundAt(o[0],o[2],o[1]-1.5);return [o[0],(fl>-1e8?fl:sm.y0-arm)+arm,o[2]]}
 function simPose(key,T,e,u,arm){const sm=e.sim,B=sm.bodies,st=u<1?simStand(sm,arm):null,rb=B[0];
   B.forEach(function(b){const g=T.gs[b.p.id];if(!g)return;
     if(b.par<0){const o=[b.x[0],b.x[1],b.x[2]],pos=st?[st[0]+(o[0]-st[0])*u,st[1]+(o[1]-st[1])*u,st[2]+(o[2]-st[2])*u]:o,qq=qS(sm.q0,b.q,u);
