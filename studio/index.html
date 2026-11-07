@@ -2298,7 +2298,12 @@ function entTick(dt){Object.keys(Object.assign({},RAG,RSZ)).forEach(function(key
   const g=T.g,r=T.root,s=RSZ[key]||1;let lo=1e9;T.parts.forEach(function(p){lo=Math.min(lo,p.pos[1]-p.size[1]/2)});const arm=r.pos[1]-lo;
   g.scale.setScalar(s);
   if(e){e.t+=dt;if(!e.sim){e.sim=simInit(key,T,e);if(e.pf!=null){ragPush(e,key,e.pf,e.pd,e.pv);e.pf=null;e.pd=null;e.pv=null}}let u=1;
-    if(e.t<e.end||e.dead)simStep(e.sim,dt);else u=Math.max(0,1-(e.t-e.end)/RRISE);
+    if(e.t<e.end||e.dead){simStep(e.sim,dt);
+      /* a remote player's ragdoll is only a copy: keep pulling its body to where that player really is, so the two screens never drift apart */
+      const nn=T.np,R0=byId(P.avId);if(nn&&nn.net&&nn.tx!=null&&R0){const b0=e.sim.bodies[0],k=1-Math.exp(-dt*10),
+        dx=(R0.pos[0]+nn.tx-b0.x[0])*k,dy=(R0.pos[1]+nn.th-b0.x[1])*k,dz=(R0.pos[2]-nn.ty-b0.x[2])*k;
+        e.sim.bodies.forEach(function(b){b.x[0]+=dx;b.x[1]+=dy;b.x[2]+=dz;if(b.xp){b.xp[0]+=dx;b.xp[1]+=dy;b.xp[2]+=dz}})}}
+    else u=Math.max(0,1-(e.t-e.end)/RRISE);
     if(e.dead&&e.t>=e.end){finishDead(key,T);return}
     if(!e.dead&&e.t>=e.end+RRISE){simFinish(key,T,e,arm);delete RAG[key];if(key==='main')S.rag=false;return}
     simPose(key,T,e,u,arm);return}
