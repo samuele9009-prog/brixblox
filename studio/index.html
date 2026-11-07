@@ -457,7 +457,7 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
       <div id="s-parts" class="pnl" hidden>
         <div class="tb"><button id="p-add" class="btn small" type="button">+ Part</button><select id="p-shape" class="btn ghost small" aria-label="Add a shape"><option value="">+ Shape</option><option value="cyl">Cylinder</option><option value="sphere">Sphere</option><option value="wedge">Triangle</option></select><button id="p-weld" class="btn small" type="button">Weld</button><button id="p-unweld" class="btn ghost small" type="button">Unweld</button><button id="p-group" class="btn small" type="button">Group</button><button id="p-ungroup" class="btn ghost small" type="button">Ungroup</button><button id="p-copy" class="btn ghost small" type="button">Copy</button><button id="p-paste" class="btn ghost small" type="button">Paste</button><button id="p-dup" class="btn ghost small" type="button">Duplicate</button><button id="p-del" class="btn ghost small" type="button">Delete</button><button id="p-rig" class="btn ghost small" type="button" aria-pressed="false">Rig editor</button></div>
         <p id="p-msg" class="hint">Weld: select the Torso first, then ctrl-click the parts to weld to it.</p>
-        <p class="note" style="margin:4px 0 8px"><b>P</b> adds a part in front of you &middot; <b>Ctrl+G</b> groups into a model &middot; <b>Ctrl+Shift+G</b> ungroups &middot; <b>Backspace</b> deletes &middot; <b>Alt+click</b> (or double-click) a piece of a model to select just that piece.</p><div id="p-list"></div><div id="p-props"></div>
+        <p class="note" style="margin:4px 0 8px"><b>P</b> adds a part in front of you &middot; <b>Ctrl+G</b> groups into a model &middot; <b>Ctrl+Shift+G</b> ungroups &middot; <b>Backspace</b> deletes &middot; <b>Alt+click</b> (or double-click) a piece of a model to select just that piece. &middot; <b>L</b> locks or unlocks the selection.</p><div id="p-list"></div><div id="p-props"></div>
       </div>
       <div id="s-anim" class="pnl anim" hidden>
         <div class="an-top">
@@ -1123,25 +1123,31 @@ const OLMASK=[0xff0000,0x00ff00,0x000000].map(function(c){const m=new THREE.Mesh
 let olRT=null;
 const olScene=new THREE.Scene(),olCam=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
 const olMat=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,
-  uniforms:{tM:{value:null},uTex:{value:new THREE.Vector2(1,1)},uPx:OLU.uPx,uSel:{value:new THREE.Vector3(.239,.647,1)},uHov:{value:new THREE.Vector3(1,1,1)}},
+  uniforms:{tM:{value:null},tD:{value:null},uNear:{value:.5},uFar:{value:1500},uTex:{value:new THREE.Vector2(1,1)},uPx:OLU.uPx,uSel:{value:new THREE.Vector3(.239,.647,1)},uHov:{value:new THREE.Vector3(1,1,1)}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}',
-  fragmentShader:'uniform sampler2D tM;uniform vec2 uTex;uniform float uPx;uniform vec3 uSel;uniform vec3 uHov;varying vec2 vUv;'+
-  'void main(){vec4 c=texture2D(tM,vUv);float ds=99.0,dh=99.0;'+
+  /* The mask's depth buffer holds the nearest surface at every pixel. An outline pixel is only painted if nothing nearer than the highlighted edge sits on top of it, so the line tucks under models in front. */
+  fragmentShader:'uniform sampler2D tM;uniform sampler2D tD;uniform float uNear;uniform float uFar;uniform vec2 uTex;uniform float uPx;uniform vec3 uSel;uniform vec3 uHov;varying vec2 vUv;'+
+  'float lin(float d){float z=d*2.0-1.0;return 2.0*uNear*uFar/(uFar+uNear-z*(uFar-uNear));}'+
+  'void main(){vec4 c=texture2D(tM,vUv);float ds=99.0,dh=99.0,zs=0.0,zh=0.0;'+
   'for(int i=0;i<24;i++){float a=float(i)*0.2617994;vec2 d=vec2(cos(a),sin(a));'+
-  'for(int k=1;k<=4;k++){float r=uPx*float(k)*0.25+0.5;vec4 s=texture2D(tM,vUv+d*r/uTex);'+
-  'if(s.r>0.5)ds=min(ds,r);if(s.g>0.5)dh=min(dh,r);}}'+
+  'for(int k=1;k<=4;k++){float r=uPx*float(k)*0.25+0.5;vec2 q=vUv+d*r/uTex;vec4 s=texture2D(tM,q);'+
+  'if(s.r>0.5&&r<ds){ds=r;zs=lin(texture2D(tD,q).x);}if(s.g>0.5&&r<dh){dh=r;zh=lin(texture2D(tD,q).x);}}}'+
+  'float zp=lin(texture2D(tD,vUv).x);'+
   'float out_=(c.r>0.5||c.g>0.5)?0.0:1.0;'+
-  'float as=clamp(uPx+1.0-ds,0.0,1.0)*out_,ah=clamp(uPx+1.0-dh,0.0,1.0)*out_;'+
+  'float vs=(zp>=zs-(0.5+0.02*zs))?1.0:0.0,vh=(zp>=zh-(0.5+0.02*zh))?1.0:0.0;'+
+  'float as=clamp(uPx+1.0-ds,0.0,1.0)*out_*vs,ah=clamp(uPx+1.0-dh,0.0,1.0)*out_*vh;'+
   'if(as>=ah)gl_FragColor=vec4(uSel,as);else gl_FragColor=vec4(uHov,ah);}'});
 olScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),olMat));
 function hovIds(){const p=hov&&byId(hov);if(!p||p.stab)return {};const ids={},r=rootOf(p);
   if(p.model)partsOf(p.model).forEach(function(q){ids[q.id]=1});else if(kids(r).length)treeOf(r).forEach(function(q){ids[q.id]=1});else ids[p.id]=1;return ids}
 function outlinePass(){if(playing||running)return;
-  const S1={};sel.forEach(function(id){const p=byId(id);if(p&&!p.stab)S1[id]=1});const H1=hovIds();
+  let S1={};sel.forEach(function(id){const p=byId(id);if(p&&!p.stab)S1[id]=1});
+  if(animOn()&&aJs.length){S1={};aJs.forEach(function(id){S1[id]=1})}const H1=hovIds();
   if(!Object.keys(S1).length&&!Object.keys(H1).length)return;
   const sz=renderer.getDrawingBufferSize(new THREE.Vector2());
   if(!olRT||olRT.width!==sz.x||olRT.height!==sz.y){if(olRT)olRT.dispose();
-    olRT=new THREE.WebGLRenderTarget(sz.x,sz.y,{minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,depthBuffer:true,stencilBuffer:false,generateMipmaps:false})}
+    olRT=new THREE.WebGLRenderTarget(sz.x,sz.y,{minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,depthBuffer:true,stencilBuffer:false,generateMipmaps:false});
+    const dt=new THREE.DepthTexture(sz.x,sz.y);dt.type=THREE.UnsignedIntType;dt.minFilter=dt.magFilter=THREE.NearestFilter;olRT.depthTexture=dt}
   const old=[];
   Object.keys(M).forEach(function(id){const m=M[id];old.push([m,m.material]);m.material=OLMASK[S1[id]?0:H1[id]?1:2]});
   const bg=scene.background,fg=scene.fog,cl=camera.layers.mask,ca=renderer.getClearAlpha(),cc=new THREE.Color(),au=renderer.shadowMap.autoUpdate;renderer.getClearColor(cc);
@@ -1149,9 +1155,9 @@ function outlinePass(){if(playing||running)return;
   try{renderer.setRenderTarget(olRT);renderer.setClearColor(0x000000,0);renderer.clear();renderer.render(scene,camera)}
   finally{renderer.setRenderTarget(null);renderer.setClearColor(cc,ca);renderer.shadowMap.autoUpdate=au;camera.layers.mask=cl;scene.background=bg;scene.fog=fg;
     old.forEach(function(q){q[0].material=q[1]})}
-  olMat.uniforms.tM.value=olRT.texture;olMat.uniforms.uTex.value.set(sz.x,sz.y);
+  olMat.uniforms.tM.value=olRT.texture;olMat.uniforms.tD.value=olRT.depthTexture;olMat.uniforms.uNear.value=camera.near;olMat.uniforms.uFar.value=camera.far;olMat.uniforms.uTex.value.set(sz.x,sz.y);
   renderer.autoClear=false;renderer.render(olScene,olCam);renderer.autoClear=true}
-function hl(){P.parts.forEach(function(p){const m=M[p.id];if(!m)return;m.material.emissive.setHex(animOn()&&aJ===p.id?0x8a6a10:emi(p))})}
+function hl(){P.parts.forEach(function(p){const m=M[p.id];if(!m)return;m.material.emissive.setHex(animOn()&&aJs.indexOf(p.id)>=0?0x8a6a10:emi(p))})}
 function matSel(cur,fn){const s=el('select');Object.keys(MATS).forEach(function(k){const o=el('option','',MATS[k].n);o.value=k;s.append(o)});s.value=MATS[cur]?cur:'plastic';s.onchange=function(){fn(s.value)};return s}
 function setMat(p,k){const old=MATS[p.mat]||MATS.plastic;if(!p.color||p.color.toLowerCase()===old.c.toLowerCase())p.color=MATS[k].c;p.mat=k}
 /* While dragging, only move the existing meshes (once per frame) instead of rebuilding every part, material and gizmo on each mouse event */
@@ -1219,6 +1225,7 @@ function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
 
 /* Rig editor: balls at anchor points, arrows to move them */
 function buildEdit(){try{updTool()}catch(e){}while(editG.children.length)editG.remove(editG.children[0]);gizmo=[];balls=[];gz=[];agT=null;if(playing)return;if(animOn()){buildAnimGizmo();return}
+  if(!rigOn&&sel.length&&sel.every(function(id){const q=byId(id);return q&&q.locked}))return;
   let c=null,half=[.3,.3,.3];
   if(rigOn){P.parts.filter(function(p){return p.parent}).forEach(function(p){const b=new THREE.Mesh(new THREE.SphereGeometry(.35,16,12),new THREE.MeshBasicMaterial({color:p.id===selJ?'#ffd23f':'#ff5a5a',depthTest:false}));
       b.position.set(p.pivot[0],p.pivot[1],p.pivot[2]);b.renderOrder=9;b.userData.joint=p.id;b.userData.fx={b:new THREE.Vector3(p.pivot[0],p.pivot[1],p.pivot[2]),d:new THREE.Vector3(),off:0};editG.add(b);balls.push(b)});
@@ -1514,7 +1521,7 @@ $('a-type').onchange=function(){const A=P.anims[curA];if(!A)return;A.type=this.v
 $('a-gs').onchange=function(){const A=P.anims[curA];if(!A)return;A.gs=Math.max(0,+this.value||0);save();animUI()};
 
 /* ===== Rigs and the Animator: joints on the left, keyframes on a timeline ===== */
-let pps=170,aSelKeys=[],aClip=[],aJ=null,aLoop=true,kelm=new Map(),valIns={},rowEls={},phEl=null,animMenu=null,ahov=null;
+let pps=170,aSelKeys=[],aClip=[],aJ=null,aJs=[],aLoop=true,kelm=new Map(),valIns={},rowEls={},phEl=null,animMenu=null,ahov=null;
 function treeOf(r){const a=[r];kids(r).forEach(function(c){treeOf(c).forEach(function(x){a.push(x)})});return a}
 /* A rig always lives inside a model: make one if needed and pull the whole rig into it */
 function ensureRigModel(r){let mid=r.model;
@@ -1525,9 +1532,16 @@ function fixA(){if(!P.anims[curA])curA=Object.keys(P.anims)[0]||''}
 function rigJoints(){const r=animT&&byId(animT),out=[];if(!r)return out;if(!r.stab)out.push({p:r,d:0});(function walk(p,d){kids(p).forEach(function(c){out.push({p:c,d:d});walk(c,d+1)})})(r,r.stab?0:1);return out}
 /* Only rigs can be picked while the Animator is open; picking one highlights its whole model */
 function animSelect(r){snapRig(r);if(!r){animT=null;sel=[];selModel=null}else{const mid=ensureRigModel(r);animT=r.id;sel=partsOf(mid).map(function(q){return q.id});selModel=mid}
-  aSelKeys=[];if(!rigJoints().some(function(j){return j.p.id===aJ}))aJ=null;{const was=stagePrev;stagePrev=animT;stageApply();if(r&&r.id!==was)stageFocus(r)}hl();buildEdit();renderParts()}
+  aSelKeys=[];aJFix();{const was=stagePrev;stagePrev=animT;stageApply();if(r&&r.id!==was)stageFocus(r)}hl();buildEdit();renderParts()}
 function animPickId(id){const p=id&&byId(id),r=p&&rootOf(p);animSelect(r&&kids(r).length?r:null)}
-function animClick(e){ray.setFromCamera(ndc(e),camera);const h=ray.intersectObjects(pickable(),false)[0];if(h){const p=byId(h.object.userData.id),r=p&&rootOf(p);if(!(r&&kids(r).length))return}if(!h)return;const hid=h.object.userData.id;animPickId(hid);if(hid&&animT&&rigJoints().some(function(q){return q.p.id===hid})){selJoint(hid);hl();const re=rowEls[hid]&&rowEls[hid][0];const gr=$('a-grid');if(re&&gr){const ra=re.getBoundingClientRect(),gb=gr.getBoundingClientRect();if(ra.top<gb.top+24)gr.scrollTop-=gb.top+24-ra.top;else if(ra.bottom>gb.bottom)gr.scrollTop+=ra.bottom-gb.bottom}}else if(hid&&animT)selJoint(null)}
+function animClick(e){ray.setFromCamera(ndc(e),camera);const h=ray.intersectObjects(pickSel(),false)[0],add=e.ctrlKey||e.shiftKey||e.metaKey;
+  if(!h){if(!add&&animT&&aJs.length)selJoint(null);return}
+  {const p=byId(h.object.userData.id),r=p&&rootOf(p);if(!(r&&kids(r).length))return}
+  const hid=h.object.userData.id;animPickId(hid);
+  if(hid&&animT&&rigJoints().some(function(q){return q.p.id===hid})){
+    selJoint(hid,(add||(aJs.length===1&&aJs[0]===hid))?'toggle':undefined);hl();
+    const re=rowEls[hid]&&rowEls[hid][0];const gr=$('a-grid');if(re&&gr){const ra=re.getBoundingClientRect(),gb=gr.getBoundingClientRect();if(ra.top<gb.top+24)gr.scrollTop-=gb.top+24-ra.top;else if(ra.bottom>gb.bottom)gr.scrollTop+=ra.bottom-gb.bottom}}
+  else if(hid&&animT)selJoint(null)}
 /* Blue outlined box shown around a rig while the mouse is over it */
 const abox=new THREE.Group();
 [1,1.015,1.03].forEach(function(k){const l=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),new THREE.LineBasicMaterial({color:0x2f9bff,depthTest:false}));l.scale.setScalar(k);l.renderOrder=20;abox.add(l)});
@@ -1537,8 +1551,8 @@ function animHover(id){const p=id&&byId(id),r=p&&rootOf(p);ahov=r&&kids(r).lengt
 
 /* Animator handles: move arrows (R) rotation rings. Arrows move the part in the model; rings set rotation keyframes at the playhead. */
 const AX=new THREE.Vector3(1,0,0),AY=new THREE.Vector3(0,1,0),AZ=new THREE.Vector3(0,0,1);
-function animTarget(){const a=aJ&&byId(aJ);if(a&&!a.stab)return a;const t=animT&&byId(animT);if(t&&!t.stab)return t;const j=rigJoints()[0];return j?j.p:null}
-function animHint(){const h=$('a-hint');if(h&&animT&&byId(animT))h.textContent='Animating '+byId(animT).name+'. '+(aGM==='rot'?'Rotate handle: drag a ring to set a keyframe. Press R for move arrows.':'Move handle: drag an arrow to move the part (sets a keyframe). Press R for rotate rings.')}
+function animTarget(){const a=aJ&&byId(aJ);return a&&!a.stab&&aJs.indexOf(aJ)>=0?a:null}
+function animHint(){const h=$('a-hint');if(h&&animT&&byId(animT))h.textContent='Animating '+byId(animT).name+'. '+(aGM==='rot'?'Rotate handle: drag a ring to set a keyframe. Press R for move arrows.':'Move handle: drag an arrow to move the part (sets a keyframe). Press R for rotate rings. Click a part to select it, Ctrl+click adds or removes parts, click empty space to deselect.')}
 function buildAnimGizmo(){const t=animTarget();if(!t||!J[t.id])return;
   if(aGM==='rot'){agT=t.id;const R=Math.max(1.2,Math.min(4,Math.max(t.size[0],t.size[1],t.size[2])/2+.6));
     [[0xff4444,0],[0x44dd44,1],[0x4488ff,2]].forEach(function(a){const m=new THREE.Mesh(new THREE.TorusGeometry(R,.09,8,48),new THREE.MeshBasicMaterial({color:a[0],depthTest:false})),g=new THREE.Group();
@@ -1562,24 +1576,28 @@ function animGizUpdate(){if(!animOn()||!agT||!J[agT]||!M[agT])return;scene.updat
     ax=[AX.clone().applyQuaternion(qp),AY.clone().applyQuaternion(qp.clone().multiply(qx)),AZ.clone().applyQuaternion(qp.clone().multiply(qx).multiply(qy))];
   gz.forEach(function(g){const u=g.userData;if(u.off)g.position.copy(c).add(u.off);else if(u.ri!==undefined){g.position.copy(c);g.quaternion.setFromUnitVectors(AZ,ax[u.ri]);g.children.forEach(function(m){m.userData.axW=ax[u.ri]})}})}
 function animScr(v){const w=cv.getBoundingClientRect(),u=v.clone().project(camera);return new THREE.Vector2(w.left+(u.x+1)/2*w.width,w.top+(1-u.y)/2*w.height)}
-function animGizStart(o,e){if(!agT)return;
-  if(o.userData.rotIdx!==undefined){const A=P.anims[curA];if(!A){$('a-hint').textContent='Press + New to make an animation first.';return}
-    const rot=(live[agT]||evalPose(A,aT)[agT]||[0,0,0]).slice(),c=animScr(animGizCenter());
-    gd={an:1,mode:'rot',id:agT,i:o.userData.rotIdx,rot:rot,last:Math.atan2(-(e.clientY-c.y),e.clientX-c.x),axW:o.userData.axW.clone()}}
-  else{const t=byId(agT);snapRig(t&&rootOf(t));gd={an:1,mode:'move',id:agT,a:o.userData.axis.clone()};
-    if(t){const A=P.anims[curA];if(!A){gd=null;$('a-hint').textContent='Press + New to make an animation first.';return}gd.pos=(live['p:'+agT]||evalPose(A,aT)['p:'+agT]||[0,0,0]).slice()}}}
+function animGizStart(o,e){if(!agT)return;const A=P.anims[curA];
+  if(!A){$('a-hint').textContent='Press + New to make an animation first.';return}
+  const ids=aJs.length?aJs.slice():[agT];
+  if(o.userData.rotIdx!==undefined){const rs={};ids.forEach(function(id){rs[id]=(live[id]||evalPose(A,aT)[id]||[0,0,0]).slice()});const c=animScr(animGizCenter());
+    gd={an:1,mode:'rot',id:agT,i:o.userData.rotIdx,rs:rs,rot:rs[agT]||[0,0,0],last:Math.atan2(-(e.clientY-c.y),e.clientX-c.x),axW:o.userData.axW.clone()}}
+  else{const t=byId(agT);snapRig(t&&rootOf(t));const ps={};ids.forEach(function(id){ps[id]=(live['p:'+id]||evalPose(A,aT)['p:'+id]||[0,0,0]).slice()});
+    gd={an:1,mode:'move',id:agT,a:o.userData.axis.clone(),ps:ps,pos:ps[agT]||[0,0,0]}}}
 function animDrag(e,dx,dy){const t=byId(gd.id);if(!t)return;
   if(gd.mode==='rot'){const c=animScr(animGizCenter()),ang=Math.atan2(-(e.clientY-c.y),e.clientX-c.x);let da=ang-gd.last;gd.last=ang;
     while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;
-    const sg=camera.getWorldDirection(new THREE.Vector3()).dot(gd.axW)<0?1:-1;gd.rot[gd.i]+=da*180/Math.PI*sg;
-    live[gd.id]=gd.rot.slice();preview();if(valIns[gd.id])valIns[gd.id].forEach(function(n,i){n.value=Math.round(gd.rot[i]*10)/10});return}
+    const sg=camera.getWorldDirection(new THREE.Vector3()).dot(gd.axW)<0?1:-1;const dd=da*180/Math.PI*sg;
+    for(const id in gd.rs){gd.rs[id][gd.i]+=dd;live[id]=gd.rs[id].slice();if(valIns[id])valIns[id].forEach(function(n,i){n.value=Math.round(gd.rs[id][i]*10)/10})}preview();return}
   const v=animGizCenter(),a=gd.a,d=animScr(v.clone().add(a)).sub(animScr(v)),L=d.lengthSq();if(L<1)return;
   const k=(dx*d.x+dy*d.y)/L,dw=a.clone().multiplyScalar(k),par=t.parent&&J[t.parent];
+  if(gd.ps){for(const id in gd.ps){const tt=byId(id),pr=tt&&tt.parent&&J[tt.parent],v=dw.clone();if(pr)v.applyQuaternion(pr.getWorldQuaternion(new THREE.Quaternion()).invert());
+    const q=gd.ps[id];q[0]+=v.x;q[1]+=v.y;q[2]+=v.z;live['p:'+id]=q.slice()}preview();return}
   if(par){const q=par.getWorldQuaternion(new THREE.Quaternion()).invert();dw.applyQuaternion(q)}
-  if(gd.pos){gd.pos[0]+=dw.x;gd.pos[1]+=dw.y;gd.pos[2]+=dw.z;live['p:'+gd.id]=gd.pos.slice();preview();return}
   moveBy(t,[dw.x,dw.y,dw.z]);quickSync()}
-function animRotEnd(g){const A=P.anims[curA];if(A&&g.rot){live={};setKey(A,g.id,aT,g.rot.map(function(v){return Math.round(v*10)/10}))}
-  else if(A&&g.pos){const r=(evalPose(A,aT)[g.id]||[0,0,0]).slice();live={};setKey(A,g.id,aT,r,g.pos.map(function(v){return Math.round(v*100)/100}))}
+function animRotEnd(g){const A=P.anims[curA];
+  if(A&&g.rs){live={};for(const id in g.rs)setKey(A,id,aT,g.rs[id].map(function(v){return Math.round(v*10)/10}))}
+  else if(A&&g.ps){const rr={};for(const id in g.ps)rr[id]=(evalPose(A,aT)[id]||[0,0,0]).slice();live={};
+    for(const id in g.ps)setKey(A,id,aT,rr[id],g.ps[id].map(function(v){return Math.round(v*100)/100}))}
   else live={};animUI();preview()}
 /* Shift+N then R (or hold Shift+N and tap R): drop a new smooth, face-and-all character-style rig where the camera is looking */
 function rigRebuild(r,smooth){const ps=rigParts(r),gone=ps.slice(1).map(function(q){return q.id});
@@ -1669,7 +1687,14 @@ function refreshVals(){const A=P.anims[curA];if(!A)return;const po=evalPose(A,aT
   for(const id in valIns){const r=po[id]||[0,0,0];valIns[id].forEach(function(n,i){if(document.activeElement!==n)n.value=Math.round(r[i]*10)/10})}}
 function animTick(){if(phEl)phEl.style.left=(aT*pps)+'px';$('a-clock').textContent=aT.toFixed(2)+'s';refreshVals()}
 function setTime(t){const A=P.anims[curA];if(!A)return;aT=Math.max(0,Math.min(A.len,t));animTick();preview()}
-function selJoint(id){aJ=id;if(animOn()){hl();buildEdit()}for(const k in rowEls)rowEls[k].forEach(function(r){r.classList.toggle('on',k===id)})}
+function aJFix(){const ok={};rigJoints().forEach(function(j){ok[j.p.id]=1});aJs=aJs.filter(function(id){return ok[id]});if(aJs.indexOf(aJ)<0)aJ=aJs.length?aJs[aJs.length-1]:null}
+/* Body parts you have picked: null clears them, 'toggle' adds or removes one, 'keep' leaves a multi-selection alone if that part is already in it, anything else picks just that one */
+function selJoint(id,mode){
+  if(!id){aJs=[];aJ=null}
+  else if(mode==='toggle'){const i=aJs.indexOf(id);if(i>=0){aJs.splice(i,1);aJ=aJs.length?aJs[aJs.length-1]:null}else{aJs.push(id);aJ=id}}
+  else if(mode==='keep'&&aJs.indexOf(id)>=0)aJ=id;
+  else{aJs=[id];aJ=id}
+  if(animOn()){hl();buildEdit()}for(const k in rowEls)rowEls[k].forEach(function(r){r.classList.toggle('on',aJs.indexOf(k)>=0)})}
 function updKeySel(){kelm.forEach(function(d,k){d.classList.toggle('sel',aSelKeys.some(function(q){return q.k===k}))})}
 /* Shift + drag on the timeline draws a box and selects every keyframe it touches (hold Ctrl as well to add to the selection) */
 function marquee(e){const A=P.anims[curA];if(!A)return;e.preventDefault();
@@ -1688,7 +1713,7 @@ function keyDown(e,id,k,d){e.stopPropagation();e.preventDefault();if(e.button!==
   const has=aSelKeys.some(function(q){return q.k===k});
   if(e.shiftKey||e.ctrlKey||e.metaKey)aSelKeys=has?aSelKeys.filter(function(q){return q.k!==k}):aSelKeys.concat({id:id,k:k});
   else if(!has)aSelKeys=[{id:id,k:k}];
-  updKeySel();selJoint(id);if(!aSelKeys.some(function(q){return q.k===k}))return;
+  updKeySel();selJoint(id,'keep');if(!aSelKeys.some(function(q){return q.k===k}))return;
   const x0=e.clientX,orig=aSelKeys.map(function(q){return q.k.t});let moved=false;d.setPointerCapture(e.pointerId);
   d.onpointermove=function(ev){if(Math.abs(ev.clientX-x0)>2)moved=true;if(!moved)return;const A=P.anims[curA],lo=Math.min.apply(null,orig),hi=Math.max.apply(null,orig),sh=Math.max(-lo,Math.min(A.len-hi,(ev.clientX-x0)/pps));
     aSelKeys.forEach(function(q,i){q.k.t=Math.round((orig[i]+sh)*100)/100;kelm.get(q.k).style.left=(q.k.t*pps)+'px'});preview()};
@@ -1721,6 +1746,7 @@ addEventListener('keydown',function(e){if(e.code==='Escape')closeMenu();
   if(playing||running||!animOn()||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
   if((e.code==='Delete'||e.code==='Backspace')&&aSelKeys.length){e.preventDefault();delKeys()}
   else if(e.code==='Space'&&document.activeElement.tagName!=='BUTTON'){e.preventDefault();$('a-play').click()}
+  else if((e.ctrlKey||e.metaKey)&&e.code==='KeyA'){e.preventDefault();if(animT){aJs=rigJoints().filter(function(j){return !j.p.stab}).map(function(j){return j.p.id});aJ=aJs.length?aJs[aJs.length-1]:null;hl();buildEdit();animUI()}}
   else if((e.ctrlKey||e.metaKey)&&e.code==='KeyC')copyKeys();
   else if((e.ctrlKey||e.metaKey)&&e.code==='KeyV')pasteKeys(aT)});
 
@@ -1732,22 +1758,22 @@ function animUI(){if($('s-anim').hidden)return;fixA();
   if(!A){hint.textContent='Press + New to make an animation.';return}
   $('a-clock').textContent=aT.toFixed(2)+'s';
   if(!animT||!byId(animT)){hint.textContent='Click a rig in the stage to animate it. Clicking off it keeps it selected; press X to deselect.';g.append(el('p','empty','No rig selected.'));return}
-  const js=rigJoints();if(!js.some(function(j){return j.p.id===aJ}))aJ=js.length?js[0].p.id:null;
-  hint.textContent='Animating '+byId(animT).name+'. '+(aGM==='rot'?'Rotate handle: drag a ring to set a keyframe. Press R for move arrows.':'Move handle: drag an arrow to move the part (sets a keyframe). Press R for rotate rings.');
+  const js=rigJoints();aJFix();
+  hint.textContent='Animating '+byId(animT).name+'. '+(aGM==='rot'?'Rotate handle: drag a ring to set a keyframe. Press R for move arrows.':'Move handle: drag an arrow to move the part (sets a keyframe). Press R for rotate rings. Click a part to select it, Ctrl+click adds or removes parts, click empty space to deselect.');
   const W=Math.max(A.len*pps+60,160),nm=el('div','an-names'),tm=el('div','an-time'),ru=el('div','an-ruler'),po=evalPose(A,aT);
   tm.style.width=W+'px';nm.append(el('div','an-rh','Joints'));
   for(let i=0;i*.1<=A.len+1e-6;i++){const t=i*.1,mj=i%5===0,tk=el('i','tk'+(mj?' mj':''));tk.style.left=(t*pps)+'px';ru.append(tk);
     if(mj&&(pps>=110||i%10===0)){const lb=el('span','tl',t.toFixed(1));lb.style.left=(t*pps+3)+'px';ru.append(lb)}}
   ru.onpointerdown=function(e){if(e.button!==0)return;aSelKeys=[];updKeySel();scrub(e,ru,tm)};tm.append(ru);
-  js.forEach(function(j){const id=j.p.id,r=po[id]||[0,0,0],on=aJ===id?' on':'',nr=el('div','an-row'+on),tr=el('div','an-row'+on),lb=el('span','an-nm',j.p.name);
-    lb.style.paddingLeft=(8+j.d*10)+'px';nr.onclick=function(){selJoint(id)};tr.dataset.j=id;nr.append(lb);
+  js.forEach(function(j){const id=j.p.id,r=po[id]||[0,0,0],on=aJs.indexOf(id)>=0?' on':'',nr=el('div','an-row'+on),tr=el('div','an-row'+on),lb=el('span','an-nm',j.p.name);
+    lb.style.paddingLeft=(8+j.d*10)+'px';nr.onclick=function(e){selJoint(id,(e.ctrlKey||e.shiftKey||e.metaKey)?'toggle':undefined)};tr.dataset.j=id;nr.append(lb);
     const ins=[0,1,2].map(function(i){const n=el('input');n.type='number';n.step='1';n.value=Math.round(r[i]*10)/10;n.title='XYZ'.charAt(i)+' rotation (degrees)';
-      n.onfocus=function(){selJoint(id)};
+      n.onfocus=function(){selJoint(id,'keep')};
       n.oninput=function(){live[id]=ins.map(function(q){return +q.value||0});preview()};
       n.onchange=function(){live={};setKey(A,id,aT,ins.map(function(q){return +q.value||0}));save();animUI();preview()};return n});
     valIns[id]=ins;ins.forEach(function(n){nr.append(n)});rowEls[id]=[nr,tr];
     (A.keys[id]||[]).forEach(function(k){const d=el('i','kf'+(aSelKeys.some(function(q){return q.k===k})?' sel':''));d.style.left=(k.t*pps)+'px';kelm.set(k,d);d.onpointerdown=function(e){keyDown(e,id,k,d)};tr.append(d)});
-    tr.onpointerdown=function(e){if(e.button!==0)return;if(e.shiftKey){marquee(e);return}selJoint(id);aSelKeys=[];updKeySel();scrub(e,tr,tm)};
+    tr.onpointerdown=function(e){if(e.button!==0)return;if(e.shiftKey){marquee(e);return}selJoint(id,'keep');aSelKeys=[];updKeySel();scrub(e,tr,tm)};
     nm.append(nr);tm.append(tr)});
   phEl=el('div','an-ph');phEl.style.left=(aT*pps)+'px';tm.append(phEl);
   tm.oncontextmenu=function(e){e.preventDefault();const row=e.target.closest&&e.target.closest('.an-row'),b=tm.getBoundingClientRect();
@@ -1786,8 +1812,8 @@ cv.onpointerdown=function(e){cv.setPointerCapture(e.pointerId);lx=e.clientX;ly=e
   if(h&&h.object.userData.scale){scaleStart(h.object);return}
   if(h){snapSel();gd={a:h.object.userData.axis.clone(),rig:rigOn,p:rigOn?byId(selJ):byId(sel[0])};return}
   if(rigOn){h=ray.intersectObjects(balls,false)[0];if(h){selJ=h.object.userData.joint;buildEdit();return}}
-  h=ray.intersectObjects(pickable(),false)[0];pick(h?h.object.userData.id:null,e.ctrlKey||e.shiftKey||e.metaKey,e.altKey)};
-cv.ondblclick=function(e){if(playing||rigOn||animOn())return;ray.setFromCamera(ndc(e),camera);const h=ray.intersectObjects(pickable(),false)[0];if(h)pick(h.object.userData.id,false,true)};
+  h=ray.intersectObjects(pickSel(),false)[0];pick(h?h.object.userData.id:null,e.ctrlKey||e.shiftKey||e.metaKey,e.altKey)};
+cv.ondblclick=function(e){if(playing||rigOn||animOn())return;ray.setFromCamera(ndc(e),camera);const h=ray.intersectObjects(pickSel(),false)[0];if(h)pick(h.object.userData.id,false,true)};
 cv.onpointermove=function(e){if(playing&&!look)playHover(e);const pl=document.pointerLockElement===cv,big=pl&&(Math.abs(e.movementX)>250||Math.abs(e.movementY)>250),dx=big?0:pl?e.movementX:e.clientX-lx,dy=big?0:pl?e.movementY:e.clientY-ly;lx=e.clientX;ly=e.clientY;
   if(look){cam.yaw+=dx*.005;cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.005))}
   else if(gd&&gd.an)animDrag(e,dx,dy);
@@ -1797,7 +1823,7 @@ cv.onpointermove=function(e){if(playing&&!look)playHover(e);const pl=document.po
     const d=sc(v.clone().add(gd.a)).sub(sc(v)),L=d.lengthSq();if(L<1)return;
     const k=(dx*d.x+dy*d.y)/L;
     if(gd.rig){p.pivot[0]+=gd.a.x*k;p.pivot[1]+=gd.a.y*k;p.pivot[2]+=gd.a.z*k}else moveSel([gd.a.x*k,gd.a.y*k,gd.a.z*k]);quickSync()}
-  else if(!playing){hovE=e;if(!hovP){hovP=true;requestAnimationFrame(function(){hovP=false;if(playing||gd||look||!hovE)return;ray.setFromCamera(ndc(hovE),camera);const h=ray.intersectObjects(pickable(),false)[0];if(animOn()){setHover(null);animHover(h?h.object.userData.id:null)}else{animHover(null);setHover(h?h.object.userData.id:null)}})}}};
+  else if(!playing){hovE=e;if(!hovP){hovP=true;requestAnimationFrame(function(){hovP=false;if(playing||gd||look||!hovE)return;ray.setFromCamera(ndc(hovE),camera);const h=ray.intersectObjects(pickSel(),false)[0];if(animOn()){setHover(null);animHover(h?h.object.userData.id:null)}else{animHover(null);setHover(h?h.object.userData.id:null)}})}}};
 cv.onpointerleave=function(){setHover(null);animHover(null);cv.style.cursor=''};
 document.addEventListener('pointerlockchange',function(){lockPend=false;if(document.pointerLockElement!==cv){look=false;cv.style.cursor=''}});
 cv.onpointerup=cv.onpointercancel=function(e){if(e&&e.type==='pointercancel'&&(lockPend||document.pointerLockElement===cv))return;look=false;cv.style.cursor='';if(document.pointerLockElement===cv)document.exitPointerLock();if(gd){const g0=gd;gd=null;if(g0.an&&(g0.mode==='rot'||g0.pos))animRotEnd(g0);save();if(!g0.an){rebuildParts();props()}else if(!g0.pos&&g0.mode==='move')rebuildParts()}};
@@ -1856,6 +1882,19 @@ function rootOf(p){while(p.parent&&byId(p.parent))p=byId(p.parent);return p}
 function svcOf(p){return rootOf(p).svc||'world'}
 function inW(p){return svcOf(p)==='world'}
 function pickable(){return Object.keys(M).filter(function(k){const p=byId(k);return p&&!p.stab&&inW(p)&&stageVis(p)}).map(function(k){return M[k]})}
+/* Locked parts can not be hovered or clicked in the 3D view (rays pass through them to whatever is behind). Select them in the Explorer list and press L to unlock. */
+function pickSel(){return pickable().filter(function(m){const q=byId(m.userData.id);return q&&!q.locked})}
+function lockGroup(p){const r=rootOf(p);if(p.model)return partsOf(p.model);if(kids(r).length)return treeOf(r);return [p]}
+function toggleLock(){const set={},ids=[];
+  sel.forEach(function(id){const p=byId(id);if(p&&!p.av)lockGroup(p).forEach(function(q){if(!set[q.id]&&!q.av&&!q.stab){set[q.id]=1;ids.push(q)}})});
+  if(!ids.length){msg(sel.length?'Your character can not be locked.':'Select a block or model first, then press L to lock it (press L again to unlock).');return}
+  const unlock=ids.every(function(q){return q.locked});
+  ids.forEach(function(q){if(unlock)delete q.locked;else q.locked=true});
+  if(!unlock){sel=[];selModel=null;selSvc=null;setHover(null)}
+  msg(unlock?'Unlocked '+ids.length+' part'+(ids.length>1?'s':'')+'.':'Locked '+ids.length+' part'+(ids.length>1?'s':'')+'. It can not be hovered or clicked now. Select it in the Explorer list and press L to unlock.');all()}
+addEventListener('keydown',function(e){if(e.code!=='KeyL'||e.ctrlKey||e.metaKey||e.altKey||e.shiftKey||e.repeat||playing||running||menuEl||VIEWONLY||document.getElementById('shome'))return;
+  const a=document.activeElement;if(a&&(/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a.isContentEditable))return;if($('studio').getClientRects().length===0||animOn())return;
+  e.preventDefault();toggleLock()});
 function vv(x){return Math.max(.0002,x*P.audio.vol*2)}
 function feet0(){let m=1e9;P.parts.forEach(function(p){if(p.av)m=Math.min(m,p.pos[1]-p.size[1]/2)});return m===1e9?0:m}
 /* Highest surface under the feet that is no more than STEP above them */
@@ -2324,7 +2363,7 @@ function renderParts(){const l=$('p-list');l.replaceChildren();
     xrow({d:d,ic:'\u270E',icc:'#c9822b',nm:(D.hat?(KW[h.t]||h.t)+(h.a.length?' '+h.a.join(' '):''):'Loose blocks')+(tail&&on?'  ('+on+')':''),
       bd:[n+(n===1?' block':' blocks')],on:selScr===h,go:function(){selScript(h)}})}
   function scrRows(id,d){scrOf(id).forEach(function(sc){scrRow(sc,d,false)})}
-  function prow(p,d,w){const rig=!p.parent&&kids(p).length,bds=[];if(rig)bds.push(hum(p)?'Humanoid':'Rig');(p.tags||[]).forEach(function(t){bds.push('#'+t)});
+  function prow(p,d,w){const rig=!p.parent&&kids(p).length,bds=[];if(rig)bds.push(hum(p)?'Humanoid':'Rig');if(p.locked)bds.push('\uD83D\uDD12 locked');(p.tags||[]).forEach(function(t){bds.push('#'+t)});
     xrow({d:d,ic:rig?'\u263A':'\u25A2',icc:rig?'#2fa95a':'#3b82f6',nm:(w?'\u21B3 ':'')+p.name,bd:bds,on:sel.indexOf(p.id)>=0,
       go:function(e){pick(p.id,e.ctrlKey||e.shiftKey||e.metaKey,true)},plus:{t:'part',id:p.id}});
     scrRows(p.id,d+1);kids(p).forEach(function(c){prow(c,d+1,true)})}
@@ -2332,7 +2371,7 @@ function renderParts(){const l=$('p-list');l.replaceChildren();
   function listIn(key){let n=0;
     P.models.forEach(function(m){const ps=partsOf(m.id).filter(function(p){return svcOf(p)===key});if(!ps.length)return;n++;
       const open=openM[m.id]!==false;
-      xrow({d:1,ic:'\u25A3',icc:'#8a5cf6',nm:m.name,bd:[ps.length+(ps.length===1?' part':' parts')],open:open,onTg:function(){openM[m.id]=!open;renderParts()},
+      xrow({d:1,ic:'\u25A3',icc:'#8a5cf6',nm:m.name,bd:[ps.length+(ps.length===1?' part':' parts')].concat(ps.every(function(q){return q.locked})?['\uD83D\uDD12 locked']:[]),open:open,onTg:function(){openM[m.id]=!open;renderParts()},
         on:selModel===m.id,go:function(){pickModel(m.id)},plus:{t:'model',id:m.id}});
       if(open){scrRows(m.id,2);ps.filter(function(p){return !p.parent}).forEach(function(p){prow(p,2,false)})}});
     P.parts.filter(function(p){return !p.parent&&!p.model&&svcOf(p)===key}).forEach(function(p){n++;prow(p,1,false)});return n}
@@ -2451,7 +2490,7 @@ save=function(){saveRaw();if(histBusy)return;const cur=snapState();if(cur===hist
   histT=now;histLast=cur;redoS.length=0};
 function histApply(str){histBusy=true;try{const st=JSON.parse(str);P.parts=st.parts;P.models=st.models;P.anims=st.anims;P.nid=st.nid;P.avId=st.avId;
   sel=sel.filter(function(id){return byId(id)});if(selModel&&!byModel(selModel))selModel=null;if(selJ&&!byId(selJ))selJ=null;
-  aSelKeys=[];live={};fixA();if(aJ&&!byId(aJ))aJ=null;
+  aSelKeys=[];live={};fixA();aJFix();
   rebuildParts();renderParts();
   if(animOn()){const r=animT&&byId(animT);animSelect(r&&kids(r).length?r:null);animUI()}else props();
   histLast=snapState();saveRaw()}finally{histBusy=false}}
