@@ -1878,7 +1878,7 @@ let look=false,gd=null,lx=0,ly=0,hovE=null,hovP=false;
 let lockPend=false,lockRetry=false;
 function lockPtr(){if(document.pointerLockElement===cv||lockPend)return;lockPend=true;lockRetry=false;
   try{const r=cv.requestPointerLock({unadjustedMovement:true});if(r&&r.catch)r.catch(function(){lockRetry=true;try{cv.requestPointerLock()}catch(x){lockPend=false}})}catch(x){lockRetry=true;try{cv.requestPointerLock()}catch(y){lockPend=false}}}
-cv.addEventListener('mousedown',function(e){if(e.button===2&&look){lockPtr();setTimeout(function(){if(look&&document.pointerLockElement!==cv&&!lockPend)lockWarn(window!==window.top?'This preview blocks mouse lock, so the pointer can still move. Open the game in its own browser tab.':'Your browser did not lock the mouse, so the pointer can still move.')},400)}});
+cv.addEventListener('mousedown',function(e){if(e.button===2&&gd&&gd.mv)look=true;if(e.button===2&&look){lockPtr();setTimeout(function(){if(look&&document.pointerLockElement!==cv&&!lockPend)lockWarn(window!==window.top?'This preview blocks mouse lock, so the pointer can still move. Open the game in its own browser tab.':'Your browser did not lock the mouse, so the pointer can still move.')},400)}});
 document.addEventListener('pointerlockerror',function(){if(!lockRetry&&look){lockRetry=true;try{cv.requestPointerLock()}catch(x){lockPend=false}return}lockPend=false;
   lockWarn(window!==window.top?'This preview blocks mouse lock, so the pointer can still move. Open the game in its own browser tab.':'Your browser blocked mouse lock, so the pointer can still move.')});
 let lockWarnEl=null,lockWarnT=0;
@@ -1946,8 +1946,8 @@ function rmoveDrag(e){const g=gd,b=dragBox();if(!b)return;ray.setFromCamera(ndc(
   const d=[c[0]-b.c[0],c[1]-b.c[1],c[2]-b.c[2]].map(function(v){return Math.round(v*1000)/1000});
   if(Math.abs(d[0])+Math.abs(d[1])+Math.abs(d[2])<1e-4)return;moveSel(d);quickSync()}
 cv.ondblclick=function(e){if(playing||rigOn||animOn())return;ray.setFromCamera(ndc(e),camera);{const gh=ray.intersectObjects(gizmo,false)[0];if(gh&&gh.object.userData.rotAx!==undefined){rotReset();return}}const h=ray.intersectObjects(pickSel(),false)[0];if(h)pick(h.object.userData.id,false,true)};
-cv.onpointermove=function(e){if(playing&&!look)playHover(e);const pl=document.pointerLockElement===cv,big=pl&&(Math.abs(e.movementX)>250||Math.abs(e.movementY)>250),dx=big?0:pl?e.movementX:e.clientX-lx,dy=big?0:pl?e.movementY:e.clientY-ly;lx=e.clientX;ly=e.clientY;
-  if(look||(playing&&cdT<=.01&&pl)){cam.yaw+=dx*.005;cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.005))}
+cv.onpointermove=function(e){if(gd&&gd.mv){gd.le={clientX:e.clientX,clientY:e.clientY,altKey:e.altKey};if((e.buttons&2)&&!look){look=true;lockPtr()}}if(playing&&!look)playHover(e);const pl=document.pointerLockElement===cv,big=pl&&(Math.abs(e.movementX)>250||Math.abs(e.movementY)>250),dx=big?0:pl?e.movementX:e.clientX-lx,dy=big?0:pl?e.movementY:e.clientY-ly;lx=e.clientX;ly=e.clientY;
+  if(look||(playing&&cdT<=.01&&pl)){cam.yaw+=dx*.005;cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.005));if(gd&&gd.mv&&look)rmoveDrag(e)}
   else if(gd&&gd.rm)rmoveDrag(e);
   else if(gd&&gd.an)animDrag(e,dx,dy);
   else if(gd&&gd.rg)rotDrag(e);
@@ -2563,6 +2563,7 @@ function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.
     const hide=camD<(avHid?1.5:1.1);if(hide!==avHid){avHid=hide;avVis(!hide)}
     cam.x=fx-f[0]*camD;cam.y=fy-f[1]*camD;cam.z=fz-f[2]*camD}}else{camF=null;camD=null;fpPrev=false;{const xh=document.getElementById('fp-x');if(xh)xh.style.display='none'}if(avHid){avHid=false;avVis(true)}}
   if(aPlay&&!playing&&!rigOn){const A=P.anims[curA];if(A){aT+=dt;if(aT>=A.len){if(aLoop)aT%=A.len;else{aT=A.len;aPlay=false;animPlayBtn()}}animTick();applyPose(evalPose(A,aT))}}
+  if(gd&&gd.mv&&gd.le&&!playing)rmoveDrag(gd.le);
   stageTick(dt);animBox();animGizUpdate();gizmoFit();
   const w=cv.clientWidth,h=fsOn?cv.clientHeight:Math.round(w*.75),pr=Math.min(window.devicePixelRatio||1,2);
   if(w&&h&&(cv.width!==Math.floor(w*pr)||cv.height!==Math.floor(h*pr))){renderer.setPixelRatio(pr);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
