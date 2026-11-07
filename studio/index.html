@@ -474,9 +474,9 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
       <div class="tabs"><button id="t-out" type="button" class="on">Output</button><button id="t-code" type="button">Code</button><button id="t-parts" type="button">Explorer</button><button id="t-anim" type="button">Animator</button></div>
       <pre id="s-out" class="pre"></pre><pre id="s-code" class="pre" hidden></pre>
       <div id="s-parts" class="pnl" hidden>
-        <div class="tb"><button id="p-add" class="btn small" type="button">+ Part</button><select id="p-shape" class="btn ghost small" aria-label="Add a shape"><option value="">+ Shape</option><option value="cyl">Cylinder</option><option value="sphere">Sphere</option><option value="wedge">Triangle</option></select><select id="p-gui" class="btn ghost small" aria-label="Add a GUI element"><option value="">+ GUI</option><option value="text">Text</option><option value="button">Button</option><option value="frame">Frame</option><option value="image">Image</option></select><button id="p-weld" class="btn small" type="button">Weld</button><button id="p-unweld" class="btn ghost small" type="button">Unweld</button><button id="p-group" class="btn small" type="button">Group</button><button id="p-ungroup" class="btn ghost small" type="button">Ungroup</button><button id="p-copy" class="btn ghost small" type="button">Copy</button><button id="p-paste" class="btn ghost small" type="button">Paste</button><button id="p-dup" class="btn ghost small" type="button">Duplicate</button><button id="p-del" class="btn ghost small" type="button">Delete</button><button id="p-rig" class="btn ghost small" type="button" aria-pressed="false">Rig editor</button></div>
+        <div class="tb"><button id="p-add" class="btn small" type="button">+ Part</button><select id="p-shape" class="btn ghost small" aria-label="Add a shape"><option value="">+ Shape</option><option value="cyl">Cylinder</option><option value="sphere">Sphere</option><option value="wedge">Triangle</option></select><select id="p-gui" class="btn ghost small" aria-label="Add a GUI element"><option value="">+ GUI</option><option value="text">Text</option><option value="button">Button</option><option value="frame">Frame</option><option value="image">Image</option></select><button id="p-weld" class="btn small" type="button">Weld</button><button id="p-unweld" class="btn ghost small" type="button">Unweld</button><button id="p-group" class="btn small" type="button">Group</button><button id="p-ungroup" class="btn ghost small" type="button">Ungroup</button><button id="p-union" class="btn small" type="button" title="Ctrl+Shift+G">Union</button><button id="p-split" class="btn ghost small" type="button" title="Ctrl+Alt+U">Split</button><button id="p-copy" class="btn ghost small" type="button">Copy</button><button id="p-paste" class="btn ghost small" type="button">Paste</button><button id="p-dup" class="btn ghost small" type="button">Duplicate</button><button id="p-del" class="btn ghost small" type="button">Delete</button><button id="p-rig" class="btn ghost small" type="button" aria-pressed="false">Rig editor</button></div>
         <p id="p-msg" class="hint">Weld: select the Torso first, then ctrl-click the parts to weld to it.</p>
-        <p class="note" style="margin:4px 0 8px"><b>P</b> adds a part in front of you &middot; <b>Ctrl+G</b> groups into a model &middot; <b>Ctrl+Shift+G</b> ungroups &middot; <b>Backspace</b> deletes &middot; <b>Alt+click</b> (or double-click) a piece of a model to select just that piece. &middot; <b>L</b> locks or unlocks the selection.</p><div id="p-list"></div><div id="p-props"></div>
+        <p class="note" style="margin:4px 0 8px"><b>P</b> adds a part in front of you &middot; <b>Ctrl+G</b> groups into a model &middot; <b>Ctrl+Shift+G</b> unions the selection into one single part (<b>Ctrl+Alt+U</b> splits it back) &middot; <b>Ctrl+Alt+G</b> ungroups &middot; <b>Backspace</b> deletes &middot; <b>Alt+click</b> (or double-click) a piece of a model to select just that piece. &middot; <b>L</b> locks or unlocks the selection.</p><div id="p-list"></div><div id="p-props"></div>
       </div>
       <div id="s-anim" class="pnl anim" hidden>
         <div class="an-top">
@@ -541,6 +541,7 @@ const BD={
  playercol:{c:'pl',l:'set player collisions to _',a:['true'],dd:{0:'bool'},tip:'true: players can not walk through each other, so you bump into the other players in the server. false: players walk straight through each other (the default). It goes back to false when the game restarts.'},
  givebadge:{c:'pl',l:'give badge _ to player _',a:['Winner','player'],tip:'Gives a player a badge you made under Assets in the Explorer (Badges). Type the badge name. The player is a name, a variable, or player (the first player in the server) (like toucher). The player sees a pop-up and the badge is saved to their account, once per badge per game. Anyone can earn a badge themselves; only the game owner or an admin can give one to another player.'},
  awardbadge:{c:'pl',l:'award badge _ to player _ icon _',a:['Winner','player','\uD83C\uDFC5'],tip:'Gives a player a badge and counts it in their profile. You do not need to make the badge first: it is created for you if it does not exist yet. Each badge is only given once per player per game, and every new badge adds 1 to their badge counter. Type the badge name, then the player (a name, a variable, or player for the first player in the server) and an icon. Anyone can earn a badge themselves; only the game owner or an admin can give one to another player.'},
+ randplayer:{c:'pl',l:'get random player into _',a:['target'],dd:{0:'var'},tip:'Picks one player in the game at random (you included) and stores their name in the variable. Use it with blocks like kick, teleport or ragdoll.'},
  getcount:{c:'pl',l:'get player count into _',a:['count'],dd:{0:'var'},tip:'Stores how many players are in the game right now (you included) in the variable.'},
  accwear:{c:'pl',l:'put accessory _ on player _ slot _',a:['Cool Hat','player','auto'],dd:{2:'accslot'},tip:'Puts an accessory from the BrixBlox shop (including ones you made) on a player. They do NOT need to own it and nothing is added to their inventory. It is only worn during this game and other players see it. Type the accessory name exactly. Slot auto uses the slot the accessory was made for (or hat).'},
  accstrip:{c:'pl',l:'take accessory _ off player _',a:['Cool Hat','player'],tip:'Takes off an accessory that was put on with the put accessory block.'},
@@ -558,6 +559,7 @@ const BD={
  guishow:{c:'gu',l:'show gui _',a:['Button1'],dd:{0:'guit'},tip:'Shows a GUI element you made under GUI in the Explorer.'},
  guihide:{c:'gu',l:'hide gui _',a:['Button1'],dd:{0:'guit'},tip:'Hides a GUI element until you show it again.'},
  guitext:{c:'gu',l:'set gui _ text to _',a:['Text1','Hello'],dd:{0:'guit'},tip:'Changes the words on a GUI text, button or frame. You can use a variable name (like score) to show its value.'},
+ guicolor:{c:'gu',l:'set gui _ _ color to _',a:['Frame1','background','red'],dd:{0:'guit',1:'guipart'},tip:'Changes a colour of a GUI text, button or frame while the game runs. Pick background, text or border, then type a colour name (red, skyblue) or a code like #ff8800. Type random for a random colour. Pick "this GUI" inside a script that belongs to a GUI. It goes back to the GUI setting when the game restarts.'},
  guiclick:{c:'gu',hat:1,l:'when gui _ clicked',a:['Button1'],dd:{0:'gui'},tip:'Runs when a player clicks that GUI button while playing (press Play). The variable clicker holds the player name.'},
  guivis:{c:'gu',l:'set gui _ visible to _',a:['Frame1','true'],dd:{0:'guit',1:'bool'},tip:'Turns a GUI on (true) or off (false). Works on frames too: hiding a frame hides everything inside it. Pick "this GUI" inside a script that belongs to a GUI.'},
  guitoggle:{c:'gu',l:'toggle gui _',a:['Frame1'],dd:{0:'guit'},tip:'If the GUI is showing it hides it, and if it is hidden it shows it. Great for a menu button that opens and closes a frame.'},
@@ -575,6 +577,7 @@ const BD={
  teleport:{c:'en',l:'teleport _ to x _ y _ z _',a:['target','0','5','0'],tip:'Moves a rig or player to this spot in the world. y is the height of the feet (the floor is usually 0). Type a name, a variable, or player (the first player in the server; player2 is the second, and so on).'},
  say:{c:'lk',l:'say _',a:['Hello!'],tip:'Shows a chat bubble above your head for a few seconds.'},
  color:{c:'lk',l:'color _',a:['red'],raw:1},
+ setimage:{c:'lk',l:'set image of this object to _',a:['none'],dd:{0:'img'},tip:'Puts a picture from Assets on the object this script belongs to (pick the picture, or none to take it off). It goes back to the part setting when the game restarts. Put the script on an object with the + next to it in the Explorer.'},
  transparency:{c:'lk',l:'set transparency to _',a:['0.5'],tip:'Makes the object this script belongs to see-through: 0 is solid, 0.5 is half see-through, 1 is invisible. With no object it changes your own character. It goes back to the part setting when the game restarts.'},
  wait:{c:'ct',l:'wait _ secs',a:['1']},
  repeat:{c:'ct',l:'repeat _',a:['4'],k:1},
@@ -741,13 +744,13 @@ function newVarDlg(done){mdl('New variable',function(c,close){const n=el('input'
 function ddSel(b,i,kind,ro){
   if(ro){const n=el('input');n.value=b.a[i];n.readOnly=true;fit(n);return n}
   const s=el('select','ddsel');s.title=kind==='var'?'Pick a variable, or make a new one':'';
-  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='bool'?[['true','true'],['false','false']]:varList().map(function(v){return [v,v]});
+  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='img'?[['none','none']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})):kind==='guipart'?[['background','background'],['text','text'],['border','border']]:kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='bool'?[['true','true'],['false','false']]:varList().map(function(v){return [v,v]});
     const cur=String(b.a[i]);if(cur&&!o.some(function(q){return q[0]===cur}))o.unshift([cur,cur]);
     o.forEach(function(q){const op=el('option','',q[1]);op.value=q[0];s.append(op)});
     if(kind==='var'){const nw=el('option','','\uFF0B New variable\u2026');nw.value='\u0001new';s.append(nw)}
     s.value=cur};
   fill();
-  s.onpointerdown=function(e){e.stopPropagation();if(kind==='var'||kind==='gui'||kind==='guit')fill()};
+  s.onpointerdown=function(e){e.stopPropagation();if(kind==='var'||kind==='gui'||kind==='guit'||kind==='img')fill()};
   s.onchange=function(){
     if(s.value==='\u0001new'){newVarDlg(function(v){if(v){b.a[i]=v;save();rend();renderParts()}else fill()});return}
     b.a[i]=s.value;reser();save();view()};
@@ -928,7 +931,7 @@ function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('p
 
 
 /* BricBloc as text */
-const KW={pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
+const KW={randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
 
@@ -1039,6 +1042,15 @@ async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0
     case'rigsize':{const sz=Math.max(.1,Math.min(20,n(1)));resolve(String(val(a[0],S))).forEach(function(t){RSZ[t.key]=sz});break}
     case'transparency':{let rs=roots(o,true);if(!rs.length){const T=byId(P.avId);if(T)rs=[rootOf(T)]}
       const v=Math.max(0,Math.min(1,n(0)));rs.forEach(function(r){rigParts(r).forEach(function(q){if(!q.stab)setTr(q,v)})});break}
+    case'setimage':{const rs=roots(o,true);if(!rs.length){log('Error: "set image" must be in a script that belongs to an object. Use the + next to an object in the Explorer.');break}
+      const nm=String(val(a[0],S)).trim(),low=nm.toLowerCase(),key=(!nm||low==='none')?null:Object.keys(P.assets.images).find(function(k){return k.toLowerCase()===low});
+      if(nm&&low!=='none'&&!key){log('Error: no image named "'+nm+'". Upload it under Assets in the Explorer.');break}
+      rs.forEach(function(r){rigParts(r).forEach(function(q){imgApply(q,key)})});break}
+    case'guicolor':{const gg=(String(a[0]).trim().toLowerCase()==='this'&&guiById(o))?[guiById(o)]:guiByName(a[0]);if(!gg.length){log('Error: no GUI named "'+String(a[0]).trim()+'". Add one under GUI in the Explorer.');break}
+      const part=String(val(a[1],S)).trim().toLowerCase(),want=String(val(a[2],S)).trim(),hx=want.toLowerCase()==='random'?'#'+Math.floor(Math.random()*0x1000000).toString(16).padStart(6,'0'):cssHex(want);
+      if(!hx){log('Error: "'+want+'" is not a colour. Use a name like red or a code like #ff8800.');break}
+      const ky=(part==='text'||part==='color')?'color':part==='border'?'bc':'bg';
+      gg.forEach(function(g){const r=GR[g.id]=GR[g.id]||{};r[ky]=hx});renderGui();break}
     case'collision':{const v=String(val(a[0],S)).trim().toLowerCase(),on=!(v==='false'||v==='0'||v==='off'||v==='no'),rs=roots(o);
       if(!rs.length){log('Error: "set collision" must be in a script that belongs to an object. Use the + next to an object in the Explorer.');break}
       rs.forEach(function(r){CO[r.id]=on});break}
@@ -1074,6 +1086,7 @@ async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0
           NET.ch.send({type:'broadcast',event:'ga',payload:{id:NET.id,n:ME.username,t:q.net,a:it.id,m:add?1:0,nm:String(it.name).slice(0,24)}});
           log((add?'Sent "':'Asked to remove "')+it.name+(add?'" to ':'" from ')+t.name+'.')}}
       break}
+    case'randplayer':{const vn=String(a[0]).trim();if(!vn){log('Error: type a variable name to store the player in.');break}const pl=plist();S.v[vn]=pl.length?pl[Math.floor(Math.random()*pl.length)].name:String(P.player.name);break}
     case'getcount':{const vn=String(a[0]).trim();if(!vn){log('Error: type a variable name to store the count in.');break}S.v[vn]=1+S.oth.length;break}
     case'rigbeh':{const rs=roots(o).filter(function(r){return kids(r).length>0});
       if(!rs.length){log('Error: "set rig behavior" must be in a script that belongs to a rig (parts welded together). Use the + next to a rig in the Explorer.');break}
@@ -1153,6 +1166,7 @@ P.squads=P.squads||[{id:'q1',name:'Red Squad',color:'#e5484d'},{id:'q2',name:'Bl
 const byId=function(id){return P.parts.find(function(p){return p.id===id})};
 const piv=function(p){return p.parent?p.pivot:p.pos};
 const kids=function(p){return P.parts.filter(function(c){return c.parent===p.id})};
+let selFold=null,openF={},lastPS=[];
 let selSvc=null,openS={},curTab='out',fsOn=false,animT=null,PG=null,J={},M={},sel=[],selModel=null,openM={},rigOn=false,rig0={},aGM='move',agT=null,selJ=null,balls=[],gizmo=[],curA='',aT=0,aPlay=false,live={},RO={},playing=false,hov=null,gz=[],cd=14,cdT=14,zq=0,camD=null,avHid=false,fpPrev=false,CAMM=[],CAMN=0;
 let tool='move';const editG=new THREE.Group();scene.add(editG);const ray=new THREE.Raycaster(),CRAY=new THREE.Raycaster();
 function msg(t){$('p-msg').textContent=t}
@@ -1246,8 +1260,20 @@ neon:{n:'Neon',c:'#00f0ff',sh:0,sp:'#000000'}};
 const TC={};
 function tex(k){if(!TC[k]){const S=256,c=document.createElement('canvas');c.width=c.height=S;let h=0;for(let i=0;i<k.length;i++)h=h*31+k.charCodeAt(i);TX[k](c.getContext('2d'),S,RNG(h+7));
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());TC[k]=t}return TC[k]}
+const ITX={};
+function imgTex(nm){const src=P.assets.images[nm];if(!src)return null;const k=nm+'|'+src.length+'|'+src.slice(-32);let t=ITX[k];if(t)return t;
+  const im=new Image();t=new THREE.Texture(im);im.onload=function(){t.needsUpdate=true};im.src=src;ITX[k]=t;return t}
+function texOK(p){return !!p&&!p.stab&&p.shape!=='mesh'&&!(p.av&&!p.acc)&&!p.sm&&!(p.parent&&/^(Head|Torso|[RL](arm|leg))$/.test(p.name))}
+function hasTex(p){return texOK(p)&&!!p.tex&&!!P.assets.images[p.tex]}
+function texPng(k){return /^data:image\/(png|gif|webp)/i.test(P.assets.images[k]||'')}
+/* used by the "set image" block: swaps the picture while the game runs, the part setting is not changed */
+function imgApply(q,key){const m=M[q.id];if(!m||!texOK(q))return;const old=m.material;
+  m.material=mkMat(Object.assign({},q,{tex:null}));
+  if(key){const t=imgTex(key);if(t){const mt=m.material;mt.map=t;mt.color.set(0xffffff);mt.vertexColors=false;if(texPng(key)){mt.transparent=true;mt.alphaTest=.04}mt.needsUpdate=true}}
+  try{old.dispose()}catch(e){}hl()}
 function mkMat(p){const k=MATS[p.mat]?p.mat:'plastic',d=MATS[k],m=new THREE.MeshPhongMaterial({color:p.color,shininess:p.av?40:(d.sh==null?20:d.sh),specular:new THREE.Color(p.av?'#4a4a4a':(d.sp||'#111111'))});
-  if(TX[k])m.map=tex(k);if(d.op){m.transparent=true;m.opacity=d.op}if(k==='neon')m.emissive.set(p.color);if(p.tr>0){m.transparent=true;m.opacity=(d.op||1)*(1-Math.min(1,p.tr))}return m}
+  if(TX[k])m.map=tex(k);if(d.op){m.transparent=true;m.opacity=d.op}if(k==='neon')m.emissive.set(p.color);if(p.tr>0){m.transparent=true;m.opacity=(d.op||1)*(1-Math.min(1,p.tr))}if(p.shape==='union'&&p.un){m.vertexColors=true;if(p.un.pc!==p.color)m.color.set(p.color);else m.color.set(0xffffff)}
+  if(hasTex(p)){const t=imgTex(p.tex);if(t){m.map=t;m.color.set(0xffffff);m.vertexColors=false;if(texPng(p.tex)){m.transparent=true;m.alphaTest=.04}}}return m}
 /* World-sized texture coordinates: each face is mapped by its dominant axis, so a tile always covers ts studs */
 function boxUV(g,ts){const ps=g.attributes.position,nm=g.attributes.normal,uv=g.attributes.uv;
   for(let i=0;i<ps.count;i++){const nx=nm.getX(i),ny=nm.getY(i),nz=nm.getZ(i),ax=Math.abs(nx),ay=Math.abs(ny),az=Math.abs(nz),x=ps.getX(i),y=ps.getY(i),z=ps.getZ(i);let u,v;
@@ -1312,7 +1338,7 @@ function quickSync(){if(qsPend)return;qsPend=true;requestAnimationFrame(function
 function rebuildParts(){
   if(hline.parent)hline.parent.remove(hline);hov=null;if(PG){scene.remove(PG);freeTree(PG)}
   PG=new THREE.Group();scene.add(PG);J={};M={};
-  P.parts.forEach(function(p){const g=new THREE.Group(),v=piv(p),geo=((p.av&&!p.acc)||p.sm||(p.parent&&/^(Head|Torso|[RL](arm|leg))$/.test(p.name)))?avGeo(p):cachedGeo(p,false,shapeGeo),md=MATS[p.mat]||MATS.plastic;if(TX[p.mat])boxUV(geo,md.ts||6);const m=new THREE.Mesh(geo,mkMat(p));m.receiveShadow=true;m.castShadow=!md.op&&!p.stab&&!(p.tr>.3);m.layers.enable(1);
+  P.parts.forEach(function(p){const g=new THREE.Group(),v=piv(p),geo=((p.av&&!p.acc)||p.sm||(p.parent&&/^(Head|Torso|[RL](arm|leg))$/.test(p.name)))?avGeo(p):(p.shape==='union'&&p.un?unionGeo(p):hasTex(p)?shapeGeo(p):cachedGeo(p,false,shapeGeo)),md=MATS[p.mat]||MATS.plastic;if(TX[p.mat]&&!hasTex(p))boxUV(geo,md.ts||6);const m=new THREE.Mesh(geo,mkMat(p));m.receiveShadow=true;m.castShadow=!md.op&&!p.stab&&!(p.tr>.3);m.layers.enable(1);
     m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);m.userData.id=p.id;if(p.face)addFace(m,p);if(p.stab)m.visible=false;if(p.light&&!p.stab){const L=new THREE.PointLight(p.light.c,p.light.i,p.light.r,1);L.userData.isL=1;m.add(L)}if(p.shape==='mesh'){m.material.visible=false;m.castShadow=false;try{meshHook(m,p)}catch(e){}}g.add(m);J[p.id]=g;M[p.id]=m});
   const hk={};P.parts.forEach(function(p){if(p.parent)hk[p.parent]=1});
   P.parts.forEach(function(p){const g=J[p.id],v=piv(p),pa=p.parent&&byId(p.parent);
@@ -1626,15 +1652,21 @@ addEventListener('keydown',function(e){const t=({Digit2:'move',Numpad2:'move',Di
 function scaleStart(o){const bx=scaleBox();if(!bx)return;const a=o.userData.axis.clone(),la=o.userData.lax||a,ax=la.x?0:la.y?1:2,s=la.getComponent(ax)>0?1:-1,
   ps=scaleSet().map(function(p){return {p:p,pos:p.pos.slice(),size:p.size.slice(),pv:p.pivot?p.pivot.slice():null}}),lo=bx.c[ax]-bx.h[ax],hi=bx.c[ax]+bx.h[ax];
   const uni=ps.length>1;let mn=1e9;ps.forEach(function(q){if(!q.p.stab)(uni?[0,1,2]:[ax]).forEach(function(i){mn=Math.min(mn,q.size[i])})});
-  const rs={};ps.forEach(function(q){rs[rootOf(q.p).id]=1});
-  gd={sc:1,loc:!!o.userData.lax,uni:uni,a:a,ax:ax,s:s,ps:ps,rs:Object.keys(rs),lo:lo,hi:hi,L0:hi-lo,c0:bx.c.slice(),h0:bx.h.slice(),mn:mn,acc:0}}
+  const rs={};ps.forEach(function(q){rs[rootOf(q.p).id]=1});let mnA=1e9;ps.forEach(function(q){if(!q.p.stab)[0,1,2].forEach(function(i){mnA=Math.min(mnA,q.size[i])})});
+  gd={sc:1,loc:!!o.userData.lax,uni:uni,a:a,ax:ax,s:s,ps:ps,rs:Object.keys(rs),lo:lo,hi:hi,L0:hi-lo,c0:bx.c.slice(),h0:bx.h.slice(),mn:mn,mnA:mnA,acc:0}}
 function scaleDrag(e,dx,dy){const g=gd,ax=g.ax,pt=new THREE.Vector3(g.c0[0],g.c0[1],g.c0[2]).add(g.a.clone().multiplyScalar(g.h0[ax])),w=cv.getBoundingClientRect();
   const sc=function(q){const u=q.clone().project(camera);return new THREE.Vector2(u.x*w.width/2,-u.y*w.height/2)};
   const d=sc(pt.clone().add(g.a)).sub(sc(pt)),L=d.lengthSq();if(L<1)return;
   g.acc+=(dx*d.x+dy*d.y)/L;
-  const sym=e.ctrlKey||e.metaKey;let L1=g.L0+g.acc*(sym?2:1);
-  if(e.altKey)L1=Math.round(L1*2)/2;
-  L1=Math.max(L1,g.L0*.2/g.mn);
+  const us=e.altKey&&e.shiftKey,sym=us||e.ctrlKey||e.metaKey;let L1=g.L0+g.acc*(sym?2:1);
+  if(e.altKey&&!e.shiftKey)L1=Math.round(L1*2)/2;
+  L1=Math.max(L1,g.L0*.2/(us?g.mnA:g.mn));
+  /* Alt+Shift: scale. Every side grows or shrinks by the same factor around the middle, so the shape keeps its proportions (and a group's parts spread out with it) */
+  if(us){const f=L1/g.L0,r3=function(v){return Math.round(v*1000)/1000};
+    g.ps.forEach(function(q){const p=q.p;[0,1,2].forEach(function(i){p.size[i]=r3(q.size[i]*f);if(!g.loc){p.pos[i]=r3(g.c0[i]+(q.pos[i]-g.c0[i])*f);if(q.pv&&p.pivot)p.pivot[i]=r3(g.c0[i]+(q.pv[i]-g.c0[i])*f)}});
+      const m=M[p.id];if(m)m.scale.set(p.size[0]/q.size[0],p.size[1]/q.size[1],p.size[2]/q.size[2])});
+    g.rs.forEach(function(id){const r=byId(id);if(r&&kids(r).length){delete rig0[id];snapRig(r)}});
+    quickSync();return}
   if(g.loc){const q=g.ps[0],p=q.p,r3=function(v){return Math.round(v*1000)/1000},sh=sym?0:(L1-g.L0)/2;
     p.size[ax]=r3(L1);for(let i=0;i<3;i++)p.pos[i]=r3(q.pos[i]+g.a.getComponent(i)*sh);
     const m=M[p.id];if(m)m.scale.set(p.size[0]/q.size[0],p.size[1]/q.size[1],p.size[2]/q.size[2]);quickSync();return}
@@ -1644,7 +1676,7 @@ function scaleDrag(e,dx,dy){const g=gd,ax=g.ax,pt=new THREE.Vector3(g.c0[0],g.c0
   g.rs.forEach(function(id){const r=byId(id);if(r&&kids(r).length){delete rig0[id];snapRig(r)}});
   quickSync()}
 /* Clicking a piece of a model selects the whole model. Alt+click, double-click, or the Workspace list picks one piece. */
-function pick(id,add,indiv){{const q=id&&byId(id);if(q)snapRig(rootOf(q))}if(animOn()){animPickId(id);return}selSvc=null;selGui=null;const p=id&&byId(id);
+function pick(id,add,indiv){selFold=null;{const q=id&&byId(id);if(q)snapRig(rootOf(q))}if(animOn()){animPickId(id);return}selSvc=null;selGui=null;const p=id&&byId(id);
   if(!p){sel=[];selModel=null}
   else if(p.model&&!indiv){const ids=[id].concat(partsOf(p.model).map(function(q){return q.id}).filter(function(x){return x!==id}));
     if(add){const have=ids.every(function(x){return sel.indexOf(x)>=0});sel=have?sel.filter(function(x){return ids.indexOf(x)<0}):sel.concat(ids.filter(function(x){return sel.indexOf(x)<0}));selModel=null}
@@ -1654,12 +1686,55 @@ function pick(id,add,indiv){{const q=id&&byId(id);if(q)snapRig(rootOf(q))}if(ani
   else if(add){sel=sel.indexOf(id)>=0?sel.filter(function(x){return x!==id}):sel.concat(id);selModel=null}
   else{sel=[id];selModel=null}
   hl();buildEdit();renderParts()}
-function pickModel(mid){if(animOn()){const r=partsOf(mid).find(function(p){return !p.parent&&kids(p).length});animSelect(r||null);return}sel=partsOf(mid).map(function(q){return q.id});selModel=sel.length?mid:null;hl();buildEdit();renderParts()}
+function pickModel(mid){selFold=null;if(animOn()){const r=partsOf(mid).find(function(p){return !p.parent&&kids(p).length});animSelect(r||null);return}sel=partsOf(mid).map(function(q){return q.id});selModel=sel.length?mid:null;hl();buildEdit();renderParts()}
 function group(){let ids=sel.filter(function(id){const p=byId(id);return p&&!p.av});{const set={};ids.forEach(function(id){set[id]=1;const r=rootOf(byId(id));if(kids(r).length)treeOf(r).forEach(function(q){set[q.id]=1})});ids=Object.keys(set)}
   if(!ids.length){msg('Select the part(s) you want to group first.');return}
   let n=1,nm='Model';while(P.models.some(function(m){return m.name===nm}))nm='Model'+(++n);
   const m={id:'m'+P.nid++,name:nm};P.models.push(m);ids.forEach(function(id){byId(id).model=m.id});cleanModels();
   sel=ids.slice();selModel=m.id;msg('Grouped '+ids.length+' part(s) into '+m.name+'.');all()}
+/* ===== Union: Ctrl+Shift+G merges the selected parts into ONE part (not a model). The pieces are kept inside the part as p.un = {b: base size, pc: colour at
+   creation, g: [{s: shape, z: size, y: triangle turn, c: colour, m: 4x4 matrix relative to the union's centre}]}; the mesh is merged when the part is built. ===== */
+function unionW(p){const v=piv(p),q=hasRot(p)?rotQ(p):new THREE.Quaternion(),c=new THREE.Vector3(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]).applyQuaternion(q).add(new THREE.Vector3(v[0],v[1],v[2])),
+  b=p.un?p.un.b:[1,1,1],k=p.un?new THREE.Vector3(p.size[0]/(b[0]||1),p.size[1]/(b[1]||1),p.size[2]/(b[2]||1)):new THREE.Vector3(1,1,1);
+  return new THREE.Matrix4().compose(c,q,k)}
+function unionGeo(p){const un=p.un,b=un.b,ov=un.pc!==p.color,gs=[];let np=0;
+  un.g.forEach(function(c){const g0=shapeGeo({shape:c.s,size:c.z,ry:c.y||0}),g=g0.index?g0.toNonIndexed():g0;if(g!==g0)g0.dispose();g.applyMatrix4(new THREE.Matrix4().fromArray(c.m));np+=g.attributes.position.count;gs.push({g:g,c:c})});
+  const P3=new Float32Array(np*3),N3=new Float32Array(np*3),U2=new Float32Array(np*2),C3=new Float32Array(np*3);let o=0;
+  gs.forEach(function(e){const g=e.g,n=g.attributes.position.count,col=ov?new THREE.Color(1,1,1):new THREE.Color(e.c.c||'#b8c0c8');
+    P3.set(g.attributes.position.array,o*3);N3.set(g.attributes.normal.array,o*3);if(g.attributes.uv)U2.set(g.attributes.uv.array,o*2);
+    for(let i=0;i<n;i++){C3[(o+i)*3]=col.r;C3[(o+i)*3+1]=col.g;C3[(o+i)*3+2]=col.b}o+=n;g.dispose()});
+  const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.BufferAttribute(P3,3));G.setAttribute('normal',new THREE.BufferAttribute(N3,3));G.setAttribute('uv',new THREE.BufferAttribute(U2,2));G.setAttribute('color',new THREE.BufferAttribute(C3,3));
+  G.applyMatrix4(new THREE.Matrix4().makeScale(p.size[0]/(b[0]||1),p.size[1]/(b[1]||1),p.size[2]/(b[2]||1)));return G}
+function unionMake(){if(animOn())return;
+  const ps=sel.map(byId).filter(function(p){return p&&!p.av&&!p.parent&&!kids(p).length&&p.shape!=='mesh'&&!p.sm&&!p.stab});
+  if(ps.length<2){const sk=sel.length-ps.length;msg('Select two or more plain parts to union'+(sk>0?' ('+sk+' selected skipped: rigs, meshes and the player cannot be unioned)':'')+'.');return}
+  const comps=[];
+  ps.forEach(function(p){const W=unionW(p);
+    if(p.shape==='union'&&p.un)p.un.g.forEach(function(c){comps.push({s:c.s,z:c.z.slice(),y:c.y,c:c.c,m:new THREE.Matrix4().multiplyMatrices(W,new THREE.Matrix4().fromArray(c.m)).toArray()})});
+    else comps.push({s:p.shape==='cyl'||p.shape==='sphere'||p.shape==='wedge'?p.shape:undefined,z:p.size.slice(),y:p.shape==='wedge'?(p.ry||0):undefined,c:p.color,m:W.toArray()})});
+  const tmp={shape:'union',size:[1,1,1],color:'#fff',un:{b:[1,1,1],pc:'#fff',g:comps}},gt=unionGeo(tmp);gt.computeBoundingBox();
+  const bb=gt.boundingBox,C=bb.getCenter(new THREE.Vector3()),B=bb.getSize(new THREE.Vector3());gt.dispose();
+  const rd=function(x){return Math.round(x*1000)/1000},size=[Math.max(.05,rd(B.x)),Math.max(.05,rd(B.y)),Math.max(.05,rd(B.z))];
+  comps.forEach(function(c){c.m[12]-=C.x;c.m[13]-=C.y;c.m[14]-=C.z;c.m=c.m.map(function(x){return Math.round(x*10000)/10000});if(c.s===undefined)delete c.s;if(c.y===undefined)delete c.y});
+  const f=ps[0],np=mkPart('Union',[rd(C.x),rd(C.y),rd(C.z)],size,f.color);
+  np.shape='union';np.un={b:size.slice(),pc:f.color,g:comps};
+  ['mat','svc','nocol','tr','fold','tex'].forEach(function(k){if(f[k]!==undefined)np[k]=f[k]});
+  if(ps.every(function(p){return p.model&&p.model===f.model}))np.model=f.model;
+  const ids=ps.map(function(p){return p.id}),at=P.parts.findIndex(function(p){return p.id===ids[0]});
+  P.parts.pop();P.parts=P.parts.filter(function(p){return ids.indexOf(p.id)<0});P.parts.splice(Math.min(at<0?P.parts.length:at,P.parts.length),0,np);
+  cleanModels();sel=[np.id];selModel=null;msg('United '+ps.length+' parts into one part.');all()}
+function unionSplit(){if(animOn())return;
+  const us=sel.map(byId).filter(function(p){return p&&p.shape==='union'&&p.un});
+  if(!us.length){msg('Select a union to split.');return}
+  let made=[],ids={};
+  us.forEach(function(u){ids[u.id]=1;const W=unionW(u);
+    u.un.g.forEach(function(c){const M=new THREE.Matrix4().multiplyMatrices(W,new THREE.Matrix4().fromArray(c.m)),ps=new THREE.Vector3(),q=new THREE.Quaternion(),sc=new THREE.Vector3();M.decompose(ps,q,sc);
+      const rd=function(x){return Math.round(x*1000)/1000},sh=c.s&&c.s!=='box'?c.s:null,np=mkPart(SHN[sh]||'Part',[rd(ps.x),rd(ps.y),rd(ps.z)],[Math.max(.05,rd(c.z[0]*Math.abs(sc.x))),Math.max(.05,rd(c.z[1]*Math.abs(sc.y))),Math.max(.05,rd(c.z[2]*Math.abs(sc.z)))],(u.un.pc!==u.color?u.color:c.c)||u.color);
+      if(sh)np.shape=sh;if(sh==='wedge'&&c.y)np.ry=c.y;
+      const e=new THREE.Euler().setFromQuaternion(q,'XYZ'),D=180/Math.PI,r=[rd(e.x*D),rd(e.y*D),rd(e.z*D)];if(r[0]||r[1]||r[2])np.rot=r;
+      ['mat','svc','nocol','tr','model','fold'].forEach(function(k){if(u[k]!==undefined)np[k]=u[k]});made.push(np)})});
+  P.parts=P.parts.filter(function(p){return !ids[p.id]||made.indexOf(p)>=0});
+  cleanModels();sel=made.map(function(p){return p.id});selModel=null;msg('Split into '+made.length+' parts.');all()}
 function ungroup(){const ms={};sel.forEach(function(id){const p=byId(id);if(p&&p.model)ms[p.model]=1});
   let blk=false;Object.keys(ms).forEach(function(k){if(partsOf(k).some(function(p){return !p.parent&&kids(p).length})){delete ms[k];blk=true}});
   if(blk&&!Object.keys(ms).length){msg('Rigs always stay inside a model, so this one cannot be ungrouped.');return}
@@ -1783,20 +1858,21 @@ function multiProps(d,ps){const ms=el('select'),ph=el('option','','Choose a mate
   const col=el('input');col.type='color';col.value=ps[0].color;
   col.oninput=function(){avTouch(ps);ps.forEach(function(q){q.color=col.value;const m=M[q.id];if(m){m.material.color.set(col.value);if(q.mat==='neon')m.material.emissive.set(col.value)}});hl();save()};
   d.append(el('p','note',ps.length+' parts selected. Material and colour below change all of them at once.'),lab('Material (all selected)',ms),lab('Color (all selected)',col));trAll(d,ps,'Transparency (all selected)');contSel(d)}
-function props(){const d=$('p-props');d.replaceChildren();{const gg=selGui&&!sel.length&&!selModel&&P.guis.find(function(x){return x.id===selGui});if(gg){guiProps(d,gg);return}}if(!selModel&&!sel.length&&selSvc){svcProps(d);return}if(selModel){const mm=byModel(selModel);if(mm){modelProps(d,mm);return}}{const mp=sel.map(function(id){return byId(id)}).filter(function(q){return q&&!q.stab});if(mp.length>1){multiProps(d,mp);return}}const p=byId(sel[0]);if(!p)return;
+function props(){props0();try{propsExtra()}catch(e){}}
+function props0(){const d=$('p-props');d.replaceChildren();if(selFold&&!sel.length&&!selModel&&!selGui){const ff=foldBy(selFold);if(ff){folderProps(d,ff);return}}{const gg=selGui&&!sel.length&&!selModel&&P.guis.find(function(x){return x.id===selGui});if(gg){guiProps(d,gg);return}}if(!selModel&&!sel.length&&selSvc){svcProps(d);return}if(selModel){const mm=byModel(selModel);if(mm){modelProps(d,mm);return}}{const mp=sel.map(function(id){return byId(id)}).filter(function(q){return q&&!q.stab});if(mp.length>1){multiProps(d,mp);return}}const p=byId(sel[0]);if(!p)return;
   const nm=el('input');nm.value=p.name;nm.oninput=function(){p.name=nm.value;save()};nm.onchange=function(){renderParts()};
   const col=el('input');col.type='color';col.value=p.color;col.oninput=function(){avTouch(p);p.color=col.value;M[p.id].material.color.set(col.value);hl();save()};
   d.append(lab('Name (arms must be Rarm and Larm)',nm),lab('Material',matSel(p.mat,function(k){setMat(p,k);all()})),lab('Color',col),vec('Position',p.pos,true),vec('Size',p.size,false));
   if(!p.stab)trAll(d,[p],'Transparency');
   if(!p.parent){const c=el('input');c.type='checkbox';c.checked=!!p.movable;c.onchange=function(){p.movable=c.checked;save()};const l=el('label','','Movable (push it with your character)');l.append(c);d.append(l);
     const c2=el('input');c2.type='checkbox';c2.checked=!p.nocol;c2.onchange=function(){if(c2.checked)delete p.nocol;else p.nocol=true;save()};const l2=el('label','','Collision (solid: blocks your character)');l2.append(c2);d.append(l2)}
-  else d.append(el('p','note','Welded: moves with the part it is welded to.'));if((!p.av||p.acc)&&!p.sm&&!p.stab&&p.shape!=='mesh'){const ss=el('select');[['box','Block'],['cyl','Cylinder'],['sphere','Sphere'],['wedge','Triangle']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ss.append(op)});ss.value=p.shape||'box';ss.onchange=function(){if(ss.value==='box')delete p.shape;else p.shape=ss.value;all()};d.append(lab('Shape',ss))}
+  else d.append(el('p','note','Welded: moves with the part it is welded to.'));if((!p.av||p.acc)&&!p.sm&&!p.stab&&p.shape!=='mesh'&&p.shape!=='union'){const ss=el('select');[['box','Block'],['cyl','Cylinder'],['sphere','Sphere'],['wedge','Triangle']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ss.append(op)});ss.value=p.shape||'box';ss.onchange=function(){if(ss.value==='box')delete p.shape;else p.shape=ss.value;all()};d.append(lab('Shape',ss))}
   if(p.shape==='mesh')meshProps(d,p);
   if(!p.stab&&(p.acc||(!p.av&&!p.parent&&!p.model))){const as=el('select');[['','Not an accessory'],['hat','Hat (top of the head)'],['face','Face accessory (front of the head)'],['neck','Neck (where the head meets the body)'],['back','Back (on the back)']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];as.append(op)});
     as.value=p.acc||'';as.onchange=function(){setAcc(p,as.value)};d.append(lab('Accessory (wear it on your character)',as));
     if(p.acc)d.append(el('p','note','It is welded to your character, shows on you and on other players, and has no collision. Change Position and Size above to fit it.'))}
   if(p.stab)d.append(el('p','note','Stabilizer: holds the rig up so the Torso can move and rotate freely. It is hidden and is never animated.'));lightBox(d,p);lightBox(d,p);tagBox(d,p);contSel(d)}
-$('p-add').onclick=function(){newPart()};$('p-shape').onchange=function(){if(this.value)newPart(this.value);this.value=''};$('p-group').onclick=group;$('p-ungroup').onclick=ungroup;$('p-copy').onclick=copySel;$('p-paste').onclick=pasteClip;$('p-dup').onclick=dupSel;
+$('p-add').onclick=function(){newPart()};$('p-shape').onchange=function(){if(this.value)newPart(this.value);this.value=''};$('p-group').onclick=group;$('p-ungroup').onclick=ungroupKey;$('p-union').onclick=unionMake;$('p-split').onclick=unionSplit;$('p-copy').onclick=copySel;$('p-paste').onclick=pasteClip;$('p-dup').onclick=dupSel;
 $('p-weld').onclick=function(){if(sel.length<2){msg('Select the Torso first, then ctrl-click the parts to weld to it.');return}
   const t=byId(sel[0]);let n=0;
   sel.slice(1).forEach(function(id){const c=byId(id);let a=t;while(a&&a!==c)a=a.parent?byId(a.parent):null;if(a===c)return;c.parent=t.id;c.pivot=defPivot(c);n++});
@@ -2414,12 +2490,14 @@ addEventListener('keydown',function(e){if(/INPUT|TEXTAREA|SELECT/.test(document.
 addEventListener('keyup',function(e){keys[e.code]=false});
 addEventListener('blur',function(){for(const k in keys)keys[k]=false});
 
-/* Editor shortcuts: P new part, Backspace/Delete remove, Ctrl+G group, Ctrl+Shift+G ungroup (ignored while typing or in the script area) */
+/* Editor shortcuts: P new part, Backspace/Delete remove, Ctrl+G group, Ctrl+Shift+G union into one part, Ctrl+Alt+U split union, Ctrl+Alt+G ungroup (ignored while typing or in the script area) */
 let edArea=true;
 addEventListener('pointerdown',function(e){edArea=!(e.target&&e.target.closest&&e.target.closest('#s-ws,#s-pal'))},true);
 addEventListener('keydown',function(e){const a=document.activeElement;if(VIEWONLY||document.getElementById('shome')||!edArea||playing||running||animOn()||(a&&(/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a.isContentEditable)))return;
   const ctl=e.ctrlKey||e.metaKey;
-  if(ctl&&e.code==='KeyG'){e.preventDefault();if(e.shiftKey)ungroup();else group();return}
+  if(ctl&&e.code==='KeyG'){e.preventDefault();if(e.repeat)return;if(e.altKey)ungroup();else if(e.shiftKey)unionMake();else group();return}
+  if(ctl&&e.code==='KeyU'){e.preventDefault();if(e.repeat)return;if(e.altKey)unionSplit();else if(e.shiftKey)unionMake();else ungroupKey();return}
+  if(ctl&&e.shiftKey&&!e.altKey&&e.code==='KeyF'){e.preventDefault();if(!e.repeat)newFolder();return}
   if(ctl&&!e.shiftKey&&!e.altKey&&!e.repeat){
     if(e.code==='KeyC'){if(String(getSelection()).length)return;e.preventDefault();copySel();return}
     if(e.code==='KeyV'){e.preventDefault();pasteClip();return}
@@ -2972,6 +3050,9 @@ const GFONT={'':'inherit',serif:'Georgia,"Times New Roman",serif',mono:'"Courier
 const GRIDBG='linear-gradient(to right,rgba(255,255,255,.16) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.16) 1px,transparent 1px)';
 const GED={grid:0,mag:true,top:false},GE={},openG={};let SB=null,gKeyT=0,GDRAG=null;
 function hexA(h,a){const m=/^#?([0-9a-f]{6})$/i.exec(h||''),n=m?parseInt(m[1],16):0;return 'rgba('+(n>>16&255)+','+(n>>8&255)+','+(n&255)+','+a+')'}
+function cssHex(v){v=String(v==null?'':v).trim().toLowerCase();if(!v)return null;if(/^[0-9a-f]{6}$/.test(v))v='#'+v;
+  const x=document.createElement('canvas').getContext('2d');x.fillStyle='#000001';x.fillStyle=v;const t=x.fillStyle;if(t==='#000001'&&v.replace(/\s/g,'')!=='#000001')return null;
+  if(t[0]==='#')return t;const m=/(\d+)\D+(\d+)\D+(\d+)/.exec(t);return m?'#'+[1,2,3].map(function(i){return (+m[i]).toString(16).padStart(2,'0')}).join(''):null}
 function guiState(g){const r=GR[g.id]||{};return {vis:r.vis!==undefined?r.vis:g.vis!==false,text:r.text!==undefined?r.text:g.text}}
 function guiByName(n){const k=String(n).trim().toLowerCase();return P.guis.filter(function(g){return g.name.toLowerCase()===k})}
 function guiClickable(g){const k=g.name.toLowerCase();return g.type==='button'||P.scripts.some(function(sc){const h=sc[0];return (h.t==='guiclick'&&String(h.a[0]).trim().toLowerCase()===k)||(h.t==='guithisclick'&&h.o===g.id)})}
@@ -2994,8 +3075,8 @@ function guiPS(g){const p=guiPar(g),pe=p?GE[p]:GL;return {w:(pe&&pe.clientWidth)
 function guiRad(g,k){const r=g.rc===false?0:(g.round||0)*k,c=g.cn||[1,1,1,1];return c.map(function(v){return v?r+'px':'0'}).join(' ')}
 function guiPaint(e,g,k,ed){const s=e.style;
   s.left=g.x+'%';s.top=g.y+'%';s.width=g.w+'%';s.height=g.h+'%';
-  s.backgroundColor=hexA(g.bg,g.op);s.color=g.color;s.fontSize=Math.max(6,g.fs*k)+'px';s.borderRadius=guiRad(g,k);
-  s.border=g.bw>0?Math.max(1,g.bw*k)+'px solid '+(g.bc||'#ffffff'):'0';
+  const R=ed?null:GR[g.id];s.backgroundColor=hexA((R&&R.bg)||g.bg,g.op);s.color=(R&&R.color)||g.color;s.fontSize=Math.max(6,g.fs*k)+'px';s.borderRadius=guiRad(g,k);
+  s.border=g.bw>0?Math.max(1,g.bw*k)+'px solid '+((R&&R.bc)||g.bc||'#ffffff'):'0';
   s.boxShadow=g.sh?'0 '+(3*k)+'px '+(10*k)+'px rgba(0,0,0,.5)':'none';
   s.overflow=g.clip===false?'visible':'hidden';
   s.opacity=(g.alpha===undefined?1:g.alpha)*(ed&&g.vis===false?.35:1);
@@ -3031,7 +3112,7 @@ function renderGui(){const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
   guiBar(ed)}
 try{new ResizeObserver(function(){renderGui()}).observe(cv)}catch(e){}
 /* picking, moving, resizing */
-function guiSelect(id){if(selGui===id)return;selGui=id;if(id){sel=[];selModel=null;selSvc=null;hl();buildEdit()}renderParts()}
+function guiSelect(id){if(selGui===id)return;selFold=null;selGui=id;if(id){sel=[];selModel=null;selSvc=null;hl();buildEdit()}renderParts()}
 function near(vals,cands){let best=null;vals.forEach(function(v){cands.forEach(function(c){const d=c-v;if(Math.abs(d)<1.2&&(!best||Math.abs(d)<Math.abs(best.d)))best={d:d,at:c}})});return best}
 function guiLines(g){const X=[0,50,100],Y=[0,50,100],p=guiPar(g);P.guis.forEach(function(o){if(o===g||guiPar(o)!==p)return;X.push(o.x,o.x+o.w/2,o.x+o.w);Y.push(o.y,o.y+o.h/2,o.y+o.h)});return {x:X,y:Y}}
 function guiGuides(gx,gy,g){Array.from(GL.querySelectorAll('.gg')).forEach(function(n){n.remove()});if(!g)return;
@@ -3265,6 +3346,7 @@ function svcProps(d){const s=SV.find(function(x){return x.k===selSvc});if(!s)ret
         w.append(el('span','nm',n+(kind==='audio'&&bigRef(src)?'  ('+(bigSize(src)/1048576).toFixed(1)+' MB)':'')));
         if(kind==='audio'){const au=el('audio'),as=audioSrc(n);au.controls=true;au.preload='none';if(as)au.src=as;else w.append(el('span','note','loading...'));w.append(au)}
         if(kind==='audio'){const vr=el('input');vr.type='range';vr.min=0;vr.max=1;vr.step=.05;vr.value=P.assets.avol[n]!==undefined?P.assets.avol[n]:1;vr.title='Volume of this sound';vr.setAttribute('aria-label','Volume of '+n);vr.style.cssText='width:90px;min-height:0;padding:0';vr.oninput=function(){P.assets.avol[n]=+vr.value;save();liveVol()};w.append(vr)}
+        if(kind==='image')w.append(mb('Put on selected part','ghost',function(){const t=lastPS.map(byId).filter(Boolean);if(!t.length){msg('Click a part first, then come back and press this.');return}applyTex(t,n)}));
         w.append(mb('Delete','ghost',function(){delete P.assets[col][n];if(kind==='audio'){delete P.assets.avol[n];stopAudio(n);delete AUD[n];dropBig(src)}updSkyTex();save();msg('Deleted '+n+'.');renderParts()}));d.append(w)})};
     d.append(el('p','note','Images'));rows('images','image');d.append(el('p','note','Audio'));rows('audio','audio');d.append(el('p','note','Meshes'));meshRows(d);d.append(el('p','note','Badges (give them with the "give badge" block)'));badgeUI(d)}
   else if(s.k==='gui'){const r=el('div','tb');[['text','Text'],['button','Button'],['frame','Frame'],['image','Image']].forEach(function(q){r.append(mb('+ '+q[1],'',function(){addGui(q[0])}))});d.append(r);
@@ -3281,6 +3363,9 @@ function xrow(o){const r=el('div','exr'+(o.svc?' svc':'')+(o.on?' on':'')+(o.dim
   (o.bd||[]).forEach(function(t){r.append(el('span','bd',t))});
   if(o.plus){const pb=el('button','plus','+');pb.type='button';pb.title='Add inside '+o.nm;pb.setAttribute('aria-label','Add inside '+o.nm);
     pb.onclick=function(e){e.stopPropagation();r.classList.add('menu');addMenu(pb,o.plus,function(){r.classList.remove('menu')})};r.append(pb)}
+  if(o.dragT){r.draggable=true;r.ondragstart=function(e){XD={t:o.dragT,id:o.dragId};try{e.dataTransfer.setData('text/plain','x');e.dataTransfer.effectAllowed='move'}catch(x){}};r.ondragend=function(){XD=null;Array.from(document.querySelectorAll('.exr.xdrop')).forEach(function(n){n.classList.remove('xdrop')})}}
+  if(o.drop){r.ondragover=function(e){if(XD&&dropOK(XD,o.drop)){e.preventDefault();r.classList.add('xdrop')}};r.ondragleave=function(){r.classList.remove('xdrop')};
+    r.ondrop=function(e){e.preventDefault();r.classList.remove('xdrop');const d=XD;XD=null;if(d)dropOn(d,o.drop)}}
   r.onclick=function(e){if(o.go)o.go(e)};
   r.onkeydown=function(e){if(e.target===r&&(e.key==='Enter'||e.key===' ')){e.preventDefault();if(o.go)o.go(e)}};
   $('p-list').append(r);return r}
@@ -3310,6 +3395,8 @@ function addGroups(c){if(c.t==='gui'){const O2=[];[['text','Text','A text label 
     if(c.t==='part'&&!(byId(c.id)||{}).stab)O.push(mi('\u2600','#f5b400','Light','Makes this part glow and light up its surroundings',function(){addLight(c.id)}));
     if(c.t==='part')O.push(mi('\u2295','#8a5cf6','Welded part','Sticks to this part and moves with it',function(){addWelded(c.id)}));
     if(isRigCtx(c))A.push(mi('\u25B6','#2f78d0','New animation','Opens the Animator for this rig',function(){addAnimFor(c)}))}
+  if(c.t==='part'||c.t==='model')O.push(mi('\u25A7','#2f78d0','Image','Put a picture from Assets on this '+(c.t==='model'?'model':'part'),function(){imgDlg(c)}));
+  if(c.t==='svc'&&(k==='world'||k==='shared'||k==='vault'))O.push(mi('\uD83D\uDCC1','#e0a82e','Folder','A folder to keep things tidy in the list',function(){newFolder(k)}));
   if(c.t!=='svc'||k==='world'||k==='shared'||k==='vault')[['cyl','Cylinder','\u25CB','A cylinder'],['sphere','Sphere','\u25CF','A ball'],['wedge','Triangle','\u25E3','A triangular wedge']].forEach(function(q){O.push(mi(q[2],'#3b82f6',q[1],q[3],function(){addPartNear(c,q[0])}))});
   if(c.t!=='svc'||k==='world'||k==='scripts'){
     Sx.push(scr('Script: when start','start','Runs when the game starts'));
@@ -3363,22 +3450,27 @@ function renderParts(){const l=$('p-list');l.replaceChildren();
   function scrRows(id,d){scrOf(id).forEach(function(sc){scrRow(sc,d,false)})}
   function prow(p,d,w){const rig=!p.parent&&kids(p).length,bds=[];if(rig)bds.push(hum(p)?'Humanoid':'Rig');if(p.locked)bds.push('\uD83D\uDD12 locked');(p.tags||[]).forEach(function(t){bds.push('#'+t)});
     xrow({d:d,ic:rig?'\u263A':'\u25A2',icc:rig?'#2fa95a':'#3b82f6',nm:(w?'\u21B3 ':'')+p.name,bd:bds,on:sel.indexOf(p.id)>=0,
-      go:function(e){pick(p.id,e.ctrlKey||e.shiftKey||e.metaKey,true)},plus:{t:'part',id:p.id}});
+      go:function(e){pick(p.id,e.ctrlKey||e.shiftKey||e.metaKey,true)},plus:{t:'part',id:p.id},dragT:'part',dragId:p.id,drop:{t:'part',id:p.id}});
     scrRows(p.id,d+1);kids(p).forEach(function(c){prow(c,d+1,true)})}
   function plain(t,fn,ic,icc,d){xrow({d:d||1,ic:ic||'\u2022',icc:icc,nm:t,dim:1,go:fn})}
   function listIn(key){let n=0;
-    P.models.forEach(function(m){const ps=partsOf(m.id).filter(function(p){return svcOf(p)===key});if(!ps.length)return;n++;
-      const open=openM[m.id]!==false;
-      xrow({d:1,ic:'\u25A3',icc:'#8a5cf6',nm:m.name,bd:[ps.length+(ps.length===1?' part':' parts')].concat(ps.every(function(q){return q.locked})?['\uD83D\uDD12 locked']:[]),open:open,onTg:function(){openM[m.id]=!open;renderParts()},
-        on:selModel===m.id,go:function(){pickModel(m.id)},plus:{t:'model',id:m.id}});
-      if(open){scrRows(m.id,2);ps.filter(function(p){return !p.parent}).forEach(function(p){prow(p,2,false)})}});
-    P.parts.filter(function(p){return !p.parent&&!p.model&&svcOf(p)===key}).forEach(function(p){n++;prow(p,1,false)});return n}
+    const doItems=function(fid,d){let c=0;
+      P.models.forEach(function(m){const ps=partsOf(m.id).filter(function(p){return svcOf(p)===key});if(!ps.length||inF(ps[0])!==fid)return;c++;
+        const open=openM[m.id]!==false;
+        xrow({d:d,ic:'\u25A3',icc:'#8a5cf6',nm:m.name,bd:[ps.length+(ps.length===1?' part':' parts')].concat(ps.every(function(q){return q.locked})?['\uD83D\uDD12 locked']:[]),open:open,onTg:function(){openM[m.id]=!open;renderParts()},
+          on:selModel===m.id,go:function(){pickModel(m.id)},plus:{t:'model',id:m.id},dragT:'model',dragId:m.id,drop:{t:'model',id:m.id}});
+        if(open){scrRows(m.id,d+1);ps.filter(function(p){return !p.parent}).forEach(function(p){prow(p,d+1,false)})}});
+      P.parts.filter(function(p){return !p.parent&&!p.model&&svcOf(p)===key&&inF(p)===fid}).forEach(function(p){c++;prow(p,d,false)});return c};
+    (P.folders||[]).filter(function(f){return (f.svc||'world')===key}).forEach(function(f){n++;const open=openF[f.id]!==false,cnt=countF(f.id,key);
+      xrow({d:1,ic:'\uD83D\uDCC1',icc:'#e0a82e',nm:f.name,bd:[cnt+(cnt===1?' item':' items')],open:open,onTg:function(){openF[f.id]=!open;renderParts()},on:selFold===f.id,go:function(){foldPick(f.id)},drop:{t:'folder',id:f.id}});
+      if(open)doItems(f.id,2)});
+    n+=doItems('',1);return n}
   SV.forEach(function(s){const ex=EXP.indexOf(s.k)>=0,open=openS[s.k]===undefined?s.k==='world':openS[s.k];let cnt=null;
     if(s.k==='world'||s.k==='shared'||s.k==='vault')cnt=P.parts.filter(function(p){return !p.parent&&svcOf(p)===s.k}).length;
     else if(s.k==='squads')cnt=P.squads.length;else if(s.k==='gui')cnt=P.guis.length;else if(s.k==='scripts')cnt=P.scripts.length;else if(s.k==='tags')cnt=Object.keys(tagMap()).length;else if(s.k==='roster')cnt=1+S.oth.length;else if(s.k==='assets')cnt=Object.keys(P.assets.images).length+Object.keys(P.assets.audio).length+Object.keys(P.assets.meshes||{}).length;
-    const go=function(){if(animOn())return;selSvc=s.k;selGui=null;sel=[];selModel=null;hl();buildEdit();renderParts()};
+    const go=function(){if(animOn())return;selFold=null;selSvc=s.k;selGui=null;sel=[];selModel=null;hl();buildEdit();renderParts()};
     const sr=xrow({svc:1,d:0,ic:s.i,nm:s.n,bd:cnt==null?null:[String(cnt)],open:ex?open:undefined,onTg:ex?function(){openS[s.k]=!open;if(s.k==='gui'){if(open)selGui=null;else{sel=[];selModel=null;selSvc=null;selGui=null;hl();buildEdit()}}renderParts()}:null,title:s.d,
-      on:selSvc===s.k&&!sel.length&&!selModel,go:go,plus:PLUSOK.indexOf(s.k)>=0?{t:'svc',k:s.k}:null});if(s.k==='gui')guiRootDrop(sr);
+      on:selSvc===s.k&&!sel.length&&!selModel,go:go,plus:PLUSOK.indexOf(s.k)>=0?{t:'svc',k:s.k}:null,drop:(s.k==='world'||s.k==='shared'||s.k==='vault')?{t:'svc',k:s.k}:null});if(s.k==='gui')guiRootDrop(sr);
     if(!ex||!open)return;
     if(s.k==='world'||s.k==='shared'||s.k==='vault'){if(!listIn(s.k)&&s.k!=='world')plain('(empty)',go)}
     else if(s.k==='roster'){const q=P.squads.find(function(z){return z.id===P.player.squad});plain(P.player.name+' (you)'+(q?'  \u2014  '+q.name:''),function(){pick((avTorso()||byId(P.avId)||{}).id,false,true)},'\u263A','#2fa95a');
@@ -3510,14 +3602,103 @@ if(!P.v11){P.v11=1;const av=function(n){return P.parts.find(function(p){return p
 applyEnv();rebuildParts();renderParts();anims();requestAnimationFrame(frame);loadBig();setTimeout(gcBig,4000);
 if(gameId&&!VIEWONLY&&sb&&!PEND&&(Object.keys(P.assets.audio).some(function(n){return bigRef(P.assets.audio[n])})||Object.keys(P.assets.meshes||{}).some(function(n){return bigRef(P.assets.meshes[n])})))setTimeout(function(){cloudPush(gameId)},3000);
 
+
+/* ===== Folders: keep the Explorer tidy. Parts and models get p.fold = the folder id. Ctrl+Shift+F makes one from the selection, Ctrl+U ungroups a model or dissolves a folder. ===== */
+function foldBy(id){return id?(P.folders||[]).find(function(f){return f.id===id})||null:null}
+function inF(p){const f=p&&p.fold&&foldBy(p.fold);return f&&(f.svc||'world')===svcOf(p)?f.id:''}
+function countF(fid,key){let c=0;P.models.forEach(function(m){const ps=partsOf(m.id).filter(function(p){return svcOf(p)===key});if(ps.length&&inF(ps[0])===fid)c++});
+  P.parts.forEach(function(p){if(!p.parent&&!p.model&&svcOf(p)===key&&inF(p)===fid)c++});return c}
+function foldItems(ps){const set={},out=[];ps.forEach(function(p){if(!p||p.av)return;const r=rootOf(p);if(r.av)return;(kids(r).length?treeOf(r):[p]).forEach(function(q){if(!set[q.id]){set[q.id]=1;out.push(q)}});
+  if(p.model)partsOf(p.model).forEach(function(q){if(!set[q.id]&&!q.av){set[q.id]=1;out.push(q)}})});return out}
+function foldAssign(ps,fid){const f=foldBy(fid),all0=foldItems(ps);let n=0,skip=0;
+  all0.forEach(function(q){if(f&&(f.svc||'world')!==svcOf(q)){skip++;return}if(f)q.fold=f.id;else delete q.fold;n++});
+  return {n:n,skip:skip}}
+function newFolder(svc){if(animOn()||VIEWONLY)return;P.folders=Array.isArray(P.folders)?P.folders:[];
+  const ps=(selModel?partsOf(selModel):sel.map(byId)).filter(function(p){return p&&!p.av}),key=(typeof svc==='string'&&svc)?svc:(ps.length?svcOf(ps[0]):'world');
+  let n=1,nm='Folder';while(P.folders.some(function(f){return f.name===nm}))nm='Folder'+(++n);
+  const f={id:'f'+P.nid++,name:nm,svc:key};P.folders.push(f);let got=0;
+  if(ps.length&&(typeof svc!=='string'))got=foldAssign(ps,f.id).n;
+  openF[f.id]=true;selFold=f.id;sel=[];selModel=null;selSvc=null;selGui=null;hl();buildEdit();
+  msg('Made '+f.name+(got?' with '+got+' part(s) inside':'. Pick a part, then choose this folder in its Folder box.')+' Rename it in the box below.');save();renderParts()}
+function foldPick(id){if(animOn())return;selFold=id;sel=[];selModel=null;selSvc=null;selGui=null;hl();buildEdit();renderParts()}
+function dissolveFolder(id){const f=foldBy(id);if(!f)return;P.parts.forEach(function(p){if(p.fold===id)delete p.fold});P.folders=P.folders.filter(function(x){return x.id!==id});delete openF[id];
+  selFold=null;msg('Folder "'+f.name+'" removed. Everything inside is back in the list.');save();renderParts()}
+function ungroupKey(){if(animOn())return;if(selFold&&!sel.length&&!selModel&&foldBy(selFold)){dissolveFolder(selFold);return}ungroup()}
+function folderProps(d,f){const nm=el('input');nm.value=f.name;nm.maxLength=40;nm.oninput=function(){f.name=nm.value||'Folder';save()};nm.onchange=function(){renderParts()};
+  d.append(lab('Folder name',nm));
+  const inside=P.parts.filter(function(p){return p.fold===f.id&&inF(p)===f.id});
+  d.append(el('p','note',inside.length+' part(s) inside. Click a part, then pick this folder in its Folder box to move it in.'));
+  const r=el('div','tb');
+  r.append(mb('Select everything inside','',function(){if(!inside.length){msg('The folder is empty.');return}sel=inside.map(function(p){return p.id});selModel=null;selFold=null;hl();buildEdit();renderParts()}),
+    mb('Ungroup (Ctrl+U)','ghost',function(){dissolveFolder(f.id)}));d.append(r)}
+/* Extra boxes under a part's properties: its picture and its folder */
+function propsExtra(){const d=$('p-props');if(selGui||animOn()||(!sel.length&&!selModel))return;
+  const ps=(selModel?partsOf(selModel):sel.map(byId)).filter(function(q){return q&&!q.stab});if(!ps.length)return;lastPS=ps.map(function(q){return q.id});
+  const tp=ps.filter(texOK);
+  if(tp.length){const is=el('select');[['','None']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})).forEach(function(o){const op=el('option','',o[1]);op.value=o[0];is.append(op)});
+    const cur=tp[0].tex&&P.assets.images[tp[0].tex]&&tp.every(function(q){return q.tex===tp[0].tex})?tp[0].tex:'';is.value=cur;is.onchange=function(){applyTex(tp,is.value)};
+    d.append(lab('Picture (upload under Assets first, the colour is ignored while one is set)',is))}
+  const root=ps.filter(function(q){return !q.av});
+  if(root.length){const key=svcOf(root[0]),fs=(P.folders||[]).filter(function(f){return (f.svc||'world')===key}),fsel=el('select');
+    [['','No folder']].concat(fs.map(function(f){return [f.id,f.name]})).forEach(function(o){const op=el('option','',o[1]);op.value=o[0];fsel.append(op)});
+    const fc=inF(root[0]);fsel.value=root.every(function(q){return inF(q)===fc})?fc:'';
+    fsel.onchange=function(){const r=foldAssign(root,fsel.value);msg(r.skip?'Some parts are in a different service than this folder, so they stayed out.':'Moved.');save();renderParts()};
+    d.append(lab('Folder',fsel));
+    const nb=mb('+ New folder with this (Ctrl+Shift+F)','ghost',function(){newFolder()});d.append(nb)}}
+function applyTex(ps,k){const ok=ps.filter(texOK);if(!ok.length){msg('That cannot have a picture (rig body parts, meshes and the character are skipped).');return}
+  ok.forEach(function(p){if(k)p.tex=k;else delete p.tex});msg(k?'Put "'+k+'" on '+ok.length+' part(s).':'Picture removed.');all()}
+function imgDlg(c){const tg=c.t==='model'?partsOf(c.id):[byId(c.id)].filter(Boolean);if(!tg.length)return;
+  mdl('Pick a picture for '+ctxName(c),function(d,close){const ks=Object.keys(P.assets.images);
+    if(!ks.length){d.append(el('p','','No pictures yet. Upload one under Assets in the Explorer first.'));const r=el('div','tb');r.append(mb('Upload image','',function(){close();pickFile('image')}));d.append(r);return}
+    const g=el('div','');g.style.cssText='display:flex;flex-wrap:wrap;gap:8px;max-height:50vh;overflow:auto';
+    const add=function(k){const b=el('button','btn small ghost');b.type='button';b.style.cssText='display:flex;flex-direction:column;align-items:center;gap:4px;width:92px;padding:6px;height:auto';
+      if(k){const im=el('img');im.src=P.assets.images[k];im.alt=k;im.style.cssText='width:72px;height:72px;object-fit:contain';b.append(im)}
+      b.append(el('span','',k||'No picture'));b.onclick=function(){close();applyTex(tg,k)};g.append(b)};
+    add('');ks.forEach(add);d.append(g)})}
+(function(){const g=$('p-group');if(!g||!g.parentNode)return;const b=el('button',g.className,'+ Folder');b.type='button';b.title='New folder (Ctrl+Shift+F). Puts the selected things inside it.';b.onclick=function(){newFolder()};g.parentNode.insertBefore(b,g)})();
+
+
+/* ===== Drag in the Explorer: drop a part or model onto a model (joins it), a folder (goes inside), a part (becomes its child, welded) or the World row (comes back out) ===== */
+let XD=null;
+(function(){const st=document.createElement('style');st.textContent='.exr.xdrop{outline:2px dashed #3b82f6;outline-offset:-2px;background:rgba(59,130,246,.15)}';document.head.append(st)})();
+function dragParts(d){if(d.t==='model')return partsOf(d.id).filter(function(p){return !p.av});
+  const p=byId(d.id);if(!p||p.av)return [];const ids=sel.indexOf(p.id)>=0&&sel.length>1?sel:[p.id];return ids.map(byId).filter(function(q){return q&&!q.av&&!q.stab})}
+function isUnder(a,b){/* is b inside a's weld tree */let q=b,n=0;while(q&&n++<200){if(q.id===a.id)return true;q=q.parent&&byId(q.parent)}return false}
+function dropOK(d,t){if(animOn()||VIEWONLY)return false;const ps=dragParts(d);if(!ps.length)return false;
+  if(t.t==='part'){const tp=byId(t.id);if(!tp||tp.av&&false)return false;return ps.every(function(p){return p.id!==tp.id&&!isUnder(p,tp)})}
+  if(t.t==='model'){if(d.t==='model'&&d.id===t.id)return false;return !!byModel(t.id)}
+  return true}
+function dropOn(d,t){if(!dropOK(d,t))return;const ps=dragParts(d);let msg0='';
+  if(t.t==='folder'){const r=foldAssign(ps,t.id);msg0=r.skip?'Some parts are in a different service than this folder, so they stayed out.':'Moved into the folder.'}
+  else if(t.t==='model'){const mid=t.id,tm=partsOf(mid)[0],fid=tm?inF(tm):'';
+    foldItems(ps).forEach(function(q){q.model=mid;if(fid)q.fold=fid;else delete q.fold});msg0='Moved into '+byModel(mid).name+'.'}
+  else if(t.t==='part'){const tp=byId(t.id);let n=0;
+    (d.t==='model'?ps.filter(function(c){return !c.parent}):ps).forEach(function(c){if(c.parent===tp.id)return;c.parent=tp.id;c.pivot=defPivot(c);n++});
+    const mid=ensureRigModel(rootOf(tp));foldItems(ps).forEach(function(q){q.model=mid});cleanModels();msg0=n?'Now a child of '+tp.name+' (welded, it moves with it).':'Already a child of '+tp.name+'.'}
+  else if(t.t==='svc'){ps.forEach(function(c){if(c.parent){c.parent=null;c.pivot=null}});
+    foldItems(ps).forEach(function(q){if(!kids(rootOf(q)).length)delete q.model});
+    foldItems(ps).forEach(function(q){delete q.fold});msg0='Taken out of its model, folder and parent.'}
+  cleanModels();msg(msg0);all()}
+
 /* Undo / redo: Ctrl+Z undoes, Ctrl+Shift+Z or Ctrl+Y redoes (parts, models and animations) */
 const hist=[],redoS=[];let histLast=null,histT=0,histBusy=false;const saveRaw=save;
-function snapState(){return JSON.stringify({parts:P.parts,models:P.models,anims:P.anims,guis:P.guis,nid:P.nid,avId:P.avId})}
+function snapState(){return JSON.stringify({parts:P.parts,models:P.models,anims:P.anims,guis:P.guis,folders:P.folders||[],nid:P.nid,avId:P.avId})}
+/* In co-op, Ctrl+Z only takes back YOUR changes. Anything the other person changed last stays the way they left it. */
+function coUndoMerge(st){if(typeof COP==='undefined'||!COP||!COP.on||COP.joining)return st;
+  try{coDiff()}catch(e){}
+  const T=function(kind,id){const q=COP.stamp&&COP.stamp[kind+':'+id];return !!q&&q.by!==COP.id};
+  const arr=function(kind,target,cur){const out=[],seen={};(target||[]).forEach(function(o){seen[o.id]=1;if(T(kind,o.id)){const c=cur.find(function(x){return x.id===o.id});if(c)out.push(c)}else out.push(o)});
+    cur.forEach(function(c){if(!seen[c.id]&&T(kind,c.id))out.push(c)});return out};
+  const an={};Object.keys(st.anims||{}).forEach(function(k){if(T('anim',k)){if(P.anims[k])an[k]=P.anims[k]}else an[k]=st.anims[k]});
+  Object.keys(P.anims).forEach(function(k){if(!(k in (st.anims||{}))&&T('anim',k))an[k]=P.anims[k]});
+  const out=Object.assign({},st);out.parts=arr('part',st.parts,P.parts);out.models=arr('model',st.models,P.models);out.anims=an;
+  if(T('meta','guis')&&Array.isArray(P.guis))out.guis=P.guis;if(T('meta','folders'))out.folders=P.folders||[];
+  out.nid=Math.max(st.nid||0,P.nid||0);return out}
 histLast=snapState();
 save=function(){saveRaw();if(histBusy)return;const cur=snapState();if(cur===histLast)return;const now=performance.now();
   if(!hist.length||now-histT>500){hist.push(histLast);if(hist.length>100)hist.shift()}
   histT=now;histLast=cur;redoS.length=0};
-function histApply(str){histBusy=true;try{const st=JSON.parse(str);P.parts=st.parts;P.models=st.models;P.anims=st.anims;if(st.guis){P.guis=st.guis;if(selGui&&!P.guis.some(function(g){return g.id===selGui}))selGui=null}P.nid=st.nid;P.avId=st.avId;
+function histApply(str){histBusy=true;try{const st=coUndoMerge(JSON.parse(str));P.parts=st.parts;P.models=st.models;P.anims=st.anims;P.folders=st.folders||[];if(selFold&&!foldBy(selFold))selFold=null;if(st.guis){P.guis=st.guis;if(selGui&&!P.guis.some(function(g){return g.id===selGui}))selGui=null}P.nid=st.nid;P.avId=st.avId;
   sel=sel.filter(function(id){return byId(id)});if(selModel&&!byModel(selModel))selModel=null;if(selJ&&!byId(selJ))selJ=null;
   aSelKeys=[];live={};fixA();aJFix();
   rebuildParts();renderParts();
