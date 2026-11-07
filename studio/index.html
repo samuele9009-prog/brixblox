@@ -3261,6 +3261,7 @@ async function netJoin(){
       const add=!!p.m,nm=String(p.nm||'an accessory').slice(0,24);
       invChange(id,add).then(function(r){if(r&&r.ok&&!r.same)chatSys('Admin '+by+(add?' added the accessory "'+nm+'" to your inventory. Wear it from your avatar page.':' removed the accessory "'+nm+'" from your inventory.'))}).catch(function(){})});
     ch.on('broadcast',{event:'ar'},function(){if(Date.now()-ADMT>3000)admLoad()});
+    ch.on('presence',{event:'sync'},function(){NET.synced=true});
     ch.on('presence',{event:'join'},function(){NET.last=''});
     ch.on('presence',{event:'leave'},function(e){(e.leftPresences||[]).forEach(function(m){netDrop(m.id)})});
     ch.subscribe(function(st){if(st==='SUBSCRIBED'){NET.on=true;NET.fail=false;ch.track({id:NET.id,n:ME.username})}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')NET.fail=true})
@@ -3269,7 +3270,8 @@ function ragOut(){const e=RAG.main;if(!e||!e.sim||e.gone)return null;const sm=e.
   B.forEach(function(b){const q=b.par<0?qS(sm.q0,b.q,u):qS([0,0,0,1],qm(qc(B[b.par].q),b.q),u);o[b.p.id]=q.map(r3)});return o}
 function netRecv(q){if(!q||!q.id||q.id===NET.id||!NET.on||!(running||playing))return;
   let e=NP.find(function(n){return n.net===q.id});
-  if(!e){NETCOL=/^#[0-9a-f]{6}$/i.test(q.c)?q.c:null;NETSK=/^#[0-9a-f]{6}$/i.test(q.sk)?q.sk:null;NETPN=/^#[0-9a-f]{6}$/i.test(q.pn)?q.pn:null;spawnPlayer(String(q.n),S);NETCOL=null;NETSK=null;NETPN=null;e=NP[NP.length-1];if(!e)return;e.net=q.id;e.g.position.set(q.x,q.h,-q.y)}
+  if(!e){NETCOL=/^#[0-9a-f]{6}$/i.test(q.c)?q.c:null;NETSK=/^#[0-9a-f]{6}$/i.test(q.sk)?q.sk:null;NETPN=/^#[0-9a-f]{6}$/i.test(q.pn)?q.pn:null;spawnPlayer(String(q.n),S);NETCOL=null;NETSK=null;NETPN=null;e=NP[NP.length-1];if(!e)return;e.net=q.id;e.g.position.set(q.x,q.h,-q.y);e.seen=performance.now();
+    NP.slice().forEach(function(o){if(o!==e&&o.net&&String(o.un||o.name)===String(q.n)&&performance.now()-(o.seen||0)>1500)netDrop(o.net)})}
   e.tx=q.x;e.ty=q.y;e.th=q.h;e.td=(q.d!=null&&isFinite(+q.d))?+q.d:(e.td||0);e.mv=q.m;e.seen=performance.now();
   const nm=function(v){return typeof v==='string'?v.slice(0,40):''};
   e.un=String(q.n||e.name).slice(0,24);e.air=!!q.g;e.wa=nm(q.wa);e.ia=nm(q.ia);e.ja=nm(q.ja);
@@ -3286,8 +3288,15 @@ function netDrop(id){const i=NP.findIndex(function(n){return n.net===id});if(i<0
   NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);chatSys(n.name+' left the game');renderParts()}
 setInterval(function(){if(!NET.on||!(running||playing))return;
   const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,e:accStr(ME&&ME.av&&ME.av.eq)},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.an,q.ac,q.rc,q.e].join()+(rgo?JSON.stringify(rgo):'');
-  if(j===NET.last&&++NET.idle<10)return;NET.last=j;NET.idle=0;NET.ch.send({type:'broadcast',event:'p',payload:q});
-  const now=performance.now();NP.slice().forEach(function(n){if(n.net&&now-n.seen>10000)netDrop(n.net)})},100);
+  const nowT=performance.now();if(j===NET.last&&nowT-(NET.lt||0)<1500)return;NET.last=j;NET.idle=0;NET.lt=nowT;NET.ch.send({type:'broadcast',event:'p',payload:q})},100);
+/* Ghost sweep, runs on every player's own game (so it works even if the player who left has an old version):
+   the server's list of who is online is the truth. Someone who is not on it and has gone quiet is removed. */
+setInterval(function(){if(!NET.on||!NET.ch||!(running||playing))return;
+  let ps=null;try{ps=NET.ch.presenceState()}catch(e){}
+  const now=performance.now();
+  NP.slice().forEach(function(n){if(!n.net)return;const quiet=now-(n.seen||0);
+    if(NET.synced&&ps){if(!ps[n.net]&&quiet>5000)netDrop(n.net)}else if(quiet>12000)netDrop(n.net);
+    if(quiet>45000)netDrop(n.net)})},1000);
 function bbHud(){const lb=el('button','btn ghost small','Leave game');lb.id='bb-leave';lb.style.cssText='position:fixed;top:10px;right:10px;z-index:60';lb.onclick=leaveGame;
   const inf=el('div','chip');inf.style.cssText='position:fixed;top:10px;right:140px;z-index:60';document.body.append(lb,inf);
   setInterval(function(){inf.textContent=P.name+' \u00b7 '+(NET.on?('Server '+NET.sid.slice(1)+' \u00b7 '+(1+NP.filter(function(n){return n.net}).length)+' online'):(NET.fail?'Solo (online unavailable)':'Connecting...'))},700)}
