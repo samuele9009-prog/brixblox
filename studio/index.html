@@ -1014,7 +1014,7 @@ P.squads=P.squads||[{id:'q1',name:'Red Squad',color:'#e5484d'},{id:'q2',name:'Bl
 const byId=function(id){return P.parts.find(function(p){return p.id===id})};
 const piv=function(p){return p.parent?p.pivot:p.pos};
 const kids=function(p){return P.parts.filter(function(c){return c.parent===p.id})};
-let selSvc=null,openS={},curTab='out',fsOn=false,animT=null,PG=null,J={},M={},sel=[],selModel=null,openM={},rigOn=false,rig0={},aGM='move',agT=null,selJ=null,balls=[],gizmo=[],curA='',aT=0,aPlay=false,live={},RO={},playing=false,hov=null,gz=[],cd=14,cdT=14,zq=0,camD=null,avHid=false,CAMM=[],CAMN=0;
+let selSvc=null,openS={},curTab='out',fsOn=false,animT=null,PG=null,J={},M={},sel=[],selModel=null,openM={},rigOn=false,rig0={},aGM='move',agT=null,selJ=null,balls=[],gizmo=[],curA='',aT=0,aPlay=false,live={},RO={},playing=false,hov=null,gz=[],cd=14,cdT=14,zq=0,camD=null,avHid=false,fpPrev=false,CAMM=[],CAMN=0;
 let tool='move';const editG=new THREE.Group();scene.add(editG);const ray=new THREE.Raycaster(),CRAY=new THREE.Raycaster();
 function msg(t){$('p-msg').textContent=t}
 /* Cylinder with smoothly rounded top and bottom edges (b = edge rounding) */
@@ -1830,7 +1830,7 @@ $('a-grid').onwheel=function(e){if(!e.ctrlKey)return;e.preventDefault();pps=Math
 /* Fly camera: right-drag to look, WASD to move, Q/E down/up, wheel for forward/back */
 const cam={x:0,y:9,z:22,yaw:0,pit:-.3},keys={};
 const fwd=function(){return [Math.sin(cam.yaw)*Math.cos(cam.pit),Math.sin(cam.pit),-Math.cos(cam.yaw)*Math.cos(cam.pit)]};
-const ndc=function(e){const r=cv.getBoundingClientRect();return new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1)};
+const ndc=function(e){if(playing&&document.pointerLockElement===cv)return new THREE.Vector2(0,0);const r=cv.getBoundingClientRect();return new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1)};
 let look=false,gd=null,lx=0,ly=0,hovE=null,hovP=false;
 /* Holding right click locks and hides the mouse pointer, so it cannot move while you look around. Browsers only allow the lock on a real mouse press, so it is asked for again on mousedown. */
 let lockPend=false,lockRetry=false;
@@ -1842,7 +1842,8 @@ document.addEventListener('pointerlockerror',function(){if(!lockRetry&&look){loc
 let lockWarnEl=null,lockWarnT=0;
 function lockWarn(t){if(!lockWarnEl){lockWarnEl=document.createElement('div');lockWarnEl.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:500;max-width:92vw;padding:10px 16px;border-radius:10px;background:#1d1f21;color:#fff;font:700 .85rem system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.4);pointer-events:none';document.body.append(lockWarnEl)}
   lockWarnEl.textContent=t;lockWarnEl.style.display='block';clearTimeout(lockWarnT);lockWarnT=setTimeout(function(){lockWarnEl.style.display='none'},6000)}
-cv.addEventListener('mouseup',function(e){if(e.button===2){look=false;if(document.pointerLockElement===cv)document.exitPointerLock()}});
+cv.addEventListener('mouseup',function(e){if(e.button===2){look=false;if(document.pointerLockElement===cv&&!(playing&&cdT<=.01))document.exitPointerLock()}});
+cv.addEventListener('mousedown',function(e){if(e.button===0&&playing&&cdT<=.01&&document.pointerLockElement!==cv)lockPtr()});
 cv.style.touchAction='none';cv.oncontextmenu=function(e){e.preventDefault()};
 cv.onpointerdown=function(e){cv.setPointerCapture(e.pointerId);lx=e.clientX;ly=e.clientY;if(e.button===2){look=true;return}if(e.button===0&&playing){playClick(e);return}if(e.button!==0||playing)return;if(animOn()){ray.setFromCamera(ndc(e),camera);const gh=ray.intersectObjects(gizmo,false)[0];if(gh){animGizStart(gh.object,e);return}animClick(e);return}
   ray.setFromCamera(ndc(e),camera);let h=ray.intersectObjects(gizmo,false)[0];
@@ -1853,7 +1854,7 @@ cv.onpointerdown=function(e){cv.setPointerCapture(e.pointerId);lx=e.clientX;ly=e
   h=ray.intersectObjects(pickSel(),false)[0];pick(h?h.object.userData.id:null,e.ctrlKey||e.shiftKey||e.metaKey,e.altKey)};
 cv.ondblclick=function(e){if(playing||rigOn||animOn())return;ray.setFromCamera(ndc(e),camera);{const gh=ray.intersectObjects(gizmo,false)[0];if(gh&&gh.object.userData.rotAx!==undefined){rotReset();return}}const h=ray.intersectObjects(pickSel(),false)[0];if(h)pick(h.object.userData.id,false,true)};
 cv.onpointermove=function(e){if(playing&&!look)playHover(e);const pl=document.pointerLockElement===cv,big=pl&&(Math.abs(e.movementX)>250||Math.abs(e.movementY)>250),dx=big?0:pl?e.movementX:e.clientX-lx,dy=big?0:pl?e.movementY:e.clientY-ly;lx=e.clientX;ly=e.clientY;
-  if(look){cam.yaw+=dx*.005;cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.005))}
+  if(look||(playing&&cdT<=.01&&pl)){cam.yaw+=dx*.005;cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.005))}
   else if(gd&&gd.an)animDrag(e,dx,dy);
   else if(gd&&gd.rg)rotDrag(e);
   else if(gd&&gd.sc)scaleDrag(e,dx,dy);
@@ -1865,7 +1866,7 @@ cv.onpointermove=function(e){if(playing&&!look)playHover(e);const pl=document.po
   else if(!playing){hovE=e;if(!hovP){hovP=true;requestAnimationFrame(function(){hovP=false;if(playing||gd||look||!hovE)return;ray.setFromCamera(ndc(hovE),camera);const h=ray.intersectObjects(pickSel(),false)[0];if(animOn()){setHover(null);animHover(h?h.object.userData.id:null)}else{animHover(null);setHover(h?h.object.userData.id:null)}})}}};
 cv.onpointerleave=function(){setHover(null);animHover(null);cv.style.cursor=''};
 document.addEventListener('pointerlockchange',function(){lockPend=false;if(document.pointerLockElement!==cv){look=false;cv.style.cursor=''}});
-cv.onpointerup=cv.onpointercancel=function(e){if(e&&e.type==='pointercancel'&&(lockPend||document.pointerLockElement===cv))return;look=false;cv.style.cursor='';if(document.pointerLockElement===cv)document.exitPointerLock();if(gd){const g0=gd;gd=null;if(g0.an&&(g0.mode==='rot'||g0.pos))animRotEnd(g0);save();if(!g0.an){rebuildParts();props()}else if(!g0.pos&&g0.mode==='move')rebuildParts()}};
+cv.onpointerup=cv.onpointercancel=function(e){if(e&&e.type==='pointercancel'&&(lockPend||document.pointerLockElement===cv))return;look=false;cv.style.cursor='';if(document.pointerLockElement===cv&&!(playing&&cdT<=.01))document.exitPointerLock();if(gd){const g0=gd;gd=null;if(g0.an&&(g0.mode==='rot'||g0.pos))animRotEnd(g0);save();if(!g0.an){rebuildParts();props()}else if(!g0.pos&&g0.mode==='move')rebuildParts()}};
 cv.onwheel=function(e){e.preventDefault();if(playing){if(cdT<=.01&&e.deltaY>0)cdT=2.5;else{cdT*=Math.exp(e.deltaY*.0015);if(e.deltaY<0&&cdT<1.4)cdT=0}cdT=Math.max(0,Math.min(60,cdT));return}zq+=-e.deltaY*.02};
 addEventListener('keydown',function(e){if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;if(playing&&e.code==='Space')e.preventDefault();keys[e.code]=true});
 addEventListener('keyup',function(e){keys[e.code]=false});
@@ -1897,7 +1898,8 @@ function play(dt,f){const SP=S.speed!=null?S.speed:P.rules.speed,l=Math.hypot(f[
   let wx=ux*iz-uz*ix,wz=uz*iz+ux*ix;const m=Math.hypot(wx,wz),mv=m>0;
   if(mv){wx/=m;wz/=m}
   const ka=1-Math.exp(-dt*(S.gr?13:6));S.pvx+=((mv?wx*SP:0)-S.pvx)*ka;S.pvz+=((mv?wz*SP:0)-S.pvz)*ka;S.x+=S.pvx*dt;S.y-=S.pvz*dt;
-  if(mv){const td=Math.atan2(-wz,wx)*180/Math.PI,df=((td-S.dir+540)%360+360)%360-180;S.dir+=df*(1-Math.exp(-dt*14))}
+  if(cdT<=.01){const td=Math.atan2(-uz,ux)*180/Math.PI,df=((td-S.dir+540)%360+360)%360-180;S.dir+=df*(1-Math.exp(-dt*20))}
+  else if(mv){const td=Math.atan2(-wz,wx)*180/Math.PI,df=((td-S.dir+540)%360+360)%360-180;S.dir+=df*(1-Math.exp(-dt*14))}
   if(keys.Space&&S.gr&&!S.rag){S.vy=P.rules.jump;S.gr=false;S.jt=0;jumpSound()}
   
   const W=P.anims[S.walkA||'walk'],JA=P.anims[S.jumpA||'jump'],IA=P.anims[S.idleA||'idle'],air=!S.gr;let tp={};
@@ -2451,8 +2453,11 @@ function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.
     const fx=T.pos[0]+S.x,fy=T.pos[1]+S.ch+1,fz=T.pos[2]-S.y;cd+=(cdT-cd)*(1-Math.exp(-dt*10));if(Math.abs(cdT-cd)<.002)cd=cdT;
     const want=cd<.05?0:cd,lim=want>0?camLimit(fx,fy,fz,f,want):0;
     if(camD===null||lim<camD)camD=lim;else camD+=(lim-camD)*(1-Math.exp(-dt*7));if(camD>want)camD=want;
+    {const fpm=cdT<=.01;if(fpm!==fpPrev){fpPrev=fpm;if(fpm){if(document.pointerLockElement!==cv)lockWarn('First person: click the game to lock the mouse and look around. Esc lets go of it.')}else if(document.pointerLockElement===cv&&!look)document.exitPointerLock()}
+      let xh=document.getElementById('fp-x');if(!xh){xh=document.createElement('div');xh.id='fp-x';xh.style.cssText='position:fixed;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.65);pointer-events:none;z-index:40;display:none';document.body.append(xh)}
+      if(fpm&&document.pointerLockElement===cv){const rc=cv.getBoundingClientRect();xh.style.left=(rc.left+rc.width/2)+'px';xh.style.top=(rc.top+rc.height/2)+'px';xh.style.display='block'}else xh.style.display='none'}
     const hide=camD<(avHid?1.5:1.1);if(hide!==avHid){avHid=hide;avVis(!hide)}
-    cam.x=fx-f[0]*camD;cam.y=fy-f[1]*camD;cam.z=fz-f[2]*camD}}else{camF=null;camD=null;if(avHid){avHid=false;avVis(true)}}
+    cam.x=fx-f[0]*camD;cam.y=fy-f[1]*camD;cam.z=fz-f[2]*camD}}else{camF=null;camD=null;fpPrev=false;{const xh=document.getElementById('fp-x');if(xh)xh.style.display='none'}if(avHid){avHid=false;avVis(true)}}
   if(aPlay&&!playing&&!rigOn){const A=P.anims[curA];if(A){aT+=dt;if(aT>=A.len){if(aLoop)aT%=A.len;else{aT=A.len;aPlay=false;animPlayBtn()}}animTick();applyPose(evalPose(A,aT))}}
   stageTick(dt);animBox();animGizUpdate();gizmoFit();
   const w=cv.clientWidth,h=fsOn?cv.clientHeight:Math.round(w*.75),pr=Math.min(window.devicePixelRatio||1,2);
