@@ -3218,9 +3218,21 @@ let leavingEl=null;
 function showLeaving(){if(leavingEl)return;const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:9999;background:#232527;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font:700 1.1rem Montserrat,system-ui,sans-serif';
   o.textContent='Leaving game...';leavingEl=o;document.body.append(o);try{if(document.pointerLockElement)document.exitPointerLock()}catch(e){}
   setTimeout(function(){const b=document.createElement('button');b.type='button';b.className='btn';b.textContent='Back to BrixBlox';b.onclick=function(){location.href=SITE_URL};o.append(b)},3000)}
-function leaveGame(){showLeaving();try{S.stop=true}catch(e){}netLeave();if(window.parent!==window)parent.postMessage({bb:'leave'},location.origin);else location.href=SITE_URL}
-function netLeave(){NET.on=false;try{if(NET.ch)sb.removeChannel(NET.ch);if(NET.lob)sb.removeChannel(NET.lob)}catch(e){}NET.ch=NET.lob=null}
-addEventListener('pagehide',netLeave);
+function leaveGame(){showLeaving();try{S.stop=true}catch(e){}
+  /* wait (briefly) for the goodbye to be sent before the page that holds the connection is closed */
+  netLeave().then(function(){if(window.parent!==window)parent.postMessage({bb:'leave'},location.origin);else location.href=SITE_URL})}
+/* Tell everyone in the game we are gone (a 'bye' message plus leaving the presence list), then close the channels.
+   fast=true is for a closing page: it cannot wait, so everything is sent and closed at once. */
+function netLeave(fast){
+  const ch=NET.ch,lob=NET.lob,was=NET.on;NET.on=false;NET.ch=NET.lob=null;
+  const jobs=[];
+  try{if(ch&&was){jobs.push(ch.send({type:'broadcast',event:'bye',payload:{id:NET.id}}));jobs.push(ch.untrack())}}catch(e){}
+  try{if(lob)jobs.push(lob.untrack())}catch(e){}
+  const close=function(){try{if(ch)sb.removeChannel(ch)}catch(e){}try{if(lob)sb.removeChannel(lob)}catch(e){}};
+  if(fast||!jobs.length){close();return Promise.resolve()}
+  const done=Promise.all(jobs.map(function(j){return Promise.resolve(j).catch(function(){})}));
+  return Promise.race([done,new Promise(function(r){setTimeout(r,800)})]).then(close,close)}
+addEventListener('pagehide',function(){netLeave(true)});
 function netChat(t){if(NET.on)NET.ch.send({type:'broadcast',event:'c',payload:{id:NET.id,n:ME.username,t:t}})}
 async function netJoin(){
   if(!sb||!PLAYINFO||!PLAYINFO.id){NET.fail=true;return}
@@ -3233,6 +3245,7 @@ async function netJoin(){
     let n=1;while((cn['s'+n]||0)>=NETMAX)n++;NET.sid='s'+n;await lob.track({sid:NET.sid});
     const ch=NET.ch=sb.channel('bbs:'+gid+':'+NET.sid,{config:{presence:{key:NET.id},broadcast:{self:false}}});
     ch.on('broadcast',{event:'p'},function(m){netRecv(m.payload)});
+    ch.on('broadcast',{event:'bye'},function(m){const p=m.payload;if(p&&p.id&&p.id!==NET.id)netDrop(p.id)});/* a player pressed Leave: drop them right away */
     ch.on('broadcast',{event:'c'},function(m){const p=m.payload;if(p&&p.id!==NET.id&&(running||playing)){const t=filt(String(p.t).slice(0,120));chatLine(String(p.n).slice(0,16),t);netSay(p.id,t)}});
     ch.on('broadcast',{event:'k'},function(m){const p=m.payload;if(!p||p.t!==NET.id||p.id===NET.id||!(running||playing))return;
       const by=String(p.n||'').slice(0,24);if(!isAdminName(by))return;if(admIsBB(ME&&ME.username)&&!admIsBB(by))return;/* nobody but brixblox can kill brixblox */
@@ -3274,7 +3287,7 @@ function netDrop(id){const i=NP.findIndex(function(n){return n.net===id});if(i<0
 setInterval(function(){if(!NET.on||!(running||playing))return;
   const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,e:accStr(ME&&ME.av&&ME.av.eq)},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.an,q.ac,q.rc,q.e].join()+(rgo?JSON.stringify(rgo):'');
   if(j===NET.last&&++NET.idle<10)return;NET.last=j;NET.idle=0;NET.ch.send({type:'broadcast',event:'p',payload:q});
-  const now=performance.now();NP.slice().forEach(function(n){if(n.net&&now-n.seen>20000)netDrop(n.net)})},100);
+  const now=performance.now();NP.slice().forEach(function(n){if(n.net&&now-n.seen>10000)netDrop(n.net)})},100);
 function bbHud(){const lb=el('button','btn ghost small','Leave game');lb.id='bb-leave';lb.style.cssText='position:fixed;top:10px;right:10px;z-index:60';lb.onclick=leaveGame;
   const inf=el('div','chip');inf.style.cssText='position:fixed;top:10px;right:140px;z-index:60';document.body.append(lb,inf);
   setInterval(function(){inf.textContent=P.name+' \u00b7 '+(NET.on?('Server '+NET.sid.slice(1)+' \u00b7 '+(1+NP.filter(function(n){return n.net}).length)+' online'):(NET.fail?'Solo (online unavailable)':'Connecting...'))},700)}
