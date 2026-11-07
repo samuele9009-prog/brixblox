@@ -1309,7 +1309,12 @@ function mirrorRot(){const rs=rotRoots();if(!rs.length){msg('Select a part first
     const R=new THREE.Matrix4().makeRotationFromQuaternion(hasRot(p)?rotQ(p):new THREE.Quaternion()),e=R.elements;let bi=0,bv=-1;
     for(let i=0;i<3;i++){const v=Math.abs(e[i*4]*rv.x+e[i*4+1]*rv.y+e[i*4+2]*rv.z);if(v>bv){bv=v;bi=i}}
     /* a box looks the same flipped along any of its own axes, so flip the one facing the mirror to keep the turn as small as possible */
-    const Rn=M.clone().multiply(R).multiply(new THREE.Matrix4().makeScale(bi===0?-1:1,bi===1?-1:1,bi===2?-1:1)),eu=new THREE.Euler().setFromRotationMatrix(Rn,'XYZ'),
+    let Rn;
+    if(p.shape==='wedge'){/* a triangle is only symmetrical front-to-back (along the way it is extruded), so that is the one flip that gives its true mirror image */
+      const ry=(p.ry||0)*Math.PI/180,Y=new THREE.Matrix4().makeRotationY(ry),Yi=new THREE.Matrix4().makeRotationY(-ry);
+      Rn=M.clone().multiply(R).multiply(Y).multiply(new THREE.Matrix4().makeScale(1,1,-1)).multiply(Yi)}
+    else Rn=M.clone().multiply(R).multiply(new THREE.Matrix4().makeScale(bi===0?-1:1,bi===1?-1:1,bi===2?-1:1));
+    const eu=new THREE.Euler().setFromRotationMatrix(Rn,'XYZ'),
       nr=[eu.x*k,eu.y*k,eu.z*k].map(r3),old=p.rot||[0,0,0];
     if(Math.abs(nr[0]-old[0])+Math.abs(nr[1]-old[1])+Math.abs(nr[2]-old[2])>.01){if(nr[0]||nr[1]||nr[2])p.rot=nr;else delete p.rot;ch=true}
     if(ch){n++;if(kids(p).length){delete rig0[p.id];snapRig(p)}}});
@@ -1894,8 +1899,9 @@ cv.onpointerdown=function(e){cv.setPointerCapture(e.pointerId);lx=e.clientX;ly=e
   if(h){snapSel();gd={a:h.object.userData.axis.clone(),rig:rigOn,p:rigOn?byId(selJ):byId(sel[0])};return}
   if(rigOn){h=ray.intersectObjects(balls,false)[0];if(h){selJ=h.object.userData.joint;buildEdit();return}}
   if(e.shiftKey&&!rigOn){marqueeSel(e);return}
-  h=ray.intersectObjects(pickSel(),false)[0];pick(h?h.object.userData.id:null,e.ctrlKey||e.shiftKey||e.metaKey,e.altKey);
-  if(h&&!rigOn&&!(e.ctrlKey||e.shiftKey||e.metaKey))dragStart2(h,e)};
+  h=ray.intersectObjects(pickSel(),false)[0];const was=!!h&&sel.indexOf(h.object.userData.id)>=0;pick(h?h.object.userData.id:null,e.ctrlKey||e.shiftKey||e.metaKey,e.altKey);
+  /* only something that was already selected before this click can be dragged, so a first click just selects */
+  if(h&&was&&!rigOn&&!(e.ctrlKey||e.shiftKey||e.metaKey))dragStart2(h,e)};
 /* Shift + drag in the 3D view draws a box and selects every part whose middle is inside it (hold Ctrl as well to add to the current selection).
    Shift + a plain click still adds or removes one part. */
 function marqueeSel(e){const x0=e.clientX,y0=e.clientY,add0=e.ctrlKey||e.metaKey,alt0=e.altKey;let moved=false,box=null;
@@ -1936,8 +1942,8 @@ function dragBox(){const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];let n=0;
   sel.forEach(function(id){const p=byId(id);if(!p||p.stab)return;const q=eh(p);n++;for(let i=0;i<3;i++){lo[i]=Math.min(lo[i],p.pos[i]-q[i]);hi[i]=Math.max(hi[i],p.pos[i]+q[i])}});
   return n?{lo:lo,hi:hi,c:[0,1,2].map(function(i){return (lo[i]+hi[i])/2}),h:[0,1,2].map(function(i){return (hi[i]-lo[i])/2})}:null}
 function rmoveDrag(e){const g=gd,b=dragBox();if(!b)return;
-  /* a click that wiggles a little is still just a click: the part only moves once the mouse has travelled 10 pixels */
-  if(!g.on){if(!look&&Math.hypot(e.clientX-g.sx,e.clientY-g.sy)<10)return;g.on=true}ray.setFromCamera(ndc(e),camera);
+  /* a click that wiggles a little is still just a click: the part only moves once the mouse has travelled 24 pixels */
+  if(!g.on){if(!look&&Math.hypot(e.clientX-g.sx,e.clientY-g.sy)<24)return;g.on=true}ray.setFromCamera(ndc(e),camera);
   const skip={};sel.forEach(function(id){skip[id]=1});
   const hit=ray.intersectObjects(pickable().filter(function(m){return !skip[m.userData.id]}),false)[0];let pt,ax=1,sg=1;
   if(hit&&hit.distance<800){pt=hit.point;const nn=hit.face.normal.clone().transformDirection(hit.object.matrixWorld),a=[Math.abs(nn.x),Math.abs(nn.y),Math.abs(nn.z)];
