@@ -251,6 +251,8 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
 .gsh{position:absolute;width:11px;height:11px;margin:-5.5px;box-sizing:border-box;background:#fff;border:2px solid #00b06f;border-radius:3px;pointer-events:auto;touch-action:none}
 .gsh.nw{left:0;top:0;cursor:nwse-resize}.gsh.n{left:50%;top:0;cursor:ns-resize}.gsh.ne{left:100%;top:0;cursor:nesw-resize}.gsh.e{left:100%;top:50%;cursor:ew-resize}
 .gsh.se{left:100%;top:100%;cursor:nwse-resize}.gsh.s{left:50%;top:100%;cursor:ns-resize}.gsh.sw{left:0;top:100%;cursor:nesw-resize}.gsh.w{left:0;top:50%;cursor:ew-resize}
+.exr.gdrop{outline:2px solid #00e08a;outline-offset:-2px}
+.gtx{display:block;min-width:0}
 .gg{position:absolute;background:#ff3dac;pointer-events:none;z-index:3}
 .pnl input[type=checkbox]{min-height:0;width:auto;margin-left:8px}
 .pnl{flex:1;min-height:220px;overflow:auto;padding:8px;background:var(--paper);border:1px solid var(--line);border-radius:8px}
@@ -2852,7 +2854,7 @@ CVW.append(GL,GB);
 const GTYPE={text:{n:'Text',i:'T',c:'#2fa95a'},button:{n:'Button',i:'▭',c:'#00b06f'},frame:{n:'Frame',i:'□',c:'#3b82f6'},image:{n:'Image',i:'▧',c:'#2f78d0'}};
 const GFONT={'':'inherit',serif:'Georgia,"Times New Roman",serif',mono:'"Courier New",ui-monospace,monospace',round:'"Trebuchet MS","Segoe UI",system-ui,sans-serif',hand:'"Brush Script MT","Comic Sans MS",cursive'};
 const GRIDBG='linear-gradient(to right,rgba(255,255,255,.16) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.16) 1px,transparent 1px)';
-const GED={grid:0,mag:true},GE={};let SB=null,gKeyT=0;
+const GED={grid:0,mag:true,top:false},GE={},openG={};let SB=null,gKeyT=0,GDRAG=null;
 function hexA(h,a){const m=/^#?([0-9a-f]{6})$/i.exec(h||''),n=m?parseInt(m[1],16):0;return 'rgba('+(n>>16&255)+','+(n>>8&255)+','+(n&255)+','+a+')'}
 function guiState(g){const r=GR[g.id]||{};return {vis:r.vis!==undefined?r.vis:g.vis!==false,text:r.text!==undefined?r.text:g.text}}
 function guiByName(n){const k=String(n).trim().toLowerCase();return P.guis.filter(function(g){return g.name.toLowerCase()===k})}
@@ -2860,22 +2862,45 @@ function guiClick(g){if(!(running||playing))return;S.v.clicker=P.player.name;con
   P.scripts.forEach(function(sc){const h=sc[0];if(h.t==='guiclick'&&String(h.a[0]).trim().toLowerCase()===k)fireScript(sc)})}
 /* GUI edit mode is ON only while the GUI folder is open in the Explorer (and you are not playing). Then the stage only talks to the GUI. */
 function guiEdit(){return !!openS.gui&&!running&&!playing&&!VIEWONLY&&!animOn()}
-function guiCur(){return selGui?P.guis.find(function(x){return x.id===selGui}):null}
+function guiById(id){return id?P.guis.find(function(x){return x.id===id}):null}
+function guiCur(){return guiById(selGui)||null}
+/* GUI can sit inside other GUI (like Roblox): g.parent is the id of the GUI that holds it, and x, y, w, h are percentages of that holder */
+function guiPar(g){return g.parent&&guiById(g.parent)?g.parent:''}
+function guiKids(pid){return P.guis.filter(function(g){return guiPar(g)===pid})}
+function guiIsIn(id,anc){let g=guiById(id),n=0;while(g&&n++<60){if(g.id===anc)return true;g=guiById(guiPar(g))}return false}
+function guiAbs(g){const p=guiById(guiPar(g));if(!p)return {x:g.x,y:g.y,w:g.w,h:g.h};const a=guiAbs(p);return {x:a.x+g.x*a.w/100,y:a.y+g.y*a.h/100,w:g.w*a.w/100,h:g.h*a.h/100}}
+function guiSetParent(g,pid){pid=pid||'';if(pid===g.id||(pid&&guiIsIn(pid,g.id)))return false;if(guiPar(g)===pid)return true;
+  const a=guiAbs(g),pa=pid?guiAbs(guiById(pid)):{x:0,y:0,w:100,h:100};g.parent=pid;
+  g.w=r1(clamp(a.w/pa.w*100,1,100));g.h=r1(clamp(a.h/pa.h*100,1,100));g.x=r1(clamp((a.x-pa.x)/pa.w*100,0,100-g.w));g.y=r1(clamp((a.y-pa.y)/pa.h*100,0,100-g.h));
+  if(pid)openG[pid]=true;save();renderParts();return true}
+function guiPS(g){const p=guiPar(g),pe=p?GE[p]:GL;return {w:(pe&&pe.clientWidth)||1,h:(pe&&pe.clientHeight)||1}}
 function guiRad(g,k){const r=g.rc===false?0:(g.round||0)*k,c=g.cn||[1,1,1,1];return c.map(function(v){return v?r+'px':'0'}).join(' ')}
 function guiPaint(e,g,k,ed){const s=e.style;
   s.left=g.x+'%';s.top=g.y+'%';s.width=g.w+'%';s.height=g.h+'%';
   s.backgroundColor=hexA(g.bg,g.op);s.color=g.color;s.fontSize=Math.max(6,g.fs*k)+'px';s.borderRadius=guiRad(g,k);
   s.border=g.bw>0?Math.max(1,g.bw*k)+'px solid '+(g.bc||'#ffffff'):'0';
   s.boxShadow=g.sh?'0 '+(3*k)+'px '+(10*k)+'px rgba(0,0,0,.5)':'none';
+  s.overflow=g.clip===false?'visible':'hidden';
   s.opacity=(g.alpha===undefined?1:g.alpha)*(ed&&g.vis===false?.35:1);
   s.fontWeight=g.bold===false?'400':'700';s.fontFamily=GFONT[g.ff||'']||'inherit';
   s.textAlign=g.al||'center';s.justifyContent=g.al==='left'?'flex-start':g.al==='right'?'flex-end':'center'}
 function guiPlace(g){const e=GE[g.id];if(e){e.style.left=g.x+'%';e.style.top=g.y+'%';e.style.width=g.w+'%';e.style.height=g.h+'%'}guiBox()}
 function makeSB(){const b=document.createElement('div');b.className='gsb';const lb=document.createElement('div');lb.className='gsl';b.append(lb);
   ['nw','n','ne','e','se','s','sw','w'].forEach(function(d){const h=document.createElement('div');h.className='gsh '+d;h.onpointerdown=function(ev){guiResizeStart(ev,d)};b.append(h)});return b}
-function guiBox(){if(!SB)return;const g=guiCur();if(!g||!guiEdit()||(!GE[g.id])){SB.hidden=true;return}
-  SB.hidden=false;const s=SB.style;s.left=g.x+'%';s.top=g.y+'%';s.width=g.w+'%';s.height=g.h+'%';
-  SB.classList.toggle('low',g.y<9);SB.firstChild.textContent=g.name+'  '+Math.round(g.w*10)/10+'% × '+Math.round(g.h*10)/10+'%'+(g.lock?'  🔒':'')}
+function guiBox(){if(!SB)return;const g=guiCur(),e=g&&GE[g.id];if(!e||!guiEdit()){SB.hidden=true;return}
+  const r=e.getBoundingClientRect(),b=GL.getBoundingClientRect(),s=SB.style;SB.hidden=false;
+  s.left=(r.left-b.left)+'px';s.top=(r.top-b.top)+'px';s.width=r.width+'px';s.height=r.height+'px';
+  SB.classList.toggle('low',r.top-b.top<26);SB.firstChild.textContent=g.name+'  '+Math.round(g.w*10)/10+'% × '+Math.round(g.h*10)/10+'%'+(g.lock?'  🔒':'')}
+function guiBuild(pid,host,k,ed,live){guiKids(pid).forEach(function(g){const st=guiState(g);if(!ed&&!st.vis)return;
+    const has=guiKids(g.id).length>0,btn=g.type==='button'&&!ed&&!has,e=document.createElement(btn?'button':'div'),s=e.style;if(btn)e.type='button';
+    s.cssText='position:absolute;box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;margin:0;padding:0 .3em;border:0;white-space:pre-wrap;line-height:1.15;font-family:inherit;font-weight:700;pointer-events:none';
+    guiPaint(e,g,k,ed);
+    if(g.type==='image'&&g.img&&P.assets.images[g.img]){s.backgroundImage='url("'+P.assets.images[g.img]+'")';s.backgroundSize='contain';s.backgroundRepeat='no-repeat';s.backgroundPosition='center'}
+    const t=document.createElement('span');t.className='gtx';t.textContent=ed?(g.text||''):(st.text||'');e.append(t);e._t=t;
+    if(ed){s.pointerEvents='auto';s.cursor=g.lock?'not-allowed':'move';s.userSelect='none';s.outline='1px dashed rgba(255,255,255,.5)';s.outlineOffset='-1px';
+      e.onpointerdown=function(ev){guiDown(ev,g)};e.ondblclick=function(ev){ev.stopPropagation();guiInline(g)}}
+    else if(g.type==='button'&&live){s.pointerEvents='auto';s.cursor='pointer';e.tabIndex=-1;e.onmousedown=function(ev){ev.preventDefault()};e.onclick=function(){guiClick(g)}}
+    GE[g.id]=e;host.append(e);guiBuild(g.id,e,k,ed,live)})}
 function renderGui(){const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
   const ed=guiEdit(),live=running||playing,k=w/480;
   GL.style.width=w+'px';GL.style.height=h+'px';GL.replaceChildren();CVW.classList.toggle('gedit',ed);
@@ -2884,42 +2909,34 @@ function renderGui(){const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
   GL.onpointerdown=ed?function(ev){if(ev.target===GL&&ev.button===0){ev.preventDefault();if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();guiSelect(null)}}:null;
   GL.oncontextmenu=ed?function(ev){ev.preventDefault()}:null;
   for(const id in GE)delete GE[id];
-  (P.guis||[]).forEach(function(g){const st=guiState(g);if(!ed&&!st.vis)return;
-    const btn=g.type==='button'&&!ed,e=document.createElement(btn?'button':'div'),s=e.style;if(btn)e.type='button';
-    s.cssText='position:absolute;box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;margin:0;padding:0 .3em;border:0;white-space:pre-wrap;line-height:1.15;font-family:inherit;font-weight:700;pointer-events:none';
-    guiPaint(e,g,k,ed);
-    if(g.type==='image'&&g.img&&P.assets.images[g.img]){s.backgroundImage='url("'+P.assets.images[g.img]+'")';s.backgroundSize='contain';s.backgroundRepeat='no-repeat';s.backgroundPosition='center'}
-    e.textContent=ed?(g.text||''):(st.text||'');
-    if(ed){s.pointerEvents='auto';s.cursor=g.lock?'not-allowed':'move';s.userSelect='none';s.outline='1px dashed rgba(255,255,255,.5)';s.outlineOffset='-1px';
-      e.onpointerdown=function(ev){guiDown(ev,g)};e.ondblclick=function(ev){ev.stopPropagation();guiInline(g)}}
-    else if(btn&&live){s.pointerEvents='auto';s.cursor='pointer';e.tabIndex=-1;e.onmousedown=function(ev){ev.preventDefault()};e.onclick=function(){guiClick(g)}}
-    GE[g.id]=e;GL.append(e)});
+  guiBuild('',GL,k,ed,live);
   if(ed){SB=makeSB();GL.append(SB);guiBox()}else SB=null;
   guiBar(ed)}
 try{new ResizeObserver(function(){renderGui()}).observe(cv)}catch(e){}
 /* picking, moving, resizing */
 function guiSelect(id){if(selGui===id)return;selGui=id;if(id){sel=[];selModel=null;selSvc=null;hl();buildEdit()}renderParts()}
 function near(vals,cands){let best=null;vals.forEach(function(v){cands.forEach(function(c){const d=c-v;if(Math.abs(d)<1.2&&(!best||Math.abs(d)<Math.abs(best.d)))best={d:d,at:c}})});return best}
-function guiLines(g){const X=[0,50,100],Y=[0,50,100];P.guis.forEach(function(o){if(o===g)return;X.push(o.x,o.x+o.w/2,o.x+o.w);Y.push(o.y,o.y+o.h/2,o.y+o.h)});return {x:X,y:Y}}
-function guiGuides(gx,gy){Array.from(GL.querySelectorAll('.gg')).forEach(function(n){n.remove()});
-  if(gx!=null&&gx!==undefined){const v=document.createElement('div');v.className='gg';v.style.cssText='left:'+gx+'%;top:0;width:1px;height:100%';GL.append(v)}
-  if(gy!=null&&gy!==undefined){const v=document.createElement('div');v.className='gg';v.style.cssText='top:'+gy+'%;left:0;height:1px;width:100%';GL.append(v)}}
+function guiLines(g){const X=[0,50,100],Y=[0,50,100],p=guiPar(g);P.guis.forEach(function(o){if(o===g||guiPar(o)!==p)return;X.push(o.x,o.x+o.w/2,o.x+o.w);Y.push(o.y,o.y+o.h/2,o.y+o.h)});return {x:X,y:Y}}
+function guiGuides(gx,gy,g){Array.from(GL.querySelectorAll('.gg')).forEach(function(n){n.remove()});if(!g)return;
+  const pe=GE[guiPar(g)]||GL,pr=pe.getBoundingClientRect(),b=GL.getBoundingClientRect();
+  if(gx!=null){const v=document.createElement('div');v.className='gg';v.style.cssText='left:'+(pr.left-b.left+gx/100*pr.width)+'px;top:0;width:1px;height:100%';GL.append(v)}
+  if(gy!=null){const v=document.createElement('div');v.className='gg';v.style.cssText='top:'+(pr.top-b.top+gy/100*pr.height)+'px;left:0;height:1px;width:100%';GL.append(v)}}
 const clamp=function(v,a,b){return Math.max(a,Math.min(b,v))},r1=function(v){return Math.round(v*10)/10};
 function guiSnapMove(g,x,y,alt){x=clamp(x,0,100-g.w);y=clamp(y,0,100-g.h);let gx=null,gy=null;
   if(GED.grid&&!alt){x=clamp(Math.round(x/GED.grid)*GED.grid,0,100-g.w);y=clamp(Math.round(y/GED.grid)*GED.grid,0,100-g.h)}
   if(GED.mag&&!alt){const o=guiLines(g),bx=near([x,x+g.w/2,x+g.w],o.x),by=near([y,y+g.h/2,y+g.h],o.y);if(bx){x+=bx.d;gx=bx.at}if(by){y+=by.d;gy=by.at}}
   return {x:r1(clamp(x,0,100-g.w)),y:r1(clamp(y,0,100-g.h)),gx:gx,gy:gy}}
-function guiDown(ev,g){if(ev.button!==0)return;if(ev.currentTarget&&ev.currentTarget.isContentEditable)return;ev.preventDefault();ev.stopPropagation();
+function guiDown(ev,g){if(ev.button!==0)return;if(ev.target&&ev.target.isContentEditable)return;ev.preventDefault();ev.stopPropagation();
   if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
   guiSelect(g.id);if(g.lock){msg('"'+g.name+'" is locked. Untick Locked in the properties to move it.');return}
-  const W=GL.clientWidth,H=GL.clientHeight,x0=ev.clientX,y0=ev.clientY,ox=g.x,oy=g.y;let moved=false;
+  const ps=guiPS(g),x0=ev.clientX,y0=ev.clientY,ox=g.x,oy=g.y;let moved=false;
   const mv=function(m){if(!moved&&Math.abs(m.clientX-x0)+Math.abs(m.clientY-y0)<4)return;moved=true;
-    const r=guiSnapMove(g,ox+(m.clientX-x0)/W*100,oy+(m.clientY-y0)/H*100,m.altKey);g.x=r.x;g.y=r.y;guiPlace(g);guiGuides(r.gx,r.gy)};
+    const r=guiSnapMove(g,ox+(m.clientX-x0)/ps.w*100,oy+(m.clientY-y0)/ps.h*100,m.altKey);g.x=r.x;g.y=r.y;guiPlace(g);guiGuides(r.gx,r.gy,g)};
   const up=function(){removeEventListener('pointermove',mv);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);guiGuides();if(moved){save();props()}};
   addEventListener('pointermove',mv);addEventListener('pointerup',up);addEventListener('pointercancel',up)}
 function guiResizeStart(ev,d){if(ev.button!==0)return;ev.preventDefault();ev.stopPropagation();const g=guiCur();if(!g)return;if(g.lock){msg('"'+g.name+'" is locked.');return}
-  const W=GL.clientWidth,H=GL.clientHeight,x0=ev.clientX,y0=ev.clientY,o={x:g.x,y:g.y,w:g.w,h:g.h},has=function(c){return d.indexOf(c)>=0};
-  const mv=function(m){const dx=(m.clientX-x0)/W*100,dy=(m.clientY-y0)/H*100;let L=o.x,T=o.y,R=o.x+o.w,B=o.y+o.h,gx=null,gy=null;
+  const ps=guiPS(g),x0=ev.clientX,y0=ev.clientY,o={x:g.x,y:g.y,w:g.w,h:g.h},has=function(c){return d.indexOf(c)>=0};
+  const mv=function(m){const dx=(m.clientX-x0)/ps.w*100,dy=(m.clientY-y0)/ps.h*100;let L=o.x,T=o.y,R=o.x+o.w,B=o.y+o.h,gx=null,gy=null;
     if(has('w'))L+=dx;if(has('e'))R+=dx;if(has('n'))T+=dy;if(has('s'))B+=dy;
     if(m.shiftKey&&d.length===2){/* keep the shape */
       const s0=Math.max((R-L)/o.w,(B-T)/o.h),sMax=Math.min(has('w')?(o.x+o.w)/o.w:(100-o.x)/o.w,has('n')?(o.y+o.h)/o.h:(100-o.y)/o.h),
@@ -2930,18 +2947,18 @@ function guiResizeStart(ev,d){if(ev.button!==0)return;ev.preventDefault();ev.sto
       if(has('w'))L=sn(L,'x');if(has('e'))R=sn(R,'x');if(has('n'))T=sn(T,'y');if(has('s'))B=sn(B,'y');
       L=Math.max(0,L);T=Math.max(0,T);R=Math.min(100,R);B=Math.min(100,B);
       if(R-L<1){if(has('w'))L=R-1;else R=L+1}if(B-T<1){if(has('n'))T=B-1;else B=T+1}}
-    g.x=r1(L);g.y=r1(T);g.w=r1(R-L);g.h=r1(B-T);guiPlace(g);guiGuides(gx,gy)};
+    g.x=r1(L);g.y=r1(T);g.w=r1(R-L);g.h=r1(B-T);guiPlace(g);guiGuides(gx,gy,g)};
   const up=function(){removeEventListener('pointermove',mv);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);guiGuides();save();props()};
   addEventListener('pointermove',mv);addEventListener('pointerup',up);addEventListener('pointercancel',up)}
 /* typing straight onto the stage: double-click a GUI (or press Enter) */
-function guiInline(g){if(g.type==='image')return;const e=GE[g.id];if(!e||e.isContentEditable)return;
-  e.contentEditable='true';e.style.cursor='text';e.style.userSelect='text';e.style.outline='2px solid #00e08a';e.focus();
-  try{const r=document.createRange();r.selectNodeContents(e);const s=getSelection();s.removeAllRanges();s.addRange(r)}catch(x){}
+function guiInline(g){if(g.type==='image')return;const e=GE[g.id],t=e&&e._t;if(!t||t.isContentEditable)return;
+  t.contentEditable='true';t.style.display='inline-block';t.style.minWidth='1em';t.style.cursor='text';t.style.userSelect='text';t.style.pointerEvents='auto';e.style.outline='2px solid #00e08a';t.focus();
+  try{const r=document.createRange();r.selectNodeContents(t);const s=getSelection();s.removeAllRanges();s.addRange(r)}catch(x){}
   let cancel=false;
-  e.onkeydown=function(k){k.stopPropagation();if(k.key==='Enter'&&k.shiftKey){k.preventDefault();document.execCommand('insertText',false,'\n')}
-    else if(k.key==='Enter'){k.preventDefault();e.blur()}else if(k.key==='Escape'){k.preventDefault();cancel=true;e.blur()}};
-  e.onblur=function(){e.onblur=null;e.contentEditable='false';if(!cancel){g.text=(e.textContent||'').slice(0,120);save()}renderGui();props()};
-  e.onpointerdown=function(ev){ev.stopPropagation()}}
+  t.onkeydown=function(k){k.stopPropagation();if(k.key==='Enter'&&k.shiftKey){k.preventDefault();document.execCommand('insertText',false,'\n')}
+    else if(k.key==='Enter'){k.preventDefault();t.blur()}else if(k.key==='Escape'){k.preventDefault();cancel=true;t.blur()}};
+  t.onblur=function(){t.onblur=null;t.contentEditable='false';if(!cancel){g.text=(t.textContent||'').slice(0,120);save()}renderGui();props()};
+  t.onpointerdown=function(ev){ev.stopPropagation()}}
 addEventListener('keydown',function(e){if(!guiEdit()||!selGui)return;const a=document.activeElement;
   if(a&&(/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a.isContentEditable))return;const g=guiCur();if(!g)return;
   const stop=function(){e.preventDefault();e.stopImmediatePropagation()},ctl=e.ctrlKey||e.metaKey;
@@ -2955,40 +2972,52 @@ addEventListener('keydown',function(e){if(!guiEdit()||!selGui)return;const a=doc
     clearTimeout(gKeyT);gKeyT=setTimeout(function(){save();props()},250)}},true);
 /* adding, copying, deleting */
 function guiName(base){let n=1,nm=base;while(P.guis.some(function(g){return g.name.toLowerCase()===nm.toLowerCase()}))nm=base+(++n);return nm}
-function addGui(type){if(animOn())return;const T=GTYPE[type];if(!T)return;const nm=guiName(T.n);
+function addGui(type,pid){if(animOn())return;const T=GTYPE[type];if(!T)return;const nm=guiName(T.n);pid=pid&&guiById(pid)?pid:'';
   const D={text:{x:35,y:5,w:30,h:10,text:'Hello!',bg:'#000000',op:0,color:'#ffffff',fs:26,round:0},
     button:{x:40,y:80,w:20,h:9,text:'Click me',bg:'#00b06f',op:1,color:'#ffffff',fs:20,round:10},
     frame:{x:30,y:30,w:40,h:40,text:'',bg:'#232527',op:.85,color:'#ffffff',fs:20,round:8},
     image:{x:40,y:35,w:20,h:30,text:'',bg:'#ffffff',op:0,color:'#ffffff',fs:20,round:0}}[type];
-  const g=Object.assign({id:'u'+P.nid++,name:nm,type:type,vis:true,img:''},D);
-  P.guis.push(g);selGui=g.id;sel=[];selModel=null;selSvc=null;openS.gui=true;hl();save();renderParts();
-  msg('Added a '+T.n.toLowerCase()+' GUI called '+nm+'. Drag it on the stage to move it, drag the white squares to resize it.')}
-function dupGui(g){const c=JSON.parse(JSON.stringify(g));c.id='u'+P.nid++;c.name=guiName((g.name.replace(/\d+$/,'')||'GUI'));
-  c.x=r1(Math.min(100-c.w,c.x+3));c.y=r1(Math.min(100-c.h,c.y+3));c.lock=false;P.guis.splice(P.guis.indexOf(g)+1,0,c);selGui=c.id;save();renderParts();msg('Copied to '+c.name+'.')}
-function delGui(g){P.guis=P.guis.filter(function(x){return x!==g});if(selGui===g.id)selGui=null;save();rend();renderParts()}
-function guiMove(g,dir){const i=P.guis.indexOf(g),j=i+dir;if(j<0||j>=P.guis.length)return;P.guis.splice(i,1);P.guis.splice(j,0,g);save();renderParts()}
+  if(pid){D.x=r1((100-D.w)/2);D.y=r1((100-D.h)/2)}
+  const g=Object.assign({id:'u'+P.nid++,name:nm,type:type,vis:true,img:'',parent:pid},D);
+  P.guis.push(g);if(pid)openG[pid]=true;selGui=g.id;sel=[];selModel=null;selSvc=null;openS.gui=true;hl();save();renderParts();
+  msg('Added a '+T.n.toLowerCase()+' GUI called '+nm+(pid?' inside '+guiById(pid).name:'')+'. Drag it on the stage to move it, drag the white squares to resize it.')}
+function dupGui(g){let first=null;const cp=function(o,par){const c=JSON.parse(JSON.stringify(o));c.id='u'+P.nid++;c.name=guiName(o.name.replace(/\d+$/,'')||'GUI');c.parent=par;c.lock=false;
+    if(!first){first=c;c.x=r1(Math.min(100-c.w,c.x+3));c.y=r1(Math.min(100-c.h,c.y+3));P.guis.splice(P.guis.indexOf(g)+1,0,c)}else P.guis.push(c);
+    guiKids(o.id).forEach(function(k){cp(k,c.id)})};
+  cp(g,guiPar(g));selGui=first.id;save();renderParts();msg('Copied to '+first.name+'.')}
+function delGui(g){const dead=P.guis.filter(function(x){return guiIsIn(x.id,g.id)}).map(function(x){return x.id});
+  P.guis=P.guis.filter(function(x){return dead.indexOf(x.id)<0});if(dead.indexOf(selGui)>=0)selGui=null;save();rend();renderParts()}
+function guiMove(g,dir){const sib=guiKids(guiPar(g)),t=sib[sib.indexOf(g)+dir];if(!t)return;const i=P.guis.indexOf(g),j=P.guis.indexOf(t);P.guis[i]=t;P.guis[j]=g;save();renderParts()}
 /* the little toolbar that floats on the stage in GUI edit mode */
 function guiBar(ed){GB.replaceChildren();if(!ed){GB.hidden=true;return}GB.hidden=false;const g=guiCur();
+  let into=g?(g.type==='frame'?g.id:guiPar(g)):'';if(GED.top)into='';
   const mk=function(t,fn,cls,tip){const x=document.createElement('button');x.type='button';x.className='gb'+(cls?' '+cls:'');x.textContent=t;if(tip)x.title=tip;x.onclick=fn;GB.append(x);return x};
   const tt=document.createElement('span');tt.className='gt';tt.textContent='GUI edit mode';GB.append(tt);
-  mk('+ Text',function(){addGui('text')});mk('+ Button',function(){addGui('button')});mk('+ Frame',function(){addGui('frame')});mk('+ Image',function(){addGui('image')});
+  mk('+ Text',function(){addGui('text',into)});mk('+ Button',function(){addGui('button',into)});mk('+ Frame',function(){addGui('frame',into)});mk('+ Image',function(){addGui('image',into)});
+  const cand=g?(g.type==='frame'?g.id:guiPar(g)):'';
+  if(cand)mk('Add into: '+(GED.top?'Screen':guiById(cand).name),function(){GED.top=!GED.top;renderGui()},GED.top?'':'on','New GUI goes inside this Frame. Click to switch to the top level (the screen).');
   const GR2=[0,2,5,10];
   mk('Grid: '+(GED.grid?GED.grid+'%':'Off'),function(){GED.grid=GR2[(GR2.indexOf(GED.grid)+1)%GR2.length];renderGui()},GED.grid?'on':'','Snap moving and resizing to a grid');
-  mk('Magnet: '+(GED.mag?'On':'Off'),function(){GED.mag=!GED.mag;renderGui()},GED.mag?'on':'','Snap to the middle, the edges and other GUI (hold Alt while dragging to skip snapping)');
+  mk('Magnet: '+(GED.mag?'On':'Off'),function(){GED.mag=!GED.mag;renderGui()},GED.mag?'on':'','Snap to the middle, the edges and neighbouring GUI (hold Alt while dragging to skip snapping)');
   if(g){mk('Corners: '+(g.rc===false?'Off':'On'),function(){g.rc=g.rc===false;save();renderGui();props()},g.rc===false?'':'on','Turn rounded corners on or off for the selected GUI');
+    if(guiPar(g))mk('Move out',function(){const p=guiById(guiPar(g));guiSetParent(g,p?guiPar(p):'')},'','Take it out of its Frame');
     mk('Copy',function(){dupGui(g)},'','Duplicate (Ctrl+D)');mk('Delete',function(){delGui(g)},'red','Delete (Del key)')}
   const sp=document.createElement('span');sp.className='sp';GB.append(sp);
   mk('Done',function(){openS.gui=false;selGui=null;renderParts()},'on','Close the GUI folder and go back to the normal 3D view');
-  const hn=document.createElement('div');hn.className='gh';hn.textContent='Drag to move · drag the white squares to resize (hold Shift to keep the shape) · double-click to type · arrow keys nudge · Ctrl+Z undoes. The 3D view is locked until you press Done or close the GUI folder.';GB.append(hn);
-  GB.style.top=g&&g.y+g.h/2>50?'6px':'auto';GB.style.bottom=g&&g.y+g.h/2>50?'auto':'6px'}
+  const hn=document.createElement('div');hn.className='gh';hn.textContent='Drag to move · drag the white squares to resize (Shift keeps the shape) · double-click to type · arrows nudge · Ctrl+Z undoes. Frames can hold other GUI: use "Add into", or drag rows onto a Frame in the Explorer. The 3D view is locked until you press Done.';GB.append(hn);
+  GB.style.top=g&&(GL.getBoundingClientRect().height?(GE[g.id]?(GE[g.id].getBoundingClientRect().top+GE[g.id].getBoundingClientRect().height/2-GL.getBoundingClientRect().top)>GL.getBoundingClientRect().height/2:g.y>50):g.y>50)?'6px':'auto';
+  GB.style.bottom=GB.style.top==='6px'?'auto':'6px'}
 function guiProps(d,g){const T=GTYPE[g.type]||GTYPE.frame;
   if(g.alpha===undefined)g.alpha=1;if(g.bw===undefined)g.bw=0;if(!g.bc)g.bc='#ffffff';
   const head=function(t){const h=el('div','',t);h.style.cssText='font-weight:800;margin:14px 0 4px;font-size:11px;opacity:.75;text-transform:uppercase;letter-spacing:.05em';d.append(h)};
   const chk=function(t,get,set){const c=el('input');c.type='checkbox';c.checked=!!get();c.onchange=function(){set(c.checked);save();renderGui()};d.append(lab(t,c));return c};
-  d.append(el('p','note',T.n+' GUI. Open the GUI folder to drag it on the stage: drag to move, drag the white squares to resize, double-click to type. Blocks \"show gui\", \"hide gui\", \"set gui text to\"'+(g.type==='button'?' and \"when gui clicked\"':'')+' find it by name.'));
+  d.append(el('p','note',T.n+' GUI. Open the GUI folder to drag it on the stage: drag to move, drag the white squares to resize, double-click to type. Blocks \"show gui\", \"hide gui\", \"set gui text to\"'+(g.type==='button'?' and \"when gui clicked\"':'')+' find it by name. Position and size are percentages of whatever holds it.'));
   const nm=el('input');nm.value=g.name;nm.maxLength=24;nm.oninput=function(){const v=nm.value.trim();if(v){g.name=v;save()}};
   nm.onchange=function(){let v=g.name,n=1;const base=v;while(P.guis.some(function(x){return x!==g&&x.name.toLowerCase()===v.toLowerCase()}))v=base+(++n);g.name=v;save();rend();renderParts()};
   d.append(lab('Name (blocks find it by this name)',nm));
+  const ps=el('select');const o0=el('option','','(top level - the screen)');o0.value='';ps.append(o0);
+  P.guis.filter(function(x){return !guiIsIn(x.id,g.id)}).forEach(function(x){const op=el('option','',x.name+' ('+(GTYPE[x.type]||GTYPE.frame).n+')');op.value=x.id;ps.append(op)});
+  ps.value=guiPar(g);ps.onchange=function(){guiSetParent(g,ps.value)};d.append(lab('Inside (parent)',ps));
   if(g.type!=='image'){const tx=el('input');tx.value=g.text||'';tx.maxLength=120;tx.oninput=function(){g.text=tx.value;save();renderGui()};d.append(lab('Text',tx))}
   head('Position and size');
   slider(d,'Left (%)',g,'x',0,100,.5,null,renderGui);slider(d,'Top (%)',g,'y',0,100,.5,null,renderGui);
@@ -2999,10 +3028,11 @@ function guiProps(d,g){const T=GTYPE[g.type]||GTYPE.frame;
   head('Look');
   const bg=el('input');bg.type='color';bg.value=g.bg;bg.oninput=function(){g.bg=bg.value;save();renderGui()};d.append(lab('Background colour',bg));
   slider(d,'Background opacity',g,'op',0,1,.05,function(v){return Math.round(v*100)+'%'},renderGui);
-  slider(d,'Whole GUI opacity',g,'alpha',0,1,.05,function(v){return Math.round(v*100)+'%'},renderGui);
+  slider(d,'Whole GUI opacity (includes what is inside)',g,'alpha',0,1,.05,function(v){return Math.round(v*100)+'%'},renderGui);
   slider(d,'Border width',g,'bw',0,12,1,null,renderGui);
   const bc=el('input');bc.type='color';bc.value=g.bc;bc.oninput=function(){g.bc=bc.value;save();renderGui()};d.append(lab('Border colour',bc));
   chk('Shadow',function(){return g.sh},function(v){g.sh=v});
+  chk('Clip what is inside to this shape',function(){return g.clip!==false},function(v){g.clip=v});
   if(g.type!=='image'){head('Text');
     const tc=el('input');tc.type='color';tc.value=g.color;tc.oninput=function(){g.color=tc.value;save();renderGui()};d.append(lab('Text colour',tc));
     slider(d,'Text size',g,'fs',8,80,1,null,renderGui);
@@ -3013,8 +3043,7 @@ function guiProps(d,g){const T=GTYPE[g.type]||GTYPE.frame;
   chk('Rounded corners',function(){return g.rc!==false},function(v){g.rc=v;props()});
   if(g.rc!==false){slider(d,'Corner radius',g,'round',0,100,1,null,renderGui);
     const cr=el('div','');cr.style.cssText='display:flex;flex-wrap:wrap;gap:2px 10px';g.cn=g.cn||[1,1,1,1];
-    ['Top-left','Top-right','Bottom-right','Bottom-left'].forEach(function(t,i){const c=el('input');c.type='checkbox';c.checked=!!g.cn[i];c.onchange=function(){g.cn=g.cn.slice();g.cn[i]=c.checked?1:0;save();renderGui()};cr.append(lab(t,c))});d.append(cr);
-    }
+    ['Top-left','Top-right','Bottom-right','Bottom-left'].forEach(function(t,i){const c=el('input');c.type='checkbox';c.checked=!!g.cn[i];c.onchange=function(){g.cn=g.cn.slice();g.cn[i]=c.checked?1:0;save();renderGui()};cr.append(lab(t,c))});d.append(cr)}
   const ac=el('button','btn ghost small','Use these corners on every GUI');ac.type='button';ac.style.marginTop='6px';
   ac.onclick=function(){P.guis.forEach(function(x){x.rc=g.rc;x.round=g.round;x.cn=g.cn?g.cn.slice():[1,1,1,1]});save();renderGui();msg('Applied to all GUI.')};d.append(ac);
   if(g.type==='image'){head('Picture');const is=el('select');[['','None']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})).forEach(function(o){const op=el('option','',o[1]);op.value=o[0];is.append(op)});
@@ -3024,8 +3053,20 @@ function guiProps(d,g){const T=GTYPE[g.type]||GTYPE.frame;
   chk('Locked (cannot be dragged on the stage)',function(){return g.lock},function(v){g.lock=v});
   const row=el('div','tb');row.style.marginTop='10px';
   [['Bring forward',function(){guiMove(g,1)}],['Send back',function(){guiMove(g,-1)}],['Copy',function(){dupGui(g)}]].forEach(function(q){const b=el('button','btn ghost small',q[0]);b.type='button';b.onclick=q[1];row.append(b)});d.append(row);
-  const del=el('button','btn ghost small','Delete this GUI');del.type='button';del.style.marginTop='10px';del.onclick=function(){delGui(g)};d.append(del)}
+  const del=el('button','btn ghost small','Delete this GUI'+(guiKids(g.id).length?' and what is inside':''));del.type='button';del.style.marginTop='10px';del.onclick=function(){delGui(g)};d.append(del)}
 $('p-gui').onchange=function(){if(this.value)addGui(this.value);this.value=''};
+/* Explorer helpers for the GUI tree: rows can be dragged onto a Frame (or any GUI) to put them inside it, or onto "GUI" to take them out */
+function guiTreeRows(pid,d){guiKids(pid).forEach(function(g){const T=GTYPE[g.type]||GTYPE.frame,ks=guiKids(g.id),open=openG[g.id]!==false;
+    const r=xrow({d:d,ic:T.i,icc:T.c,nm:g.name,bd:[T.n+(ks.length?' · '+ks.length:'')],open:ks.length?open:undefined,onTg:ks.length?function(){openG[g.id]=!open;renderParts()}:null,
+      on:selGui===g.id,go:function(){if(animOn())return;guiSelect(g.id)},plus:{t:'gui',id:g.id}});
+    r.draggable=true;r.ondragstart=function(e){GDRAG=g.id;try{e.dataTransfer.setData('text/plain',g.id);e.dataTransfer.effectAllowed='move'}catch(x){}};
+    r.ondragend=function(){GDRAG=null;Array.from(document.querySelectorAll('.exr.gdrop')).forEach(function(n){n.classList.remove('gdrop')})};
+    r.ondragover=function(e){if(GDRAG&&GDRAG!==g.id&&!guiIsIn(g.id,GDRAG)){e.preventDefault();r.classList.add('gdrop')}};
+    r.ondragleave=function(){r.classList.remove('gdrop')};
+    r.ondrop=function(e){e.preventDefault();r.classList.remove('gdrop');const m=guiById(GDRAG);GDRAG=null;if(m)guiSetParent(m,g.id)};
+    if(ks.length&&open)guiTreeRows(g.id,d+1)})}
+function guiRootDrop(r){r.ondragover=function(e){if(GDRAG){e.preventDefault();r.classList.add('gdrop')}};r.ondragleave=function(){r.classList.remove('gdrop')};
+  r.ondrop=function(e){e.preventDefault();r.classList.remove('gdrop');const m=guiById(GDRAG);GDRAG=null;if(m)guiSetParent(m,'')}}
 /* ===== Explorer: services in the game tree ===== */
 const SV=[
  {k:'world',n:'World',i:'▦',d:'Everything that physically exists in the 3D game: parts, models and your character.'},
@@ -3127,10 +3168,11 @@ addEventListener('pointerdown',function(e){if(addM&&!addM.contains(e.target))clo
 addEventListener('keydown',function(e){if(e.key==='Escape'&&addM){e.stopPropagation();closeAdd()}},true);
 function isRigCtx(c){if(c.t==='model')return partsOf(c.id).some(function(p){return !p.parent&&kids(p).length>0});
   const p=c.t==='part'&&byId(c.id);return !!(p&&kids(rootOf(p)).length)}
-function ctxName(c){if(c.t==='svc'){const s=SV.find(function(x){return x.k===c.k});return s?s.n:''}
+function ctxName(c){if(c.t==='gui'){const gg=guiById(c.id);return gg?gg.name:''}if(c.t==='svc'){const s=SV.find(function(x){return x.k===c.k});return s?s.n:''}
   const o=c.t==='model'?byModel(c.id):byId(c.id);return o?o.name:''}
 function mi(ic,c,t,d,fn){return {ic:ic,c:c,t:t,d:d,fn:fn}}
-function addGroups(c){const O=[],Sx=[],A=[],k=c.k,own=c.t==='svc'?null:c.id;
+function addGroups(c){if(c.t==='gui'){const O2=[];[['text','Text','A text label inside this GUI'],['button','Button','A button inside this GUI'],['frame','Frame','A box inside this GUI'],['image','Image','A picture inside this GUI']].forEach(function(q){const T=GTYPE[q[0]];O2.push(mi(T.i,T.c,q[1],q[2],function(){addGui(q[0],c.id)}))});return [{g:'Put inside this GUI',items:O2}]}
+  const O=[],Sx=[],A=[],k=c.k,own=c.t==='svc'?null:c.id;
   const scr=function(g,t,d){return mi('\u270E','#c9822b',g,d,function(){addScript(own,t)})};
   if(c.t==='svc'){
     if(k==='world'||k==='shared'||k==='vault')O.push(mi('\u25A2','#3b82f6','Part','A 2x2x2 block where the camera looks',function(){addPartNear(c)}));
@@ -3211,13 +3253,13 @@ function renderParts(){const l=$('p-list');l.replaceChildren();
     if(s.k==='world'||s.k==='shared'||s.k==='vault')cnt=P.parts.filter(function(p){return !p.parent&&svcOf(p)===s.k}).length;
     else if(s.k==='squads')cnt=P.squads.length;else if(s.k==='gui')cnt=P.guis.length;else if(s.k==='scripts')cnt=P.scripts.length;else if(s.k==='tags')cnt=Object.keys(tagMap()).length;else if(s.k==='roster')cnt=1+S.oth.length;else if(s.k==='assets')cnt=Object.keys(P.assets.images).length+Object.keys(P.assets.audio).length+Object.keys(P.assets.meshes||{}).length;
     const go=function(){if(animOn())return;selSvc=s.k;selGui=null;sel=[];selModel=null;hl();buildEdit();renderParts()};
-    xrow({svc:1,d:0,ic:s.i,nm:s.n,bd:cnt==null?null:[String(cnt)],open:ex?open:undefined,onTg:ex?function(){openS[s.k]=!open;if(s.k==='gui'){if(open)selGui=null;else{sel=[];selModel=null;selSvc=null;selGui=null;hl();buildEdit()}}renderParts()}:null,title:s.d,
-      on:selSvc===s.k&&!sel.length&&!selModel,go:go,plus:PLUSOK.indexOf(s.k)>=0?{t:'svc',k:s.k}:null});
+    const sr=xrow({svc:1,d:0,ic:s.i,nm:s.n,bd:cnt==null?null:[String(cnt)],open:ex?open:undefined,onTg:ex?function(){openS[s.k]=!open;if(s.k==='gui'){if(open)selGui=null;else{sel=[];selModel=null;selSvc=null;selGui=null;hl();buildEdit()}}renderParts()}:null,title:s.d,
+      on:selSvc===s.k&&!sel.length&&!selModel,go:go,plus:PLUSOK.indexOf(s.k)>=0?{t:'svc',k:s.k}:null});if(s.k==='gui')guiRootDrop(sr);
     if(!ex||!open)return;
     if(s.k==='world'||s.k==='shared'||s.k==='vault'){if(!listIn(s.k)&&s.k!=='world')plain('(empty)',go)}
     else if(s.k==='roster'){const q=P.squads.find(function(z){return z.id===P.player.squad});plain(P.player.name+' (you)'+(q?'  \u2014  '+q.name:''),function(){pick((avTorso()||byId(P.avId)||{}).id,false,true)},'\u263A','#2fa95a');
       S.oth.forEach(function(n){plain(n,go,'\u263A','#3b82f6')})}
-    else if(s.k==='gui'){P.guis.forEach(function(g){const T=GTYPE[g.type]||GTYPE.frame;xrow({d:1,ic:T.i,icc:T.c,nm:g.name,bd:[T.n],on:selGui===g.id,go:function(){if(animOn())return;guiSelect(g.id)}})});if(!P.guis.length)plain('(no GUI yet)',go)}
+    else if(s.k==='gui'){guiTreeRows('',1);if(!P.guis.length)plain('(no GUI yet)',go)}
     else if(s.k==='squads')P.squads.forEach(function(q){plain(q.name,go,'\u25A0',q.color)});
     else if(s.k==='tags'){const m=tagMap();Object.keys(m).forEach(function(t){plain('# '+t+'   ('+m[t].length+')',function(){pickTag(t)})});if(!Object.keys(m).length)plain('(no tags yet)',go)}
     else if(s.k==='scripts'){P.scripts.forEach(function(sc){scrRow(sc,1,true)});if(!P.scripts.length)plain('(no scripts yet)',go)}
