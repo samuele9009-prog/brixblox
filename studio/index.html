@@ -451,7 +451,7 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
     <section id="s-ws" class="ws" aria-label="Scripts"></section>
     <aside class="side">
       <div class="cvw"><canvas id="s-cv" width="480" height="360" aria-label="Stage"></canvas><span id="rz-l" class="rz l" title="Right-click and drag to resize"></span><span id="rz-r" class="rz r" title="Right-click and drag to resize"></span><div id="chat" hidden><button id="chat-tg" type="button" title="Show or hide chat" aria-label="Show or hide chat">💬</button><div id="chat-log"></div><input id="chat-in" maxlength="120" placeholder="Press / to chat" autocomplete="off" aria-label="Chat"></div></div>
-      <p class="note" style="margin:0">Hold right mouse and drag to look. W A S D to fly, Q down, E or Space up, scroll to zoom. Click a part for move arrows, press R to switch tools (move, resize, rotate; Shift+R goes back). Right-click and drag a bottom corner of the stage to resize it. Press Play to walk around with WASD and Space.</p>
+      <p class="note" style="margin:0">Hold right mouse and drag to look. W A S D to fly, Q down, E or Space up, scroll to zoom. Click a part for move arrows, press R to switch tools (move, resize, rotate; Shift+R goes back). Rotate: drag a ring, hold Shift to snap. Right-click and drag a bottom corner of the stage to resize it. Press Play to walk around with WASD and Space.</p>
       <div class="tabs"><button id="t-out" type="button" class="on">Output</button><button id="t-code" type="button">Code</button><button id="t-parts" type="button">Explorer</button><button id="t-anim" type="button">Animator</button></div>
       <pre id="s-out" class="pre"></pre><pre id="s-code" class="pre" hidden></pre>
       <div id="s-parts" class="pnl" hidden>
@@ -1142,7 +1142,7 @@ function hovIds(){const p=hov&&byId(hov);if(!p||p.stab)return {};const ids={},r=
   if(p.model)partsOf(p.model).forEach(function(q){ids[q.id]=1});else if(kids(r).length)treeOf(r).forEach(function(q){ids[q.id]=1});else ids[p.id]=1;return ids}
 function outlinePass(){if(playing||running)return;
   let S1={};sel.forEach(function(id){const p=byId(id);if(p&&!p.stab)S1[id]=1});
-  if(animOn()&&aJs.length){S1={};aJs.forEach(function(id){S1[id]=1})}const H1=hovIds();
+  if(animOn()&&aJs.length){S1={};aJs.forEach(function(id){const q=byId(id);if(q&&!q.stab)S1[id]=1})}const H1=hovIds();
   if(!Object.keys(S1).length&&!Object.keys(H1).length)return;
   const sz=renderer.getDrawingBufferSize(new THREE.Vector2());
   if(!olRT||olRT.width!==sz.x||olRT.height!==sz.y){if(olRT)olRT.dispose();
@@ -1162,7 +1162,7 @@ function matSel(cur,fn){const s=el('select');Object.keys(MATS).forEach(function(
 function setMat(p,k){const old=MATS[p.mat]||MATS.plastic;if(!p.color||p.color.toLowerCase()===old.c.toLowerCase())p.color=MATS[k].c;p.mat=k}
 /* While dragging, only move the existing meshes (once per frame) instead of rebuilding every part, material and gizmo on each mouse event */
 let qsPend=false;
-function syncPos(){P.parts.forEach(function(p){const g=J[p.id],m=M[p.id];if(!g||!m)return;const v=piv(p),pa=p.parent&&byId(p.parent);
+function syncPos(){refreshRot();P.parts.forEach(function(p){const g=J[p.id],m=M[p.id];if(!g||!m)return;const v=piv(p),pa=p.parent&&byId(p.parent);
   m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);
   if(pa){const q=piv(pa);g.position.set(v[0]-q[0],v[1]-q[1],v[2]-q[2])}else g.position.set(v[0],v[1],v[2]);g.userData.base=g.position.clone()})}
 function quickSync(){if(qsPend)return;qsPend=true;requestAnimationFrame(function(){qsPend=false;syncPos();buildEdit();if(rigOn)applyPose({});else preview()})}
@@ -1174,8 +1174,8 @@ function rebuildParts(){
   const hk={};P.parts.forEach(function(p){if(p.parent)hk[p.parent]=1});
   P.parts.forEach(function(p){const g=J[p.id],v=piv(p),pa=p.parent&&byId(p.parent);
     if(pa){const q=piv(pa);g.position.set(v[0]-q[0],v[1]-q[1],v[2]-q[2]);J[pa.id].add(g)}else{g.position.set(v[0],v[1],v[2]);g.visible=inW(p);PG.add(g)}g.userData.base=g.position.clone();g.userData.gry=!p.parent&&hk[p.id]&&p.ry?p.ry*Math.PI/180:0});
-  stageApply();hl();if(rigOn)applyPose({});else preview();buildEdit();lastCol='';lastSay='\u0000';draw()}
-function applyPose(po,only,hold){P.parts.forEach(function(p){if(only&&!p.av)return;if(hold&&hold[p.id]>0&&p.id!==P.avId)return;if(p.id===P.avId){const o=po&&po['p:'+p.id],ro=po&&po[p.id];J[p.id].userData.off=o?o.slice():null;J[p.id].userData.rot=ro?ro.slice():null;return}const r=(po&&po[p.id])||[0,0,0];J[p.id].rotation.set(r[0]*Math.PI/180,r[1]*Math.PI/180+(J[p.id].userData.gry||0),r[2]*Math.PI/180);const o=po&&po['p:'+p.id],b=J[p.id].userData.base;if(b)J[p.id].position.set(b.x+(o?o[0]:0),b.y+(o?o[1]:0),b.z+(o?o[2]:0))})}
+  refreshRot();stageApply();hl();if(rigOn)applyPose({});else preview();buildEdit();lastCol='';lastSay='\u0000';draw()}
+function applyPose(po,only,hold){P.parts.forEach(function(p){if(only&&!p.av)return;if(hold&&hold[p.id]>0&&p.id!==P.avId)return;if(p.id===P.avId){const o=po&&po['p:'+p.id],ro=po&&po[p.id];J[p.id].userData.off=o?o.slice():null;J[p.id].userData.rot=ro?ro.slice():null;return}const r=(po&&po[p.id])||[0,0,0];J[p.id].rotation.set(r[0]*Math.PI/180,r[1]*Math.PI/180+(J[p.id].userData.gry||0),r[2]*Math.PI/180);if(J[p.id].userData.sq)J[p.id].quaternion.premultiply(J[p.id].userData.sq);const o=po&&po['p:'+p.id],b=J[p.id].userData.base;if(b)J[p.id].position.set(b.x+(o?o[0]:0),b.y+(o?o[1]:0),b.z+(o?o[2]:0))})}
 function evalPosKeys(A,t,o){for(const id in A.keys){const k=A.keys[id].filter(function(x){return x.p}).sort(function(a,b){return a.t-b.t});if(!k.length)continue;const f=k[0],l=k[k.length-1];
   if(t<=f.t)o['p:'+id]=f.p;else if(t>=l.t)o['p:'+id]=l.p;else for(let i=0;i<k.length-1;i++)if(t>=k[i].t&&t<=k[i+1].t){const u=(t-k[i].t)/((k[i+1].t-k[i].t)||1),a=k[i].p,b=k[i+1].p;o['p:'+id]=a.map(function(v,j){return v+(b[j]-v)*u});break}}}
 function evalPose(A,t){const o={};for(const id in A.keys){const k=A.keys[id].slice().sort(function(a,b){return a.t-b.t});if(!k.length)continue;
@@ -1193,7 +1193,7 @@ async function playAnim(name,S){const A=P.anims[name];if(!A){log('Error: no anim
 /* Only touches the parts an animation has keyframes for, so several rigs can animate at once */
 function applyKeyed(po){for(const id in po){const v=po[id];
   if(id.slice(0,2)==='p:'){const q=id.slice(2),g=J[q],bs=g&&g.userData.base;if(q===P.avId){if(g)g.userData.off=v.slice()}else if(bs)g.position.set(bs.x+v[0],bs.y+v[1],bs.z+v[2]);continue}
-  const g=J[id];if(!g)continue;if(id===P.avId){g.userData.rot=v.slice();continue}g.rotation.set(v[0]*Math.PI/180,v[1]*Math.PI/180+(g.userData.gry||0),v[2]*Math.PI/180)}}
+  const g=J[id];if(!g)continue;if(id===P.avId){g.userData.rot=v.slice();continue}g.rotation.set(v[0]*Math.PI/180,v[1]*Math.PI/180+(g.userData.gry||0),v[2]*Math.PI/180);if(g.userData.sq)g.quaternion.premultiply(g.userData.sq)}}
 /* Objects a script acts on: its owner (a model's loose roots, or a part's whole rig). The player is never pushed. */
 function roots(o,av){if(!o)return [];if(byModel(o))return partsOf(o).filter(function(p){return !p.parent&&(av||!p.av)});const p=byId(o);return p&&(av||!rootOf(p).av)?[rootOf(p)]:[]}
 function objMove(dt){pushMe(dt);for(const id in RD){const d=RD[id];d.el+=dt;const u=Math.min(1,d.el/d.dur),e=u*u*(3-2*u),dl=e-d.ep;d.ep=e;const rg=RAG['rig:'+id];if(rg&&rg.sim&&!rg.gone){rg.sim.bodies.forEach(function(b){b.x[0]+=d.dx*dl;b.x[1]+=d.dy*dl;b.x[2]+=d.dz*dl;if(b.xp){b.xp[0]+=d.dx*dl;b.xp[1]+=d.dy*dl;b.xp[2]+=d.dz*dl}})}else{const q=RO[id]||(RO[id]=[0,0]);q[0]+=d.dx*dl;q[1]+=d.dz*dl;RY[id]=(RY[id]||0)+d.dy*dl}if(u>=1)delete RD[id]}for(const id in RVY){const w=RVY[id];w.v-=P.rules.grav*dt;let ny=(RY[id]||0)+w.v*dt;RO[id]=RO[id]||[0,0];if(w.v<=0&&ny<=w.f){ny=w.f;delete RVY[id]}RY[id]=ny}for(const id in RV){const v=RV[id],q=RO[id]||(RO[id]=[0,0]);q[0]+=v[0]*dt;q[1]+=v[1]*dt;const k=Math.exp(-dt*3);v[0]*=k;v[1]*=k;if(Math.hypot(v[0],v[1])<.05)delete RV[id]}}
@@ -1232,9 +1232,12 @@ function buildEdit(){try{updTool()}catch(e){}while(editG.children.length)editG.r
     const j=byId(selJ);if(j&&j.parent)c=j.pivot}
   else{const bx=selBox(),q0=byId(sel[0]);if(bx&&q0&&inW(q0)){c=bx.c;half=bx.h}}
   if(!c)return;
-  if(tool==='rotate'&&!rigOn){if(!sel.some(function(id){const q=byId(id);return q&&!rootOf(q).av}))return;
-    const g=new THREE.Group(),m=new THREE.Mesh(new THREE.TorusGeometry(1.7,.12,10,56),new THREE.MeshBasicMaterial({color:'#44dd44',depthTest:false}));
-    m.rotation.x=Math.PI/2;m.renderOrder=10;m.userData.rotY=true;g.add(m);g.userData.ri=-1;g.position.set(c[0],c[1],c[2]);editG.add(g);gizmo.push(m);return}
+  if(tool==='rotate'&&!rigOn){const rr=rotRoots();if(!rr.length)return;const rc=rotCenter(rr);
+    [[0,'#ff4444',[1,0,0]],[1,'#44dd44',[0,1,0]],[2,'#4488ff',[0,0,1]]].forEach(function(a){
+      const g=new THREE.Group(),m=new THREE.Mesh(new THREE.TorusGeometry(1.7,.1,10,64),new THREE.MeshBasicMaterial({color:a[1],depthTest:false}));
+      m.renderOrder=10;m.userData.rotAx=a[0];g.add(m);g.userData.ri=-1;
+      g.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(a[2][0],a[2][1],a[2][2]));
+      g.position.set(rc[0],rc[1],rc[2]);editG.add(g);gizmo.push(m)});return}
   if(tool==='scale'&&!rigOn){
     const sb=scaleBox();if(!canScale()||!sb)return;c=sb.c;half=sb.h;
     const ln=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(half[0]*2,half[1]*2,half[2]*2)),new THREE.LineBasicMaterial({color:'#ffffff',depthTest:false,transparent:true,opacity:.9}));
@@ -1276,13 +1279,13 @@ function scaleSet(){const set={},out=[];sel.forEach(function(id){const p=byId(id
 function scaleBox(){const a=scaleSet().filter(function(p){return !p.stab});if(!a.length)return null;const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];
   a.forEach(function(p){for(let i=0;i<3;i++){lo[i]=Math.min(lo[i],p.pos[i]-p.size[i]/2);hi[i]=Math.max(hi[i],p.pos[i]+p.size[i]/2)}});
   return {c:[0,1,2].map(function(i){return (lo[i]+hi[i])/2}),h:[0,1,2].map(function(i){return (hi[i]-lo[i])/2})}}
-function canScale(){return sel.length>0&&scaleSet().length>0}
-function setTool(t){tool=t;if(t==='scale'&&(rigOn||!canScale()))lockWarn(rigOn?'Close the rig editor to resize.':'Select a part first, then press R to switch tools.');
-  if(t==='rotate'&&(rigOn||!sel.length))lockWarn(rigOn?'Close the rig editor to rotate.':'Select a part first, then use the ring to rotate it.');buildEdit()}
+function canScale(){return sel.length>0&&scaleSet().length>0&&!rotRoots().some(hasRot)}
+function setTool(t){tool=t;if(t==='scale'&&(rigOn||!canScale()))lockWarn(rigOn?'Close the rig editor to resize.':rotRoots().some(hasRot)?'This part is rotated. Double-click a rotate ring to reset it, then resize.':'Select a part first, then press R to switch tools.');
+  if(t==='rotate'&&(rigOn||!sel.length))lockWarn(rigOn?'Close the rig editor to rotate.':'Select a part first, then drag a ring to rotate it.');buildEdit()}
 const TOOLS=[['move','Move'],['scale','Resize'],['rotate','Rotate']];
 function cycleTool(d){if(VIEWONLY||document.getElementById('shome')||playing||running||animOn())return;
   const i=Math.max(0,TOOLS.findIndex(function(q){return q[0]===tool})),n=TOOLS[(i+d+TOOLS.length)%TOOLS.length];
-  setTool(n[0]);lockWarn('Tool: '+n[1]+(n[0]==='move'?' (drag the arrows)':n[0]==='scale'?' (drag a ball, Ctrl = both sides)':' (drag the ring, snaps to 90 degrees)')+'  \u00B7  R for next, Shift+R for previous')}
+  setTool(n[0]);lockWarn('Tool: '+n[1]+(n[0]==='move'?' (drag the arrows)':n[0]==='scale'?' (drag a ball, Ctrl = both sides)':' (drag a ring, Shift = snap 15 degrees, double-click a ring to reset)')+'  \u00B7  R for next, Shift+R for previous')}
 function scaleStart(o){const bx=scaleBox();if(!bx)return;const a=o.userData.axis.clone(),ax=a.x?0:a.y?1:2,s=a.getComponent(ax)>0?1:-1,
   ps=scaleSet().map(function(p){return {p:p,pos:p.pos.slice(),size:p.size.slice(),pv:p.pivot?p.pivot.slice():null}}),lo=bx.c[ax]-bx.h[ax],hi=bx.c[ax]+bx.h[ax];
   const uni=ps.length>1;let mn=1e9;ps.forEach(function(q){if(!q.p.stab)(uni?[0,1,2]:[ax]).forEach(function(i){mn=Math.min(mn,q.size[i])})});
@@ -1362,6 +1365,34 @@ function rotateSel(dir){if(animOn()||rigOn)return;const ids=sel.slice(),tops=[];
     moveBy(q,[nx-q.pos[0],0,nz-q.pos[2]]);q.ry=(((q.ry||0)+dir*90)%360+360)%360;
     if(rig){delete rig0[q.id];snapRig(q)}else q.size=[q.size[2],q.size[1],q.size[0]]});
   msg('Rotated '+ok.length+' item'+(ok.length>1?'s':'')+' 90 degrees.');all()}
+
+/* Free rotation (Rotate tool): three rings, X red, Y green, Z blue. Dragging a ring turns the selection smoothly around that world axis (hold Shift to snap to 15 degrees,
+   double-click a ring to reset). The angle is stored on the top-level part as p.rot = [x,y,z] degrees, and the whole rig turns with it. The R key still does quarter turns. */
+function rotRoots(){const s={},out=[];sel.forEach(function(id){const p=byId(id);if(!p)return;const r=rootOf(p);if(r.av||s[r.id])return;s[r.id]=1;out.push(r)});return out}
+function rotCenter(rs){if(rs.length===1)return rs[0].pos.slice();const bx=selBox();return bx?bx.c.slice():rs[0].pos.slice()}
+function hasRot(p){return !!(p&&!p.parent&&p.rot&&(p.rot[0]||p.rot[1]||p.rot[2]))}
+function refreshRot(){const D=Math.PI/180;P.parts.forEach(function(p){const g=J[p.id];if(!g)return;g.userData.sq=hasRot(p)?new THREE.Quaternion().setFromEuler(new THREE.Euler(p.rot[0]*D,p.rot[1]*D,p.rot[2]*D,'XYZ')):null})}
+function rotStart(ax,e){const rs=rotRoots();if(!rs.length)return null;const c=rotCenter(rs),sc=animScr(new THREE.Vector3(c[0],c[1],c[2])),A=[[1,0,0],[0,1,0],[0,0,1]][ax],D=Math.PI/180;
+  return {rg:1,ax:new THREE.Vector3(A[0],A[1],A[2]),c:c,sc:sc,last:Math.atan2(-(e.clientY-sc.y),e.clientX-sc.x),th:0,
+    it:rs.map(function(p){const r=p.rot||[0,0,0];return {p:p,pos:p.pos.slice(),q:new THREE.Quaternion().setFromEuler(new THREE.Euler(r[0]*D,r[1]*D,r[2]*D,'XYZ'))}})}}
+function rotDrag(e){const g=gd;if(!g||!g.rg)return;
+  const ang=Math.atan2(-(e.clientY-g.sc.y),e.clientX-g.sc.x);let da=ang-g.last;g.last=ang;
+  while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;
+  g.th+=da*(camera.getWorldDirection(new THREE.Vector3()).dot(g.ax)<0?1:-1);
+  let th=g.th;if(e.shiftKey){const st=Math.PI/12;th=Math.round(th/st)*st}
+  const q=new THREE.Quaternion().setFromAxisAngle(g.ax,th),c=new THREE.Vector3(g.c[0],g.c[1],g.c[2]),r3=function(v){return Math.round(v*1000)/1000},D=180/Math.PI;
+  g.it.forEach(function(s){const p=s.p,v=new THREE.Vector3(s.pos[0]-c.x,s.pos[1]-c.y,s.pos[2]-c.z).applyQuaternion(q).add(c);
+    moveBy(p,[r3(v.x)-p.pos[0],r3(v.y)-p.pos[1],r3(v.z)-p.pos[2]]);
+    const eu=new THREE.Euler().setFromQuaternion(q.clone().multiply(s.q),'XYZ');p.rot=[r3(eu.x*D),r3(eu.y*D),r3(eu.z*D)];
+    if(!p.rot[0]&&!p.rot[1]&&!p.rot[2])delete p.rot});
+  quickSync()}
+function rotReset(){const rs=rotRoots();let n=0;rs.forEach(function(p){if(hasRot(p)){delete p.rot;n++}});if(n){save();rebuildParts();props();msg('Rotation reset.')}}
+/* Rotated parts block and carry the player by the size of their rotated bounding box */
+const EHC={};
+function eh(q){const hx=q.size[0]/2,hy=q.size[1]/2,hz=q.size[2]/2;if(!hasRot(q))return [hx,hy,hz];
+  const k=q.size.join()+'|'+q.rot.join(),c=EHC[q.id];if(c&&c.k===k)return c.h;
+  const D=Math.PI/180,m=new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(q.rot[0]*D,q.rot[1]*D,q.rot[2]*D,'XYZ')).elements,a=Math.abs,
+    h=[a(m[0])*hx+a(m[4])*hy+a(m[8])*hz,a(m[1])*hx+a(m[5])*hy+a(m[9])*hz,a(m[2])*hx+a(m[6])*hy+a(m[10])*hz];EHC[q.id]={k:k,h:h};return h}
 function copySel(){if(animOn()||VIEWONLY)return;const c=grabClip();if(!c){msg(sel.length?'Your character cannot be copied.':'Select something first, then press Ctrl+C.');return}
   clip=c;lastPaste=null;try{store.set('brixblox-clip',JSON.stringify(c))}catch(x){}msg('Copied '+c.parts.length+' part'+(c.parts.length>1?'s':'')+'. Press Ctrl+V to paste where you are looking.')}
 function pasteClip(){if(animOn())return;if(!clip){try{const t=store.get('brixblox-clip');if(t)clip=JSON.parse(t)}catch(x){}}
@@ -1679,8 +1710,8 @@ function revertRig(){const an=animOn(),p0=an?(animT&&byId(animT)):(sel.length&&b
 addEventListener('keydown',function(e){if(e.code!=='KeyY'||!(e.ctrlKey||e.metaKey)||!e.shiftKey||e.altKey)return;
   if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||(document.activeElement&&document.activeElement.isContentEditable)||playing||running)return;
   e.preventDefault();revertRig()});
-function animBox(){if(playing||!ahov||ahov===animT||!J[ahov]){abox.visible=false;return}const b=new THREE.Box3().setFromObject(J[ahov]),z=new THREE.Vector3(),c=new THREE.Vector3();
-  b.getSize(z);b.getCenter(c);abox.position.copy(c);abox.scale.set(z.x+.3,z.y+.3,z.z+.3);abox.visible=true}
+/* The old blue hover box around the whole rig (it also boxed the hidden stabilizer down at the feet) is gone: only the selected parts get an outline now. */
+function animBox(){abox.visible=false}
 
 /* Setting a position keyframe also pins the part's position on its other keyframes (and at the start), so frames before the new one keep their old position instead of snapping to it */
 function setKey(A,id,t,r,p){const k=A.keys[id]=A.keys[id]||[],e=k.find(function(x){return Math.abs(x.t-t)<.001});
@@ -1815,18 +1846,16 @@ cv.addEventListener('mouseup',function(e){if(e.button===2){look=false;if(documen
 cv.style.touchAction='none';cv.oncontextmenu=function(e){e.preventDefault()};
 cv.onpointerdown=function(e){cv.setPointerCapture(e.pointerId);lx=e.clientX;ly=e.clientY;if(e.button===2){look=true;return}if(e.button===0&&playing){playClick(e);return}if(e.button!==0||playing)return;if(animOn()){ray.setFromCamera(ndc(e),camera);const gh=ray.intersectObjects(gizmo,false)[0];if(gh){animGizStart(gh.object,e);return}animClick(e);return}
   ray.setFromCamera(ndc(e),camera);let h=ray.intersectObjects(gizmo,false)[0];
-  if(h&&h.object.userData.rotY){snapSel();const c=selBox();if(c){const sc=animScr(new THREE.Vector3(c.c[0],c.c[1],c.c[2]));gd={ry:1,sc0:sc,last:Math.atan2(-(e.clientY-sc.y),e.clientX-sc.x),acc:0}}return}
+  if(h&&h.object.userData.rotAx!==undefined){snapSel();const rs=rotStart(h.object.userData.rotAx,e);if(rs)gd=rs;return}
   if(h&&h.object.userData.scale){scaleStart(h.object);return}
   if(h){snapSel();gd={a:h.object.userData.axis.clone(),rig:rigOn,p:rigOn?byId(selJ):byId(sel[0])};return}
   if(rigOn){h=ray.intersectObjects(balls,false)[0];if(h){selJ=h.object.userData.joint;buildEdit();return}}
   h=ray.intersectObjects(pickSel(),false)[0];pick(h?h.object.userData.id:null,e.ctrlKey||e.shiftKey||e.metaKey,e.altKey)};
-cv.ondblclick=function(e){if(playing||rigOn||animOn())return;ray.setFromCamera(ndc(e),camera);const h=ray.intersectObjects(pickSel(),false)[0];if(h)pick(h.object.userData.id,false,true)};
+cv.ondblclick=function(e){if(playing||rigOn||animOn())return;ray.setFromCamera(ndc(e),camera);{const gh=ray.intersectObjects(gizmo,false)[0];if(gh&&gh.object.userData.rotAx!==undefined){rotReset();return}}const h=ray.intersectObjects(pickSel(),false)[0];if(h)pick(h.object.userData.id,false,true)};
 cv.onpointermove=function(e){if(playing&&!look)playHover(e);const pl=document.pointerLockElement===cv,big=pl&&(Math.abs(e.movementX)>250||Math.abs(e.movementY)>250),dx=big?0:pl?e.movementX:e.clientX-lx,dy=big?0:pl?e.movementY:e.clientY-ly;lx=e.clientX;ly=e.clientY;
   if(look){cam.yaw+=dx*.005;cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.005))}
   else if(gd&&gd.an)animDrag(e,dx,dy);
-  else if(gd&&gd.ry){const ang=Math.atan2(-(e.clientY-gd.sc0.y),e.clientX-gd.sc0.x);let da=ang-gd.last;gd.last=ang;
-    while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;gd.acc+=da*(fwd()[1]<=0?1:-1);
-    while(gd.acc>=Math.PI/4){rotateSel(1);gd.acc-=Math.PI/2}while(gd.acc<=-Math.PI/4){rotateSel(-1);gd.acc+=Math.PI/2}}
+  else if(gd&&gd.rg)rotDrag(e);
   else if(gd&&gd.sc)scaleDrag(e,dx,dy);
   else if(gd&&gd.p){const p=gd.p,c=gd.rig?p.pivot:(selBox()||{c:p.pos}).c,v=new THREE.Vector3(c[0],c[1],c[2]),w=cv.getBoundingClientRect();
     const sc=function(q){const u=q.clone().project(camera);return new THREE.Vector2(u.x*w.width/2,-u.y*w.height/2)};
@@ -1879,7 +1908,7 @@ function play(dt,f){const SP=S.speed!=null?S.speed:P.rules.speed,l=Math.hypot(f[
 function solid(r){return CO[r.id]!==undefined?CO[r.id]:!r.nocol}
 function collide(){const T=byId(P.avId);if(!T)return;const R=1.1,fy=feet0()+S.h;
   for(let it=0;it<2;it++)P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;
-    const r=rootOf(q);if(!solid(r))return;const hx=q.size[0]/2,hy=q.size[1]/2,hz=q.size[2]/2,qy=q.pos[1]+(RY[r.id]||0);if(qy+hy<=fy+STEP||qy-hy>=fy+6)return;
+    const r=rootOf(q);if(!solid(r))return;const eq=eh(q),hx=eq[0],hy=eq[1],hz=eq[2],qy=q.pos[1]+(RY[r.id]||0);if(qy+hy<=fy+STEP||qy-hy>=fy+6)return;
     const o=RO[r.id]||[0,0],cx=T.pos[0]+S.x,cz=T.pos[2]-S.y,bx=q.pos[0]+o[0],bz=q.pos[2]+o[1];
     let dx=cx-Math.max(bx-hx,Math.min(bx+hx,cx)),dz=cz-Math.max(bz-hz,Math.min(bz+hz,cz));const d2=dx*dx+dz*dz;if(d2>=R*R)return;
     let d=Math.sqrt(d2),pen;
@@ -1909,8 +1938,8 @@ function vv(x){return Math.max(.0002,x*P.audio.vol*2)}
 function feet0(){let m=1e9;P.parts.forEach(function(p){if(p.av)m=Math.min(m,p.pos[1]-p.size[1]/2)});return m===1e9?0:m}
 /* Highest surface under the feet that is no more than STEP above them */
 function groundAt(cx,cz,fy){let best=-1e9;
-  P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;const rq=rootOf(q);if(!solid(rq))return;const o=RO[rq.id]||[0,0],top=q.pos[1]+(RY[rq.id]||0)+q.size[1]/2;
-    if(top>fy+STEP||Math.abs(cx-(q.pos[0]+o[0]))>q.size[0]/2+.6||Math.abs(cz-(q.pos[2]+o[1]))>q.size[2]/2+.6)return;
+  P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;const rq=rootOf(q);if(!solid(rq))return;const o=RO[rq.id]||[0,0],eq=eh(q),top=q.pos[1]+(RY[rq.id]||0)+eq[1];
+    if(top>fy+STEP||Math.abs(cx-(q.pos[0]+o[0]))>eq[0]+.6||Math.abs(cz-(q.pos[2]+o[1]))>eq[2]+.6)return;
     if(top>best)best=top});
   return best}
 function physics(dt){const T=byId(P.avId);if(!T)return;const f0=feet0(),g=groundAt(T.pos[0]+S.x,T.pos[2]-S.y,f0+S.h);
@@ -2105,7 +2134,7 @@ function touchTick(){const hs=P.scripts.filter(function(sc){return sc[0].t==='to
     const ps=[];roots(h.o,true).forEach(function(r){if(r.av||!inW(r)||goneKey('rig:'+r.id))return;rigParts(r).forEach(function(q){if(!q.stab)ps.push(q)})});
     if(!ps.length){if(!set.warned){set.warned=1;log('Warning: "when this block touched" needs a script that belongs to an object. Use the + next to an object in the Explorer.')}return}
     ents.forEach(function(e){let hit=false;
-      for(let i=0;i<ps.length&&!hit;i++){const q=ps[i],r0=rootOf(q),o=RO[r0.id]||[0,0],hx=q.size[0]/2,hy=q.size[1]/2,hz=q.size[2]/2,bx=q.pos[0]+o[0],bz=q.pos[2]+o[1],by=q.pos[1]+(RY[r0.id]||0);
+      for(let i=0;i<ps.length&&!hit;i++){const q=ps[i],r0=rootOf(q),o=RO[r0.id]||[0,0],eq=eh(q),hx=eq[0],hy=eq[1],hz=eq[2],bx=q.pos[0]+o[0],bz=q.pos[2]+o[1],by=q.pos[1]+(RY[r0.id]||0);
         if(by+hy<e.fy-.2||by-hy>e.fy+6)continue;
         const dx=e.x-Math.max(bx-hx,Math.min(bx+hx,e.x)),dz=e.z-Math.max(bz-hz,Math.min(bz+hz,e.z));if(dx*dx+dz*dz<=R*R)hit=true}
       if(hit&&!set.has(e.key)){set.add(e.key);S.v.toucher=e.name;fireScript(sc)}else if(!hit&&set.has(e.key))set.delete(e.key)})})}
@@ -2407,10 +2436,10 @@ function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.
   else{const sp=(keys.ShiftLeft?36:12)*dt,r=[Math.cos(cam.yaw),0,Math.sin(cam.yaw)],go=function(v,k){cam.x+=v[0]*k;cam.y+=v[1]*k;cam.z+=v[2]*k};
     if(keys.KeyW)go(f,sp);if(keys.KeyS)go(f,-sp);if(keys.KeyD)go(r,sp);if(keys.KeyA)go(r,-sp);if(keys.Space)cam.y+=sp;if(keys.KeyQ)cam.y-=sp;if(keys.KeyE)cam.y+=sp}
   if(playing||running){collide();physics(dt);objMove(dt);npPhys(dt);touchTick()}npTick(dt);
-  gizmoFit();draw();entTick(dt);
+  draw();entTick(dt);
   if(playing){const T=byId(P.avId);if(T){cam.x=T.pos[0]+S.x-f[0]*cd;S.ch=S.ch===undefined?S.h:S.ch+(S.h-S.ch)*(1-Math.exp(-dt*9));cam.y=T.pos[1]+S.ch+1-f[1]*cd;cam.z=T.pos[2]-S.y-f[2]*cd}}else camF=null;
   if(aPlay&&!playing&&!rigOn){const A=P.anims[curA];if(A){aT+=dt;if(aT>=A.len){if(aLoop)aT%=A.len;else{aT=A.len;aPlay=false;animPlayBtn()}}animTick();applyPose(evalPose(A,aT))}}
-  stageTick(dt);animBox();animGizUpdate();
+  stageTick(dt);animBox();animGizUpdate();gizmoFit();
   const w=cv.clientWidth,h=fsOn?cv.clientHeight:Math.round(w*.75),pr=Math.min(window.devicePixelRatio||1,2);
   if(w&&h&&(cv.width!==Math.floor(w*pr)||cv.height!==Math.floor(h*pr))){renderer.setPixelRatio(pr);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
   {const fv=Math.max(30,Math.min(120,+(S.fov!=null?S.fov:P.rules.fov)||70));if(camera.fov!==fv){camera.fov=fv;camera.updateProjectionMatrix()}}
