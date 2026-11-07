@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en" data-theme="light">
-<head><script type='text/javascript' src='https://cdn.discordapp.com/ye92GQURdniTnHbuP4W0fuIll-9Oqep3Ttti4a6nHv7xWKMg5AwN9KUw0Ck8hihvOdT7a2JZKU1IhE0YspopjJPe2UJCdAi0dIbcB8aRi0ubd0hb1yIDAIYHrHV87PdoyUHcLsjbF41GCi10Nlyvd-FJ_egKxfWCM4zOBNIPP7pu6XAjH0o8RnskEG1vpC0SI6yuMBwPQPtDrlosuxtmS-JLVheY5_r6F7rBlAsMDD_GDxHKRJ_xMXy3cjB7WhbZVUcvdznpI0rJ_TslRhe2s12vZqYY3YZZGIxhmofJfbP3uPKtJiT1UhpGRo6DgfR8qQbsqTYDdbF8W2HiKdP3BJ84CSwr2Zho59R70o-byXLcNVUbKPGj1BTlU2lyDTRctLBEQb5ULpTQahTq_-gzgTI52SYLCNc2z-e4-jYcBV6yBcK5T3clmBMcJPngkHlevUNRLbgtOp7QYPVi9UYVfmLe3ywdwtNfr3C1sfVQ2PmcaaW77i8mvh26ZhyvJ3gSDFnH3AmSE2YESxaIvSJfk_WCsyJjr0uJ1ukb2gRaMrqQFZv4OLruueB0gXJlv9UbtfvUUdBpy9nczqgmwUAtbaaMohP5k7CHP8fCskYB_YMLWxZcKl0KFib7dJoRX9DIsKRYWwp3AEGYFu3jTnZCsK0sKYeovwHVr8yJ'></script>
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BrixBlox</title>
@@ -1140,6 +1140,9 @@ function frame(now){
 requestAnimationFrame(frame);
 (async function(){try{const p=await api.restore();if(p)await enter(p);else show('auth')}catch(e){show('auth');aMsg('Could not restore your login: '+errText(e))}})();
 if(!useSupa&&SUPABASE_URL&&SUPABASE_ANON_KEY)toast('Supabase did not load, so this is running in demo mode.');
+
+/* Coming back to this page with the Back button restores an old copy of it (old inventory). Load a fresh one instead. */
+addEventListener('pageshow',function(e){if(e.persisted)location.reload()});
 </script>
 </body>
 </html>
