@@ -2112,7 +2112,7 @@ function sizer(h,sg){h.oncontextmenu=function(e){e.preventDefault()};
 sizer($('rz-l'),-1);sizer($('rz-r'),1);
 
 /* Play: your character walks with WASD, Space jumps. Solid parts block you; Movable parts get pushed. */
-function play(dt,f){const SP=S.speed!=null?S.speed:P.rules.speed,l=Math.hypot(f[0],f[2])||1,ux=f[0]/l,uz=f[2]/l,ix=S.rag?0:(keys.KeyD?1:0)-(keys.KeyA?1:0),iz=S.rag?0:(keys.KeyW?1:0)-(keys.KeyS?1:0);
+function play(dt,f){const SP=(S.fly&&amAdmin()?2.2:1)*(S.speed!=null?S.speed:P.rules.speed),l=Math.hypot(f[0],f[2])||1,ux=f[0]/l,uz=f[2]/l,ix=S.rag?0:(keys.KeyD?1:0)-(keys.KeyA?1:0),iz=S.rag?0:(keys.KeyW?1:0)-(keys.KeyS?1:0);
   let wx=ux*iz-uz*ix,wz=uz*iz+ux*ix;const m=Math.hypot(wx,wz),mv=m>0;
   if(mv){wx/=m;wz/=m}
   const ka=1-Math.exp(-dt*(S.gr?13:6));S.pvx+=((mv?wx*SP:0)-S.pvx)*ka;S.pvz+=((mv?wz*SP:0)-S.pvz)*ka;S.x+=S.pvx*dt;S.y-=S.pvz*dt;
@@ -2163,8 +2163,10 @@ function groundAt(cx,cz,fy){let best=-1e9;
     if(top>best)best=top});
   return best}
 function physics(dt){const T=byId(P.avId);if(!T)return;const f0=feet0(),g=groundAt(T.pos[0]+S.x,T.pos[2]-S.y,f0+S.h);
-  S.vy=Math.max(-220,S.vy-P.rules.grav*dt);const nh=S.h+S.vy*dt;
-  if(S.vy<=0&&g>-1e8&&f0+nh<=g){S.h=g-f0;S.vy=0;S.gr=true}else{S.h=nh;S.gr=false}
+  if(S.fly&&!S.rag&&amAdmin()){/* admin flight: Space up, Q down, no gravity */
+    const dv=((keys.Space?1:0)-(keys.KeyQ?1:0))*38;let nh=S.h+dv*dt;if(g>-1e8&&f0+nh<=g){nh=g-f0;S.gr=true}else S.gr=false;S.h=nh;S.vy=0}
+  else{S.vy=Math.max(-220,S.vy-P.rules.grav*dt);const nh=S.h+S.vy*dt;
+  if(S.vy<=0&&g>-1e8&&f0+nh<=g){S.h=g-f0;S.vy=0;S.gr=true}else{S.h=nh;S.gr=false}}
   if(f0+S.h<-150){S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0}}
 
 /* ===== Atmosphere: sky colour, time of day, brightness, fog ===== */
@@ -2369,7 +2371,7 @@ function playClick(e){const c=clickInfo(e);if(!c)return;const l=clickScripts(c.p
 function nameCol(n){if(n===P.player.name){const q=P.squads.find(function(z){return z.id===P.player.squad});if(q)return q.color}let h=0;for(let i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))>>>0;return 'hsl('+(h%360)+',75%,72%)'}
 /* chatLine(name,message) shows "Name: message" with a coloured name; chatLine(text,null,true) is a system line. Lines fade after 12 s unless you are typing. */
 function chatLine(a,b,sys){const L=$('chat-log'),d=el('div',sys?'sys':'');
-  if(sys)d.textContent=a;else{const n=el('span','cn',a+': ');n.style.color=nameCol(a);d.append(n,document.createTextNode(b))}
+  if(sys)d.textContent=a;else{const n=el('span','cn',a+': ');n.style.color=nameCol(a);if(isAdminName(a))d.append(admIcon(13));d.append(n,document.createTextNode(b))}
   L.append(d);while(L.children.length>60)L.firstChild.remove();L.scrollTop=1e9;setTimeout(function(){d.classList.add('old')},12000)}
 function chatSys(t){chatLine(t,null,true)}
 function chatShow(on){const c=$('chat');c.hidden=!on;if(on)c.classList.remove('min');if(!on){$('chat-log').replaceChildren();$('chat-in').value='';if(document.activeElement===$('chat-in'))$('chat-in').blur()}}
@@ -2836,9 +2838,9 @@ async function studioHome(){
   const who=el('div','who');who.append(mb('Create a new game','',function(){reloadInto('__new__')}),mb('← BrixBlox','ghost',function(){location.href=SITE_URL}));bar.append(lg,who);
   const pg=el('div','page');pg.style.maxWidth='1280px';pg.append(el('h2','big','Your games'));const box=el('div');pg.append(box);ov.append(bar,pg);document.body.append(ov);
   const map={},L=glib();
-  Object.keys(L).forEach(function(id){const g=L[id];if(mineG(g)&&id.indexOf('acc_')!==0)map[id]={id:id,name:g.name||'Untitled',vis:g.vis||'private',at:g.at||0}});
+  Object.keys(L).forEach(function(id){const g=L[id];if(mineG(g)&&id.indexOf('acc_')!==0&&id.indexOf('sys_')!==0)map[id]={id:id,name:g.name||'Untitled',vis:g.vis||'private',at:g.at||0}});
   if(sb){try{const r=await sb.from('games').select('id,name,vis,updated_at').eq('owner_id',ME.id);
-    if(!r.error)r.data.forEach(function(x){if(String(x.id).indexOf('acc_')===0)return;const t=Date.parse(x.updated_at)||0,o=map[x.id];if(!o||t>o.at)map[x.id]={id:x.id,name:x.name||'Untitled',vis:x.vis,at:t,cloud:!o}})}catch(e){}}
+    if(!r.error)r.data.forEach(function(x){if(String(x.id).indexOf('acc_')===0||String(x.id).indexOf('sys_')===0)return;const t=Date.parse(x.updated_at)||0,o=map[x.id];if(!o||t>o.at)map[x.id]={id:x.id,name:x.name||'Untitled',vis:x.vis,at:t,cloud:!o}})}catch(e){}}
   const list=Object.keys(map).map(function(k){return map[k]}).sort(function(a,b){return b.at-a.at});
   const cards=function(host,items,adm){host.className='gcards';
     items.forEach(function(g){let h=0;for(let i=0;i<g.id.length;i++)h=(h*31+g.id.charCodeAt(i))>>>0;
@@ -2860,7 +2862,7 @@ async function studioHome(){
   let all=[];
   try{let r=await sb.from('games').select('id,name,vis,updated_at,owner_id,owner_name,official').order('updated_at',{ascending:false}).limit(500);
     if(r.error)r=await sb.from('games').select('id,name,vis,updated_at,owner_id,owner_name').order('updated_at',{ascending:false}).limit(500);
-    if(!r.error)all=(r.data||[]).filter(function(x){return String(x.id).indexOf('acc_')!==0}).map(function(x){return {id:x.id,name:x.name||'Untitled',vis:x.vis,at:Date.parse(x.updated_at)||0,cloud:true,oid:x.owner_id,oname:x.owner_name,official:!!x.official}})}catch(e){}
+    if(!r.error)all=(r.data||[]).filter(function(x){return String(x.id).indexOf('acc_')!==0&&String(x.id).indexOf('sys_')!==0}).map(function(x){return {id:x.id,name:x.name||'Untitled',vis:x.vis,at:Date.parse(x.updated_at)||0,cloud:true,oid:x.owner_id,oname:x.owner_name,official:!!x.official}})}catch(e){}
   const offH=el('h2','big','Made by BrixBlox'),offBox=el('div'),allH=el('h2','big','All games'),allBox=el('div');
   offH.style.marginTop=allH.style.marginTop='28px';pg.insertBefore(offH,pg.firstChild);pg.insertBefore(offBox,offH.nextSibling);pg.append(allH,allBox);
   function officialBox(){offBox.replaceChildren();const o=all.filter(function(g){return g.official});
@@ -2897,6 +2899,10 @@ async function netJoin(){
     const ch=NET.ch=sb.channel('bbs:'+gid+':'+NET.sid,{config:{presence:{key:NET.id},broadcast:{self:false}}});
     ch.on('broadcast',{event:'p'},function(m){netRecv(m.payload)});
     ch.on('broadcast',{event:'c'},function(m){const p=m.payload;if(p&&p.id!==NET.id&&(running||playing)){const t=filt(String(p.t).slice(0,120));chatLine(String(p.n).slice(0,16),t);netSay(p.id,t)}});
+    ch.on('broadcast',{event:'k'},function(m){const p=m.payload;if(!p||p.t!==NET.id||p.id===NET.id||!(running||playing))return;
+      const by=String(p.n||'').slice(0,24);if(!isAdminName(by))return;if(admIsBB(ME&&ME.username)&&!admIsBB(by))return;/* nobody but brixblox can kill brixblox */
+      startRag('main',true);chatSys('You were killed by admin '+by+'.')});
+    ch.on('broadcast',{event:'ar'},function(){if(Date.now()-ADMT>3000)admLoad()});
     ch.on('presence',{event:'join'},function(){NET.last=''});
     ch.on('presence',{event:'leave'},function(e){(e.leftPresences||[]).forEach(function(m){netDrop(m.id)})});
     ch.subscribe(function(st){if(st==='SUBSCRIBED'){NET.on=true;NET.fail=false;ch.track({id:NET.id,n:ME.username})}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')NET.fail=true})
@@ -2906,7 +2912,7 @@ function netRecv(q){if(!q||!q.id||q.id===NET.id||!NET.on||!(running||playing))re
   if(!e){NETCOL=/^#[0-9a-f]{6}$/i.test(q.c)?q.c:null;spawnPlayer(String(q.n),S);NETCOL=null;e=NP[NP.length-1];if(!e)return;e.net=q.id;e.g.position.set(q.x,q.h,-q.y)}
   e.tx=q.x;e.ty=q.y;e.th=q.h;e.td=q.d;e.mv=q.m;e.seen=performance.now();
   const nm=function(v){return typeof v==='string'?v.slice(0,40):''};
-  e.air=!!q.g;e.wa=nm(q.wa);e.ia=nm(q.ia);e.ja=nm(q.ja);
+  e.un=String(q.n||e.name).slice(0,24);e.air=!!q.g;e.wa=nm(q.wa);e.ia=nm(q.ia);e.ja=nm(q.ja);
   {const es=typeof q.e==='string'?q.e.slice(0,200):'';if(es!==e.eqs){e.eqs=es;try{netEq(e,es)}catch(x){}}}
   if(e.rc===undefined)e.rc=q.rc;else if(q.rc!==e.rc){e.rc=q.rc;startRag('np:'+e.name,false)}/* they were ragdolled: show it on this screen too (never as a kill, they respawn on their own screen) */
   if(e.ac===undefined)e.ac=q.ac;/* first packet: do not replay an old animation */
@@ -2939,6 +2945,80 @@ function bbHud(){const lb=el('button','btn ghost small','Leave game');lb.id='bb-
   setInterval(function(){try{if(document.hidden||!(running||playing))return;
     if(sb)sb.rpc('play_heartbeat',{p_seconds:60}).then(function(){},function(){});
     else if(ME.demo)store.set('brixblox-playsec',String((parseInt(store.get('brixblox-playsec')||'0',10)||0)+60))}catch(e){}},60000)})();
+
+/* ===== Admins, player list and admin panel =====
+   The BrixBlox account is always an admin and can give admin to other players from the admin panel. The list of admin usernames is one shared row in the
+   database (id sys_admins) that everyone reads when a game starts. NOTE: like the rest of this page, these checks run in the browser. A player who edits the
+   page could pretend to be an admin. Real protection needs a server (a Supabase edge function or row-level rules), see the notes with this update. */
+var ADM={list:[]},ADMT=0;
+function admName(n){return String(n||'').trim().toLowerCase()}
+function admIsBB(n){return admName(n)==='brixblox'}
+function isAdminName(n){const k=admName(n);return !!k&&(k==='brixblox'||!!(ADM&&ADM.list.indexOf(k)>=0))}
+function amAdmin(){return !!ME&&isAdminName(ME.username)}
+function admClean(a){const o=[];(Array.isArray(a)?a:[]).forEach(function(x){const k=admName(x);if(/^[a-z0-9_]{1,24}$/.test(k)&&k!=='brixblox'&&o.indexOf(k)<0)o.push(k)});return o.slice(0,200)}
+async function admLoad(){ADMT=Date.now();
+  try{let d;if(sb){const r=await sb.from('games').select('data').eq('id','sys_admins').maybeSingle();if(r.error)throw r.error;d=r.data&&r.data.data}else d=store.get('brixblox-admins');
+    if(typeof d==='string')d=JSON.parse(d);ADM.list=admClean(d&&d.admins);try{admPanelFill()}catch(e){}}catch(e){}}
+async function admSave(list){const data=JSON.stringify({admins:admClean(list)});
+  if(sb){const r=await sb.from('games').upsert({id:'sys_admins',owner_id:ME.id,owner_name:ME.username,name:'Admins',vis:'public',data:data,updated_at:new Date().toISOString()});if(r.error)throw r.error}
+  else store.set('brixblox-admins',data);
+  ADM.list=admClean(list);try{if(NET.on&&NET.ch)NET.ch.send({type:'broadcast',event:'ar',payload:{}})}catch(e){}}
+function admIcon(sz){const s=document.createElement('span');s.title='Admin';s.style.cssText='display:inline-flex;vertical-align:-2px;margin-right:4px;flex:none';
+  s.innerHTML='<svg viewBox="-12 -13 24 26" width="'+(sz||14)+'" height="'+(sz||14)+'"><path d="M0-11L10-7V0Q10 8 0 12Q-10 8-10 0V-7Z" fill="#ffc233" stroke="#7a5200" stroke-width="1.6" stroke-linejoin="round"/><path d="M0-5.2L1.5-1.6 5.3-1.3 2.4 1.2 3.3 4.9 0 2.9-3.3 4.9-2.4 1.2-5.3-1.3-1.5-1.6Z" fill="#7a5200"/></svg>';return s}
+function npTagAdm(q){/* redraw a name tag, with a shield next to the name when the player is an admin */
+  const cv=q.tag.material.map.image,x=cv.getContext('2d');x.clearRect(0,0,256,64);x.fillStyle='rgba(20,22,24,.82)';x.fillRect(4,10,248,44);
+  x.fillStyle='#fff';x.font='700 26px sans-serif';x.textAlign='center';x.textBaseline='middle';const w=x.measureText(q.name).width,off=q.adm?15:0;x.fillText(q.name,128+off,33);
+  if(q.adm){x.save();x.translate(128+off-w/2-17,33);x.scale(1.15,1.15);x.beginPath();x.moveTo(0,-11);x.lineTo(10,-7);x.lineTo(10,0);x.quadraticCurveTo(10,8,0,12);x.quadraticCurveTo(-10,8,-10,0);x.lineTo(-10,-7);x.closePath();
+    x.fillStyle='#ffc233';x.fill();x.lineWidth=1.6;x.strokeStyle='#7a5200';x.stroke();x.beginPath();for(let i=0;i<10;i++){const r=i%2?2.4:5.6,a=-Math.PI/2+i*Math.PI/5;x.lineTo(Math.cos(a)*r,Math.sin(a)*r)}x.closePath();x.fillStyle='#7a5200';x.fill();x.restore()}
+  q.tag.material.map.needsUpdate=true}
+function setFly(v){if(!amAdmin())return;S.fly=!!v;flyBtn.textContent='Fly: '+(S.fly?'ON':'off')+'  (F)';flyBtn.setAttribute('aria-pressed',String(!!S.fly))}
+function admKill(id,name){if(!NET.on||!NET.ch||!amAdmin())return;if(admIsBB(name)&&!admIsBB(ME.username)){chatSys('You cannot kill brixblox.');return}
+  NET.ch.send({type:'broadcast',event:'k',payload:{id:NET.id,n:ME.username,t:id}});chatSys('You killed '+name+'.')}
+const UIS='position:fixed;z-index:61;color:#fff;font-family:inherit;font-weight:700;font-size:.82rem;';
+const plBox=el('div'),plHead=el('div'),plBody=el('div');plBox.id='bb-pl';
+plBox.style.cssText=UIS+'z-index:59;top:52px;right:10px;width:200px;max-width:46vw;background:rgba(20,22,24,.7);border-radius:10px;display:none;overflow:hidden';
+plHead.style.cssText='padding:6px 10px;cursor:pointer;background:rgba(0,0,0,.3);display:flex;justify-content:space-between;gap:8px';plBody.style.cssText='max-height:40vh;overflow-y:auto;padding:4px 0';
+plHead.title='Click to hide or show';plHead.onclick=function(){plBody.hidden=!plBody.hidden};plBox.append(plHead,plBody);document.body.append(plBox);
+const admBtn=el('button','btn small');admBtn.type='button';admBtn.style.cssText=UIS+'right:10px;bottom:10px;display:none;width:auto;margin:0;gap:6px;align-items:center';admBtn.append(admIcon(16),document.createTextNode('Admin'));
+const admPanel=el('div');admPanel.style.cssText=UIS+'right:10px;bottom:56px;width:300px;max-width:92vw;max-height:70vh;overflow-y:auto;background:#232527;border:1px solid #4a4c4e;border-radius:12px;padding:12px;display:none';
+const flyBtn=el('button','btn small ghost');flyBtn.type='button';flyBtn.style.cssText='width:100%;margin:8px 0 2px';flyBtn.onclick=function(){setFly(!S.fly)};
+const admPl=el('div'),admLs=el('div'),admMsg=el('div');admMsg.style.cssText='min-height:1.2em;font-size:.78rem;color:#ffd23f;margin-top:4px';
+function small(t){const d=el('div',null,t);d.style.cssText='font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:#bdbebe;margin:12px 0 4px';return d}
+function admRow(name,btnText,fn){const r=el('div');r.style.cssText='display:flex;align-items:center;gap:6px;padding:3px 0';const n=el('span',null,name);n.style.cssText='flex:1;overflow-wrap:anywhere';
+  if(isAdminName(name))r.append(admIcon(14));r.append(n);if(btnText){const b=el('button','btn small ghost',btnText);b.type='button';b.style.cssText='width:auto;margin:0;min-height:28px;padding:0 10px;font-size:.8rem';b.onclick=fn;r.append(b)}return r}
+const hd=el('div');hd.style.cssText='display:flex;align-items:center;font-size:1rem';hd.append(admIcon(18),document.createTextNode('Admin panel'));
+const hint=el('div',null,'Fly: Space = up, Q = down, WASD to move (faster).');hint.style.cssText='font-size:.74rem;color:#bdbebe';
+admPanel.append(hd,flyBtn,hint,small('Players in this game'),admPl);
+const bbSec=el('div');
+const adIn=el('input');adIn.type='text';adIn.maxLength=24;adIn.placeholder='Username';adIn.style.cssText='flex:1;min-width:0;min-height:34px;border-radius:8px;border:1px solid #555;background:#191b1d;color:#fff;padding:0 8px';
+const adGo=el('button','btn small','Give admin');adGo.type='button';adGo.style.cssText='width:auto;margin:0;min-height:34px;padding:0 10px;font-size:.85rem';
+const adRow=el('div');adRow.style.cssText='display:flex;gap:6px';adRow.append(adIn,adGo);bbSec.append(small('Admins (brixblox only)'),admLs,adRow,admMsg);admPanel.append(bbSec);
+adGo.onclick=async function(){const n=adIn.value.trim();if(!/^[A-Za-z0-9_]{1,24}$/.test(n)){admMsg.textContent='That is not a valid username.';return}
+  if(admIsBB(n)){admMsg.textContent='brixblox is always an admin.';return}if(ADM.list.indexOf(admName(n))>=0){admMsg.textContent=n+' is already an admin.';return}
+  adGo.disabled=true;admMsg.textContent='Saving...';
+  try{if(sb){const r=await sb.from('profiles').select('username').ilike('username',n.replace(/_/g,'\\_')).limit(1);if(!r.error&&r.data&&!r.data.length){admMsg.textContent='No player is named '+n+'.';adGo.disabled=false;return}}
+    await admSave(ADM.list.concat([admName(n)]));adIn.value='';admMsg.textContent=n+' is now an admin.';admPanelFill()}catch(e){admMsg.textContent='Could not save: '+((e&&e.message)||e)}
+  adGo.disabled=false};
+function admPanelFill(){admLs.replaceChildren();bbSec.hidden=!(ME&&admIsBB(ME.username));
+  if(!ADM.list.length){const e=el('div',null,'No other admins yet.');e.style.cssText='color:#bdbebe;font-size:.78rem';admLs.append(e)}
+  ADM.list.forEach(function(n){admLs.append(admRow(n,'Remove',async function(){try{await admSave(ADM.list.filter(function(x){return x!==n}));admMsg.textContent=n+' is no longer an admin.';admPanelFill()}catch(e){admMsg.textContent='Could not save: '+((e&&e.message)||e)}}))})}
+admBtn.onclick=function(){admPanel.style.display=admPanel.style.display==='none'?'block':'none';if(admPanel.style.display==='block')admLoad().then(admPanelFill)};
+document.body.append(admBtn,admPanel);setFly(false);admPanelFill();
+addEventListener('keydown',function(e){if(e.code!=='KeyF'||e.repeat||e.ctrlKey||e.metaKey||e.altKey)return;if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;if(!(running||playing)||!amAdmin())return;setFly(!S.fly)});
+setInterval(function(){
+  const on=!!ME&&(running||playing);plBox.style.display=on?'block':'none';admBtn.style.display=on&&amAdmin()?'inline-flex':'none';
+  if(!on){admPanel.style.display='none';return}
+  if(!amAdmin()&&S.fly)S.fly=false;
+  const others=NP.filter(function(n){return n.net});
+  others.forEach(function(e){const a=isAdminName(e.un||e.name);if(a!==!!e.adm){e.adm=a;try{npTagAdm(e)}catch(x){}}});
+  plHead.replaceChildren(el('span',null,'Players'),el('span',null,String(1+others.length)));
+  if(!plBody.hidden){plBody.replaceChildren();[{n:ME.username,me:1}].concat(others.map(function(e){return {n:e.un||e.name}})).forEach(function(p){
+    const r=el('div');r.style.cssText='display:flex;align-items:center;padding:3px 10px;gap:0';if(isAdminName(p.n))r.append(admIcon(14));const t=el('span',null,p.n+(p.me?' (you)':''));t.style.cssText='overflow:hidden;text-overflow:ellipsis;white-space:nowrap';r.append(t);plBody.append(r)})}
+  if(admPanel.style.display==='block'){flyBtn.textContent='Fly: '+(S.fly?'ON':'off')+'  (F)';admPl.replaceChildren();
+    if(!others.length){const e=el('div',null,'Nobody else is here.');e.style.cssText='color:#bdbebe;font-size:.78rem';admPl.append(e)}
+    others.forEach(function(e){admPl.append(admRow(e.un||e.name,'Kill',function(){admKill(e.net,e.un||e.name)}))})}
+},500);
+setInterval(admLoad,45000);admLoad();
 </script>
 </body>
 </html>
