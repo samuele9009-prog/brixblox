@@ -405,6 +405,11 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       <div id="bb-code" class="bb-code" hidden><code id="bb-codev"></code><span class="hint" style="margin:0">for <b id="bb-codeamt">0</b> blockbucks</span><button id="bb-copy" class="btn ghost small" type="button">Copy</button></div>
       <form id="f-bb" class="addrow" style="margin-top:12px"><input id="bb-in" type="text" maxlength="20" placeholder="Enter your code (BBX-XXXX-XXXX)" autocapitalize="characters" spellcheck="false" autocomplete="off" required><button class="btn" type="submit">Redeem</button></form>
       <p id="bb-msg" class="msg" role="status"></p>
+      <div id="bb-owner" hidden>
+        <h3>Take out (brixblox)</h3>
+        <p class="hint">Your Blockbank never runs out. Take out as many blockbucks as you want and they land in your wallet.</p>
+        <form id="f-bbo" class="addrow"><input id="bbo-n" type="number" min="1" max="1000000000" step="1" placeholder="Amount" required><button class="btn" type="submit">Take out</button></form>
+      </div>
       <h3>Recent activity</h3>
       <ul id="bb-log" class="bb-log"></ul>
     </section>
@@ -583,7 +588,8 @@ function makeDemo(){
       d.seen=d.seen||{};const k=gid+':'+id;if(!d.seen[k]){d.seen[k]=1;badd(d,owner,1,'New player')}
       const hs=Math.floor(now/36e5)*36e5,cnt=d.pl.filter(function(x){return x.g===gid&&x.t>=hs}).length;
       if(cnt>=100){d.hp=d.hp||{};const hk=gid+':'+hs,paid=d.hp[hk]||0,tg=cnt*2;if(tg>paid){badd(d,owner,tg-paid,'Busy hour: '+cnt+' plays');d.hp[hk]=tg}}save(d)},
-    async bankCode(id){const d=load(),b=bk(d,id);if(b.saved<BANK_MIN)throw new Error('You need at least 20 blockbucks saved to redeem.');if(!b.code)b.code='BBX-'+rc()+'-'+rc();b.amt=b.saved;save(d);return {code:b.code,amount:b.amt}},
+    async bankTake(id,n){const d=load(),b=bk(d,id);b.wallet+=n;b.log.unshift({amount:n,reason:'Taken out of the Blockbank',created_at:new Date().toISOString()});save(d);return {amount:n,wallet:b.wallet}},
+    async bankCode(id,x){const d=load(),b=bk(d,id);if(b.saved<BANK_MIN)throw new Error('You need at least 20 blockbucks saved to redeem.');if(!b.code)b.code='BBX-'+rc()+'-'+rc();b.amt=b.saved;save(d);return {code:b.code,amount:b.amt}},
     async bankRedeem(id,code){const d=load(),b=bk(d,id);if(!b.code||b.code!==String(code).trim().toUpperCase())throw new Error('That code is not valid or was already used.');if(b.saved<b.amt)throw new Error('Not enough blockbucks saved for that code.');
       const n=b.amt;b.saved-=n;b.wallet+=n;b.code=null;b.amt=0;b.log.unshift({amount:-n,reason:'Redeemed to your wallet',created_at:new Date().toISOString()});save(d);return {amount:n,saved:b.saved,wallet:b.wallet}},
     async setAvatar(id,a){const d=load();const u=d.users.find(function(x){return x.id===id});if(u){u.av=a;save(d)}},
@@ -619,6 +625,7 @@ function makeSupa(){
     async recordPlay(id,gid){const r=await sb.rpc('record_play',{p_game:String(gid)});if(r.error)throw r.error},
     async bankCode(){const r=await sb.rpc('bank_create_code');if(r.error)throw r.error;return r.data},
     async bankRedeem(id,code){const r=await sb.rpc('bank_redeem',{p_code:code});if(r.error)throw r.error;return r.data},
+    async bankTake(id,n){const r=await sb.rpc('bank_admin_take',{p_amount:n});if(r.error)throw r.error;return r.data},
     async setAvatar(id,a){const r=await sb.auth.updateUser({data:{avatar:a}});if(r.error)throw r.error},
     async setAccount(id,a,cur){const change=!!a.email&&a.email.toLowerCase()!==(cur||'').toLowerCase();const upd={data:{age:a.age}};if(change)upd.email=a.email;const r=await sb.auth.updateUser(upd,change?{emailRedirectTo:location.origin+location.pathname}:undefined);if(r.error)throw r.error;return {pending:change}},
     async setColor(id,c){const r=await sb.from('profiles').update({avatar_color:c}).eq('id',id);if(r.error)throw r.error},
@@ -757,10 +764,11 @@ let bank={saved:0,wallet:0,code:null,codeAmt:0,log:[]};
 function bbMsg(t,good){const m=$('bb-msg');m.textContent=t;m.className='msg'+(good?' good':'')}
 async function loadBank(){try{bank=await api.bankStatus(me.id);bbMsg('')}catch(e){bbMsg(errText(e))}paintBank()}
 function paintBank(){
-  $('bb-saved').textContent=bank.saved;$('bb-wallet').textContent=bank.wallet;
-  $('bb-bar').style.width=Math.min(100,bank.saved/BANK_MIN*100)+'%';
-  $('bb-need').textContent=bank.saved>=BANK_MIN?'You can redeem now.':'Save '+(BANK_MIN-bank.saved)+' more to redeem.';
-  $('bb-get').disabled=bank.saved<BANK_MIN;
+  const inf=isBB();$('bb-owner').hidden=!inf;
+  $('bb-saved').textContent=inf?'\u221E':bank.saved;$('bb-wallet').textContent=bank.wallet;
+  $('bb-bar').style.width=inf?'100%':Math.min(100,bank.saved/BANK_MIN*100)+'%';
+  $('bb-need').textContent=inf?'Unlimited. Use Take out below.':bank.saved>=BANK_MIN?'You can redeem now.':'Save '+(BANK_MIN-bank.saved)+' more to redeem.';
+  $('bb-get').disabled=!inf&&bank.saved<BANK_MIN;
   $('bb-code').hidden=!bank.code;if(bank.code){$('bb-codev').textContent=bank.code;$('bb-codeamt').textContent=bank.codeAmt}
   const ul=$('bb-log');ul.replaceChildren();
   if(!bank.log.length){const li=document.createElement('li');li.textContent='Nothing yet. Publish a game and get players!';ul.append(li)}
@@ -775,6 +783,10 @@ function checkAnim(n){
 $('bb-get').onclick=async function(){$('bb-get').disabled=true;
   try{const r=await api.bankCode(me.id);bank.code=r.code;bank.codeAmt=r.amount;bbMsg('Here is your code. Enter it below to redeem.',true)}catch(e){bbMsg(errText(e))}
   paintBank()};
+$('f-bbo').addEventListener('submit',async function(e){e.preventDefault();if(!isBB())return;const n=Math.floor(+$('bbo-n').value);
+  if(!(n>=1)||n>1e9){bbMsg('Enter a whole number from 1 to 1,000,000,000.');return}
+  try{await api.bankTake(me.id,n);$('bbo-n').value='';checkAnim(n);bbMsg('')}catch(er){bbMsg(errText(er));return}
+  await loadBank()});
 $('bb-copy').onclick=function(){try{navigator.clipboard.writeText(bank.code);toast('Code copied')}catch(e){$('bb-in').value=bank.code}};
 $('f-bb').addEventListener('submit',async function(e){e.preventDefault();const c=$('bb-in').value.trim();if(!c)return;
   try{const r=await api.bankRedeem(me.id,c);$('bb-in').value='';checkAnim(r.amount);bbMsg('')}catch(er){bbMsg(errText(er));return}
