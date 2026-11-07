@@ -1179,7 +1179,7 @@ function rebuildParts(){
   if(hline.parent)hline.parent.remove(hline);hov=null;if(PG){scene.remove(PG);PG.traverse(function(o){if(o.geometry&&!o.geometry.userData.keep)o.geometry.dispose();if(o.material)o.material.dispose()})}
   PG=new THREE.Group();scene.add(PG);J={};M={};
   P.parts.forEach(function(p){const g=new THREE.Group(),v=piv(p),geo=(p.av||p.sm||(p.parent&&/^(Head|Torso|[RL](arm|leg))$/.test(p.name)))?avGeo(p):cachedGeo(p,false,shapeGeo),md=MATS[p.mat]||MATS.plastic;if(TX[p.mat])boxUV(geo,md.ts||6);const m=new THREE.Mesh(geo,mkMat(p));m.receiveShadow=true;m.castShadow=!md.op&&!p.stab;m.layers.enable(1);
-    m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);m.userData.id=p.id;if(p.face)addFace(m,p);if(p.stab)m.visible=false;g.add(m);J[p.id]=g;M[p.id]=m});
+    m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);m.userData.id=p.id;if(p.face)addFace(m,p);if(p.stab)m.visible=false;if(p.light&&!p.stab){const L=new THREE.PointLight(p.light.c,p.light.i,p.light.r,1);L.userData.isL=1;m.add(L)}g.add(m);J[p.id]=g;M[p.id]=m});
   const hk={};P.parts.forEach(function(p){if(p.parent)hk[p.parent]=1});
   P.parts.forEach(function(p){const g=J[p.id],v=piv(p),pa=p.parent&&byId(p.parent);
     if(pa){const q=piv(pa);g.position.set(v[0]-q[0],v[1]-q[1],v[2]-q[2]);J[pa.id].add(g)}else{g.position.set(v[0],v[1],v[2]);g.visible=inW(p);PG.add(g)}g.userData.base=g.position.clone();g.userData.gry=!p.parent&&hk[p.id]&&p.ry?p.ry*Math.PI/180:0});
@@ -1416,7 +1416,7 @@ function pasteClip(){if(animOn())return;if(!clip){try{const t=store.get('brixblo
   const ids=stamp(clip,d);lastPaste={clip:clip,ids:ids,d:d};
   msg('Pasted '+ids.length+' part'+(ids.length>1?'s':'')+'.');all()}
 function dupSel(){if(animOn())return;const c=grabClip();if(!c){msg(sel.length?'Your character cannot be duplicated.':'Select something first, then press Ctrl+D.');return}
-  const sp=clipSpan(c.parts),ids=stamp(c,[round5(sp.hi[0]-sp.lo[0]+.5),0,0]);lastPaste=null;msg('Duplicated '+ids.length+' part'+(ids.length>1?'s':'')+'.');all()}
+  const sp=clipSpan(c.parts),ids=stamp(c,[0,0,0]);lastPaste=null;msg('Duplicated '+ids.length+' part'+(ids.length>1?'s':'')+'.');all()}
 /* A new part appears where the camera is looking: on the first thing in view, or 10 studs ahead */
 function newPart(shape){shape=typeof shape==='string'?shape:'box';if(animOn())return;const f=fwd(),o=new THREE.Vector3(cam.x,cam.y,cam.z);ray.set(o,new THREE.Vector3(f[0],f[1],f[2]));
   const h=ray.intersectObjects(pickable(),false)[0];let pos;
@@ -1439,7 +1439,7 @@ function props(){const d=$('p-props');d.replaceChildren();if(!selModel&&!sel.len
   if(!p.parent){const c=el('input');c.type='checkbox';c.checked=!!p.movable;c.onchange=function(){p.movable=c.checked;save()};const l=el('label','','Movable (push it with your character)');l.append(c);d.append(l);
     const c2=el('input');c2.type='checkbox';c2.checked=!p.nocol;c2.onchange=function(){if(c2.checked)delete p.nocol;else p.nocol=true;save()};const l2=el('label','','Collision (solid: blocks your character)');l2.append(c2);d.append(l2)}
   else d.append(el('p','note','Welded: moves with the part it is welded to.'));if(!p.av&&!p.sm&&!p.stab){const ss=el('select');[['box','Block'],['cyl','Cylinder'],['sphere','Sphere'],['wedge','Triangle']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ss.append(op)});ss.value=p.shape||'box';ss.onchange=function(){if(ss.value==='box')delete p.shape;else p.shape=ss.value;all()};d.append(lab('Shape',ss))}
-  if(p.stab)d.append(el('p','note','Stabilizer: holds the rig up so the Torso can move and rotate freely. It is hidden and is never animated.'));tagBox(d,p);contSel(d)}
+  if(p.stab)d.append(el('p','note','Stabilizer: holds the rig up so the Torso can move and rotate freely. It is hidden and is never animated.'));lightBox(d,p);lightBox(d,p);tagBox(d,p);contSel(d)}
 $('p-add').onclick=function(){newPart()};$('p-shape').onchange=function(){if(this.value)newPart(this.value);this.value=''};$('p-group').onclick=group;$('p-ungroup').onclick=ungroup;$('p-copy').onclick=copySel;$('p-paste').onclick=pasteClip;$('p-dup').onclick=dupSel;
 $('p-weld').onclick=function(){if(sel.length<2){msg('Select the Torso first, then ctrl-click the parts to weld to it.');return}
   const t=byId(sel[0]);let n=0;
@@ -1927,7 +1927,7 @@ function collide(){const T=byId(P.avId);if(!T)return;const R=1.1,fy=feet0()+S.h;
     else{const m=[cx-(bx-hx),bx+hx-cx,cz-(bz-hz),bz+hz-cz],mn=Math.min.apply(null,m),i=m.indexOf(mn);dx=i===0?-1:i===1?1:0;dz=i===2?-1:i===3?1:0;pen=mn+R}
     if(r.movable)RO[r.id]=[o[0]-dx*pen,o[1]-dz*pen];else{S.x+=dx*pen;S.y-=dz*pen}})}
 /* ===== Gravity: the player falls, lands on top of parts, and respawns after dropping into the void ===== */
-const STEP=.6;
+const STEP=2.5;
 function rootOf(p){while(p.parent&&byId(p.parent))p=byId(p.parent);return p}
 function svcOf(p){return rootOf(p).svc||'world'}
 function inW(p){return svcOf(p)==='world'}
@@ -2280,6 +2280,15 @@ function clock(h){const m=Math.round(h*60),hh=Math.floor(m/60)%24,mm=m%60;return
 function slider(d,t,o,k,mn,mx,st,fmt,fn){const r=el('input');r.type='range';r.min=mn;r.max=mx;r.step=st;r.value=o[k];
   const l=el('label','',t),b=el('b','',fmt?fmt(o[k]):String(o[k]));l.append(b,r);
   r.oninput=function(){o[k]=+r.value;b.textContent=fmt?fmt(o[k]):r.value;save();if(fn)fn()};d.append(l)}
+/* Lights: a part can glow and light up the things around it */
+function lightLive(p){const m=M[p.id],L=m&&m.children.find(function(o){return o.userData.isL});if(L&&p.light){L.color.set(p.light.c);L.intensity=p.light.i;L.distance=p.light.r}}
+function lightBox(d,p){if(p.stab||p.av)return;const c=el('input');c.type='checkbox';c.checked=!!p.light;
+  c.onchange=function(){if(c.checked)p.light={c:'#ffe9a8',i:1.5,r:30};else delete p.light;save();rebuildParts();props()};
+  const l=el('label','','Light (this part glows and lights its surroundings)');l.append(c);d.append(l);
+  if(p.light){const col=el('input');col.type='color';col.value=p.light.c;col.oninput=function(){p.light.c=col.value;lightLive(p);save()};d.append(lab('Light colour',col));
+    slider(d,'Light brightness',p.light,'i',.1,6,.1,function(v){return v.toFixed(1)},function(){lightLive(p)});
+    slider(d,'Light range',p.light,'r',5,100,1,null,function(){lightLive(p)})}}
+function addLight(id){const p=byId(id);if(!p||animOn()||p.stab)return;if(!p.light)p.light={c:'#ffe9a8',i:1.5,r:30};sel=[id];selModel=null;msg('Added a light to '+p.name+'. Change it in the properties below.');all()}
 function tagBox(d,p){const t=el('input');t.value=(p.tags||[]).join(', ');t.placeholder='e.g. coin, enemy';
   t.oninput=function(){const a=[];t.value.split(',').forEach(function(x){x=x.trim().replace(/\s+/g,'_').slice(0,20);if(x&&a.indexOf(x)<0)a.push(x)});p.tags=a;save()};
   t.onchange=function(){renderParts()};d.append(lab('Tags (comma separated)',t))}
@@ -2360,6 +2369,7 @@ function addGroups(c){const O=[],Sx=[],A=[],k=c.k,own=c.t==='svc'?null:c.id;
     if(k==='squads')O.push(mi('\u2691','#e5484d','Squad','A team players can join',function(){P.squads.push({id:'q'+P.nid++,name:'Squad '+(P.squads.length+1),color:'#'+Math.floor(Math.random()*0xffffff).toString(16).padStart(6,'0')});save();renderParts()}))}
   else{
     O.push(mi('\u25A2','#3b82f6','Part',c.t==='model'?'Add a part to this model':'A new part next to this one',function(){addPartNear(c)}));
+    if(c.t==='part'&&!(byId(c.id)||{}).stab)O.push(mi('\u2600','#f5b400','Light','Makes this part glow and light up its surroundings',function(){addLight(c.id)}));
     if(c.t==='part')O.push(mi('\u2295','#8a5cf6','Welded part','Sticks to this part and moves with it',function(){addWelded(c.id)}));
     if(isRigCtx(c))A.push(mi('\u25B6','#2f78d0','New animation','Opens the Animator for this rig',function(){addAnimFor(c)}))}
   if(c.t!=='svc'||k==='world'||k==='shared'||k==='vault')[['cyl','Cylinder','\u25CB','A cylinder'],['sphere','Sphere','\u25CF','A ball'],['wedge','Triangle','\u25E3','A triangular wedge']].forEach(function(q){O.push(mi(q[2],'#3b82f6',q[1],q[3],function(){addPartNear(c,q[0])}))});
