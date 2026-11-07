@@ -175,16 +175,30 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .item .pr i{width:11px;height:11px;border-radius:50%;background:#ffc233;display:block}
 .item .row{display:flex;gap:6px;flex-wrap:wrap}.item .row .btn{flex:1;margin:0;width:auto;padding:0 6px}
 .item.off{opacity:.75}.item .tagoff{font-size:.75rem;font-weight:800;color:#c2321f}
-.ed{border:2px solid var(--berry);border-radius:12px;padding:12px;margin-top:12px;background:#fff}
-.ed h3{font-size:1.1rem;margin:0 0 6px}
-.ed .r{display:grid;grid-template-columns:64px 1fr 76px;gap:8px;align-items:center;margin:4px 0}
-.ed .r span{font-weight:800;font-size:.85rem}
-.ed .r input[type=range]{width:100%;min-height:28px}
+.ed{border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px;background:rgba(127,127,127,.10);color:var(--ink)}
+.ed h3{font-size:1.15rem;margin:0 0 2px;color:var(--ink)}
+.ed .hint{color:var(--muted)}
+.ed .sec{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.ed .sec>h4{margin:0 0 6px;font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ed .lnk{background:none;border:0;color:var(--ink);text-decoration:underline;cursor:pointer;font-size:.8rem;padding:2px 4px;text-transform:none;letter-spacing:0}
+.ed label{margin:0 0 3px;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em}
+.ed .g3{display:grid;grid-template-columns:1fr 1fr 90px;gap:8px}
+@media(max-width:520px){.ed .g3{grid-template-columns:1fr 1fr}.ed .g3>div:first-child{grid-column:1/-1}}
+.ed .g3 input,.ed .g3 select{width:100%;min-height:38px}
+.ed .r{display:grid;grid-template-columns:30px 1fr 76px;gap:10px;align-items:center;margin:6px 0}
+.ed .ax{width:30px;height:30px;border-radius:8px;border:0;color:#fff;font-weight:800;cursor:pointer;padding:0}
+.ed .ax.x{background:#e5484d}.ed .ax.y{background:#2fa95a}.ed .ax.z{background:#2b7fff}.ed .ax.s{background:#7b818a}
+.ed input[type=range]{width:100%;min-height:28px}
+.ed input[type=range].x{accent-color:#e5484d}.ed input[type=range].y{accent-color:#2fa95a}.ed input[type=range].z{accent-color:#2b7fff}.ed input[type=range].s{accent-color:#9aa0a8}
 .ed .r input[type=number]{min-height:34px;padding:0 6px;font-size:.9rem}
-.ed .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
-.ed .g2 select,.ed .g2 input{width:100%;min-height:38px}
-.ed .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.ed .btns .btn{width:auto;margin:0}
+.ed .hn{font-size:.75rem;color:var(--muted);margin:-2px 0 0 40px}
+.ed .views{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ed .views .btn,.ed .btns .btn,.ed .texrow .btn{width:auto;margin:0}
+.ed .chk{display:flex;align-items:center;gap:6px;margin:8px 0 0;text-transform:none;letter-spacing:0;font-size:.85rem;color:var(--ink)}
+.ed .chk input{width:18px;height:18px;min-height:0}
+.ed .texrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ed .texprev{width:56px;height:56px;object-fit:contain;border-radius:8px;border:1px solid var(--line);background:repeating-conic-gradient(#8884 0 25%,#0000 0 50%) 50%/12px 12px}
+.ed .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .sh-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 
 .bb-top{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -594,8 +608,8 @@ function makeSupa(){
     async answerFriend(id,fid,yes){const r=await sb.rpc('answer_friend',{p_id:fid,p_accept:yes});if(r.error)throw r.error},
     async listGames(id){let r=await sb.from('games').select('id,name,owner_id,owner_name,vis,updated_at,thumb').or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(60);if(r.error&&/thumb/i.test(r.error.message||''))r=await sb.from('games').select('id,name,owner_id,owner_name,vis,updated_at').or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(60);if(r.error)throw r.error;return r.data},
     async gameData(id){const r=await sb.from('games').select('data').eq('id',id).single();if(r.error)throw r.error;return r.data.data},
-    async listAcc(){const r=await sb.from('games').select('id,name,data').like('id','acc_%');if(r.error)throw r.error;return r.data.map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,slot:d.slot,price:d.price,scale:d.scale,fbx:d.fbx||'',px:d.px||0,py:d.py||0,pz:d.pz||0,rx:d.rx||0,ry:d.ry||0,rz:d.rz||0,sale:d.sale!==false,removed:!!d.removed,c:'#4a4c4e'}})},
-    async saveAcc(it){const r=await sb.from('games').upsert({id:it.id,owner_id:me.id,owner_name:me.username,name:it.name,vis:'public',data:JSON.stringify({slot:it.slot,price:it.price,scale:it.scale,fbx:it.fbx||'',px:it.px||0,py:it.py||0,pz:it.pz||0,rx:it.rx||0,ry:it.ry||0,rz:it.rz||0,sale:it.sale!==false,removed:!!it.removed}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
+    async listAcc(){const r=await sb.from('games').select('id,name,data').like('id','acc_%');if(r.error)throw r.error;return r.data.map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,slot:d.slot,price:d.price,scale:d.scale,fbx:d.fbx||'',tex:d.tex||'',tf:!!d.tf,px:d.px||0,py:d.py||0,pz:d.pz||0,rx:d.rx||0,ry:d.ry||0,rz:d.rz||0,sale:d.sale!==false,removed:!!d.removed,c:'#4a4c4e'}})},
+    async saveAcc(it){const r=await sb.from('games').upsert({id:it.id,owner_id:me.id,owner_name:me.username,name:it.name,vis:'public',data:JSON.stringify({slot:it.slot,price:it.price,scale:it.scale,fbx:it.fbx||'',tex:it.tex||'',tf:!!it.tf,px:it.px||0,py:it.py||0,pz:it.pz||0,rx:it.rx||0,ry:it.ry||0,rz:it.rz||0,sale:it.sale!==false,removed:!!it.removed}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
     async delAcc(id){const r=await sb.from('games').delete().eq('id',id);if(r.error)throw r.error},
     async logOut(){await sb.auth.signOut()},
     async restore(){const r=await sb.auth.getSession();return r.data.session?await profile(r.data.session.user.id,r.data.session.user):null},
@@ -797,11 +811,31 @@ const REFUND_REMOVED=true;/* players get their coins back when an item is remove
 function itemById(id){if(ED&&ED.id===id)return ED.draft;return ITEMS.find(function(x){return x.id===id})}
 function isBB(){return !!me&&me.username.toLowerCase()==='brixblox'}
 function addItem(g,id,fx){const it=itemById(id),o=it&&FBXC[id];if(!o)return;
-  const c=o.clone(true);c.position.set(0,0,0);c.updateMatrixWorld(true);
+  const c=o.clone(true);c.position.set(0,0,0);
+  if(it.tex){const tx=getTex(it.tex,it.tf);c.traverse(function(m){if(!m.isMesh)return;
+    const ap=function(mt){const n=mt.clone();n.map=tx;if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true;return n};
+    m.material=Array.isArray(m.material)?m.material.map(ap):ap(m.material)})}
+  c.updateMatrixWorld(true);
   const bx=new THREE.Box3().setFromObject(c),sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),sl=ISLOT[it.slot]||ISLOT.hat,k=sl.s*(it.scale||1)/(Math.max(sz.x,sz.y,sz.z)||1);
   const w=new THREE.Group();c.position.set(-ct.x,sl.base?-bx.min.y:-ct.y,-ct.z);w.add(c);w.scale.setScalar(k);const D=Math.PI/180;
   w.rotation.set((it.rx||0)*D,(it.ry||0)*D,(it.rz||0)*D);
-  w.position.set(it.px||0,sl.y+(it.py||0),sl.z+(it.pz||0));g.add(w)}
+  w.position.set(it.px||0,sl.y+(it.py||0),sl.z+(it.pz||0));g.add(w);
+  if(ED&&ED.id===id&&ED.guides){/* editor guides: item bounds, the item's own axes (bold) and the avatar's axes (faint) */
+    const bm=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(sz.x,sz.y,sz.z)),new THREE.LineBasicMaterial({color:0xffe14d,depthTest:false,transparent:true}));
+    bm.position.set(0,sl.base?sz.y/2:0,0);bm.renderOrder=998;w.add(bm);
+    const la=mkAxes(.5,.012,1,true);la.position.copy(w.position);la.rotation.copy(w.rotation);g.add(la);
+    const wa=mkAxes(.42,.004,.4,false);wa.position.copy(w.position);g.add(wa)}}
+const TEXC={};
+function getTex(url,flip){const k=(flip?'f':'n')+url;if(TEXC[k])return TEXC[k];const t=new THREE.TextureLoader().load(url);t.flipY=!flip;t.wrapS=t.wrapT=THREE.RepeatWrapping;return TEXC[k]=t}
+function labelSprite(t,col){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.fillStyle='#'+('000000'+col.toString(16)).slice(-6);x.font='bold 46px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(t,32,34);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true}));sp.scale.set(.13,.13,1);sp.renderOrder=1001;return sp}
+function mkAxes(len,r,op,tip){const grp=new THREE.Group();
+  [['x',0xe5484d,[0,0,-Math.PI/2]],['y',0x3ddc6c,[0,0,0]],['z',0x2b7fff,[Math.PI/2,0,0]]].forEach(function(a){
+    const mat=new THREE.MeshBasicMaterial({color:a[1],depthTest:false,transparent:true,opacity:op}),ax=new THREE.Group();ax.rotation.set(a[2][0],a[2][1],a[2][2]);
+    const sh=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,8),mat);sh.position.y=len/2;sh.renderOrder=1000;ax.add(sh);
+    if(tip){const cn=new THREE.Mesh(new THREE.ConeGeometry(r*3.2,len*.2,12),mat);cn.position.y=len*1.1;cn.renderOrder=1000;ax.add(cn);
+      const sp=labelSprite(a[0].toUpperCase(),a[1]);sp.position.y=len*1.32;ax.add(sp)}
+    grp.add(ax)});return grp}
 function ensureFbx(){return new Promise(function(ok,no){if(THREE.FBXLoader)return ok();
   const L=['https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js','https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js'];let i=0;
   (function nx(){if(i>=L.length){THREE.FBXLoader?ok():no(new Error('Could not load the FBX loader.'));return}const s=document.createElement('script');s.src=L[i++];s.onload=nx;s.onerror=nx;document.head.append(s)})()})}
@@ -956,35 +990,68 @@ function paintShop(){
       d.appendChild(r2)}
     g.appendChild(d)})}
 
-/* ----- Accessory editor (brixblox only): live position / rotation / size on the preview avatar ----- */
-const EDF=[['px','Pos X',-1.5,1.5,.005],['py','Pos Y',-1.5,1.5,.005],['pz','Pos Z',-1.5,1.5,.005],['rx','Rot X',-180,180,1],['ry','Rot Y',-180,180,1],['rz','Rot Z',-180,180,1],['scale','Size',.1,5,.05]];
+/* ----- Accessory editor (brixblox only): live position / rotation / size / texture on the preview avatar ----- */
 function edPreview(){const d=ED.draft,eq=me.av.eq,t=Object.assign({},eq);Object.keys(t).forEach(function(k){if(t[k]===d.id)t[k]=null});t[d.slot]=d.id;pv.tryEq=t;pvRebuild()}
-function openEdit(it){if(!isBB())return;ED={id:it.id,draft:Object.assign({},it)};pvMode('idle');pv.yaw=0;pv.pitch=.08;facePreview(true);edPreview();edRender();$('acc-ed').scrollIntoView({block:'nearest',behavior:'smooth'})}
+function openEdit(it){if(!isBB())return;ED={id:it.id,draft:Object.assign({},it),guides:true};pvMode('idle');facePreview(true);pv.yaw=0;pv.pitch=.08;edPreview();edRender();$('acc-ed').scrollIntoView({block:'nearest',behavior:'smooth'})}
 function closeEdit(){ED=null;pv.tryEq=null;$('acc-ed').hidden=true;$('acc-ed').innerHTML='';pvRebuild();paintShop()}
 function facePreview(on){pv.ly=on?1.5:.95;pv.zoom=on?2.6:5.6;$('av-face').setAttribute('aria-pressed',String(on));$('av-face').textContent=on?'Full body':'Face close-up'}
+function readTex(f){return new Promise(function(ok,no){const u=URL.createObjectURL(f),im=new Image();
+  im.onload=function(){const m=512,k=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);let d=c.toDataURL('image/png');if(d.length>900000)d=c.toDataURL('image/jpeg',.88);ok(d)};
+  im.onerror=function(){URL.revokeObjectURL(u);no(new Error('Could not read that image.'))};im.src=u})}
 function edRender(){
   const el=$('acc-ed'),d=ED.draft;el.hidden=false;el.innerHTML='';
-  const h=document.createElement('h3');h.textContent='Adjust: '+d.name;el.appendChild(h);
-  const p=document.createElement('p');p.className='hint';p.textContent='Offsets are relative to the default spot for the slot. Rotation is in degrees around the item\'s centre. Changes show live on the avatar.';el.appendChild(p);
-  const g2=document.createElement('div');g2.className='g2';
-  const nm=document.createElement('input');nm.type='text';nm.maxLength=24;nm.value=d.name;nm.title='Name';nm.oninput=function(){d.name=nm.value;h.textContent='Adjust: '+d.name};
-  const sl=document.createElement('select');SLOTS.forEach(function(s){const o=document.createElement('option');o.value=s[0];o.textContent=s[1];sl.appendChild(o)});sl.value=d.slot;sl.title='Slot';sl.onchange=function(){d.slot=sl.value;edPreview()};
-  const pr=document.createElement('input');pr.type='number';pr.min=0;pr.max=999;pr.value=d.price;pr.title='Price in coins';pr.oninput=function(){d.price=Math.max(0,Math.min(999,parseInt(pr.value,10)||0))};
-  g2.append(nm,sl,pr);el.appendChild(g2);
+  function mk(t,cls,txt){const e=document.createElement(t);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+  function btn(parent,t,f,ghost){const b=mk('button','btn small'+(ghost?' ghost':''),t);b.type='button';b.onclick=f;parent.appendChild(b);return b}
   const ctl={};
-  EDF.forEach(function(f){const k=f[0],r=document.createElement('div');r.className='r';
-    const lb=document.createElement('span');lb.textContent=f[1];
-    const rg=document.createElement('input');rg.type='range';rg.min=f[2];rg.max=f[3];rg.step=f[4];
-    const nb=document.createElement('input');nb.type='number';nb.min=f[2];nb.max=f[3];nb.step=f[4];
-    const dv=k==='scale'?1:0;function set(v,from){v=parseFloat(v);if(isNaN(v))return;v=Math.max(f[2],Math.min(f[3],v));d[k]=v;if(from!==rg)rg.value=v;if(from!==nb)nb.value=v;edPreview()}
-    rg.value=nb.value=d[k]==null?dv:d[k];if(d[k]==null)d[k]=dv;
-    rg.oninput=function(){set(rg.value,rg)};nb.oninput=function(){set(nb.value,nb)};
-    ctl[k]=set;r.append(lb,rg,nb);el.appendChild(r)});
-  const bt=document.createElement('div');bt.className='btns';
-  function eb(t,f,ghost){const b=document.createElement('button');b.type='button';b.className='btn small'+(ghost?' ghost':'');b.textContent=t;b.onclick=f;bt.appendChild(b);return b}
-  const save=eb('Save',async function(){save.disabled=true;try{await api.saveAcc(Object.assign({},d));ED=null;pv.tryEq=null;$('acc-ed').hidden=true;$('acc-ed').innerHTML='';await loadItems();toast('Saved '+d.name+'.')}catch(e){toast('Could not save: '+errText(e));save.disabled=false}});
-  eb('Reset',function(){['px','py','pz','rx','ry','rz'].forEach(function(k){ctl[k](0)});ctl.scale(1)},true);
-  eb('Cancel',closeEdit,true);
+  function sec(title,keys,val){const s=mk('div','sec'),h=mk('h4');h.appendChild(mk('span',null,title));
+    if(keys){const b=mk('button','lnk','Reset');b.type='button';b.onclick=function(){keys.forEach(function(k){ctl[k](typeof val==='function'?val(k):val)})};h.appendChild(b)}
+    s.appendChild(h);el.appendChild(s);return s}
+  function row(parent,k,axis,label,min,max,step,hint){const r=mk('div','r'),b=mk('button','ax '+axis,label);b.type='button';b.title='Click to reset '+hint;
+    const rg=mk('input',axis),nb=mk('input');rg.type='range';nb.type='number';[rg,nb].forEach(function(i){i.min=min;i.max=max;i.step=step});
+    const dv=k==='scale'?1:0;if(d[k]==null)d[k]=dv;rg.value=nb.value=d[k];
+    function set(v,from){v=parseFloat(v);if(isNaN(v))return;v=Math.max(min,Math.min(max,v));d[k]=v;if(from!==rg)rg.value=v;if(from!==nb)nb.value=v;edPreview()}
+    rg.oninput=function(){set(rg.value,rg)};nb.oninput=function(){set(nb.value,nb)};b.onclick=function(){set(dv)};ctl[k]=set;r.append(b,rg,nb);parent.appendChild(r)}
+  const h=mk('h3',null,'Adjust: '+d.name);el.appendChild(h);
+  el.appendChild(mk('p','hint','Drag the avatar to look around. Yellow box = the item, bold arrows = the item\'s own X / Y / Z (they turn when you rotate), faint arrows = the avatar\'s X / Y / Z.'));
+  /* details */
+  const g=mk('div','g3');
+  function fld(lbl,ctrl){const f=mk('div');f.append(mk('label',null,lbl),ctrl);g.appendChild(f)}
+  const nm=mk('input');nm.type='text';nm.maxLength=24;nm.value=d.name;nm.oninput=function(){d.name=nm.value;h.textContent='Adjust: '+d.name};
+  const sl=mk('select','sname');SLOTS.forEach(function(s){const o=mk('option',null,s[1]);o.value=s[0];sl.appendChild(o)});sl.value=d.slot;sl.onchange=function(){d.slot=sl.value;edPreview()};
+  const pr=mk('input');pr.type='number';pr.min=0;pr.max=999;pr.value=d.price;pr.oninput=function(){d.price=Math.max(0,Math.min(999,parseInt(pr.value,10)||0))};
+  fld('Name',nm);fld('Slot',sl);fld('Price',pr);el.appendChild(g);
+  /* views */
+  const vs=sec('View'),vw=mk('div','views');vs.appendChild(vw);
+  function view(t,y,p){btn(vw,t,function(){facePreview(true);pv.yaw=y;pv.pitch=p},true)}
+  view('Front',0,.08);view('Side',Math.PI/2,.08);view('Back',Math.PI,.08);view('Top',0,1.3);
+  const gl=mk('label','chk'),gc=mk('input');gc.type='checkbox';gc.checked=ED.guides;gc.onchange=function(){ED.guides=gc.checked;edPreview()};gl.append(gc,document.createTextNode('Show guides (box and X / Y / Z arrows)'));vs.appendChild(gl);
+  /* position */
+  const ps=sec('Position (units)',['px','py','pz'],0);
+  row(ps,'px','x','X',-1.5,1.5,.005,'X (left / right)');row(ps,'py','y','Y',-1.5,1.5,.005,'Y (up / down)');row(ps,'pz','z','Z',-1.5,1.5,.005,'Z (forward / back)');
+  ps.appendChild(mk('div','hn','X left / right, Y up / down, Z forward (+) / back (-)'));
+  /* rotation */
+  const rs=sec('Rotation (degrees)',['rx','ry','rz'],0);
+  row(rs,'rx','x','X',-180,180,1,'tilt up / down');row(rs,'ry','y','Y',-180,180,1,'turn left / right');row(rs,'rz','z','Z',-180,180,1,'roll sideways');
+  rs.appendChild(mk('div','hn','X tilts nose up / down, Y turns left / right, Z rolls sideways'));
+  /* size */
+  const ss=sec('Size',['scale'],1);row(ss,'scale','s','S',.1,5,.05,'size');
+  /* texture */
+  const ts=sec('Texture'),tr=mk('div','texrow'),img=mk('img','texprev');img.alt='Texture preview';
+  const file=mk('input');file.type='file';file.accept='image/*';file.style.display='none';
+  const up=btn(tr,'Upload image',function(){file.click()},true),rm=btn(tr,'Remove',function(){d.tex='';paint();edPreview()},true);
+  tr.prepend(img);tr.appendChild(file);ts.appendChild(tr);
+  const info=mk('p','hint');ts.appendChild(info);
+  const fl=mk('label','chk'),fc=mk('input');fc.type='checkbox';fc.checked=!!d.tf;fc.onchange=function(){d.tf=fc.checked;edPreview()};fl.append(fc,document.createTextNode('Flip texture vertically (use if it looks upside down)'));ts.appendChild(fl);
+  function paint(){img.hidden=!d.tex;if(d.tex)img.src=d.tex;rm.hidden=!d.tex;fl.hidden=!d.tex;up.textContent=d.tex?'Replace image':'Upload image';
+    info.textContent=d.tex?'Applied to every material on the model. The model needs UV mapping for it to show.':'No texture. The model uses its own colours. PNG keeps transparency; large images are shrunk to 512 px.'}
+  file.onchange=async function(){const f=file.files[0];file.value='';if(!f)return;try{d.tex=await readTex(f);paint();edPreview()}catch(e){toast(errText(e))}};
+  paint();
+  /* buttons */
+  const bt=mk('div','btns');
+  const save=btn(bt,'Save',async function(){save.disabled=true;try{await api.saveAcc(Object.assign({},d));ED=null;pv.tryEq=null;$('acc-ed').hidden=true;$('acc-ed').innerHTML='';await loadItems();toast('Saved '+d.name+'.')}catch(e){toast('Could not save: '+errText(e));save.disabled=false}});
+  btn(bt,'Reset all',function(){['px','py','pz','rx','ry','rz'].forEach(function(k){ctl[k](0)});ctl.scale(1)},true);
+  btn(bt,'Cancel',closeEdit,true);
   el.appendChild(bt)}
 $('ac-go').onclick=async function(){const f=$('ac-file').files[0],nm=$('ac-name').value.trim(),m=$('ac-msg');
   function say(t,ok){m.textContent=t;m.className='hint '+(ok?'ok':'bad')}
