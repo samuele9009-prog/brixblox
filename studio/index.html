@@ -645,7 +645,7 @@ function cloudDel(id){if(!sb)return;sb.from('games').delete().eq('id',id).then(f
 function siteLook(Q){const T=(Q.parts||[]).find(function(p){return p.av&&p.name==='Torso'});
   if(T){const SH={Head:[[0,1.65,0],[1.4,1.5,1.4]],Rarm:[[1.1,-.1,0],[.7,2,.7]],Larm:[[-1.1,-.1,0],[.7,2,.7]],Rleg:[[.4,-2,0],[.75,2,.75]],Lleg:[[-.4,-2,0],[.75,2,.75]]};
     T.size=[1.6,2,.8];Q.parts.forEach(function(p){const q=p.av&&!p.acc&&SH[p.name];if(!q)return;p.pos=[T.pos[0]+q[0][0],T.pos[1]+q[0][1],T.pos[2]+q[0][2]];p.size=q[1].slice();p.pivot=defPivot(p)})}
-const sk='#f0c49a',lg='#a4bd47',tc=(ME&&ME.color)||'#ff6b57';(Q.parts||[]).forEach(function(p){if(!p.av||p.acc)return;if(p.name==='Head'||/arm$/.test(p.name))p.color=sk;else if(p.name==='Torso')p.color=tc;else if(/leg$/.test(p.name))p.color=lg})}
+const AVX=(ME&&ME.av)||{},sk=/^#[0-9a-f]{6}$/i.test(AVX.skin)?AVX.skin:'#f0c49a',lg=/^#[0-9a-f]{6}$/i.test(AVX.pants)?AVX.pants:'#a4bd47',tc=(ME&&ME.color)||'#ff6b57';(Q.parts||[]).forEach(function(p){if(!p.av||p.acc)return;if(p.name==='Head'||/arm$/.test(p.name))p.color=sk;else if(p.name==='Torso')p.color=tc;else if(/leg$/.test(p.name))p.color=lg})}
 /* The BrixBlox account is the admin: it can open and edit every game. (The database has to allow it too, see the SQL I gave you.) */
 const ADMIN=!!(ME&&!ME.demo&&String(ME.username).trim().toLowerCase()==='brixblox');
 const mineG=function(g){return ADMIN||!g.owner||!ME||g.owner.id===ME.id};
@@ -1418,6 +1418,7 @@ function spawnPlayer(name,S){const T=byId(P.avId),av=P.parts.filter(function(p){
   const nm=String(name).trim().slice(0,16)||'Player'+(NP.length+2),n=NP.length,grp=new THREE.Group(),JJ={},dx=(n%2?-1:1)*(4+Math.floor(n/2)*3);
   av.forEach(function(p){const g=new THREE.Group(),v=piv(p),m=new THREE.Mesh(p.acc?cachedGeo(p,false,shapeGeo):avGeo(p),mkMat(p));m.castShadow=!p.stab;m.receiveShadow=true;if(p.shape==='mesh'){m.material.visible=false;m.castShadow=false;try{meshHook(m,p)}catch(e){}}
     if(p.name==='Torso'){if(NETCOL)m.material.color.set(NETCOL);else m.material.color.offsetHSL((n+1)*.17,0,0)}
+    else if(!p.acc&&NETSK&&(p.name==='Head'||/arm$/.test(p.name)))m.material.color.set(NETSK);else if(!p.acc&&NETPN&&/leg$/.test(p.name))m.material.color.set(NETPN);
     m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);if(p.face)addFace(m,p);if(p.stab)m.visible=false;if(p.name==='Head'||p.name==='Torso')MM[p.name]=m;g.add(m);JJ[p.id]=g});
   av.forEach(function(p){const g=JJ[p.id],v=piv(p),pa=p.parent&&byId(p.parent);
     if(pa&&JJ[pa.id]){const q=piv(pa);g.position.set(v[0]-q[0],v[1]-q[1],v[2]-q[2]);JJ[pa.id].add(g)}else{g.position.set(v[0],v[1],v[2]);grp.add(g)}});
@@ -3211,7 +3212,7 @@ addEventListener('beforeunload',function(e){if(skipUnload)return;if(dirty()||per
 /* ===== Online play: everyone playing the same game is put in a server of up to 10. Joining picks a server that is already running, or starts a new one. ===== */
 const NRAG={c:0};/* counts how many times this player was ragdolled, so other players see it too */
 const NANIM={n:'',c:0};/* the last animation this player started on their own character, and a counter so other players never miss it */
-const NETMAX=10,NET={id:Math.random().toString(36).slice(2,10),lob:null,ch:null,sid:'',on:false,fail:false,last:'',idle:0};let NETCOL=null;
+const NETMAX=10,NET={id:Math.random().toString(36).slice(2,10),lob:null,ch:null,sid:'',on:false,fail:false,last:'',idle:0};let NETCOL=null,NETSK=null,NETPN=null;
 /* Leaving a game you only play: cover the screen at once, so the editor behind it can never be seen or used while the page is closing */
 let leavingEl=null;
 function showLeaving(){if(leavingEl)return;const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:9999;background:#232527;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font:700 1.1rem Montserrat,system-ui,sans-serif';
@@ -3255,7 +3256,7 @@ function ragOut(){const e=RAG.main;if(!e||!e.sim||e.gone)return null;const sm=e.
   B.forEach(function(b){const q=b.par<0?qS(sm.q0,b.q,u):qS([0,0,0,1],qm(qc(B[b.par].q),b.q),u);o[b.p.id]=q.map(r3)});return o}
 function netRecv(q){if(!q||!q.id||q.id===NET.id||!NET.on||!(running||playing))return;
   let e=NP.find(function(n){return n.net===q.id});
-  if(!e){NETCOL=/^#[0-9a-f]{6}$/i.test(q.c)?q.c:null;spawnPlayer(String(q.n),S);NETCOL=null;e=NP[NP.length-1];if(!e)return;e.net=q.id;e.g.position.set(q.x,q.h,-q.y)}
+  if(!e){NETCOL=/^#[0-9a-f]{6}$/i.test(q.c)?q.c:null;NETSK=/^#[0-9a-f]{6}$/i.test(q.sk)?q.sk:null;NETPN=/^#[0-9a-f]{6}$/i.test(q.pn)?q.pn:null;spawnPlayer(String(q.n),S);NETCOL=null;NETSK=null;NETPN=null;e=NP[NP.length-1];if(!e)return;e.net=q.id;e.g.position.set(q.x,q.h,-q.y)}
   e.tx=q.x;e.ty=q.y;e.th=q.h;e.td=q.d;e.mv=q.m;e.seen=performance.now();
   const nm=function(v){return typeof v==='string'?v.slice(0,40):''};
   e.un=String(q.n||e.name).slice(0,24);e.air=!!q.g;e.wa=nm(q.wa);e.ia=nm(q.ia);e.ja=nm(q.ja);
@@ -3271,7 +3272,7 @@ function netDrop(id){const i=NP.findIndex(function(n){return n.net===id});if(i<0
   n.g.traverse(function(o){if(o.geometry&&!o.geometry.userData.keep)o.geometry.dispose();if(o.material)o.material.dispose()});n.tag.material.map.dispose();n.tag.material.dispose();
   NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);chatSys(n.name+' left the game');renderParts()}
 setInterval(function(){if(!NET.on||!(running||playing))return;
-  const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:Math.round(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,e:accStr(ME&&ME.av&&ME.av.eq)},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.an,q.ac,q.rc,q.e].join()+(rgo?JSON.stringify(rgo):'');
+  const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:Math.round(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,e:accStr(ME&&ME.av&&ME.av.eq)},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.an,q.ac,q.rc,q.e].join()+(rgo?JSON.stringify(rgo):'');
   if(j===NET.last&&++NET.idle<10)return;NET.last=j;NET.idle=0;NET.ch.send({type:'broadcast',event:'p',payload:q});
   const now=performance.now();NP.slice().forEach(function(n){if(n.net&&now-n.seen>20000)netDrop(n.net)})},100);
 function bbHud(){const lb=el('button','btn ghost small','Leave game');lb.id='bb-leave';lb.style.cssText='position:fixed;top:10px;right:10px;z-index:60';lb.onclick=leaveGame;
