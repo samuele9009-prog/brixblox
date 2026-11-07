@@ -521,6 +521,9 @@ const BD={
  broadcastwait:{c:'ev',l:'broadcast _ and wait',a:['message1'],tip:'Sends a message to every \"when I receive\" script with the same name, and waits here until all of them have finished.'},
  touched:{c:'ev',hat:1,l:'when this block touched',a:[],tip:'Runs when a player starts touching the object this script belongs to. It works even when collision is false. The variable toucher holds the name of whoever touched it. Put the script on an object with the + next to it in the Explorer.'},
  pjoin:{c:'ev',hat:1,l:'when a player joins',a:[],tip:'Runs when another player joins the server, and once for you when the game starts. The variable joiner holds their name. Use the "number of players" block to see how many are in the game.'},
+ itemhold:{c:'ev',hat:1,l:'when player holds _ in hand',a:['Sword'],dd:{0:'item'},tip:'Runs when you take the item you pick out of the hotbar and hold it in your hand. Make the item first (right-click a mesh under Assets, then Create item).'},
+ itemunhold:{c:'ev',hat:1,l:'when player stops holding _ in hand',a:['Sword'],dd:{0:'item'},tip:'Runs when you put the item you pick away (or switch to another item, or it is taken from you).'},
+ screenclick:{c:'ev',hat:1,l:'when player clicks screen',a:[],tip:'Runs every time you click on the game screen while playing (press Play). Clicking the hotbar at the bottom does not count. The variable clicker holds your name.'},
  pleave:{c:'ev',hat:1,l:'when a player leaves',a:[],tip:'Runs when a player leaves, is kicked or banned. The variable leaver holds their name. "number of players" is already updated.'},
  clicked:{c:'ev',hat:1,l:'when this block is clicked from _ studs away',a:['20'],tip:'Runs when you click the object this script belongs to while playing (press Play). The number is how far away you can click from. The variable clicker holds your name.'},
  chat:{c:'ev',hat:1,l:'when player says _ in chat',a:['hello'],raw:1,tip:'Runs when a player types this in the chat box (press / while playing, type, then press Enter to send). It matches the whole message, or the start of it when the message continues after a space (so \"!kick Bob\" matches !kick). Type * to match every message. The variables speaker and message are filled in.'},
@@ -618,7 +621,7 @@ const BD={
  def:{c:'fn',hat:1,l:'define _',a:['spin'],raw:1},
  call:{c:'fn',l:'call _',a:['spin'],raw:1}
 };
-const EVH=['key','keydrop','keyheld','keyrel','recv','touched','clicked','chat','guiclick','guithisclick','pjoin','pleave'];
+const EVH=['key','keydrop','keyheld','keyrel','recv','touched','clicked','chat','guiclick','guithisclick','pjoin','pleave','itemhold','itemunhold','screenclick'];
 function mk(t,a,k){return {t:t,a:a||BD[t].a.slice(),k:BD[t].k?(k||[]):null}}
 function starter(){return [[mk('start'),mk('say',['Hello!']),mk('repeat',['4'],[mk('move',['6']),mk('turn',['90']),mk('wait',['0.3'])])]]}
 /* Games only exist on disk once they are published. An unpublished game is a draft that is lost when the page closes. */
@@ -729,7 +732,7 @@ function varList(){const v=new Set((P&&Array.isArray(P.vars))?P.vars:[]);
     if(b.k)w(b.k)})};
   P.scripts.forEach(function(sc){w(sc)});
   const has=function(t){return P.scripts.some(function(sc){return sc[0].t===t})};
-  if(has('touched'))v.add('toucher');if(has('pjoin'))v.add('joiner');if(has('pleave'))v.add('leaver');if(has('clicked')||has('guiclick')||has('guithisclick'))v.add('clicker');if(has('chat')){v.add('speaker');v.add('message')}
+  if(has('touched'))v.add('toucher');if(has('pjoin'))v.add('joiner');if(has('pleave'))v.add('leaver');if(has('clicked')||has('guiclick')||has('guithisclick')||has('screenclick'))v.add('clicker');if(has('chat')){v.add('speaker');v.add('message')}
   return Array.from(v).sort()}
 const KEYOPT=(function(){const o=[];'abcdefghijklmnopqrstuvwxyz'.split('').forEach(function(c){o.push([c,c.toUpperCase()])});'0123456789'.split('').forEach(function(c){o.push([c,c])});
   [['space','Space'],['enter','Enter'],['shift','Shift'],['ctrl','Ctrl'],['alt','Alt'],['tab','Tab'],['escape','Escape'],['backspace','Backspace'],['up','Up arrow'],['down','Down arrow'],['left','Left arrow'],['right','Right arrow']].forEach(function(q){o.push(q)});
@@ -938,7 +941,7 @@ function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('p
 
 
 /* BricBloc as text */
-const KW={giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
+const KW={itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
 
@@ -2421,7 +2424,7 @@ function lockWarn(t){if(!lockWarnEl){lockWarnEl=document.createElement('div');lo
 cv.addEventListener('mouseup',function(e){if(e.button===2){look=false;if(document.pointerLockElement===cv&&!lockMode())document.exitPointerLock()}});
 cv.addEventListener('mousedown',function(e){if(e.button===0&&lockMode()&&document.pointerLockElement!==cv)lockPtr()});
 cv.style.touchAction='none';cv.oncontextmenu=function(e){e.preventDefault()};
-cv.onpointerdown=function(e){if(VIEWONLY&&!playing)return;cv.setPointerCapture(e.pointerId);lx=e.clientX;ly=e.clientY;if(e.button===2){look=true;return}if(e.button===0&&playing){playClick(e);return}if(e.button!==0||playing)return;if(animOn()){ray.setFromCamera(ndc(e),camera);const gh=ray.intersectObjects(gizmo,false)[0];if(gh){animGizStart(gh.object,e);return}animClick(e);return}
+cv.onpointerdown=function(e){if(VIEWONLY&&!playing)return;cv.setPointerCapture(e.pointerId);lx=e.clientX;ly=e.clientY;if(e.button===2){look=true;return}if(e.button===0&&playing){screenClick();playClick(e);return}if(e.button!==0||playing)return;if(animOn()){ray.setFromCamera(ndc(e),camera);const gh=ray.intersectObjects(gizmo,false)[0];if(gh){animGizStart(gh.object,e);return}animClick(e);return}
   ray.setFromCamera(ndc(e),camera);let h=ray.intersectObjects(gizmo,false)[0];
   if(h&&h.object.userData.rotAx!==undefined){snapSel();const rs=rotStart(h.object.userData.rotAx,e);if(rs)gd=rs;return}
   if(h&&h.object.userData.scale){scaleStart(h.object);return}
@@ -2949,6 +2952,9 @@ function clickInfo(e){if(!P.scripts.some(function(sc){return sc[0].t==='clicked'
   return {p:p,d:Math.hypot(hit.point.x-(T.pos[0]+S.x),hit.point.y-(T.pos[1]+S.h),hit.point.z-(T.pos[2]-S.y))}}
 function clickScripts(p,d){const r=rootOf(p),out=[];P.scripts.forEach(function(sc){const h=sc[0];if(h.t!=='clicked'||roots(h.o,true).indexOf(r)<0)return;let rg=Number(val(h.a[0],S));if(!(rg>0))rg=20;if(d<=rg)out.push(sc)});return out}
 function playHover(e){const c=clickInfo(e);cv.style.cursor=c&&clickScripts(c.p,c.d).length?'pointer':''}
+function screenClick(){if(!(running||playing))return;const l=P.scripts.filter(function(sc){return sc[0].t==='screenclick'});if(!l.length)return;S.v.clicker=P.player.name;l.forEach(fireScript)}
+function itemEvt(kind,id){if(!id||!(running||playing))return;const it=itemsL().find(function(x){return x.id===id});if(!it)return;const nm=String(it.name).trim().toLowerCase();
+  P.scripts.forEach(function(sc){const h=sc[0];if(h.t===kind&&String(h.a[0]).trim().toLowerCase()===nm)fireScript(sc)})}
 function playClick(e){const c=clickInfo(e);if(!c)return;const l=clickScripts(c.p,c.d);if(!l.length)return;S.v.clicker=P.player.name;l.forEach(fireScript)}
 /* Chat */
 function nameCol(n){if(n===P.player.name){const q=P.squads.find(function(z){return z.id===P.player.squad});if(q)return q.color}let h=0;for(let i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))>>>0;return 'hsl('+(h%360)+',75%,72%)'}
@@ -3428,6 +3434,9 @@ function addGroups(c){if(c.t==='gui'){const O2=[];[['text','Text','A text label 
     Sx.push(scr('Script: when this block touched','touched','Runs when a player touches it'));
     Sx.push(scr('Script: when this block is clicked','clicked','Runs when you click it while playing'));
     Sx.push(scr('Script: when player says in chat','chat','Runs when a player types a word in chat'));
+    Sx.push(scr('Script: when player holds item in hand','itemhold','Runs when you hold an item you made'));
+    Sx.push(scr('Script: when player stops holding item in hand','itemunhold','Runs when you stop holding an item'));
+    Sx.push(scr('Script: when player clicks screen','screenclick','Runs every time you click the game screen'));
     Sx.push(scr('Function','def','A reusable set of blocks'))}
   const G=[];if(O.length)G.push({g:'Objects',items:O});if(Sx.length)G.push({g:own?'Scripts inside this object':'Scripts',items:Sx});if(A.length)G.push({g:'Animation',items:A});return G}
 function addMenu(btn,ctx,done){closeAdd();const G=addGroups(ctx),m=el('div','addm');m.setAttribute('role','menu');m._done=done;
@@ -4070,13 +4079,13 @@ function itemMake(E,it){const w=E.obj.clone(true);
   const g=new THREE.Group();g.add(w);itemApply(g,E,it);return g}
 function itemGive(it){if(S.items.indexOf(it.id)<0){S.items.push(it.id);chatSys('You got "'+it.name+'". Click it at the bottom or press its number.')}hotRender()}
 function itemTake(it){S.items=S.items.filter(function(x){return x!==it.id});if(S.heldItem===it.id)itemEquip(null);hotRender()}
-function itemEquip(id){const my=S;if(my.itemObj){if(my.itemObj.parent)my.itemObj.parent.remove(my.itemObj);my.itemObj=null}
+function itemEquip(id){const my=S,prevId=my.heldItem;if(my.itemObj){if(my.itemObj.parent)my.itemObj.parent.remove(my.itemObj);my.itemObj=null}
   my.heldItem=null;my.ht=0;
   if(id){const it=itemsL().find(function(x){return x.id===id});if(!it){hotRender();return}my.heldItem=id;
     meshLoad(it.mesh).then(function(E){if(my!==S||my.heldItem!==id)return;if(!E||!E.obj){log('Error: the mesh "'+it.mesh+'" for item "'+it.name+'" could not be loaded.');return}
       const R=P.parts.find(function(p){return p.av&&p.name==='Rarm'&&!p.acc}),m=R&&M[R.id];if(!m)return;
       if(my.itemObj&&my.itemObj.parent)my.itemObj.parent.remove(my.itemObj);const g=itemMake(E,it);m.add(g);my.itemObj=g})}
-  hotRender()}
+  hotRender();if(prevId!==(my.heldItem||null)){if(prevId)itemEvt('itemunhold',prevId);if(my.heldItem)itemEvt('itemhold',my.heldItem)}}
 let hotEl=null;
 function hotRender(){if(!hotEl){hotEl=el('div');hotEl.id='hotbar';hotEl.style.cssText='position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:55;display:flex;gap:6px;pointer-events:auto';document.body.append(hotEl)}
   hotEl.replaceChildren();const on=(running||playing)&&S.items.length>0;hotEl.style.display=on?'flex':'none';if(!on)return;
@@ -4260,16 +4269,19 @@ function netRecv(q){if(!q||!q.id||q.id===NET.id||!NET.on||!(running||playing))re
   e.rc=q.rc;if(q.rg&&typeof q.rg==='object'){const t={};Object.keys(q.rg).forEach(function(id){const a=q.rg[id];if(e.JJ[id]&&Array.isArray(a)&&a.length===4&&a.every(Number.isFinite))t[id]=a});e.rgT=t;e.rgAt=performance.now()}/* they were ragdolled: show it on this screen too (never as a kill, they respawn on their own screen) */
   if(e.ac===undefined)e.ac=q.ac;/* first packet: do not replay an old animation */
   else if(q.ac!==e.ac){e.ac=q.ac;if(nm(q.an)){e.an=nm(q.an);e.at=0}}}
-function netItem(e){
+function netItem(e,tries){
   if(e.itemObj){if(e.itemObj.parent)e.itemObj.parent.remove(e.itemObj);e.itemObj=null}
   if(!e.hi)return;
-  const it=itemsL().find(function(x){return x.id===e.hi});if(!it)return;
-  const R=P.parts.find(function(p){return p.av&&p.name==='Rarm'&&!p.acc}),g=R&&e.JJ[R.id],m=g&&g.children[0];if(!m)return;
-  const want=e.hi;
+  const want=e.hi,who=e.un||e.name,it=itemsL().find(function(x){return x.id===want});
+  if(!it){log('Item debug: '+who+' holds an item this copy of the game does not have. Press Update on the game, then reload.');return}
+  const R=P.parts.find(function(p){return p.av&&p.name==='Rarm'&&!p.acc}),g=R&&e.JJ[R.id],m=g&&g.children[0];
+  if(!m){log('Item debug: could not find the right arm on '+who+'.');return}
   meshLoad(it.mesh).then(function(E){
-    if(e.hi!==want||!E||!E.obj)return;
+    if(e.hi!==want)return;
+    if(!E||!E.obj){log('Item debug: the mesh "'+it.mesh+'" for "'+it.name+'" is not available on this computer'+(E&&E.fail?' ('+E.fail+')':'')+'. Re-import it and press Update.');return}
     if(e.itemObj&&e.itemObj.parent)e.itemObj.parent.remove(e.itemObj);
-    const o=itemMake(E,it);m.add(o);e.itemObj=o}).catch(function(){})}
+    const o=itemMake(E,it);o.traverse(function(x){x.visible=true;x.frustumCulled=false});m.add(o);e.itemObj=o;
+    log('Item debug: showing "'+it.name+'" on '+who+'.')}).catch(function(err){log('Item debug: '+String((err&&err.message)||err))})}
 function netSay(id,t){const e=NP.find(function(n){return n.net===id});if(!e)return;
   if(!e.bub){const c=document.createElement('canvas');c.width=1024;c.height=384;const x=c.getContext('2d');x.scale(2,2);const tx=new THREE.CanvasTexture(c);tx.minFilter=THREE.LinearFilter;tx.generateMipmaps=false;
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthTest:false}));sp.renderOrder=9;sp.visible=false;scene.add(sp);e.bub={x:x,t:tx,sp:sp}}
