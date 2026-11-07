@@ -1298,14 +1298,23 @@ const TOOLS=[['move','Move'],['scale','Resize'],['rotate','Rotate']];
 function cycleTool(d){if(VIEWONLY||document.getElementById('shome')||playing||running||animOn())return;
   const i=Math.max(0,TOOLS.findIndex(function(q){return q[0]===tool})),n=TOOLS[(i+d+TOOLS.length)%TOOLS.length];
   setTool(n[0]);lockWarn('Tool: '+n[1]+(n[0]==='move'?' (drag the arrows)':n[0]==='scale'?' (drag a ball, Ctrl = both sides)':' (drag a ring, Shift = snap 15 degrees, double-click a ring to reset)')+'  \u00B7  R for next, Shift+R for previous')}
-/* Ctrl+R: mirror the rotation of the selected parts (30 degrees becomes -30). Each part stays where it is. */
-function mirrorRot(){const rs=rotRoots();if(!rs.length){msg('Select a part first, then press Ctrl+R to mirror its rotation.');return}
-  let n=0;rs.forEach(function(p){let ch=false;
-    if(hasRot(p)){p.rot=[p.rot[0],-p.rot[1],-p.rot[2]].map(function(v){return Math.round(v*1000)/1000+0});ch=true}
-    if(p.ry){p.ry=(((-p.ry)%360)+360)%360;ch=true}
+/* Ctrl+R: mirror the selection left-to-right as you see it. The mirror is a flat wall that runs along the way you are facing, so a plank leaning right
+   (as seen from your camera) ends up leaning left. A single part stays where it is; several parts also swap sides around the middle of the selection. */
+function mirrorRot(){const rs=rotRoots();if(!rs.length){msg('Select a part first, then press Ctrl+R to mirror it the way you are facing.');return}
+  const rv=new THREE.Vector3(Math.cos(cam.yaw),0,Math.sin(cam.yaw)),k=180/Math.PI,r3=function(v){return Math.round(v*1000)/1000+0},
+    M=new THREE.Matrix4().set(1-2*rv.x*rv.x,-2*rv.x*rv.y,-2*rv.x*rv.z,0,-2*rv.y*rv.x,1-2*rv.y*rv.y,-2*rv.y*rv.z,0,-2*rv.z*rv.x,-2*rv.z*rv.y,1-2*rv.z*rv.z,0,0,0,0,1),
+    c=rotCenter(rs),multi=rs.length>1;let n=0;
+  rs.forEach(function(p){let ch=false;
+    if(multi){const sh=2*((p.pos[0]-c[0])*rv.x+(p.pos[1]-c[1])*rv.y+(p.pos[2]-c[2])*rv.z);if(Math.abs(sh)>1e-6){moveBy(p,[-sh*rv.x,-sh*rv.y,-sh*rv.z].map(r3));ch=true}}
+    const R=new THREE.Matrix4().makeRotationFromQuaternion(hasRot(p)?rotQ(p):new THREE.Quaternion()),e=R.elements;let bi=0,bv=-1;
+    for(let i=0;i<3;i++){const v=Math.abs(e[i*4]*rv.x+e[i*4+1]*rv.y+e[i*4+2]*rv.z);if(v>bv){bv=v;bi=i}}
+    /* a box looks the same flipped along any of its own axes, so flip the one facing the mirror to keep the turn as small as possible */
+    const Rn=M.clone().multiply(R).multiply(new THREE.Matrix4().makeScale(bi===0?-1:1,bi===1?-1:1,bi===2?-1:1)),eu=new THREE.Euler().setFromRotationMatrix(Rn,'XYZ'),
+      nr=[eu.x*k,eu.y*k,eu.z*k].map(r3),old=p.rot||[0,0,0];
+    if(Math.abs(nr[0]-old[0])+Math.abs(nr[1]-old[1])+Math.abs(nr[2]-old[2])>.01){if(nr[0]||nr[1]||nr[2])p.rot=nr;else delete p.rot;ch=true}
     if(ch){n++;if(kids(p).length){delete rig0[p.id];snapRig(p)}}});
-  if(!n){msg('Nothing to mirror: the selection is not rotated.');return}
-  msg('Mirrored the rotation of '+n+' item'+(n>1?'s':'')+'.');all()}
+  if(!n){msg('Nothing to mirror: it already looks the same from where you are facing.');return}
+  msg('Mirrored '+n+' item'+(n>1?'s':'')+' the way you are facing.');all()}
 addEventListener('keydown',function(e){if(e.code!=='KeyR'||!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey)return;
   e.preventDefault();if(e.repeat||VIEWONLY||document.getElementById('shome')||playing||running||animOn())return;
   const a=document.activeElement;if(a&&(/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a.isContentEditable))return;
