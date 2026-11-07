@@ -1895,7 +1895,7 @@ cv.onpointerdown=function(e){cv.setPointerCapture(e.pointerId);lx=e.clientX;ly=e
   if(rigOn){h=ray.intersectObjects(balls,false)[0];if(h){selJ=h.object.userData.joint;buildEdit();return}}
   if(e.shiftKey&&!rigOn){marqueeSel(e);return}
   h=ray.intersectObjects(pickSel(),false)[0];pick(h?h.object.userData.id:null,e.ctrlKey||e.shiftKey||e.metaKey,e.altKey);
-  if(h&&!rigOn&&!(e.ctrlKey||e.shiftKey||e.metaKey))dragStart2(h)};
+  if(h&&!rigOn&&!(e.ctrlKey||e.shiftKey||e.metaKey))dragStart2(h,e)};
 /* Shift + drag in the 3D view draws a box and selects every part whose middle is inside it (hold Ctrl as well to add to the current selection).
    Shift + a plain click still adds or removes one part. */
 function marqueeSel(e){const x0=e.clientX,y0=e.clientY,add0=e.ctrlKey||e.metaKey,alt0=e.altKey;let moved=false,box=null;
@@ -1917,8 +1917,8 @@ function marqueeSel(e){const x0=e.clientX,y0=e.clientY,add0=e.ctrlKey||e.metaKey
   addEventListener('pointermove',mv);addEventListener('pointerup',up);addEventListener('pointercancel',up)}
 /* Left-click a part or model and drag: it slides around the map (snaps to half studs, hold Alt for free movement). While you hold it, R turns it 90 degrees
    (Shift+R the other way) and T tilts it 15 degrees (Shift+T the other way). Your character, locked parts and the huge ground part are never dragged. */
-function dragStart2(h){const p=byId(h.object.userData.id);if(!p||rootOf(p).av||p.size[0]>=64||p.size[2]>=64||sel.indexOf(p.id)<0)return;
-  snapSel();const b=dragBox();gd={rm:1,mv:1,y:b?b.lo[1]:h.point.y}}
+function dragStart2(h,e){const p=byId(h.object.userData.id);if(!p||rootOf(p).av||p.size[0]>=64||p.size[2]>=64||sel.indexOf(p.id)<0)return;
+  snapSel();const b=dragBox();gd={rm:1,mv:1,sx:e.clientX,sy:e.clientY,on:false,y:b?b.lo[1]:h.point.y}}
 function compassAxis(){const cr=Math.cos(cam.yaw),sr=Math.sin(cam.yaw);return Math.abs(cr)>=Math.abs(sr)?new THREE.Vector3(1,0,0):new THREE.Vector3(0,0,1)}
 function tiltSel(dir){if(animOn()||rigOn)return;const rs=rotRoots();if(!rs.length){msg('Your character cannot be tilted.');return}
   const ax=compassAxis(),q=new THREE.Quaternion().setFromAxisAngle(ax,dir*15*Math.PI/180),c=rotCenter(rs),r3=function(v){return Math.round(v*1000)/1000+0},k=180/Math.PI;
@@ -1935,7 +1935,9 @@ addEventListener('keydown',function(e){if(!(gd&&gd.mv)||e.ctrlKey||e.metaKey||e.
 function dragBox(){const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];let n=0;
   sel.forEach(function(id){const p=byId(id);if(!p||p.stab)return;const q=eh(p);n++;for(let i=0;i<3;i++){lo[i]=Math.min(lo[i],p.pos[i]-q[i]);hi[i]=Math.max(hi[i],p.pos[i]+q[i])}});
   return n?{lo:lo,hi:hi,c:[0,1,2].map(function(i){return (lo[i]+hi[i])/2}),h:[0,1,2].map(function(i){return (hi[i]-lo[i])/2})}:null}
-function rmoveDrag(e){const g=gd,b=dragBox();if(!b)return;ray.setFromCamera(ndc(e),camera);
+function rmoveDrag(e){const g=gd,b=dragBox();if(!b)return;
+  /* a click that wiggles a little is still just a click: the part only moves once the mouse has travelled 10 pixels */
+  if(!g.on){if(!look&&Math.hypot(e.clientX-g.sx,e.clientY-g.sy)<10)return;g.on=true}ray.setFromCamera(ndc(e),camera);
   const skip={};sel.forEach(function(id){skip[id]=1});
   const hit=ray.intersectObjects(pickable().filter(function(m){return !skip[m.userData.id]}),false)[0];let pt,ax=1,sg=1;
   if(hit&&hit.distance<800){pt=hit.point;const nn=hit.face.normal.clone().transformDirection(hit.object.matrixWorld),a=[Math.abs(nn.x),Math.abs(nn.y),Math.abs(nn.z)];
