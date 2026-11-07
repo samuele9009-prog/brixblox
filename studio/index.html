@@ -1289,6 +1289,7 @@ function spawnPlayer(name,S){const T=byId(P.avId),av=P.parts.filter(function(p){
     m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);if(p.face)addFace(m,p);if(p.stab)m.visible=false;if(p.name==='Head'||p.name==='Torso')MM[p.name]=m;g.add(m);JJ[p.id]=g});
   av.forEach(function(p){const g=JJ[p.id],v=piv(p),pa=p.parent&&byId(p.parent);
     if(pa&&JJ[pa.id]){const q=piv(pa);g.position.set(v[0]-q[0],v[1]-q[1],v[2]-q[2]);JJ[pa.id].add(g)}else{g.position.set(v[0],v[1],v[2]);grp.add(g)}});
+  av.forEach(function(p){JJ[p.id].userData.base=JJ[p.id].position.clone()});
   grp.position.set(dx,0,0);scene.add(grp);
   const c=document.createElement('canvas');c.width=256;c.height=64;const x=c.getContext('2d');
   x.fillStyle='rgba(20,22,24,.82)';x.fillRect(4,10,248,44);x.fillStyle='#fff';x.font='700 26px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(nm,128,33);
@@ -1299,7 +1300,7 @@ function npAnim(n){return(typeof n==='string'&&n&&Object.prototype.hasOwnPropert
 function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
   NP.forEach(function(q){q.t+=dt;
     if(q.net&&q.tx!=null&&T){const k=1-Math.exp(-dt*14),g=q.g.position;g.x+=(q.tx-g.x)*k;g.y+=(q.th-g.y)*k;g.z+=(-q.ty-g.z)*k;
-      const J=q.JJ[P.avId];if(J){const a=(q.td-90)*Math.PI/180,df=((a-J.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;J.rotation.y+=df*k}
+      {const a=(q.td-90)*Math.PI/180;if(q.yaw===undefined)q.yaw=a;else{const df=((a-q.yaw+Math.PI*3)%(Math.PI*2))-Math.PI;q.yaw+=df*k;q.yaw=((q.yaw+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI}}
       q.tag.position.set(T.pos[0]+g.x,q.top+.75+g.y,T.pos[2]+g.z);
       if(q.bub){const age=performance.now()-(q.sayAt||0),on=q.say&&age<BUBMS;q.bub.sp.visible=!!on;
         if(on){const k=Math.max(0,Math.min(1,(BUBMS-age)/BUBFADE)),e=k*k*(3-2*k),z=.4+.6*e;q.bub.sp.material.opacity=e;q.bub.sp.scale.set(6.6*z,2.475*z,1);q.bub.sp.position.set(T.pos[0]+g.x,q.top+2.25-(1-z)+g.y,T.pos[2]+g.z)}}}
@@ -1308,11 +1309,17 @@ function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
       if(air&&JA)po=evalPose(JA,Math.min(q.jt,JA.len));
       else{const A=(q.mv&&(npAnim(q.wa)||npAnim('walk')))||npAnim(q.ia)||npAnim('idle');if(A)po=evalPose(A,q.t%A.len)}}
     else{const A=P.anims[S.idleA||'idle'];if(A)po=evalPose(A,q.t%A.len)}
-    for(const id in q.JJ){if(id===P.avId)continue;const r=po[id]||[0,0,0];q.JJ[id].rotation.set(r[0]*Math.PI/180,r[1]*Math.PI/180,r[2]*Math.PI/180)}
-    /* an animation this player started with a block: it only moves the parts it has keyframes for, on this player only */
+    /* an animation this player started with a block overrides the parts it has keyframes for, on this player only */
+    let fp=po;
     if(q.net&&q.an){const AN=npAnim(q.an);if(!AN)q.an='';else{q.at=(q.at||0)+dt;
       if(q.at>=AN.len+.05)q.an='';
-      else{const pa=evalPose(AN,Math.min(q.at,AN.len));for(const id in pa){if(id.slice(0,2)==='p:'||id===P.avId||!q.JJ[id])continue;const r=pa[id];q.JJ[id].rotation.set(r[0]*Math.PI/180,r[1]*Math.PI/180,r[2]*Math.PI/180)}}}}})}
+      else{fp=Object.assign({},po);const pa=evalPose(AN,Math.min(q.at,AN.len));for(const id in pa){const b=id.slice(0,2)==='p:'?id.slice(2):id;if(q.JJ[b])fp[id]=pa[id]}}}}
+    /* Same as your own character: every part gets its animation rotation and position offset, and the root part also gets the
+       animation's rotation and lift (crouching, sitting, flips...). Without the root offset other players hovered at standing height. */
+    const D=Math.PI/180;
+    for(const id in q.JJ){const g=q.JJ[id],r=fp[id]||[0,0,0],o=fp['p:'+id]||[0,0,0],bs=g.userData.base;
+      if(id===P.avId)g.rotation.set(r[0]*D,(q.yaw||0)+r[1]*D,r[2]*D);else g.rotation.set(r[0]*D,r[1]*D,r[2]*D);
+      if(bs)g.position.set(bs.x+o[0],bs.y+o[1],bs.z+o[2])}})}
 
 /* Rig editor: balls at anchor points, arrows to move them */
 function buildEdit(){try{updTool()}catch(e){}while(editG.children.length)editG.remove(editG.children[0]);gizmo=[];balls=[];gz=[];agT=null;if(playing)return;if(animOn()){buildAnimGizmo();return}
