@@ -65,6 +65,14 @@ form .btn{width:100%;margin-top:16px}
 .swatches{display:flex;gap:6px;flex-wrap:wrap;flex:1 1 160px}
 .swatches button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);cursor:pointer;padding:0}
 .swatches button[aria-pressed=true]{outline:3px solid var(--berry);outline-offset:2px}
+.wheel-wrap{position:relative;width:240px;max-width:100%;margin:12px 0 0;touch-action:none;user-select:none;-webkit-user-select:none}
+#wheel{display:block;width:100%;height:auto;border-radius:50%;cursor:crosshair;box-shadow:0 0 0 1px var(--line)}
+.wheel-dot{position:absolute;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1.5px #000,inset 0 0 0 1px #000;pointer-events:none;left:50%;top:50%}
+.wheel-v{display:flex;align-items:center;gap:10px;margin:10px 0 0;max-width:280px;font-size:.8rem}
+.wheel-v input{flex:1;min-width:0}
+.look-row{display:flex;align-items:center;gap:8px;margin:10px 0 8px;max-width:280px}
+.look-chip{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);flex:none}
+.look-row input{width:8.5em;min-height:36px;font-family:ui-monospace,Consolas,monospace;text-transform:uppercase}
 .swatches button:disabled{cursor:not-allowed;opacity:.35;background-image:linear-gradient(135deg,transparent 45%,rgba(0,0,0,.55) 45% 55%,transparent 55%)}
 .avatar{--c:#ff6b57;width:38px;height:52px;position:relative;flex:none}
 .avatar i{position:absolute;display:block;border:1px solid var(--line);border-radius:3px}
@@ -371,9 +379,15 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
             <button class="btn ghost small" type="button" data-a="jump" aria-pressed="false">Jump</button>
             <button class="btn ghost small" type="button" id="av-face">Face close-up</button>
           </div>
-          <p class="note">Shirt color</p><div id="sw" class="swatches"></div>
-          <p class="note">Skin color</p><div id="sw-skin" class="swatches"></div>
-          <p class="note">Pants color</p><div id="sw-pants" class="swatches"></div>
+          <div class="seg look-tabs" id="look-tabs">
+            <button class="btn ghost small" type="button" data-k="shirt" aria-pressed="true">Shirt</button>
+            <button class="btn ghost small" type="button" data-k="skin" aria-pressed="false">Skin</button>
+            <button class="btn ghost small" type="button" data-k="pants" aria-pressed="false">Pants</button>
+          </div>
+          <div class="wheel-wrap"><canvas id="wheel" width="240" height="240" aria-label="Color wheel. Drag to choose a color."></canvas><span id="wheel-dot" class="wheel-dot"></span></div>
+          <label class="wheel-v">Brightness <input type="range" id="wheel-v" min="5" max="100" value="100" aria-label="Brightness"></label>
+          <div class="look-row"><span id="look-chip" class="look-chip"></span><input type="text" id="look-hex" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Hex color"></div>
+          <div id="sw" class="swatches"></div>
           <p id="look-hint" class="hint" role="status"></p>
         </div>
         <div>
@@ -559,16 +573,18 @@ const store=(function(){
 })();
 async function sha(t){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('')}catch(e){return btoa(t)}}
 /* Skin and pants palettes. A skin tone and a pants colour can't be picked if they look too alike, so the legs never vanish into the arms and head. */
-const DEF_SKIN='#f0c49a',DEF_PANTS='#a4bd47';
+const DEF_SKIN='#f0c49a',DEF_PANTS='#a4bd47',HEX=/^#[0-9a-f]{6}$/i;
 const SKINS=['#ffe0c7','#f0c49a','#e0a878','#c68642','#a0682f','#8d5524','#5c3a1e','#3b2314'];
 const PANTS=['#a4bd47','#2b3a67','#1d1f21','#7a4cff','#ff6b57','#1fc8b4','#ff7ab8','#f5f0e6'];
-function toLab(h){const n=parseInt(h.slice(1),16);const c=[n>>16&255,n>>8&255,n&255].map(function(v){v/=255;return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4)});
-  const x=(c[0]*.4124+c[1]*.3576+c[2]*.1805)/.95047,y=c[0]*.2126+c[1]*.7152+c[2]*.0722,z=(c[0]*.0193+c[1]*.1192+c[2]*.9505)/1.08883;
+const GAM=[];for(let i=0;i<256;i++){const v=i/255;GAM.push(v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4))}
+function labOf(r,g,b){const R=GAM[r],G=GAM[g],B=GAM[b];
+  const x=(R*.4124+G*.3576+B*.1805)/.95047,y=R*.2126+G*.7152+B*.0722,z=(R*.0193+G*.1192+B*.9505)/1.08883;
   const f=function(t){return t>.008856?Math.cbrt(t):7.787*t+16/116};return [116*f(y)-16,500*(f(x)-f(y)),200*(f(y)-f(z))]}
+function toLab(h){const n=parseInt(h.slice(1),16);return labOf(n>>16&255,n>>8&255,n&255)}
 function colorDist(a,b){const p=toLab(a),q=toLab(b);return Math.sqrt(Math.pow(p[0]-q[0],2)+Math.pow(p[1]-q[1],2)+Math.pow(p[2]-q[2],2))}
 const MIN_LOOK_DIST=30;
 function tooAlike(a,b){return colorDist(a,b)<MIN_LOOK_DIST}
-function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:e.hat||null,face:e.face||null,facc:e.facc||null,back:e.back||null,neck:e.neck||null},spent:a.spent||0,skin:a.skin||DEF_SKIN,pants:a.pants||DEF_PANTS}}
+function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:e.hat||null,face:e.face||null,facc:e.facc||null,back:e.back||null,neck:e.neck||null},spent:a.spent||0,skin:HEX.test(a.skin)?a.skin:DEF_SKIN,pants:HEX.test(a.pants)?a.pants:DEF_PANTS}}
 function makeDemo(){
   function load(){try{return JSON.parse(store.get('brixblox-demo'))||{users:[],recs:{},session:null}}catch(e){return {users:[],recs:{},session:null}}}
   function save(d){store.set('brixblox-demo',JSON.stringify(d))}
@@ -696,31 +712,69 @@ function syncMe(){if(me)store.set('brixblox-me',JSON.stringify({id:me.id,usernam
 async function enter(p){me=p;syncMe();$('a-msg').textContent='';$('f-up').reset();$('f-in').reset();nameOk=false;updUp();
   try{recs=await api.records(me.id)}catch(e){recs={};toast('Could not load your times.')}
   lobby()}
-function paintLook(){
-  const a=me.av;
-  /* A saved combination that is too close (older account, edited data) gets a safe pants colour */
-  if(tooAlike(a.skin,a.pants)){const ok=PANTS.find(function(c){return !tooAlike(a.skin,c)});if(ok)a.pants=ok}
-  [['sw-skin','skin','pants'],['sw-pants','pants','skin']].forEach(function(r){
-    $(r[0]).querySelectorAll('button').forEach(function(b){
-      const clash=tooAlike(b.dataset.c,a[r[2]]);
-      b.disabled=clash&&b.dataset.c!==a[r[1]];
-      b.title=b.disabled?'Too close to your '+(r[2])+' color':'';
-      b.setAttribute('aria-pressed',String(b.dataset.c===a[r[1]]))})})}
-function setLook(key,c){
-  const other=key==='skin'?'pants':'skin';
-  if(tooAlike(c,me.av[other])){$('look-hint').className='hint bad';$('look-hint').textContent="Skin and pants colors can't be too close. Pick one that stands out.";return}
-  $('look-hint').textContent='';
-  const old=me.av[key];me.av[key]=c;pvRebuild();paintLook();
-  saveAv().then(function(ok){if(!ok){me.av[key]=old;pvRebuild();paintLook()}})}
-function paintAvatar(){if(typeof pvRebuild==='function')pvRebuild();if($('sw-skin').children.length)paintLook();$('sw').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.c===me.color))})}
+/* ===== Color wheel: one wheel for shirt, skin and pants ===== */
+const WHEEL=240,WR=WHEEL/2,look={k:'shirt',h:0,s:0,v:1};
+function hsv2rgb(h,s,v){const i=Math.floor(h*6),f=h*6-i,p=v*(1-s),q=v*(1-f*s),t=v*(1-(1-f)*s);
+  const m=[[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]][i%6];return [Math.round(m[0]*255),Math.round(m[1]*255),Math.round(m[2]*255)]}
+function rgb2hex(c){return '#'+c.map(function(x){return x.toString(16).padStart(2,'0')}).join('')}
+function hsv2hex(h,s,v){return rgb2hex(hsv2rgb(h,s,v))}
+function hex2hsv(hex){const n=parseInt(hex.slice(1),16),r=(n>>16&255)/255,g=(n>>8&255)/255,b=(n&255)/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;
+  if(d){h=mx===r?((g-b)/d+6)%6:mx===g?(b-r)/d+2:(r-g)/d+4;h/=6}return {h:h,s:mx?d/mx:0,v:mx}}
+function partner(k){return k==='skin'?'pants':k==='pants'?'skin':null}
+function lookGet(k){return k==='shirt'?me.color:me.av[k]}
+function lookClash(hex,k){const o=partner(k||look.k);return !!o&&tooAlike(hex,me.av[o])}
+function drawWheel(){
+  const c=$('wheel'),x=c.getContext('2d'),img=x.createImageData(WHEEL,WHEEL),d=img.data,o=partner(look.k),ol=o?toLab(me.av[o]):null;
+  for(let py=0;py<WHEEL;py++)for(let px=0;px<WHEEL;px++){
+    const dx=px+.5-WR,dy=py+.5-WR,r=Math.sqrt(dx*dx+dy*dy);if(r>WR)continue;
+    const rgb=hsv2rgb(((Math.atan2(dy,dx)/(2*Math.PI))+1)%1,Math.min(1,r/WR),look.v),i=(py*WHEEL+px)*4;
+    let R=rgb[0],G=rgb[1],B=rgb[2];
+    if(ol){const l=labOf(R,G,B),e=Math.sqrt(Math.pow(l[0]-ol[0],2)+Math.pow(l[1]-ol[1],2)+Math.pow(l[2]-ol[2],2));
+      if(e<MIN_LOOK_DIST){const stripe=((px+py)>>2)&1;const g=stripe?70:120;R=g;G=g;B=g}}
+    d[i]=R;d[i+1]=G;d[i+2]=B;d[i+3]=255}
+  x.putImageData(img,0,0)}
+function wheelDot(){const a=look.h*2*Math.PI,r=look.s;$('wheel-dot').style.left=(50+Math.cos(a)*r*50)+'%';$('wheel-dot').style.top=(50+Math.sin(a)*r*50)+'%'}
+function lookShow(){const hex=lookGet(look.k);$('look-chip').style.background=hex;if(document.activeElement!==$('look-hex'))$('look-hex').value=hex.toUpperCase();
+  $('sw').querySelectorAll('button').forEach(function(b){const cl=lookClash(b.dataset.c)&&b.dataset.c!==hex;b.disabled=cl;b.title=cl?'Too close to your '+partner(look.k)+' color':'';b.setAttribute('aria-pressed',String(b.dataset.c===hex))})}
+function lookHint(t){const h=$('look-hint');h.className='hint'+(t?' bad':'');h.textContent=t||''}
+function lookLoad(){const c=hex2hsv(lookGet(look.k));look.h=c.h;look.s=c.s;look.v=Math.max(.05,c.v);$('wheel-v').value=Math.round(look.v*100);drawWheel();wheelDot();lookShow()}
+function setPart(k){look.k=k;$('look-tabs').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.k===k))});
+  const pal=k==='shirt'?COLORS:k==='skin'?SKINS:PANTS,sw=$('sw');sw.innerHTML='';
+  pal.forEach(function(c){const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label',k+' color '+c);b.onclick=function(){if(lookTry(c,true))lookLoad()};sw.appendChild(b)});
+  lookHint('');lookLoad()}
+let lookRaf=0;
+function lookApply(hex){if(look.k==='shirt')me.color=hex;else me.av[look.k]=hex;lookShow();if(!lookRaf)lookRaf=requestAnimationFrame(function(){lookRaf=0;pvRebuild()})}
+/* Returns true when the color was accepted. Skin and pants that are too alike are refused. */
+function lookTry(hex,commit){
+  if(lookClash(hex)){lookHint("Skin and pants colors can't be too close. Pick one that stands out.");return false}
+  lookHint('');lookApply(hex);if(commit)lookSave();return true}
+async function lookSave(){
+  syncMe();
+  if(look.k==='shirt'){try{await api.setColor(me.id,me.color)}catch(e){toast('Could not save your color.')}}
+  else await saveAv()}
+function wheelPick(e){const r=$('wheel').getBoundingClientRect(),dx=(e.clientX-r.left)/r.width*2-1,dy=(e.clientY-r.top)/r.height*2-1,rad=Math.sqrt(dx*dx+dy*dy);
+  const h=((Math.atan2(dy,dx)/(2*Math.PI))+1)%1,sat=Math.min(1,rad);
+  if(lookTry(hsv2hex(h,sat,look.v),false)){look.h=h;look.s=sat;wheelDot()}}
+(function(){
+  const w=$('wheel');let drag=false;
+  w.addEventListener('pointerdown',function(e){drag=true;w.setPointerCapture(e.pointerId);wheelPick(e)});
+  w.addEventListener('pointermove',function(e){if(drag)wheelPick(e)});
+  const end=function(){if(!drag)return;drag=false;lookSave()};
+  w.addEventListener('pointerup',end);w.addEventListener('pointercancel',end);
+  $('wheel-v').addEventListener('input',function(){const v=this.value/100;
+    if(lookTry(hsv2hex(look.h,look.s,v),false)){look.v=v;drawWheel()}else this.value=Math.round(look.v*100)});
+  $('wheel-v').addEventListener('change',function(){lookSave()});
+  const hx=$('look-hex');
+  hx.addEventListener('change',function(){let t=hx.value.trim();if(t[0]!=='#')t='#'+t;
+    if(HEX.test(t)&&lookTry(t.toLowerCase(),true))lookLoad();else{if(!HEX.test(t))lookHint('Type a color like #ff6b57.');hx.value=lookGet(look.k).toUpperCase()}});
+  $('look-tabs').querySelectorAll('button').forEach(function(b){b.onclick=function(){setPart(b.dataset.k)}});
+})();
+function paintAvatar(){if(typeof pvRebuild==='function')pvRebuild();if(me&&$('sw'))lookLoad()}
 function unlocked(id){return id===1||!!recs[id-1]}
 function lobby(){
   show('lobby');{const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}}$('l-name').textContent=me.username;$('l-name2').textContent=me.username;
-  const sw=$('sw');sw.innerHTML='';
-  COLORS.forEach(function(c){const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label','Color '+c);b.onclick=async function(){me.color=c;syncMe();paintAvatar();try{await api.setColor(me.id,c)}catch(e){toast('Could not save your color.')}};sw.appendChild(b)});
-  [['sw-skin','skin',SKINS],['sw-pants','pants',PANTS]].forEach(function(r){const box=$(r[0]);box.innerHTML='';
-    r[2].forEach(function(c){const b=document.createElement('button');b.type='button';b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label',(r[1]==='skin'?'Skin ':'Pants ')+'color '+c);b.onclick=function(){setLook(r[1],c)};box.appendChild(b)})});
-  $('look-hint').textContent='';
+  {const v=me.av;if(tooAlike(v.skin,v.pants)){const ok=PANTS.find(function(c){return !tooAlike(v.skin,c)});if(ok)v.pants=ok}}/* older saves that are too alike get safe pants */
+  setPart('shirt');
   paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');loadFriends();loadGames();loadBank();loadItems()}
 const PAGES=['home','friends','avatar','bank','settings'];
 function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p)})}
