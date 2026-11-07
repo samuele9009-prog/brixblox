@@ -1337,15 +1337,19 @@ function adminGame(){return VIEWONLY?isAdminName(PLAYINFO&&PLAYINFO.owner):amAdm
    If nothing matches, accFind.info says why (a server error, or the names that do exist) so the error message can be useful. */
 async function accFind(q){accFind.info='';const norm=function(t){return String(t||'').normalize('NFKC').replace(/[\u200b-\u200d\ufeff]/g,'').replace(/\s+/g,' ').trim().toLowerCase()},
     loose=function(t){return norm(t).replace(/[^\p{L}\p{N}]/gu,'')};
-  q=norm(q);if(!q){accFind.info='The name is empty.';return null}let rows=[],why='';
+  q=norm(q);if(!q){accFind.info='The name is empty.';return null}let rows=[],why='',sawRemoved=false;
   if(sb){try{const r=await sb.from('games').select('id,name').like('id','acc_%').limit(2000);if(r.error)throw r.error;rows=r.data||[]}catch(e){why='The shop list could not be loaded ('+String((e&&e.message)||e)+'). '}}
   if(!rows.length){try{rows=(JSON.parse(store.get('brixblox-acc'))||[]).filter(function(x){return !x.removed})}catch(e){}}
+  /* The server list still contains items that were removed from the shop (and several items can share a name, e.g. one that was removed and made again).
+     So: look at every item that matches the name and use the first one that is NOT removed. */
+  async function live(m){if(!sb)return true;try{const r=await sb.from('games').select('data').eq('id',m.id).maybeSingle();let d=r.data&&r.data.data;if(typeof d==='string')d=JSON.parse(d);if(d&&d.removed){sawRemoved=true;return false}}catch(e){}return true}
+  async function pick(list){for(const m of list){if(await live(m))return m}return null}
   const lq=loose(q);
-  let m=rows.filter(function(x){return norm(x.id)===q})[0]||rows.filter(function(x){return norm(x.name)===q})[0]||rows.filter(function(x){return lq&&loose(x.name)===lq})[0];
-  if(!m){const part=rows.filter(function(x){return lq&&loose(x.name).indexOf(lq)>=0});if(part.length===1)m=part[0]}/* only one item contains what you typed */
-  if(!m){const names=rows.map(function(x){return String(x.name||x.id)}).slice(0,10);
+  let m=await pick(rows.filter(function(x){return norm(x.id)===q}))||await pick(rows.filter(function(x){return norm(x.name)===q}))||await pick(rows.filter(function(x){return lq&&loose(x.name)===lq}));
+  if(!m){const part=[];for(const x of rows.filter(function(x){return lq&&loose(x.name).indexOf(lq)>=0})){if(await live(x))part.push(x)}if(part.length===1)m=part[0]}/* only one item contains what you typed */
+  if(!m){if(sawRemoved){accFind.info='The only accessory with that name was removed from the shop.';return null}
+    const names=rows.map(function(x){return String(x.name||x.id)}).filter(function(n,i,a){return a.indexOf(n)===i}).slice(0,10);
     accFind.info=why+(names.length?'Accessories I can see: '+names.join(', ')+(rows.length>10?', ...':'')+'.':'I can not see any accessories at all.');return null}
-  if(sb){try{const r=await sb.from('games').select('data').eq('id',m.id).maybeSingle();let d=r.data&&r.data.data;if(typeof d==='string')d=JSON.parse(d);if(d&&d.removed){accFind.info='That accessory was removed from the shop.';return null}}catch(e){}}
   return {id:m.id,name:m.name||m.id}}
 async function invChange(id,add){if(!ME)return {ok:false,why:'not signed in'};let av=null;
   /* An online account must be changed on the server. If the server is not reachable we say so, instead of pretending it worked (the shop would never see the item). */
