@@ -2915,6 +2915,9 @@ async function netJoin(){
     ch.on('broadcast',{event:'k'},function(m){const p=m.payload;if(!p||p.t!==NET.id||p.id===NET.id||!(running||playing))return;
       const by=String(p.n||'').slice(0,24);if(!isAdminName(by))return;if(admIsBB(ME&&ME.username)&&!admIsBB(by))return;/* nobody but brixblox can kill brixblox */
       startRag('main',true);chatSys('You were killed by admin '+by+'.')});
+    ch.on('broadcast',{event:'bn'},function(m){const p=m.payload;if(!p||p.t!==NET.id||p.id===NET.id)return;
+      const by=String(p.n||'').slice(0,24);if(!isAdminName(by)||admIsBB(ME&&ME.username))return;if(isAdminName(ME&&ME.username)&&!admIsBB(by))return;
+      showBanned(String(p.r||'').slice(0,120),typeof p.u==='number'?p.u:null)});
     ch.on('broadcast',{event:'ar'},function(){if(Date.now()-ADMT>3000)admLoad()});
     ch.on('presence',{event:'join'},function(){NET.last=''});
     ch.on('presence',{event:'leave'},function(e){(e.leftPresences||[]).forEach(function(m){netDrop(m.id)})});
@@ -3008,6 +3011,45 @@ const bbSec=el('div');
 const adIn=el('input');adIn.type='text';adIn.maxLength=24;adIn.placeholder='Username';adIn.style.cssText='flex:1;min-width:0;min-height:34px;border-radius:8px;border:1px solid #555;background:#191b1d;color:#fff;padding:0 8px';
 const adGo=el('button','btn small','Give admin');adGo.type='button';adGo.style.cssText='width:auto;margin:0;min-height:34px;padding:0 10px;font-size:.85rem';
 const adRow=el('div');adRow.style.cssText='display:flex;gap:6px';adRow.append(adIn,adGo);bbSec.append(small('Admins (brixblox only)'),admLs,adRow,admMsg);admPanel.append(bbSec);
+var BANS={list:[]},banShown=false;
+function cleanBans(a){const now=Date.now(),o=[];(Array.isArray(a)?a:[]).forEach(function(b){if(!b)return;const k=admName(b.n);if(!/^[a-z0-9_]{1,24}$/.test(k)||k==='brixblox')return;
+    const u=typeof b.u==='number'?b.u:null;if(u!==null&&u<=now)return;if(o.some(function(x){return x.n===k}))return;o.push({n:k,r:String(b.r||'').slice(0,120),u:u})});return o.slice(0,500)}
+function banEntry(n){const k=admName(n),now=Date.now();return BANS.list.find(function(b){return b.n===k&&(b.u===null||b.u>now)})||null}
+function banLeft(u){if(u===null)return 'forever';const s=Math.max(0,Math.round((u-Date.now())/1000)),m=Math.floor(s/60),h=Math.floor(m/60),d=Math.floor(h/24);return d>=1?d+' day'+(d>1?'s':'')+' '+(h%24)+' h':h>=1?h+' h '+(m%60)+' min':m+' min'}
+async function bansLoad(){try{let d;if(sb){const r=await sb.from('games').select('data').eq('id','sys_bans').maybeSingle();if(r.error)throw r.error;d=r.data&&r.data.data}else d=store.get('brixblox-bans');
+    if(typeof d==='string')d=JSON.parse(d);BANS.list=cleanBans(d&&d.bans);try{bansPanelFill()}catch(e){}checkMyBan()}catch(e){}}
+async function bansSave(list){const data=JSON.stringify({bans:cleanBans(list)});
+  if(sb){const r=await sb.from('games').upsert({id:'sys_bans',owner_id:ME.id,owner_name:ME.username,name:'Bans',vis:'public',data:data,updated_at:new Date().toISOString()});if(r.error)throw r.error}
+  else store.set('brixblox-bans',data);BANS.list=cleanBans(JSON.parse(data).bans)}
+function checkMyBan(){if(!ME||admIsBB(ME.username)||banShown)return;const b=banEntry(ME.username);if(b&&(VIEWONLY||running||playing))showBanned(b.r,b.u)}
+function showBanned(reason,until){if(banShown)return;banShown=true;try{S.stop=true;running=false;playing=false;sync();if(document.pointerLockElement)document.exitPointerLock()}catch(e){}
+  const go=function(){leaveGame()};
+  mdl('You are banned from BrixBlox',function(c,close){c.append(el('p','','Reason: '+(reason||'No reason given')),el('p','note','Time left: '+(until===null?'forever':banLeft(until))+'.'));
+    const r=el('div','tb');r.append(mb('OK','',function(){close();go()}));c.append(r)});setTimeout(go,12000)}
+async function banUser(name,reason,mins,netId){
+  if(!amAdmin())throw new Error('Only admins can ban.');const k=admName(name);
+  if(!/^[a-z0-9_]{1,24}$/.test(k))throw new Error('That is not a valid username.');
+  if(admIsBB(k))throw new Error('brixblox cannot be banned.');
+  if(isAdminName(k)&&!admIsBB(ME.username))throw new Error('Only brixblox can ban an admin.');
+  if(admName(ME.username)===k)throw new Error('You cannot ban yourself.');
+  const b={n:k,r:String(reason||'').trim().slice(0,120),u:mins>0?Date.now()+mins*60000:null};
+  await bansSave(BANS.list.filter(function(x){return x.n!==k}).concat([b]));
+  if(netId&&NET.on&&NET.ch)NET.ch.send({type:'broadcast',event:'bn',payload:{id:NET.id,n:ME.username,t:netId,r:b.r,u:b.u}});
+  chatSys(name+' was banned: '+(b.r||'no reason given')+' ('+(b.u===null?'forever':banLeft(b.u))+').');bansPanelFill()}
+function banDlg(name,netId){mdl('Ban '+name,function(c,close){
+  const rs=el('input'),mn=el('input'),msg2=el('p','note','');rs.maxLength=120;rs.placeholder='Reason';mn.type='number';mn.min='0';mn.value='60';
+  [rs,mn].forEach(function(i){i.style.cssText='min-height:32px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink)'});
+  c.append(lab('Reason',rs),lab('Minutes (0 = forever)',mn),msg2);
+  const r=el('div','tb');r.append(mb('Ban','',async function(){try{await banUser(name,rs.value,Math.max(0,+mn.value||0),netId);admMsg.textContent=name+' was banned.';close()}catch(e){msg2.textContent=(e&&e.message)||String(e)}}),mb('Cancel','ghost',close));c.append(r)})}
+const banSec=el('div'),banLs=el('div'),banIn=el('input'),banGo=el('button','btn small','Ban');
+banIn.type='text';banIn.maxLength=24;banIn.placeholder='Username';banIn.style.cssText='flex:1;min-width:0;min-height:34px;border-radius:8px;border:1px solid #555;background:#191b1d;color:#fff;padding:0 8px';
+banGo.type='button';banGo.style.cssText='width:auto;margin:0;min-height:34px;padding:0 10px;font-size:.85rem';
+const banRow=el('div');banRow.style.cssText='display:flex;gap:6px';banRow.append(banIn,banGo);banSec.append(small('Bans'),banLs,banRow);admPanel.append(banSec);
+banGo.onclick=function(){const n=banIn.value.trim();if(!/^[A-Za-z0-9_]{1,24}$/.test(n)){admMsg.textContent='That is not a valid username.';return}banIn.value='';banDlg(n,null)};
+function bansPanelFill(){banLs.replaceChildren();const l=cleanBans(BANS.list);
+  if(!l.length){const e=el('div',null,'Nobody is banned.');e.style.cssText='color:#bdbebe;font-size:.78rem';banLs.append(e)}
+  l.forEach(function(b){const row=admRow(b.n+' ('+banLeft(b.u)+')'+(b.r?' - '+b.r:''),'Unban',async function(){try{await bansSave(BANS.list.filter(function(x){return x.n!==b.n}));admMsg.textContent=b.n+' was unbanned.';bansPanelFill()}catch(e){admMsg.textContent='Could not save: '+((e&&e.message)||e)}});banLs.append(row)})}
+bansPanelFill();
 adGo.onclick=async function(){const n=adIn.value.trim();if(!/^[A-Za-z0-9_]{1,24}$/.test(n)){admMsg.textContent='That is not a valid username.';return}
   if(admIsBB(n)){admMsg.textContent='brixblox is always an admin.';return}if(ADM.list.indexOf(admName(n))>=0){admMsg.textContent=n+' is already an admin.';return}
   adGo.disabled=true;admMsg.textContent='Saving...';
@@ -3031,9 +3073,10 @@ setInterval(function(){
     const r=el('div');r.style.cssText='display:flex;align-items:center;padding:3px 10px;gap:0';if(isAdminName(p.n))r.append(admIcon(14));const t=el('span',null,p.n+(p.me?' (you)':''));t.style.cssText='overflow:hidden;text-overflow:ellipsis;white-space:nowrap';r.append(t);plBody.append(r)})}
   if(admPanel.style.display==='block'){flyBtn.textContent='Fly: '+(S.fly?'ON':'off')+'  (F)';admPl.replaceChildren();
     if(!others.length){const e=el('div',null,'Nobody else is here.');e.style.cssText='color:#bdbebe;font-size:.78rem';admPl.append(e)}
-    others.forEach(function(e){admPl.append(admRow(e.un||e.name,'Kill',function(){admKill(e.net,e.un||e.name)}))})}
+    others.forEach(function(e){const row=admRow(e.un||e.name,'Kill',function(){admKill(e.net,e.un||e.name)}),bb=el('button','btn small ghost','Ban');
+      bb.type='button';bb.style.cssText='width:auto;margin:0;min-height:28px;padding:0 10px;font-size:.8rem';bb.onclick=function(){banDlg(e.un||e.name,e.net)};row.append(bb);admPl.append(row)})}
 },500);
-setInterval(admLoad,45000);admLoad();
+setInterval(admLoad,45000);admLoad();setInterval(bansLoad,30000);bansLoad();
 </script>
 </body>
 </html>
