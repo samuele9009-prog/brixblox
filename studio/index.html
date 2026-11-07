@@ -540,6 +540,8 @@ const BD={
  pspeed:{c:'pl',l:'set player speed to _',a:['24'],tip:'How fast the player walks (default 16).'},
  playercol:{c:'pl',l:'set player collisions to _',a:['true'],dd:{0:'bool'},tip:'true: players can not walk through each other, so you bump into the other players in the server. false: players walk straight through each other (the default). It goes back to false when the game restarts.'},
  givebadge:{c:'pl',l:'give badge _ to player _',a:['Winner','player'],tip:'Gives a player a badge you made under Assets in the Explorer (Badges). Type the badge name. The player is a name, a variable, or player (the first player in the server) (like toucher). The player sees a pop-up and the badge is saved to their account, once per badge per game. Anyone can earn a badge themselves; only the game owner or an admin can give one to another player.'},
+ giveitem:{c:'pl',l:'give item _ to player _',a:['Sword','player'],tip:'Gives a player an item you made (right-click a mesh under Assets, then Create item). It shows up in the hotbar at the bottom: click it or press its number to hold it. The player is a name, a variable, or player (you).'},
+ removeitem:{c:'pl',l:'remove item _ from player _',a:['Sword','player'],tip:'Takes an item away from a player.'},
  awardbadge:{c:'pl',l:'award badge _ to player _ icon _',a:['Winner','player','\uD83C\uDFC5'],tip:'Gives a player a badge and counts it in their profile. You do not need to make the badge first: it is created for you if it does not exist yet. Each badge is only given once per player per game, and every new badge adds 1 to their badge counter. Type the badge name, then the player (a name, a variable, or player for the first player in the server) and an icon. Anyone can earn a badge themselves; only the game owner or an admin can give one to another player.'},
  randplayer:{c:'pl',l:'get random player into _',a:['target'],dd:{0:'var'},tip:'Picks one player in the game at random (you included) and stores their name in the variable. Use it with blocks like kick, teleport or ragdoll.'},
  forplayer:{c:'pl',l:'only for player _ do',a:['target'],k:1,tip:'Put blocks inside and they only happen for the player you name (type a name, a variable like target from "get random player", or player). GUI blocks (show, hide, set text, set colour, visible, toggle) are sent to that player\'s screen, so nobody else sees the change. Blocks that already have a player slot (kick, teleport, ragdoll) still use their own slot.'},
@@ -932,7 +934,7 @@ function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('p
 
 
 /* BricBloc as text */
-const KW={forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
+const KW={giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
 
@@ -1059,6 +1061,9 @@ async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0
     case'teleport':{const x=n(1),y=n(2),z=n(3);resolve(String(val(a[0],S))).forEach(function(t){teleKey(t.key,x,y,z)});break}
     case'kick':{const why=String(val(a[1],S));playersOf(String(val(a[0],S))).forEach(function(t){kickKey(t.key,why,false)});break}
     case'ban':{const why=String(val(a[1],S)),mins=Math.max(0,n(2));playersOf(String(val(a[0],S))).forEach(function(t){banKey(t,why,mins)});break}
+    case'giveitem':case'removeitem':{const nm=String(val(a[0],S)).trim(),it=itemBy(nm);if(!it){log('Error: no item named "'+nm+'". Right-click a mesh under Assets and press Create item.');break}
+      const pl=playersOf(String(val(a[1],S)));if(!pl.length){log('Error: no player matches "'+String(val(a[1],S))+'".');break}
+      pl.forEach(function(t){if(t.key!=='main'){log('Warning: items can only be given to your own player for now.');return}if(b.t==='giveitem')itemGive(it);else itemTake(it)});break}
     case'givebadge':case'awardbadge':{const bn=String(val(a[0],S)).trim().toLowerCase();let bd=P.badges.find(function(x){return String(x.name).trim().toLowerCase()===bn});
       if(!bd&&b.t==='awardbadge'&&bn){const ic=String(val(a[2]===undefined?'':a[2],S)).trim().slice(0,4)||'\uD83C\uDFC5';
         bd={id:'bd'+hsh(bn).replace(/[^0-9a-z]/gi,'').slice(0,12),name:String(val(a[0],S)).trim().slice(0,24),icon:ic,desc:''};P.badges.push(bd);save()}
@@ -1150,7 +1155,7 @@ function addFace(m,p){if(!FACE){const c=document.createElement('canvas');c.width
   m.add(new THREE.Mesh(g,depthNudge(new THREE.MeshBasicMaterial({map:FACE,transparent:true}),0.008,0.0002)))}
 // S is the avatar's offset from where it was placed. x right, y forward (toward -z), h height, dir 90 faces forward.
 function initVars(){const o={};((P&&P.vars)||[]).forEach(function(n){o[n]=0});return o}
-function fresh(){return {oth:[],x:0,y:0,h:0,vy:0,gr:true,wt:0,jt:0,pvx:0,pvz:0,bp:{},air:false,mv:false,dir:90,col:null,say:'',v:initVars(),fn:{},stop:false,d:0,sl:false,sla:false,slo:0,pcol:false,xeq:{}}}
+function fresh(){return {items:[],heldItem:null,oth:[],x:0,y:0,h:0,vy:0,gr:true,wt:0,jt:0,pvx:0,pvz:0,bp:{},air:false,mv:false,dir:90,col:null,say:'',v:initVars(),fn:{},stop:false,d:0,sl:false,sla:false,slo:0,pcol:false,xeq:{}}}
 let S=fresh(),running=false;let RV={},RD={},RVY={},NP=[],RY={},CO={},TM=new Map();
 function draw(){const T=byId(P.avId),g=T&&J[T.id];
   for(const id in RO){const r=byId(id);if(r&&J[id]&&id!==P.avId)J[id].position.set(r.pos[0]+RO[id][0],r.pos[1]+(RY[id]||0),r.pos[2]+RO[id][1])}
@@ -1887,7 +1892,8 @@ function makeAvatar(){const ST=mkPart('Stabilizer',[0,3,0],[.6,.6,.6],'#9aa4ae')
   RA=mkPart('Rarm',[1.5,3,0],[1,2,1],'#f5cd30'),LA=mkPart('Larm',[-1.5,3,0],[1,2,1],'#f5cd30'),RL=mkPart('Rleg',[.5,1,0],[1,2,1],'#a4bd47'),LL=mkPart('Lleg',[-.5,1,0],[1,2,1],'#a4bd47');
   H.face=true;ST.stab=true;[ST,T,H,RA,LA,RL,LL].forEach(function(q){q.av=true});T.parent=ST.id;T.pivot=defPivot(T);[H,RA,LA,RL,LL].forEach(function(c){c.parent=T.id;c.pivot=defPivot(c)});P.avId=ST.id;
   function ks(m){return [[0,0],[.25,35],[.5,0],[.75,-35],[1,0]].map(function(q){return {t:q[0],r:[q[1]*m,0,0]}})}
-  const w={len:1,keys:{}};w.keys[RA.id]=ks(1);w.keys[LA.id]=ks(-1);w.keys[RL.id]=ks(-1);w.keys[LL.id]=ks(1);P.anims.walk=w;curA='walk';jumpAnim();idleAnim()}
+  const w={len:1,keys:{}};w.keys[RA.id]=ks(1);w.keys[LA.id]=ks(-1);w.keys[RL.id]=ks(-1);w.keys[LL.id]=ks(1);P.anims.walk=w;curA='walk';jumpAnim();idleAnim();holdAnim()}
+function holdAnim(){const R=P.parts.find(function(p){return p.av&&p.name==='Rarm'&&!p.acc});if(!R)return;const k={};k[R.id]=[{t:0,r:[80,0,0]},{t:1,r:[80,0,0]}];P.anims['hold item']={len:1,keys:k,type:'other'}}
 
 function jumpAnim(){const by=function(n){const q=P.parts.find(function(p){return p.av&&p.name===n});return q&&q.id},A={len:.5,keys:{}};
   const R=by('Rarm'),L=by('Larm'),RL=by('Rleg'),LL=by('Lleg');
@@ -2061,8 +2067,8 @@ function meshProps(d,p){
   rb.onclick=function(){const E=MESHI[meshKey((P.assets.meshes||{})[p.mesh]||'')];if(!E||!E.obj){msg('The mesh is still loading.');return}const nz=E.obj.userData.nz,k=Math.max(p.size[0],p.size[1],p.size[2])/(Math.max(nz[0],nz[1],nz[2])||1);p.size=nz.map(function(x){return Math.max(.2,Math.round(x*k*20)/20)});all();props()};
   d.append(rb)}
 function meshRows(d){const ks=Object.keys(P.assets.meshes||{});if(!ks.length){d.append(el('p','empty','Nothing here yet.'));return}
-  ks.forEach(function(n){const v=P.assets.meshes[n],w=el('div','arow');w.append(el('span','nm',n+(bigRef(v)?'  ('+(bigSize(v)/1048576).toFixed(1)+' MB)':'')));
-    w.append(mb('Place in game','',function(){newMeshPart(n)}));
+  ks.forEach(function(n){const v=P.assets.meshes[n],w=el('div','arow');w.oncontextmenu=function(e){e.preventDefault();bmenu(e,[['Create item',function(){itemRoom(n)}]])};w.append(el('span','nm',n+(bigRef(v)?'  ('+(bigSize(v)/1048576).toFixed(1)+' MB)':'')));
+    w.append(mb('Place in game','',function(){newMeshPart(n)}));w.append(mb('Create item','ghost',function(){itemRoom(n)}));
     w.append(mb('Delete','ghost',function(){const used=P.parts.filter(function(q){return q.shape==='mesh'&&q.mesh===n});P.parts=P.parts.filter(function(q){return !(q.shape==='mesh'&&q.mesh===n)});delete P.assets.meshes[n];try{cleanModels()}catch(e){}sel=[];selModel=null;msg('Deleted '+n+(used.length?' and the '+used.length+' part'+(used.length>1?'s':'')+' that used it':'')+'.');all()}));d.append(w)})}
 /* Meshes go online with the game the same way big sounds do */
 async function meshCloud(d,room){const me=d.assets&&d.assets.meshes;if(!me)return room;const bad=[];
@@ -2529,6 +2535,7 @@ function play(dt,f){const SP=(S.fly&&amAdmin()?2.2:1)*(S.speed!=null?S.speed:P.r
   const W=P.anims[S.walkA||'walk'],JA=P.anims[S.jumpA||'jump'],IA=P.anims[S.idleA||'idle'],air=!S.gr;let tp={};
   if(air&&JA){S.jt+=dt;S.air=true;tp=evalPose(JA,Math.min(S.jt,JA.len))}
   else{if(S.air){S.air=false;S.jt=0}if(W&&(mv||Math.hypot(S.pvx,S.pvz)>1.5)){S.wt+=dt*Math.min(1,Math.hypot(S.pvx,S.pvz)/12+.2);const sn=Math.floor(S.wt/(W.len/2));if(S.sn===undefined)S.sn=sn;else if(sn!==S.sn){S.sn=sn;stepSound()}tp=evalPose(W,S.wt%W.len)}else if(IA){S.it=(S.it||0)+dt;tp=evalPose(IA,S.it%IA.len)}}
+  if(S.heldItem){const HA=P.anims['hold item'];if(HA)tp=Object.assign({},tp,evalPose(HA,((S.ht=(S.ht||0)+dt))%(HA.len||1)))}
   const ak=(air&&JA)?'j':(W&&(mv||Math.hypot(S.pvx,S.pvz)>1.5))?'w':'i';if(S.ak!==ak){S.ak=ak;S.bl=.15}S.bl=Math.max(0,(S.bl||0)-dt);const kb=S.bl>0?1-Math.exp(-dt*(air?18:14)):1;P.parts.forEach(function(p){if(p.id===P.avId||!p.av||(S.hold&&S.hold[p.id]>0))return;const t=tp[p.id]||[0,0,0],c=S.bp[p.id]||(S.bp[p.id]=[0,0,0]);for(let i=0;i<3;i++)c[i]+=(t[i]-c[i])*kb;const pk='p:'+p.id,t2=tp[pk]||[0,0,0],c2=S.bp[pk]||(S.bp[pk]=[0,0,0]);for(let i=0;i<3;i++)c2[i]+=(t2[i]-c2[i])*kb});
   applyPose(S.bp,true,S.hold);S.mv=mv}
 function solid(r){return CO[r.id]!==undefined?CO[r.id]:!r.nocol}
@@ -3352,7 +3359,7 @@ function svcProps(d){const s=SV.find(function(x){return x.k===selSvc});if(!s)ret
         if(kind==='audio'){const vr=el('input');vr.type='range';vr.min=0;vr.max=1;vr.step=.05;vr.value=P.assets.avol[n]!==undefined?P.assets.avol[n]:1;vr.title='Volume of this sound';vr.setAttribute('aria-label','Volume of '+n);vr.style.cssText='width:90px;min-height:0;padding:0';vr.oninput=function(){P.assets.avol[n]=+vr.value;save();liveVol()};w.append(vr)}
         if(kind==='image')w.append(mb('Put on selected part','ghost',function(){const t=lastPS.map(byId).filter(Boolean);if(!t.length){msg('Click a part first, then come back and press this.');return}applyTex(t,n)}));
         w.append(mb('Delete','ghost',function(){delete P.assets[col][n];if(kind==='audio'){delete P.assets.avol[n];stopAudio(n);delete AUD[n];dropBig(src)}updSkyTex();save();msg('Deleted '+n+'.');renderParts()}));d.append(w)})};
-    d.append(el('p','note','Images'));rows('images','image');d.append(el('p','note','Audio'));rows('audio','audio');d.append(el('p','note','Meshes'));meshRows(d);d.append(el('p','note','Badges (give them with the "give badge" block)'));badgeUI(d)}
+    d.append(el('p','note','Images'));rows('images','image');d.append(el('p','note','Audio'));rows('audio','audio');d.append(el('p','note','Meshes'));meshRows(d);d.append(el('p','note','Items (give them with the "give item" block)'));itemRows(d);d.append(el('p','note','Badges (give them with the "give badge" block)'));badgeUI(d)}
   else if(s.k==='gui'){const r=el('div','tb');[['text','Text'],['button','Button'],['frame','Frame'],['image','Image']].forEach(function(q){r.append(mb('+ '+q[1],'',function(){addGui(q[0])}))});d.append(r);
     d.append(el('p','note','GUI sits on top of the stage and is sized in percent, so it fits any window. Click one in the list to edit it. Blocks: "show gui", "hide gui", "set gui text to" and "when gui clicked" (for buttons).'))}
   else if(s.k==='world')d.append(el('p','note','Use + Part or press P to add things. Click a part or model in the list to edit it.'))}
@@ -3530,7 +3537,7 @@ function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.
   camera.position.set(cam.x,cam.y,cam.z);camera.lookAt(cam.x+f[0],cam.y+f[1],cam.z+f[2]);{const T=playing&&byId(P.avId);if(T)sunTick(T.pos[0]+S.x,T.pos[1]+S.h,T.pos[2]-S.y);else sunTick(cam.x+f[0]*22,Math.max(0,cam.y+f[1]*22),cam.z+f[2]*22)}skyTick(dt);renderer.render(scene,camera);outlinePass()}
 
 /* Controls */
-function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing);try{renderGui()}catch(e){}}
+function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing);try{hotRender()}catch(e){}try{renderGui()}catch(e){}}
 function setRun(v){running=v;sync()}
 function resetWorld(){KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();RO={};RV={};RD={};RVY={};RY={};CO={};TM=new Map();RAG={};RSZ={};GR={};RB={};RYAW={};for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
 function boot(my){reser();const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
@@ -3603,6 +3610,7 @@ if(!P.v11){P.v11=1;const av=function(n){return P.parts.find(function(p){return p
     const q=av(r[0]);if(!q)return;q.pos=[T.pos[0]+r[1][0],T.pos[1]+r[1][1],T.pos[2]+r[1][2]];q.size=r[2].slice();q.color=r[3];q.pivot=defPivot(q);if(r[0]==='Head')q.face=true});
     const ST=P.parts.find(function(p){return p.av&&p.stab});if(ST)delete rig0[ST.id]}
   save()}
+if(!P.v12){P.v12=1;if(P.avId&&!P.anims['hold item'])holdAnim();save()}
 applyEnv();rebuildParts();renderParts();anims();requestAnimationFrame(frame);loadBig();setTimeout(gcBig,4000);
 if(gameId&&!VIEWONLY&&sb&&!PEND&&(Object.keys(P.assets.audio).some(function(n){return bigRef(P.assets.audio[n])})||Object.keys(P.assets.meshes||{}).some(function(n){return bigRef(P.assets.meshes[n])})))setTimeout(function(){cloudPush(gameId)},3000);
 
@@ -4005,6 +4013,84 @@ if(VIEWONLY){$('studio').classList.add('vo');setFs(true,true);
   document.querySelector('#studio .logo h1').textContent=P.name+(PLAYINFO&&PLAYINFO.owner?'  -  by '+PLAYINFO.owner:'');
   $('s-fs').onclick=function(){try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen()}catch(x){}};
   $('s-fs').textContent='Fullscreen';setTimeout(function(){$('s-play').click();netJoin()},60);bbHud()}
+/* ===== Items: made from a mesh in the item room, given with the "give item" block, held from the hotbar ===== */
+function itemsL(){return P.items=Array.isArray(P.items)?P.items:[]}
+function itemBy(n){const k=String(n).trim().toLowerCase();return itemsL().find(function(i){return String(i.name).toLowerCase()===k})||null}
+function itemApply(g,E,it){const nz=E.obj.userData.nz||[1,1,1],k=(+it.size||2)/(Math.max(nz[0],nz[1],nz[2])||1),D=Math.PI/180;
+  g.children[0].scale.setScalar(k);g.position.set(+it.px||0,+it.py||0,+it.pz||0);g.rotation.set((+it.rx||0)*D,(+it.ry||0)*D,(+it.rz||0)*D)}
+function itemMake(E,it){const w=E.obj.clone(true);
+  w.traverse(function(m){if(!m.isMesh)return;m.castShadow=true;m.frustumCulled=false;const f=function(mt){const n=mt.clone();n.side=THREE.DoubleSide;return n};m.material=Array.isArray(m.material)?m.material.map(f):f(m.material)});
+  const g=new THREE.Group();g.add(w);itemApply(g,E,it);return g}
+function itemGive(it){if(S.items.indexOf(it.id)<0){S.items.push(it.id);chatSys('You got "'+it.name+'". Click it at the bottom or press its number.')}hotRender()}
+function itemTake(it){S.items=S.items.filter(function(x){return x!==it.id});if(S.heldItem===it.id)itemEquip(null);hotRender()}
+function itemEquip(id){const my=S;if(my.itemObj){if(my.itemObj.parent)my.itemObj.parent.remove(my.itemObj);my.itemObj=null}
+  my.heldItem=null;my.ht=0;
+  if(id){const it=itemsL().find(function(x){return x.id===id});if(!it){hotRender();return}my.heldItem=id;
+    meshLoad(it.mesh).then(function(E){if(my!==S||my.heldItem!==id)return;if(!E||!E.obj){log('Error: the mesh "'+it.mesh+'" for item "'+it.name+'" could not be loaded.');return}
+      const R=P.parts.find(function(p){return p.av&&p.name==='Rarm'&&!p.acc}),m=R&&M[R.id];if(!m)return;
+      if(my.itemObj&&my.itemObj.parent)my.itemObj.parent.remove(my.itemObj);const g=itemMake(E,it);m.add(g);my.itemObj=g})}
+  hotRender()}
+let hotEl=null;
+function hotRender(){if(!hotEl){hotEl=el('div');hotEl.id='hotbar';hotEl.style.cssText='position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:55;display:flex;gap:6px;pointer-events:auto';document.body.append(hotEl)}
+  hotEl.replaceChildren();const on=(running||playing)&&S.items.length>0;hotEl.style.display=on?'flex':'none';if(!on)return;
+  S.items.forEach(function(id,i){const it=itemsL().find(function(x){return x.id===id});if(!it)return;const held=S.heldItem===id,b=el('button');b.type='button';b.title=it.name;
+    b.style.cssText='position:relative;width:62px;height:62px;border-radius:8px;border:2px solid '+(held?'#fff':'#4a4c4e')+';background:'+(held?'rgba(0,176,111,.85)':'rgba(35,37,39,.85)')+';color:#fff;font:700 .68rem Montserrat,system-ui,sans-serif;padding:4px;cursor:pointer;overflow:hidden';
+    const n=el('span','',String(i+1));n.style.cssText='position:absolute;left:5px;top:3px;font-size:.7rem;opacity:.8';const t=el('span','',it.name);t.style.cssText='display:block;margin-top:14px;overflow-wrap:anywhere;line-height:1.1';
+    b.append(n,t);b.onmousedown=function(e){e.preventDefault()};b.onclick=function(){itemEquip(held?null:id)};hotEl.append(b)})}
+addEventListener('keydown',function(e){const m=/^(?:Digit|Numpad)([1-9])$/.exec(e.code);if(!m||e.ctrlKey||e.metaKey||e.altKey||e.repeat||!(running||playing)||menuEl)return;
+  if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;const id=S.items[+m[1]-1];if(!id)return;itemEquip(S.heldItem===id?null:id)});
+function itemRows(d){const l=itemsL();if(!l.length){d.append(el('p','empty','No items yet. Right-click a mesh above and press Create item.'));return}
+  l.forEach(function(it){const w=el('div','arow');w.append(el('span','nm',it.name+'  ('+it.mesh+')'));
+    w.append(mb('Edit','',function(){itemRoom(it.mesh,it)}),mb('Delete','ghost',function(){P.items=itemsL().filter(function(x){return x!==it});S.items=S.items.filter(function(x){return x!==it.id});save();renderParts()}));d.append(w)})}
+function itemRoom(mn,ed){if(VIEWONLY)return;if(!(P.assets.meshes||{})[mn]){msg('That mesh is gone.');return}
+  msg('Opening the item room...');meshLoad(mn).then(function(E){if(!E||!E.obj){msg('Could not load that mesh.');return}itemRoom2(mn,E,ed)})}
+function itemRoom2(mn,E,ed){
+  const it=ed?Object.assign({},ed):{name:mn,mesh:mn,px:0,py:-1,pz:0,rx:-90,ry:0,rz:0,size:2};
+  const ov=el('div');ov.style.cssText='position:fixed;inset:0;z-index:350;background:#232527;display:flex';
+  const cvs=document.createElement('canvas');cvs.style.cssText='flex:1;min-width:0;height:100%;display:block;touch-action:none;cursor:grab';cvs.oncontextmenu=function(e){e.preventDefault()};
+  const side=el('div');side.style.cssText='width:310px;max-width:46vw;overflow:auto;padding:14px;background:var(--paper);color:var(--ink);display:flex;flex-direction:column;gap:6px';
+  ov.append(cvs,side);document.body.append(ov);
+  const rn=new THREE.WebGLRenderer({canvas:cvs,antialias:true}),sc=new THREE.Scene(),cm=new THREE.PerspectiveCamera(50,1,.1,500);
+  sc.background=new THREE.Color('#6b7178');sc.add(new THREE.HemisphereLight(0xffffff,0x666a70,.95));const dl=new THREE.DirectionalLight(0xffffff,.7);dl.position.set(-5,10,-8);sc.add(dl);
+  const gc=document.createElement('canvas');gc.width=gc.height=128;const gx=gc.getContext('2d');
+  gx.fillStyle='#7d838a';gx.fillRect(0,0,128,128);gx.fillStyle='#868c93';gx.fillRect(0,0,64,64);gx.fillRect(64,64,64,64);gx.strokeStyle='#aab0b7';gx.lineWidth=4;gx.strokeRect(0,0,128,128);
+  const gt=new THREE.CanvasTexture(gc);gt.wrapS=gt.wrapT=THREE.RepeatWrapping;gt.repeat.set(40,40);
+  const fl=new THREE.Mesh(new THREE.PlaneGeometry(80,80),new THREE.MeshBasicMaterial({map:gt}));fl.rotation.x=-Math.PI/2;sc.add(fl);
+  const AX=ME&&ME.av||{},hx=function(v,d){return /^#[0-9a-f]{6}$/i.test(v)?v:d};
+  const bx=function(w,h,dd,c){return new THREE.Mesh(new THREE.BoxGeometry(w,h,dd),new THREE.MeshPhongMaterial({color:c}))};
+  const T=bx(1.6,2,.8,hx(ME&&ME.color,'#ff6b57'));T.position.set(0,3,0);
+  const Hd=bx(1.4,1.5,1.4,hx(AX.skin,'#f0c49a'));Hd.position.set(0,4.75,0);
+  const RL=bx(.75,2,.75,hx(AX.pants,'#a4bd47'));RL.position.set(.4,1,0);const LL=bx(.75,2,.75,hx(AX.pants,'#a4bd47'));LL.position.set(-.4,1,0);
+  const LA=bx(.7,2,.7,hx(AX.skin,'#f0c49a'));LA.position.set(-1.15,3,0);
+  const ag=new THREE.Group();ag.position.set(1.15,4,0);ag.rotation.x=80*Math.PI/180;const arm=bx(.7,2,.7,hx(AX.skin,'#f0c49a'));arm.position.set(0,-1,0);ag.add(arm);
+  sc.add(T,Hd,RL,LL,LA,ag);
+  const io=itemMake(E,it);arm.add(io);const upd=function(){itemApply(io,E,it)};
+  let th=.9,ph=.25,rad=13,drag=false,lx2=0,ly2=0,alive=true;
+  cvs.onpointerdown=function(e){cvs.setPointerCapture(e.pointerId);lx2=e.clientX;ly2=e.clientY;drag=true};
+  cvs.onpointermove=function(e){if(!drag)return;th-=(e.clientX-lx2)*.008;ph=Math.max(-.3,Math.min(1.4,ph+(e.clientY-ly2)*.006));lx2=e.clientX;ly2=e.clientY};
+  cvs.onpointerup=cvs.onpointercancel=function(){drag=false};
+  cvs.onwheel=function(e){e.preventDefault();rad=Math.max(4,Math.min(40,rad*Math.exp(e.deltaY*.001)))};
+  const loop=function(){if(!alive)return;requestAnimationFrame(loop);const w=cvs.clientWidth,h=cvs.clientHeight;
+    if(w&&h&&(cvs.width!==w||cvs.height!==h)){rn.setSize(w,h,false);cm.aspect=w/h;cm.updateProjectionMatrix()}
+    cm.position.set(Math.sin(th)*Math.cos(ph)*rad,3.5+Math.sin(ph)*rad,-Math.cos(th)*Math.cos(ph)*rad);cm.lookAt(0,3.5,0);rn.render(sc,cm)};
+  loop();
+  const esc=function(e){if(e.key==='Escape'&&!/INPUT/.test(document.activeElement.tagName)){e.stopPropagation();close()}};
+  const close=function(){alive=false;document.removeEventListener('keydown',esc,true);try{rn.dispose()}catch(e){}ov.remove()};
+  document.addEventListener('keydown',esc,true);
+  const h3=el('h3','','Item room');h3.style.margin='0';
+  const nm=el('input');nm.value=it.name;nm.maxLength=24;nm.style.cssText='min-height:34px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink)';nm.oninput=function(){it.name=nm.value};
+  side.append(h3,el('p','note','This is the hold animation pose. Move and turn the item until the handle sits in the hand. Drag the room to look around, scroll to zoom.'),lab('Item name',nm));
+  const fmt=function(v){return (+v).toFixed(2)},sl=function(t,k,a,b,s){slider(side,t,it,k,a,b,s,fmt,upd)};
+  sl('Handle left/right','px',-4,4,.05);sl('Handle up/down','py',-4,4,.05);sl('Handle forward/back','pz',-4,4,.05);
+  sl('Turn X','rx',-180,180,5);sl('Turn Y','ry',-180,180,5);sl('Turn Z','rz',-180,180,5);sl('Size','size',.2,8,.1);
+  const r=el('div','tb');
+  r.append(mb('Save item','',function(){const n=String(it.name).trim().slice(0,24);if(!n){msg('Give the item a name.');return}
+      const dup=itemsL().find(function(x){return x!==ed&&String(x.name).toLowerCase()===n.toLowerCase()});if(dup){msg('There is already an item called "'+n+'".');return}
+      it.name=n;if(ed)Object.assign(ed,it);else{it.id='it'+P.nid++;itemsL().push(it)}
+      save();close();renderParts();msg('Item "'+n+'" saved. Give it with the "give item '+n+' to player player" block.')}),
+    mb('Reset','ghost',function(){Object.assign(it,{px:0,py:-1,pz:0,rx:-90,ry:0,rz:0,size:2});upd();Array.from(side.querySelectorAll('input[type=range]')).forEach(function(i,n){i.value=[0,-1,0,-90,0,0,2][n];i.dispatchEvent(new Event('input'))})}),
+    mb('Cancel','ghost',close));side.append(r)}
+
 /* ===== Studio home: the page you land on from the BrixBlox "Studio" button. It lists every game you made. ===== */
 async function studioHome(){
   const ov=el('div','screen');ov.id='shome';ov.style.zIndex=200;
