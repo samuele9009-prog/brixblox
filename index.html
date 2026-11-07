@@ -573,6 +573,7 @@ function makeDemo(){
     async gameData(){return null},
     async listAcc(){try{return (JSON.parse(store.get('brixblox-acc'))||[]).map(function(x){return Object.assign({c:'#4a4c4e'},x)})}catch(e){return []}},
     async saveAcc(it){let a=[];try{a=JSON.parse(store.get('brixblox-acc'))||[]}catch(e){}a=a.filter(function(x){return x.id!==it.id});a.push(it);store.set('brixblox-acc',JSON.stringify(a))},
+    async admins(){try{const d=JSON.parse(store.get('brixblox-admins'));return d&&d.admins||[]}catch(e){return []}},
     async delAcc(id){let a=[];try{a=JSON.parse(store.get('brixblox-acc'))||[]}catch(e){}store.set('brixblox-acc',JSON.stringify(a.filter(function(x){return x.id!==id})))},
     async logOut(){const d=load();d.session=null;save(d)},
     async restore(){const d=load();const u=d.users.find(function(x){return x.id===d.session});return u?prof(u):null},
@@ -610,6 +611,7 @@ function makeSupa(){
     async gameData(id){const r=await sb.from('games').select('data').eq('id',id).single();if(r.error)throw r.error;return r.data.data},
     async listAcc(){const r=await sb.from('games').select('id,name,data').like('id','acc_%');if(r.error)throw r.error;return r.data.map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,slot:d.slot,price:d.price,scale:d.scale,fbx:d.fbx||'',tex:d.tex||'',tf:!!d.tf,px:d.px||0,py:d.py||0,pz:d.pz||0,rx:d.rx||0,ry:d.ry||0,rz:d.rz||0,sale:d.sale!==false,removed:!!d.removed,c:'#4a4c4e'}})},
     async saveAcc(it){const r=await sb.from('games').upsert({id:it.id,owner_id:me.id,owner_name:me.username,name:it.name,vis:'public',data:JSON.stringify({slot:it.slot,price:it.price,scale:it.scale,fbx:it.fbx||'',tex:it.tex||'',tf:!!it.tf,px:it.px||0,py:it.py||0,pz:it.pz||0,rx:it.rx||0,ry:it.ry||0,rz:it.rz||0,sale:it.sale!==false,removed:!!it.removed}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
+    async admins(){const r=await sb.from('games').select('data').eq('id','sys_admins').maybeSingle();if(r.error)throw r.error;let d=r.data&&r.data.data;if(typeof d==='string')d=JSON.parse(d);return d&&d.admins||[]},
     async delAcc(id){const r=await sb.from('games').delete().eq('id',id);if(r.error)throw r.error},
     async logOut(){await sb.auth.signOut()},
     async restore(){const r=await sb.auth.getSession();return r.data.session?await profile(r.data.session.user.id,r.data.session.user):null},
@@ -810,6 +812,10 @@ let ED=null;/* item being adjusted in the editor; its draft is shown live on the
 const REFUND_REMOVED=true;/* players get their coins back when an item is removed from inventories */
 function itemById(id){if(ED&&ED.id===id)return ED.draft;return ITEMS.find(function(x){return x.id===id})}
 function isBB(){return !!me&&me.username.toLowerCase()==='brixblox'}
+/* Admins (given by brixblox in the game's admin panel) can upload and manage accessories too */
+let ADMS=[];
+function isAdm(){return isBB()||(!!me&&ADMS.indexOf(me.username.toLowerCase())>=0)}
+async function loadAdmins(){try{ADMS=(await api.admins()||[]).map(function(x){return String(x).toLowerCase()})}catch(e){}}
 function addItem(g,id,fx){const it=itemById(id),o=it&&FBXC[id];if(!o)return;
   const c=o.clone(true);c.position.set(0,0,0);
   if(it.tex){const tx=getTex(it.tex,it.tf);c.traverse(function(m){if(!m.isMesh)return;
@@ -963,7 +969,7 @@ function paintShop(){
   SLOTS.forEach(function(s){const b=document.createElement('button');b.type='button';b.className='btn ghost small';b.textContent=s[1];b.setAttribute('aria-pressed',String(pv.tab===s[0]));b.onclick=function(){pv.tab=s[0];paintShop()};tabs.appendChild(b)});
   const g=$('shop');g.innerHTML='';const eq=me.av.eq;
   $('shop-note').textContent=pv.tryEq?'Trying on. This is not saved until you buy or equip it.':'Earn coins by collecting them in games. You get 10 to start.';
-  ITEMS.filter(function(x){return x.slot===pv.tab&&(x.sale!==false||me.av.owned.indexOf(x.id)>=0||isBB())}).forEach(function(it){
+  ITEMS.filter(function(x){return x.slot===pv.tab&&(x.sale!==false||me.av.owned.indexOf(x.id)>=0||isAdm())}).forEach(function(it){
     const owned=me.av.owned.indexOf(it.id)>=0,worn=eq[it.slot]===it.id,trying=pv.tryEq&&pv.tryEq[it.slot]===it.id&&!worn,off=it.sale===false;
     const d=document.createElement('div');d.className='item'+(worn?' eq':'')+(trying?' tr':'')+(off?' off':'');
     const sw=document.createElement('div');sw.className='sw';sw.style.background=it.c;
@@ -981,7 +987,7 @@ function paintShop(){
         const prev=JSON.stringify(me.av);me.av.owned.push(it.id);me.av.spent=(me.av.spent||0)+it.price;eq[it.slot]=it.id;pv.tryEq=null;pvRebuild();paintShop();
         if(await saveAv())toast('Bought '+it.name+'!');else{me.av=JSON.parse(prev);pvRebuild();paintShop()}})}
     d.append(sw,n,pr,row);
-    if(isBB()){const r2=document.createElement('div');r2.className='row';
+    if(isAdm()){const r2=document.createElement('div');r2.className='row';
       function ab(t,f){const b=document.createElement('button');b.type='button';b.className='btn small ghost';b.textContent=t;b.onclick=f;r2.appendChild(b)}
       ab('Adjust',function(){openEdit(it)});
       ab(off?'Put on sale':'Take off sale',async function(){try{await api.saveAcc(Object.assign({},it,{sale:off}));await loadItems();toast(it.name+(off?' is on sale again.':' is off sale. Owners keep it.'))}catch(e){toast('Could not update: '+errText(e))}});
@@ -992,7 +998,7 @@ function paintShop(){
 
 /* ----- Accessory editor (brixblox only): live position / rotation / size / texture on the preview avatar ----- */
 function edPreview(){const d=ED.draft,eq=me.av.eq,t=Object.assign({},eq);Object.keys(t).forEach(function(k){if(t[k]===d.id)t[k]=null});t[d.slot]=d.id;pv.tryEq=t;pvRebuild()}
-function openEdit(it){if(!isBB())return;ED={id:it.id,draft:Object.assign({},it),guides:true};pvMode('idle');facePreview(true);pv.yaw=0;pv.pitch=.08;edPreview();edRender();$('acc-ed').scrollIntoView({block:'nearest',behavior:'smooth'})}
+function openEdit(it){if(!isAdm())return;ED={id:it.id,draft:Object.assign({},it),guides:true};pvMode('idle');facePreview(true);pv.yaw=0;pv.pitch=.08;edPreview();edRender();$('acc-ed').scrollIntoView({block:'nearest',behavior:'smooth'})}
 function closeEdit(){ED=null;pv.tryEq=null;$('acc-ed').hidden=true;$('acc-ed').innerHTML='';pvRebuild();paintShop()}
 function facePreview(on){pv.ly=on?1.5:.95;pv.zoom=on?2.6:5.6;$('av-face').setAttribute('aria-pressed',String(on));$('av-face').textContent=on?'Full body':'Face close-up'}
 function readTex(f){return new Promise(function(ok,no){const u=URL.createObjectURL(f),im=new Image();
@@ -1055,14 +1061,14 @@ function edRender(){
   el.appendChild(bt)}
 $('ac-go').onclick=async function(){const f=$('ac-file').files[0],nm=$('ac-name').value.trim(),m=$('ac-msg');
   function say(t,ok){m.textContent=t;m.className='hint '+(ok?'ok':'bad')}
-  if(!isBB())return;if(!nm){say('Give it a name.');return}if(!f||!/\.fbx$/i.test(f.name)){say('Choose an .fbx file.');return}if(f.size>4e6){say('That file is over 4 MB.');return}
+  if(!isAdm())return;if(!nm){say('Give it a name.');return}if(!f||!/\.fbx$/i.test(f.name)){say('Choose an .fbx file.');return}if(f.size>4e6){say('That file is over 4 MB.');return}
   $('ac-go').disabled=true;say('Reading...',true);
   try{await ensureFbx();const buf=await f.arrayBuffer(),u=new Uint8Array(buf);let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));
     new THREE.FBXLoader().parse(buf,'');
     const it={id:'acc_'+Date.now().toString(36),name:nm,slot:$('ac-slot').value,price:Math.max(0,Math.min(999,parseInt($('ac-price').value,10)||0)),scale:Math.max(.1,Math.min(5,parseFloat($('ac-scale').value)||1)),fbx:btoa(s)};
     await api.saveAcc(it);say('Uploaded '+nm+'.',true);$('ac-name').value='';$('ac-file').value='';await loadItems()}catch(e){say('Could not upload: '+((e&&e.message)||e))}
   $('ac-go').disabled=false};
-function openAvatarPage(){$('acc-up').hidden=!isBB();pvInit();ED=null;$('acc-ed').hidden=true;facePreview(false);pv.tryEq=null;pvRebuild();paintShop()}
+function openAvatarPage(){$('acc-up').hidden=!isAdm();loadAdmins().then(function(){$('acc-up').hidden=!isAdm();paintShop()});pvInit();ED=null;$('acc-ed').hidden=true;facePreview(false);pv.tryEq=null;pvRebuild();paintShop()}
 function frame(now){
   requestAnimationFrame(frame);
   if(!playing)pvTick(now);
