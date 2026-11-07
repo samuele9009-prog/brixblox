@@ -545,16 +545,33 @@ function stepSim(S,dt,inp){
 /*SIM-END*/
 
 /* ===== 3. Name rules. The server repeats these checks, so this is only quick feedback. ===== */
-const BLOCKED=['fuck','shit','bitch','cunt','pussy','whore','slut','porn','nazi','hitler','penis','vagina','bastard','asshole'];
+/* The word lists are stored in ROT13 so the file is not full of slurs. To add a word, ROT13 it first (rot13.com) and put it in the right list. */
+const rot=function(s){return s.replace(/[a-z]/g,function(c){return String.fromCharCode((c.charCodeAt(0)-97+13)%26+97)})};
+/* BLOCKED words are refused anywhere inside a name. WHOLE words are short ones that sit inside harmless words (like "ass" in "class"), so they are only refused as a whole name or as one piece of it (split at _ , digits and capital letters). */
+const BLOCKED=['shpx','fuvg','ovgpu','phag','chffl','juber','fyhg','cbea','anmv','uvgyre','cravf','intvan','onfgneq','nffubyr','avtt','snttbg','ergneq','puvax','tbbx','jrgonpx','ornare','gbjryurnq','enturnq','genaal','xvxr','wvmm','phzfubg','oybjwbo','unaqwbo','qvyqb','pbpxfhpx','zbgureshpx','jnax','gjng','crqbcuvyr','cnrqbcuvyr','zbyrfg','vaprfg','fvrturvy','urvyuvgyre','fjnfgvxn','uragnv','qhzonff'].map(rot);
+const WHOLE=['nff','qvpx','pbpx','phz','gvg','gvgf','obbo','obbof','nany','frk','frkl','encr','encrq','snt','sntf','qlxr','pbba','fcvp','fcvpx','cnxv','gneq','fcnm','xlf','xxx','kkk','crqb','avt','avtf','encvfg'].map(rot);
 const RESERVED=['admin','administrator','moderator','mod','staff','support','system','owner','official'];
-function squash(s){return s.replace(/(.)\1+/g,'$1')}
+/* "fuuuck" still matches "fuck", but "as" does not match "ass" and "Nigeria" does not match the n-word: each letter has to appear at least as often as in the word. */
+function runRe(w,whole){return new RegExp((whole?'^':'')+w.replace(/(.)\1*/g,function(m){return m[0]+'{'+m.length+',}'})+(whole?'$':''))}
+const BLOCKED_RE=BLOCKED.map(function(w){return runRe(w,false)}),WHOLE_RE=WHOLE.map(function(w){return runRe(w,true)});
+const LEET={'0':'o','3':'e','4':'a','5':'s','6':'g','7':'t','8':'b','9':'g'};
+/* Lower-case it, turn look-alike digits into letters, then drop everything that is not a letter. "1" can be an i or an l, so both are tried. */
+function leetForms(t){return ['i','l'].map(function(one){return t.toLowerCase().replace(/[0-9]/g,function(c){return c==='1'?one:LEET[c]||''}).replace(/q/g,'g').replace(/[^a-z]/g,'')})}
+function badWord(n){
+  const forms=leetForms(n);
+  for(let i=0;i<forms.length;i++)for(let j=0;j<BLOCKED_RE.length;j++)if(BLOCKED_RE[j].test(forms[i]))return true;
+  /* pieces: split on _ and capital letters (keeping digits for look-alikes), and again on digits */
+  const pieces=n.replace(/([a-z])([A-Z])/g,'$1 $2').split(/[_\s]+/).concat(n.replace(/([a-z])([A-Z])/g,'$1 $2').split(/[_\s0-9]+/));
+  for(let i=0;i<pieces.length;i++){if(!pieces[i])continue;const f=leetForms(pieces[i]);
+    for(let a=0;a<f.length;a++)for(let j=0;j<WHOLE_RE.length;j++)if(WHOLE_RE[j].test(f[a]))return true}
+  for(let i=0;i<forms.length;i++)for(let j=0;j<WHOLE_RE.length;j++)if(WHOLE_RE[j].test(forms[i]))return true;
+  return false}
 function nameProblem(n){
   if(n.length<3||n.length>16)return 'Use 3 to 16 characters.';
   if(!/^[A-Za-z][A-Za-z0-9_]*$/.test(n))return 'Start with a letter. Use only letters, numbers and underscores.';
-  let s=n.toLowerCase().replace(/[01345]/g,function(c){return {'0':'o','1':'i','3':'e','4':'a','5':'s'}[c]}).replace(/7/g,'t').replace(/[^a-z]/g,'');
-  s=squash(s);
-  if(RESERVED.indexOf(n.toLowerCase())>=0||RESERVED.indexOf(s)>=0)return 'That name is reserved.';
-  for(let i=0;i<BLOCKED.length;i++)if(s.indexOf(squash(BLOCKED[i]))>=0)return 'That name is not allowed. Try another.';
+  const forms=leetForms(n);
+  if(RESERVED.indexOf(n.toLowerCase())>=0||forms.some(function(f){return RESERVED.indexOf(f)>=0}))return 'That name is reserved.';
+  if(badWord(n))return 'That name is not allowed. Try another.';
   return null;
 }
 
@@ -643,7 +660,7 @@ function makeSupa(){
   return {
     demo:false,
     async checkUsername(n){const p=nameProblem(n);if(p)return p;const r=await sb.rpc('check_username',{p_name:n});if(r.error)throw r.error;return r.data.ok?null:r.data.reason},
-    async signUp(f){return viaFn({action:'signup',username:f.username,password:f.password})},
+    async signUp(f){const p=nameProblem(f.username);if(p)throw new Error(p);return viaFn({action:'signup',username:f.username,password:f.password})},
     async logIn(f){if(f.username.indexOf('@')>=0){const r=await sb.auth.signInWithPassword({email:f.username,password:f.password});if(r.error)throw r.error;return {profile:await profile(r.data.user.id,r.data.user)}}return viaFn({action:'login',username:f.username,password:f.password})},
     async friends(id){const r=await sb.rpc('list_friends');if(r.error)throw r.error;return r.data.map(x=>({fid:x.fid,name:x.username,color:x.avatar_color,status:x.status,incoming:x.incoming}))},
     async addFriend(id,n){const r=await sb.rpc('send_friend_request',{p_username:n});if(r.error)throw r.error;return r.data},
