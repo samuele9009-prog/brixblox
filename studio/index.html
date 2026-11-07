@@ -3413,7 +3413,7 @@ function coUi(){const mem=COP.ch?coMembers():[];coBtn.textContent=COP.on?'Co-op 
 function coDlg(pre){mdl('Co-op editing',function(c,close){
   const body=el('div'),err=el('p','');err.style.cssText='color:#c2321f;min-height:1.2em;margin:0;font-size:.85rem';body.style.cssText='display:flex;flex-direction:column;gap:10px';c.append(body,err);
   const inp=function(){const i=el('input');i.type='text';i.style.cssText='min-height:34px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);width:100%';return i};
-  const draw=function(){if(!body.isConnected)return;body.replaceChildren();
+  let shown=false;const draw=function(){if(shown&&!body.isConnected)return;shown=true;body.replaceChildren();
     if(!COP.on&&!COP.joining&&!COP.starting&&!COP.detached){
       if(!sb||!ME||ME.demo||VIEWONLY){body.append(el('p','note','Co-op needs a signed-in online account, in the editor.'));return}
       body.append(el('p','note','Edit a game with friends at the same time and see each other\'s changes live. One person hosts and shares a code.'));
