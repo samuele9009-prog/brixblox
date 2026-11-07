@@ -665,6 +665,7 @@ if(P.name==='My first BricBloc game')P.name='My first BrixBlox game';
 PEND=calcPend();
 function persistGame(){const L=glib(),pv=L[gameId],js=JSON.stringify(P),lh=pv?(pv.lh!==undefined?pv.lh:hsh(pv.data)):undefined;
   L[gameId]={id:gameId,name:P.name,vis:gameVis||'private',at:Date.now(),owner:(pv&&pv.owner&&pv.owner.id)?pv.owner:(ME?{id:ME.id,name:ME.username}:undefined),data:js,lh:lh,thumb:(pv&&pv.thumb)||undefined};store.set(GKEY,JSON.stringify(L));PEND=calcPend();try{updateStat()}catch(e){}
+  if(PEND&&!VIEWONLY&&sb&&ME&&gameId)cloudPush(gameId);
   const gid=gameId;thumbFor(P).then(function(th){const L2=glib();if(!L2[gid]||(L2[gid].thumb||null)===(th||null))return;if(th)L2[gid].thumb=th;else delete L2[gid].thumb;store.set(GKEY,JSON.stringify(L2))})}
 function save(){if(gameId)persistGame()}
 function clean(){P.scripts=P.scripts.filter(function(s){return s.length})}
