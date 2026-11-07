@@ -517,6 +517,8 @@ const BD={
  idleanim:{c:'pl',l:'set player idle to _',a:['idle'],raw:1,tip:'Uses an animation from the rig as the idle animation.'},
  fov:{c:'pl',l:'set camera fov to _',a:['80'],tip:'Sets how wide the camera sees, from 30 (zoomed in) to 120 (very wide). The default is 70. It goes back to the game setting when the game restarts.'},
  pspeed:{c:'pl',l:'set player speed to _',a:['24'],tip:'How fast the player walks (default 16).'},
+ shiftlockon:{c:'pl',l:'enable shiftlock',a:[],tip:'Turns shift lock on while playing: the camera moves over your shoulder, the mouse is locked so moving it turns the camera, and your character always faces where the camera looks. Click the game once to lock the mouse (browsers need a click). Press Play to test it.'},
+ shiftlockoff:{c:'pl',l:'disable shiftlock',a:[],tip:'Turns shift lock off and goes back to the normal camera.'},
  addplayer:{c:'pl',l:'add player to game _',a:['Friend'],raw:1,tip:'Adds another player to the server. They show up next to you with a name tag. A banned player can not join.'},
  kick:{c:'pl',l:'kick player _ from game, reason _',a:['target','Breaking the rules'],tip:'Removes a player from the game and shows the reason. Type a name, a variable, or player (the first player in the server; player2 is the second, and so on) (like toucher or speaker). If you kick yourself the game stops and you see the reason.'},
  ban:{c:'pl',l:'ban player _ from game, reason _ for _ minutes',a:['target','Cheating','60'],tip:'Kicks a player and stops them from joining again for this many minutes (0 = forever). A banned player cannot use add player. If you ban yourself you can lift it under Roster in the Explorer.'},
@@ -539,6 +541,8 @@ const BD={
  repeat:{c:'ct',l:'repeat _',a:['4'],k:1},
  forever:{c:'ct',l:'forever',a:[],k:1},
  'if':{c:'ct',l:'if _',a:['x > 100'],k:1},
+ 'elseif':{c:'ct',l:'else if _',a:['x > 50'],k:1,tip:'Put this right under an \"if\" or another \"else if\" block. It only runs if none of the blocks above it in the chain ran and its own condition is true.'},
+ 'else':{c:'ct',l:'else',a:[],k:1,tip:'Put this right under an \"if\" or \"else if\" block. It runs only when none of the blocks above it in the chain ran.'},
  set:{c:'vr',l:'set _ to _',a:['score','0'],raw:1,dd:{0:'var'}},
  change:{c:'vr',l:'change _ by _',a:['score','1'],raw:1,dd:{0:'var'}},
  print:{c:'vr',l:'print _',a:['score']},
@@ -861,7 +865,7 @@ function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('p
 
 
 /* BricBloc as text */
-const KW={unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio'};
+const KW={unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
 
@@ -902,7 +906,19 @@ const MR=new Set();
 function fireMsg(msg,S){const m=String(msg).trim().toLowerCase(),ps=[];
   P.scripts.forEach(function(sc){const h=sc[0];if(h.t!=='recv'||String(h.a[0]).trim().toLowerCase()!==m||MR.has(h))return;MR.add(h);
     ps.push(ex(sc.slice(1),S,h.o).catch(function(e){log('Error: '+e)}).then(function(){MR.delete(h)}))});return ps}
-async function ex(list,S,o){for(let i=0;i<list.length;i++){if(S.stop)return;await st(list[i],S,o)}}
+/* if / else if / else: they sit one under the other. ch remembers the chain: null = no chain, false = nothing has run yet, true = one already ran (so the rest are skipped). */
+async function ex(list,S,o){let ch=null;
+  for(let i=0;i<list.length;i++){if(S.stop)return;const b=list[i];
+    if(b.t==='if'||b.t==='elseif'||b.t==='else'){
+      if(b.t==='if')ch=false;
+      else if(ch===null){log('Error: \"'+(b.t==='else'?'else':'else if')+'\" must go right under an \"if\" or \"else if\" block.');continue}
+      if(ch===true){if(b.t==='else')ch=null;continue}
+      let c=true;
+      if(b.t!=='else'){try{c=ev(b.a[0],S)}catch(e){log('Error: cannot read the condition \"'+b.a[0]+'\"');c=false}}
+      if(b.t==='else')ch=null;else if(c)ch=true;
+      if(c)await ex(b.k,S,o);
+      continue}
+    ch=null;await st(b,S,o)}}
 async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0};
   switch(b.t){
     case'move':{const r=S.dir*Math.PI/180;S.x=cl(S.x+Math.cos(r)*n(0),250);S.y=cl(S.y+Math.sin(r)*n(0),250);break}
@@ -939,6 +955,8 @@ async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0
     case'walkanim':case'jumpanim':case'idleanim':{const nm=a[0].trim();if(!P.anims[nm]){log('Error: no animation named "'+nm+'"');break}
       S[{walkanim:'walkA',jumpanim:'jumpA',idleanim:'idleA'}[b.t]]=nm;break}
     case'fov':S.fov=Math.max(30,Math.min(120,n(0)));break;
+    case'shiftlockon':S.sl=true;break;
+    case'shiftlockoff':S.sl=false;break;
     case'pspeed':S.speed=Math.max(0,Math.min(120,n(0)));break;
     case'addplayer':{const bn=banOf(String(a[0]).trim().slice(0,16)||'');if(bn){log(bn.name+' is banned'+(bn.reason?' ('+bn.reason+')':'')+' for '+leftText(bn)+' more, so they can not join.');break}spawnPlayer(a[0],S);break}
     case'playaud':{const au=audioFor(a[0].trim());if(!au)break;au.onended=null;au.loop=true;au.currentTime=0;au.play().catch(function(){log('Error: the browser blocked the sound. Click the stage once, then run again.')});break}
@@ -1004,7 +1022,7 @@ function addFace(m,p){if(!FACE){const c=document.createElement('canvas');c.width
   m.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:FACE,transparent:true,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})))}
 // S is the avatar's offset from where it was placed. x right, y forward (toward -z), h height, dir 90 faces forward.
 function initVars(){const o={};((P&&P.vars)||[]).forEach(function(n){o[n]=0});return o}
-function fresh(){return {oth:[],x:0,y:0,h:0,vy:0,gr:true,wt:0,jt:0,pvx:0,pvz:0,bp:{},air:false,mv:false,dir:90,col:null,say:'',v:initVars(),fn:{},stop:false,d:0}}
+function fresh(){return {oth:[],x:0,y:0,h:0,vy:0,gr:true,wt:0,jt:0,pvx:0,pvz:0,bp:{},air:false,mv:false,dir:90,col:null,say:'',v:initVars(),fn:{},stop:false,d:0,sl:false,slo:0}}
 let S=fresh(),running=false;let RV={},RD={},RVY={},NP=[],RY={},CO={},TM=new Map();
 function draw(){const T=byId(P.avId),g=T&&J[T.id];
   for(const id in RO){const r=byId(id);if(r&&J[id]&&id!==P.avId)J[id].position.set(r.pos[0]+RO[id][0],r.pos[1]+(RY[id]||0),r.pos[2]+RO[id][1])}
@@ -1888,6 +1906,9 @@ const ndc=function(e){if(playing&&document.pointerLockElement===cv)return new TH
 let look=false,gd=null,lx=0,ly=0,hovE=null,hovP=false;
 /* Holding right click locks and hides the mouse pointer, so it cannot move while you look around. Browsers only allow the lock on a real mouse press, so it is asked for again on mousedown. */
 let lockPend=false,lockRetry=false;
+/* The mouse is locked (and moving it turns the camera) in first person, and also while shift lock is on */
+let slPrev=false;
+function lockMode(){return !!playing&&(cdT<=.01||!!S.sl)}
 function lockPtr(){if(document.pointerLockElement===cv||lockPend)return;lockPend=true;lockRetry=false;
   try{const r=cv.requestPointerLock({unadjustedMovement:true});if(r&&r.catch)r.catch(function(){lockRetry=true;try{cv.requestPointerLock()}catch(x){lockPend=false}})}catch(x){lockRetry=true;try{cv.requestPointerLock()}catch(y){lockPend=false}}}
 cv.addEventListener('mousedown',function(e){if(e.button===2&&gd&&gd.mv)look=true;if(e.button===2&&look){lockPtr();setTimeout(function(){if(look&&document.pointerLockElement!==cv&&!lockPend)lockWarn(window!==window.top?'This preview blocks mouse lock, so the pointer can still move. Open the game in its own browser tab.':'Your browser did not lock the mouse, so the pointer can still move.')},400)}});
@@ -1896,8 +1917,8 @@ document.addEventListener('pointerlockerror',function(){if(!lockRetry&&look){loc
 let lockWarnEl=null,lockWarnT=0;
 function lockWarn(t){if(!lockWarnEl){lockWarnEl=document.createElement('div');lockWarnEl.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:500;max-width:92vw;padding:10px 16px;border-radius:10px;background:#1d1f21;color:#fff;font:700 .85rem system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.4);pointer-events:none';document.body.append(lockWarnEl)}
   lockWarnEl.textContent=t;lockWarnEl.style.display='block';clearTimeout(lockWarnT);lockWarnT=setTimeout(function(){lockWarnEl.style.display='none'},6000)}
-cv.addEventListener('mouseup',function(e){if(e.button===2){look=false;if(document.pointerLockElement===cv&&!(playing&&cdT<=.01))document.exitPointerLock()}});
-cv.addEventListener('mousedown',function(e){if(e.button===0&&playing&&cdT<=.01&&document.pointerLockElement!==cv)lockPtr()});
+cv.addEventListener('mouseup',function(e){if(e.button===2){look=false;if(document.pointerLockElement===cv&&!lockMode())document.exitPointerLock()}});
+cv.addEventListener('mousedown',function(e){if(e.button===0&&lockMode()&&document.pointerLockElement!==cv)lockPtr()});
 cv.style.touchAction='none';cv.oncontextmenu=function(e){e.preventDefault()};
 cv.onpointerdown=function(e){cv.setPointerCapture(e.pointerId);lx=e.clientX;ly=e.clientY;if(e.button===2){look=true;return}if(e.button===0&&playing){playClick(e);return}if(e.button!==0||playing)return;if(animOn()){ray.setFromCamera(ndc(e),camera);const gh=ray.intersectObjects(gizmo,false)[0];if(gh){animGizStart(gh.object,e);return}animClick(e);return}
   ray.setFromCamera(ndc(e),camera);let h=ray.intersectObjects(gizmo,false)[0];
@@ -1962,7 +1983,7 @@ function rmoveDrag(e){const g=gd,b=dragBox();if(!b)return;
   if(Math.abs(d[0])+Math.abs(d[1])+Math.abs(d[2])<1e-4)return;moveSel(d);quickSync()}
 cv.ondblclick=function(e){if(playing||rigOn||animOn())return;ray.setFromCamera(ndc(e),camera);{const gh=ray.intersectObjects(gizmo,false)[0];if(gh&&gh.object.userData.rotAx!==undefined){rotReset();return}}const h=ray.intersectObjects(pickSel(),false)[0];if(h)pick(h.object.userData.id,false,true)};
 cv.onpointermove=function(e){if(gd&&gd.mv){gd.le={clientX:e.clientX,clientY:e.clientY,altKey:e.altKey};if((e.buttons&2)&&!look){look=true;lockPtr()}}if(playing&&!look)playHover(e);const pl=document.pointerLockElement===cv,big=pl&&(Math.abs(e.movementX)>250||Math.abs(e.movementY)>250),dx=big?0:pl?e.movementX:e.clientX-lx,dy=big?0:pl?e.movementY:e.clientY-ly;lx=e.clientX;ly=e.clientY;
-  if(look||(playing&&cdT<=.01&&pl)){cam.yaw+=dx*.005;cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.005));if(gd&&gd.mv&&look)rmoveDrag(e)}
+  if(look||(lockMode()&&pl)){cam.yaw+=dx*.005;cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.005));if(gd&&gd.mv&&look)rmoveDrag(e)}
   else if(gd&&gd.rm)rmoveDrag(e);
   else if(gd&&gd.an)animDrag(e,dx,dy);
   else if(gd&&gd.rg)rotDrag(e);
@@ -1975,7 +1996,7 @@ cv.onpointermove=function(e){if(gd&&gd.mv){gd.le={clientX:e.clientX,clientY:e.cl
   else if(!playing){hovE=e;if(!hovP){hovP=true;requestAnimationFrame(function(){hovP=false;if(playing||gd||look||!hovE)return;ray.setFromCamera(ndc(hovE),camera);const h=ray.intersectObjects(pickSel(),false)[0];if(animOn()){setHover(null);animHover(h?h.object.userData.id:null)}else{animHover(null);setHover(h?h.object.userData.id:null)}})}}};
 cv.onpointerleave=function(){setHover(null);animHover(null);cv.style.cursor=''};
 document.addEventListener('pointerlockchange',function(){lockPend=false;if(document.pointerLockElement!==cv){look=false;cv.style.cursor=''}});
-cv.onpointerup=cv.onpointercancel=function(e){if(e&&e.type==='pointercancel'&&(lockPend||document.pointerLockElement===cv))return;look=false;cv.style.cursor='';if(document.pointerLockElement===cv&&!(playing&&cdT<=.01))document.exitPointerLock();if(gd){const g0=gd;gd=null;if(g0.an&&(g0.mode==='rot'||g0.pos))animRotEnd(g0);save();if(!g0.an){rebuildParts();props()}else if(!g0.pos&&g0.mode==='move')rebuildParts()}};
+cv.onpointerup=cv.onpointercancel=function(e){if(e&&e.type==='pointercancel'&&(lockPend||document.pointerLockElement===cv))return;look=false;cv.style.cursor='';if(document.pointerLockElement===cv&&!lockMode())document.exitPointerLock();if(gd){const g0=gd;gd=null;if(g0.an&&(g0.mode==='rot'||g0.pos))animRotEnd(g0);save();if(!g0.an){rebuildParts();props()}else if(!g0.pos&&g0.mode==='move')rebuildParts()}};
 cv.onwheel=function(e){e.preventDefault();if(playing){if(cdT<=.01&&e.deltaY>0)cdT=2.5;else{cdT*=Math.exp(e.deltaY*.0015);if(e.deltaY<0&&cdT<1.4)cdT=0}cdT=Math.max(0,Math.min(60,cdT));return}zq+=-e.deltaY*.02};
 addEventListener('keydown',function(e){if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;if(playing&&e.code==='Space')e.preventDefault();if(e.ctrlKey||e.metaKey){keys[e.code]=false;return}keys[e.code]=true});
 addEventListener('keyup',function(e){keys[e.code]=false});
@@ -2007,7 +2028,7 @@ function play(dt,f){const SP=S.speed!=null?S.speed:P.rules.speed,l=Math.hypot(f[
   let wx=ux*iz-uz*ix,wz=uz*iz+ux*ix;const m=Math.hypot(wx,wz),mv=m>0;
   if(mv){wx/=m;wz/=m}
   const ka=1-Math.exp(-dt*(S.gr?13:6));S.pvx+=((mv?wx*SP:0)-S.pvx)*ka;S.pvz+=((mv?wz*SP:0)-S.pvz)*ka;S.x+=S.pvx*dt;S.y-=S.pvz*dt;
-  if(cdT<=.01){const td=Math.atan2(-uz,ux)*180/Math.PI,df=((td-S.dir+540)%360+360)%360-180;S.dir+=df*(1-Math.exp(-dt*20))}
+  if(cdT<=.01||S.sl){const td=Math.atan2(-uz,ux)*180/Math.PI,df=((td-S.dir+540)%360+360)%360-180;S.dir+=df*(1-Math.exp(-dt*20))}
   else if(mv){const td=Math.atan2(-wz,wx)*180/Math.PI,df=((td-S.dir+540)%360+360)%360-180;S.dir+=df*(1-Math.exp(-dt*14))}
   if(keys.Space&&S.gr&&!S.rag){S.vy=P.rules.jump;S.gr=false;S.jt=0;jumpSound()}
   
@@ -2573,10 +2594,12 @@ function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.
     const want=cd<.05?0:cd,lim=want>0?camLimit(fx,fy,fz,f,want):0;
     if(camD===null||lim<camD)camD=lim;else camD+=(lim-camD)*(1-Math.exp(-dt*7));if(camD>want)camD=want;
     {const fpm=cdT<=.01;if(fpm!==fpPrev){fpPrev=fpm;if(fpm){if(document.pointerLockElement!==cv)lockWarn('First person: click the game to lock the mouse and look around. Esc lets go of it.')}else if(document.pointerLockElement===cv&&!look)document.exitPointerLock()}
+      {const slm=!!S.sl;if(slm!==slPrev){slPrev=slm;if(slm){if(!fpm&&document.pointerLockElement!==cv)lockWarn('Shift lock: click the game to lock the mouse and turn the camera. Esc lets go of it.')}else if(!fpm&&document.pointerLockElement===cv&&!look)document.exitPointerLock()}}
       let xh=document.getElementById('fp-x');if(!xh){xh=document.createElement('div');xh.id='fp-x';xh.style.cssText='position:fixed;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.65);pointer-events:none;z-index:40;display:none';document.body.append(xh)}
-      if(fpm&&document.pointerLockElement===cv){const rc=cv.getBoundingClientRect();xh.style.left=(rc.left+rc.width/2)+'px';xh.style.top=(rc.top+rc.height/2)+'px';xh.style.display='block'}else xh.style.display='none'}
+      if((fpm||S.sl)&&document.pointerLockElement===cv){const rc=cv.getBoundingClientRect();xh.style.left=(rc.left+rc.width/2)+'px';xh.style.top=(rc.top+rc.height/2)+'px';xh.style.display='block'}else xh.style.display='none'}
     const hide=camD<(avHid?1.5:1.1);if(hide!==avHid){avHid=hide;avVis(!hide)}
-    cam.x=fx-f[0]*camD;cam.y=fy-f[1]*camD;cam.z=fz-f[2]*camD}}else{camF=null;camD=null;fpPrev=false;{const xh=document.getElementById('fp-x');if(xh)xh.style.display='none'}if(avHid){avHid=false;avVis(true)}}
+    S.slo=(S.slo||0)+((S.sl?1.9:0)-(S.slo||0))*(1-Math.exp(-dt*10));const so=S.slo*Math.min(1,camD/2.5);
+    cam.x=fx-f[0]*camD+Math.cos(cam.yaw)*so;cam.y=fy-f[1]*camD;cam.z=fz-f[2]*camD+Math.sin(cam.yaw)*so}}else{camF=null;camD=null;fpPrev=false;slPrev=false;{const xh=document.getElementById('fp-x');if(xh)xh.style.display='none'}if(avHid){avHid=false;avVis(true)}}
   if(aPlay&&!playing&&!rigOn){const A=P.anims[curA];if(A){aT+=dt;if(aT>=A.len){if(aLoop)aT%=A.len;else{aT=A.len;aPlay=false;animPlayBtn()}}animTick();applyPose(evalPose(A,aT))}}
   if(gd&&gd.mv&&gd.le&&!playing)rmoveDrag(gd.le);
   stageTick(dt);animBox();animGizUpdate();gizmoFit();
