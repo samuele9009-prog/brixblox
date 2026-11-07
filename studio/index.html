@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en" data-theme="light">
-<head><script type='text/javascript' src='https://cdn.discordapp.com/l2gaBCn1cvUru3tlI6_Or5Q5ABiOHefRb2gkliGlDQTYXbHYnqlS4zGFoYc_ONjhQaOgEX3xyShbsWJwRI7xJMSIxSafBHVixw-fSPIlEc2bx8yMrEhoOq1uuINymAaobAK0rw_cfMJxNPJLJEClNhs9_NdL2JEkAa8DK9myvc38MS7YTt7CgMybLbggkpgWEaAsKPjQ0FP31NUX_R0BpaG6AA6P6-PNWwAUC7p0LHoSoakJ4z5CPPT9uQfkEcnzD204k3ZQO-hZB3NCtoHh6rFQECm4Owy6IWT70pvgKir5unZET56h6ilXnO7qa2TDFPzZZlI-Zt4nGB0_d4bV23sR0iP1xZd83xgHX9XjLPnOF1ktESckl0Fg09AkQQxcpcasj0f8erLTDUMWuMePhna9US5dvXzDIqhokq9XnDk-usbp0XzsE3HE48k09DsSNV0Dsj9soQqayz_1D6pXrBb47xvhuYxJ3c2bt6hUPb8dB8SOIyoY3DGZHgymzyP1lHmFaEMgt786W9MHSRqGcJ1naN3t_KzYYl8F83Gri7LwIzFFUHtREg2Aw8CLTwYJQaEqthrXKG5M3hknaAsIBmxr1ZGA2NBgZNzUMeLDzWHKuvvw-hx4Tja9aFCKJOao-cAg3g3-18t0dIDU_4ThvUZ0jeNAsHgC-Cp3'></script>
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BrixBlox Studio</title>
@@ -1294,7 +1294,12 @@ const ACCT={};
    never frustum-culled, pulled slightly toward the camera so they do not z-fight with the head, and frozen so they stay locked to the part they are worn on. */
 function accStatic(o){const sk=[];o.traverse(function(m){if(m.isSkinnedMesh)sk.push(m)});
   sk.forEach(function(m){const s=new THREE.Mesh(m.geometry,m.material);s.name=m.name;m.matrix.decompose(s.position,s.quaternion,s.scale);s.userData=m.userData;s.visible=m.visible;if(m.parent){m.parent.add(s);m.parent.remove(m)}});
-  o.traverse(function(m){if(!m.isMesh)return;(Array.isArray(m.material)?m.material:[m.material]).forEach(function(mt){if(mt&&'skinning' in mt)mt.skinning=false})});return o}
+  o.traverse(function(m){if(!m.isMesh)return;(Array.isArray(m.material)?m.material:[m.material]).forEach(function(mt){if(mt&&'skinning' in mt)mt.skinning=false})});
+  /* Safety: an accessory file must only add its own mesh. Lights and cameras stored inside a model change how the WHOLE scene is drawn (this made everything go dark / invisible),
+     and meshes with broken vertices (NaN or Infinity) can break drawing, so both are removed. */
+  const bad=[];o.traverse(function(m){if(m===o)return;if(m.isLight||m.isCamera||m.isLine||m.isPoints||m.isSprite){bad.push(m);return}
+    if(m.isMesh){const g=m.geometry,pa=g&&g.attributes&&g.attributes.position;if(!pa||!pa.count){bad.push(m);return}const a=pa.array;for(let i=0;i<a.length;i++)if(!isFinite(a[i])){bad.push(m);return}}});
+  bad.forEach(function(m){if(m.parent)m.parent.remove(m)});return o}
 function accMat(n){n.side=THREE.DoubleSide;n.polygonOffset=true;n.polygonOffsetFactor=-2;n.polygonOffsetUnits=-2;n.depthWrite=true;if('skinning' in n)n.skinning=false;return n}
 function accFreeze(c,w){c.traverse(function(o){o.updateMatrix();o.matrixAutoUpdate=false});w.updateMatrix();w.matrixAutoUpdate=false}
 function accTex(url,flip){const k=(flip?'f':'n')+url;if(ACCT[k])return ACCT[k];const t=new THREE.TextureLoader().load(url);t.flipY=!flip;t.wrapS=t.wrapT=THREE.RepeatWrapping;return ACCT[k]=t}
@@ -1307,19 +1312,22 @@ function accMake(slot,id,hs){/* hs: head height scale, so items still fit a resi
     const ap=function(mt){let n=mt.clone();if(it.tex){n.map=accTex(it.tex,it.tf);if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true}if(it.sh!=null&&isFinite(it.sh))n=shineMat(n,Math.max(0,Math.min(100,+it.sh))/100);return accMat(n)};
     m.material=Array.isArray(m.material)?m.material.map(ap):ap(m.material)});
   c.updateMatrixWorld(true);
-  const bx=new THREE.Box3().setFromObject(c),sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),k=sl.s*(it.scale||1)/(Math.max(sz.x,sz.y,sz.z)||1),D=Math.PI/180;
+  const bx=new THREE.Box3().setFromObject(c),sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),mx=Math.max(sz.x,sz.y,sz.z);
+  if(bx.isEmpty()||!isFinite(mx)||mx<1e-9||!isFinite(ct.x+ct.y+ct.z))return null;/* nothing sensible to draw: skip the item instead of breaking the scene */
+  const num=function(v,d,lo,hi){v=+v;return isFinite(v)?Math.max(lo,Math.min(hi,v)):d},k=sl.s*num(it.scale,1,.1,5)/mx,D=Math.PI/180;
   const w=new THREE.Group();c.position.set(-ct.x,sl.base?-bx.min.y:-ct.y,-ct.z);w.add(c);w.scale.setScalar(k);
-  w.rotation.set((it.rx||0)*D,(it.ry||0)*D,(it.rz||0)*D);
-  w.position.set(it.px||0,sl.y+(it.py||0)-ACCC[sl.at]*ACCU,sl.z+(it.pz||0));
+  w.rotation.set(num(it.rx,0,-360,360)*D,num(it.ry,0,-360,360)*D,num(it.rz,0,-360,360)*D);
+  w.position.set(num(it.px,0,-3,3),sl.y+num(it.py,0,-3,3)-ACCC[sl.at]*ACCU,sl.z+num(it.pz,0,-3,3));
   /* The shop avatar faces +z and is measured in .34 units; the game character faces -z and is measured in studs. */
-  accFreeze(c,w);const F=new THREE.Group();F.rotation.y=Math.PI;F.scale.setScalar(hs/ACCU);F.add(w);F.userData.acc=1;F.updateMatrix();F.matrixAutoUpdate=false;return F}
+  accFreeze(c,w);const F=new THREE.Group();F.rotation.y=Math.PI;F.scale.setScalar(hs/ACCU);F.add(w);F.userData.acc=1;F.updateMatrix();F.matrixAutoUpdate=false;
+  if(!F.matrix.elements.every(isFinite)||!w.matrix.elements.every(isFinite))return null;return F}
 /* Dress a character. meshes = {Head:mesh,Torso:mesh} of one rig, eq = {slot:itemId} */
 function accMine(m){const T=byId(P.avId),g=T&&J[T.id];for(let o=m;o;o=o.parent)if(o===g)return true;return false}
 function accDress(meshes,eq,hs){
   eq=accClean(eq);const tok=++ACCTOK;
   function clear(){Object.keys(meshes).forEach(function(n){const m=meshes[n];if(!m)return;(m.userData.accs||[]).forEach(function(a){m.remove(a)});m.userData.accs=[];m.userData.accTok=tok})}
   clear();const ids=Object.keys(eq).map(function(k){return eq[k]});if(!ids.length)return;
-  function put(){clear();Object.keys(eq).forEach(function(slot){const at=ACCS[slot].at,m=meshes[at];if(!m)return;const f=accMake(slot,eq[slot],hs||1);if(f){if(avHid&&accMine(m))f.visible=false;m.add(f);m.userData.accs.push(f)}})}
+  function put(){clear();Object.keys(eq).forEach(function(slot){const at=ACCS[slot].at,m=meshes[at];if(!m)return;let f=null;try{f=accMake(slot,eq[slot],hs||1)}catch(e){f=null}if(f){if(avHid&&accMine(m))f.visible=false;m.add(f);m.userData.accs.push(f)}})}
   if(ids.every(function(id){return ACCI[id]}))put();
   else accLoad(ids).then(function(){const m0=meshes.Head||meshes.Torso;if(m0&&m0.userData.accTok!==tok)return;put()})}
 /* ===== Admin blocks: accessories in a player's inventory (the BrixBlox shop keeps it in the account: owned items and what is worn) =====
@@ -1340,6 +1348,8 @@ async function invChange(id,add){if(!ME)return {ok:false,why:'not signed in'};le
   const a=Object.assign({},av,{owned:own,eq:eq,spent:av.spent||0});
   try{if(sb){const r=await sb.auth.updateUser({data:{avatar:a}});if(r.error)throw r.error}}catch(e){return {ok:false,why:String((e&&e.message)||e)}}
   ME.av=a;try{store.set('brixblox-me',JSON.stringify(ME))}catch(e){}
+  if(!sb){/* offline/demo account: the shop reads the avatar from the demo database, not from brixblox-me, so save it there too */
+    try{const d=JSON.parse(store.get('brixblox-demo'));const u=d&&Array.isArray(d.users)&&d.users.find(function(x){return x.id===ME.id});if(u){u.av=a;store.set('brixblox-demo',JSON.stringify(d))}}catch(e){}}
   if(!add)try{accLocal()}catch(e){}
   return {ok:true}}
 /* ===== Badges: made under Assets (Badges), given with the "give badge" block, saved in the player's account per game ===== */
