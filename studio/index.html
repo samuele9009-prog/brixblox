@@ -540,8 +540,8 @@ const BD={
  pspeed:{c:'pl',l:'set player speed to _',a:['24'],tip:'How fast the player walks (default 16).'},
  playercol:{c:'pl',l:'set player collisions to _',a:['true'],dd:{0:'bool'},tip:'true: players can not walk through each other, so you bump into the other players in the server. false: players walk straight through each other (the default). It goes back to false when the game restarts.'},
  givebadge:{c:'pl',l:'give badge _ to player _',a:['Winner','player'],tip:'Gives a player a badge you made under Assets in the Explorer (Badges). Type the badge name. The player is a name, a variable, or player (the first player in the server) (like toucher). The player sees a pop-up and the badge is saved to their account, once per badge per game. Anyone can earn a badge themselves; only the game owner or an admin can give one to another player.'},
- giveitem:{c:'pl',l:'give item _ to player _',a:['Sword','player'],tip:'Gives a player an item you made (right-click a mesh under Assets, then Create item). It shows up in the hotbar at the bottom: click it or press its number to hold it. The player is a name, a variable, or player (you).'},
- removeitem:{c:'pl',l:'remove item _ from player _',a:['Sword','player'],tip:'Takes an item away from a player.'},
+ giveitem:{c:'pl',l:'give item _ to player _',a:['Sword','player'],dd:{0:'item'},tip:'Gives a player an item you made (right-click a mesh under Assets, then Create item). It shows up in the hotbar at the bottom: click it or press its number to hold it. The player is a name, a variable, or player (you).'},
+ removeitem:{c:'pl',l:'remove item _ from player _',a:['Sword','player'],dd:{0:'item'},tip:'Takes an item away from a player.'},
  awardbadge:{c:'pl',l:'award badge _ to player _ icon _',a:['Winner','player','\uD83C\uDFC5'],tip:'Gives a player a badge and counts it in their profile. You do not need to make the badge first: it is created for you if it does not exist yet. Each badge is only given once per player per game, and every new badge adds 1 to their badge counter. Type the badge name, then the player (a name, a variable, or player for the first player in the server) and an icon. Anyone can earn a badge themselves; only the game owner or an admin can give one to another player.'},
  randplayer:{c:'pl',l:'get random player into _',a:['target'],dd:{0:'var'},tip:'Picks one player in the game at random (you included) and stores their name in the variable. Use it with blocks like kick, teleport or ragdoll.'},
  forplayer:{c:'pl',l:'only for player _ do',a:['target'],k:1,tip:'Put blocks inside and they only happen for the player you name (type a name, a variable like target from "get random player", or player). GUI blocks (show, hide, set text, set colour, visible, toggle) are sent to that player\'s screen, so nobody else sees the change. Blocks that already have a player slot (kick, teleport, ragdoll) still use their own slot.'},
@@ -749,13 +749,15 @@ function newVarDlg(done){mdl('New variable',function(c,close){const n=el('input'
 function ddSel(b,i,kind,ro){
   if(ro){const n=el('input');n.value=b.a[i];n.readOnly=true;fit(n);return n}
   const s=el('select','ddsel');s.title=kind==='var'?'Pick a variable, or make a new one':'';
-  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='img'?[['none','none']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})):kind==='guipart'?[['background','background'],['text','text'],['border','border']]:kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='bool'?[['true','true'],['false','false']]:varList().map(function(v){return [v,v]});
+  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='img'?[['none','none']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})):kind==='guipart'?[['background','background'],['text','text'],['border','border']]:kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='bool'?[['true','true'],['false','false']]:kind==='item'?itemsL().map(function(i){return [i.name,i.name]}):varList().map(function(v){return [v,v]});
+    if(kind==='item'&&o.length&&!o.some(function(q){return q[0]===String(b.a[i])})){b.a[i]=o[0][0];save()}
+    if(kind==='item'&&!o.length)o=[[String(b.a[i]),'(make an item first)']];
     const cur=String(b.a[i]);if(cur&&!o.some(function(q){return q[0]===cur}))o.unshift([cur,cur]);
     o.forEach(function(q){const op=el('option','',q[1]);op.value=q[0];s.append(op)});
     if(kind==='var'){const nw=el('option','','\uFF0B New variable\u2026');nw.value='\u0001new';s.append(nw)}
     s.value=cur};
   fill();
-  s.onpointerdown=function(e){e.stopPropagation();if(kind==='var'||kind==='gui'||kind==='guit'||kind==='img')fill()};
+  s.onpointerdown=function(e){e.stopPropagation();if(kind==='var'||kind==='gui'||kind==='guit'||kind==='img'||kind==='item')fill()};
   s.onchange=function(){
     if(s.value==='\u0001new'){newVarDlg(function(v){if(v){b.a[i]=v;save();rend();renderParts()}else fill()});return}
     b.a[i]=s.value;reser();save();view()};
@@ -3293,6 +3295,7 @@ const SV=[
  {k:'atmos',n:'Atmosphere',i:'☀',d:'Sky colour, time of day, brightness and fog.'},
  {k:'rules',n:'SpawnRules',i:'⚙',d:'Settings every player gets: gravity, jump power, walk speed and camera distance.'},
  {k:'assets',n:'Assets',i:'▧',d:'Images and audio you upload to your game. Play sounds with the audio blocks.'},
+ {k:'itemservice',n:'ItemService',i:'⚔',d:'Every item you have created. Make one by right-clicking a mesh under Assets and pressing Create item, then give it with the "give item" block.'},
  {k:'audio',n:'Audio',i:'♪',d:'Global volume and mute for all game sounds.'},
  {k:'squads',n:'Squads',i:'⚑',d:'Teams that players can join. Each squad has a name and a colour.'},
  {k:'gui',n:'GUI',i:'▭',d:'Text, buttons, frames and images that sit on top of the screen while playing. Use the + to add one.'},
@@ -3300,7 +3303,7 @@ const SV=[
  {k:'shared',n:'SharedStorage',i:'▤',d:'A shelf for parts everyone may use as templates. Parts here are hidden and switched off.'},
  {k:'vault',n:'VaultStorage',i:'▥',d:'A private shelf for parts only the game itself should hold. Parts here are hidden and switched off.'},
  {k:'scripts',n:'Scripts',i:'✎',d:'Every block script in this game. Edit them in the middle of the screen.'}];
-const EXP=['world','roster','squads','gui','tags','shared','vault','assets','scripts'];
+const EXP=['world','roster','squads','gui','tags','shared','vault','assets','itemservice','scripts'];
 function tagMap(){const m={};P.parts.forEach(function(p){(p.tags||[]).forEach(function(t){(m[t]=m[t]||[]).push(p.id)})});return m}
 function pickTag(t){if(animOn())return;sel=(tagMap()[t]||[]).slice();selModel=null;selSvc=null;hl();buildEdit();renderParts()}
 function clock(h){const m=Math.round(h*60),hh=Math.floor(m/60)%24,mm=m%60;return hh+':'+(mm<10?'0':'')+mm}
@@ -3352,6 +3355,7 @@ function svcProps(d){const s=SV.find(function(x){return x.k===selSvc});if(!s)ret
       b.onclick=function(){P.parts.forEach(function(p){if(!p.parent&&p.svc===s.k)delete p.svc});all()};d.append(b)}}
   else if(s.k==='scripts'){P.scripts.forEach(function(sc){const h=sc[0],D=BD[h.t];d.append(el('p','note',(D.hat?(KW[h.t]||h.t)+' '+h.a.join(' '):'Loose blocks')+'  —  '+(sc.length-(D.hat?1:0))+' block(s)'))});
     if(!P.scripts.length)d.append(el('p','empty','No scripts yet.'))}
+  else if(s.k==='itemservice'){d.append(el('p','note','All your items live here. To make one, go to Assets, right-click a mesh and press Create item. Give it to a player with the "give item" block.'));itemRows(d)}
   else if(s.k==='assets'){const r=el('div','tb');r.append(mb('Upload image','',function(){pickFile('image')}),mb('Upload audio','',function(){pickFile('audio')}),mb('Import mesh','',pickMesh));d.append(r);
     d.append(el('p','note','Meshes: pick a .obj, .fbx or .glb file together with its texture pictures (png or jpg) in one go. For an .obj also pick its .mtl file. Up to 24 MB per mesh. Big pictures are shrunk to 1024 pixels. Press Place in game to add it, then change its Texture in the part properties.'));
     d.append(el('p','note','Images: up to 2 MB each. Audio: up to 64 MB per file and about 320 MB per game. Play sounds with the blocks "play _" (loops), "play _ once until done" and "stop audio _". Name an image Sun or Moon to change the sun or moon in the sky (the clouds are fixed and cannot be replaced). Other images are stored for objects and GUIs later. Sounds are sent online with the game when it is saved so you can hear them on other computers (big sounds need the one-time Supabase storage bucket named game-audio).'));
@@ -3482,7 +3486,7 @@ function renderParts(){const l=$('p-list');l.replaceChildren();
     n+=doItems('',1);return n}
   SV.forEach(function(s){const ex=EXP.indexOf(s.k)>=0,open=openS[s.k]===undefined?s.k==='world':openS[s.k];let cnt=null;
     if(s.k==='world'||s.k==='shared'||s.k==='vault')cnt=P.parts.filter(function(p){return !p.parent&&svcOf(p)===s.k}).length;
-    else if(s.k==='squads')cnt=P.squads.length;else if(s.k==='gui')cnt=P.guis.length;else if(s.k==='scripts')cnt=P.scripts.length;else if(s.k==='tags')cnt=Object.keys(tagMap()).length;else if(s.k==='roster')cnt=1+S.oth.length;else if(s.k==='assets')cnt=Object.keys(P.assets.images).length+Object.keys(P.assets.audio).length+Object.keys(P.assets.meshes||{}).length;
+    else if(s.k==='squads')cnt=P.squads.length;else if(s.k==='gui')cnt=P.guis.length;else if(s.k==='scripts')cnt=P.scripts.length;else if(s.k==='tags')cnt=Object.keys(tagMap()).length;else if(s.k==='roster')cnt=1+S.oth.length;else if(s.k==='itemservice')cnt=itemsL().length;else if(s.k==='assets')cnt=Object.keys(P.assets.images).length+Object.keys(P.assets.audio).length+Object.keys(P.assets.meshes||{}).length;
     const go=function(){if(animOn())return;selFold=null;selSvc=s.k;selGui=null;sel=[];selModel=null;hl();buildEdit();renderParts()};
     const sr=xrow({svc:1,d:0,ic:s.i,nm:s.n,bd:cnt==null?null:[String(cnt)],open:ex?open:undefined,onTg:ex?function(){openS[s.k]=!open;if(s.k==='gui'){if(open)selGui=null;else{sel=[];selModel=null;selSvc=null;selGui=null;hl();buildEdit()}}renderParts()}:null,title:s.d,
       on:selSvc===s.k&&!sel.length&&!selModel,go:go,plus:PLUSOK.indexOf(s.k)>=0?{t:'svc',k:s.k}:null,drop:(s.k==='world'||s.k==='shared'||s.k==='vault')?{t:'svc',k:s.k}:null});if(s.k==='gui')guiRootDrop(sr);
@@ -3494,6 +3498,7 @@ function renderParts(){const l=$('p-list');l.replaceChildren();
     else if(s.k==='squads')P.squads.forEach(function(q){plain(q.name,go,'\u25A0',q.color)});
     else if(s.k==='tags'){const m=tagMap();Object.keys(m).forEach(function(t){plain('# '+t+'   ('+m[t].length+')',function(){pickTag(t)})});if(!Object.keys(m).length)plain('(no tags yet)',go)}
     else if(s.k==='scripts'){P.scripts.forEach(function(sc){scrRow(sc,1,true)});if(!P.scripts.length)plain('(no scripts yet)',go)}
+    else if(s.k==='itemservice'){itemsL().forEach(function(it){plain(it.name,go,'⚔','#e0a82e')});if(!itemsL().length)plain('(no items yet)',go)}
     else if(s.k==='assets'){const im=Object.keys(P.assets.images),au=Object.keys(P.assets.audio),ms=Object.keys(P.assets.meshes||{});im.forEach(function(n){plain(n,go,'\u25A7','#2f78d0')});au.forEach(function(n){plain(n,go,'\u266A','#a3a31c')});ms.forEach(function(n){plain(n,go,'\u25C8','#8a5cf6')});if(!im.length&&!au.length&&!ms.length)plain('(nothing uploaded yet)',go)}});
   props();joints();try{renderGui()}catch(e){}}
 
