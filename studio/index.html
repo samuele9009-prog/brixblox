@@ -2324,7 +2324,7 @@ cv.ondblclick=function(e){if(playing||rigOn||animOn())return;ray.setFromCamera(n
 function dropLook(){if(!look)return;look=false;if(document.pointerLockElement===cv&&!lockMode())try{document.exitPointerLock()}catch(x){}}
 addEventListener('blur',dropLook);document.addEventListener('visibilitychange',function(){if(document.hidden)dropLook()});
 addEventListener('mouseup',function(e){if(e.button===2)dropLook()},true);
-cv.onpointermove=function(e){if(look&&!(e.buttons&2))dropLook();if(gd&&gd.mv){gd.le={clientX:e.clientX,clientY:e.clientY,altKey:e.altKey};if((e.buttons&2)&&!look){look=true;lockPtr()}}if(playing&&!look)playHover(e);const pl=document.pointerLockElement===cv,big=pl&&(Math.abs(e.movementX)>250||Math.abs(e.movementY)>250),dx=big?0:pl?e.movementX:e.clientX-lx,dy=big?0:pl?e.movementY:e.clientY-ly;lx=e.clientX;ly=e.clientY;
+cv.onpointermove=function(e){if(gd&&gd.mv){gd.le={clientX:e.clientX,clientY:e.clientY,altKey:e.altKey};if((e.buttons&2)&&!look){look=true;lockPtr()}}if(playing&&!look)playHover(e);const pl=document.pointerLockElement===cv,big=pl&&(Math.abs(e.movementX)>250||Math.abs(e.movementY)>250),dx=big?0:pl?e.movementX:e.clientX-lx,dy=big?0:pl?e.movementY:e.clientY-ly;lx=e.clientX;ly=e.clientY;
   if(look||(lockMode()&&pl)){cam.yaw+=dx*.005;cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.005));if(gd&&gd.mv&&look)rmoveDrag(e)}
   else if(gd&&gd.rm)rmoveDrag(e);
   else if(gd&&gd.an)animDrag(e,dx,dy);
