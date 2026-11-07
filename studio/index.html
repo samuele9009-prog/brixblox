@@ -1251,10 +1251,11 @@ function buildEdit(){try{updTool()}catch(e){}while(editG.children.length)editG.r
     const sb=scaleBox();if(!canScale()||!sb)return;c=sb.c;half=sb.h;
     const ln=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(half[0]*2,half[1]*2,half[2]*2)),new THREE.LineBasicMaterial({color:'#ffffff',depthTest:false,transparent:true,opacity:.9}));
     ln.position.set(c[0],c[1],c[2]);ln.renderOrder=9;editG.add(ln);
+    const r1=rotOne(),rq=r1?rotQ(r1):null;if(rq)ln.quaternion.copy(rq);
     [[1,0,0,'#ff4444'],[-1,0,0,'#ff4444'],[0,1,0,'#44dd44'],[0,-1,0,'#44dd44'],[0,0,1,'#4488ff'],[0,0,-1,'#4488ff']].forEach(function(a){
-      const d=new THREE.Vector3(a[0],a[1],a[2]),ax=a[0]?0:a[1]?1:2,off=half[ax]+.45,
+      const ld=new THREE.Vector3(a[0],a[1],a[2]),d=rq?ld.clone().applyQuaternion(rq):ld,ax=a[0]?0:a[1]?1:2,off=half[ax]+.45,
         hd=new THREE.Mesh(new THREE.SphereGeometry(.32,20,14),new THREE.MeshBasicMaterial({color:a[3],depthTest:false}));
-      hd.position.set(c[0]+a[0]*off,c[1]+a[1]*off,c[2]+a[2]*off);hd.renderOrder=10;hd.userData.axis=d;hd.userData.scale=true;hd.userData.fx={b:new THREE.Vector3(c[0]+a[0]*half[ax],c[1]+a[1]*half[ax],c[2]+a[2]*half[ax]),d:d,off:.45};editG.add(hd);gizmo.push(hd)});
+      hd.position.set(c[0]+d.x*off,c[1]+d.y*off,c[2]+d.z*off);hd.renderOrder=10;hd.userData.axis=d;if(rq)hd.userData.lax=ld;hd.userData.scale=true;hd.userData.fx={b:new THREE.Vector3(c[0]+d.x*half[ax],c[1]+d.y*half[ax],c[2]+d.z*half[ax]),d:d,off:.45};editG.add(hd);gizmo.push(hd)});
     return}
   [[1,0,0,'#ff4444'],[-1,0,0,'#ff4444'],[0,1,0,'#44dd44'],[0,-1,0,'#44dd44'],[0,0,1,'#4488ff'],[0,0,-1,'#4488ff']].forEach(function(a){
     const d=new THREE.Vector3(a[0],a[1],a[2]),mt=new THREE.MeshBasicMaterial({color:a[3],depthTest:false}),g=new THREE.Group(),
@@ -1288,8 +1289,10 @@ function scaleSet(){const set={},out=[];sel.forEach(function(id){const p=byId(id
 function scaleBox(){const a=scaleSet().filter(function(p){return !p.stab});if(!a.length)return null;const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];
   a.forEach(function(p){for(let i=0;i<3;i++){lo[i]=Math.min(lo[i],p.pos[i]-p.size[i]/2);hi[i]=Math.max(hi[i],p.pos[i]+p.size[i]/2)}});
   return {c:[0,1,2].map(function(i){return (lo[i]+hi[i])/2}),h:[0,1,2].map(function(i){return (hi[i]-lo[i])/2})}}
-function canScale(){return sel.length>0&&scaleSet().length>0&&!rotRoots().some(hasRot)}
-function setTool(t){tool=t;if(t==='scale'&&(rigOn||!canScale()))lockWarn(rigOn?'Close the rig editor to resize.':rotRoots().some(hasRot)?'This part is rotated. Double-click a rotate ring to reset it, then resize.':'Select a part first, then press R to switch tools.');
+function rotOne(){const a=scaleSet();return a.length===1&&hasRot(a[0])&&!a[0].parent?a[0]:null}
+function rotQ(p){const D=Math.PI/180;return new THREE.Quaternion().setFromEuler(new THREE.Euler(p.rot[0]*D,p.rot[1]*D,p.rot[2]*D,'XYZ'))}
+function canScale(){return sel.length>0&&scaleSet().length>0&&(!rotRoots().some(hasRot)||!!rotOne())}
+function setTool(t){tool=t;if(t==='scale'&&(rigOn||!canScale()))lockWarn(rigOn?'Close the rig editor to resize.':rotRoots().some(hasRot)?'Rotated groups and rigs cannot be resized. Double-click a rotate ring to reset the rotation, then resize.':'Select a part first, then press R to switch tools.');
   if(t==='rotate'&&(rigOn||!sel.length))lockWarn(rigOn?'Close the rig editor to rotate.':'Select a part first, then drag a ring to rotate it.');buildEdit()}
 const TOOLS=[['move','Move'],['scale','Resize'],['rotate','Rotate']];
 function cycleTool(d){if(VIEWONLY||document.getElementById('shome')||playing||running||animOn())return;
@@ -1301,11 +1304,11 @@ addEventListener('keydown',function(e){const t=({Digit2:'move',Numpad2:'move',Di
   const a=document.activeElement;if(a&&(/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a.isContentEditable))return;
   if(!edArea||$('studio').getClientRects().length===0)return;e.preventDefault();
   setTool(t);const q=TOOLS.find(function(z){return z[0]===t});lockWarn('Tool: '+q[1]+'  \u00B7  2 Move, 3 Resize, 4 Rotate')});
-function scaleStart(o){const bx=scaleBox();if(!bx)return;const a=o.userData.axis.clone(),ax=a.x?0:a.y?1:2,s=a.getComponent(ax)>0?1:-1,
+function scaleStart(o){const bx=scaleBox();if(!bx)return;const a=o.userData.axis.clone(),la=o.userData.lax||a,ax=la.x?0:la.y?1:2,s=la.getComponent(ax)>0?1:-1,
   ps=scaleSet().map(function(p){return {p:p,pos:p.pos.slice(),size:p.size.slice(),pv:p.pivot?p.pivot.slice():null}}),lo=bx.c[ax]-bx.h[ax],hi=bx.c[ax]+bx.h[ax];
   const uni=ps.length>1;let mn=1e9;ps.forEach(function(q){if(!q.p.stab)(uni?[0,1,2]:[ax]).forEach(function(i){mn=Math.min(mn,q.size[i])})});
   const rs={};ps.forEach(function(q){rs[rootOf(q.p).id]=1});
-  gd={sc:1,uni:uni,a:a,ax:ax,s:s,ps:ps,rs:Object.keys(rs),lo:lo,hi:hi,L0:hi-lo,c0:bx.c.slice(),h0:bx.h.slice(),mn:mn,acc:0}}
+  gd={sc:1,loc:!!o.userData.lax,uni:uni,a:a,ax:ax,s:s,ps:ps,rs:Object.keys(rs),lo:lo,hi:hi,L0:hi-lo,c0:bx.c.slice(),h0:bx.h.slice(),mn:mn,acc:0}}
 function scaleDrag(e,dx,dy){const g=gd,ax=g.ax,pt=new THREE.Vector3(g.c0[0],g.c0[1],g.c0[2]).add(g.a.clone().multiplyScalar(g.h0[ax])),w=cv.getBoundingClientRect();
   const sc=function(q){const u=q.clone().project(camera);return new THREE.Vector2(u.x*w.width/2,-u.y*w.height/2)};
   const d=sc(pt.clone().add(g.a)).sub(sc(pt)),L=d.lengthSq();if(L<1)return;
@@ -1313,6 +1316,9 @@ function scaleDrag(e,dx,dy){const g=gd,ax=g.ax,pt=new THREE.Vector3(g.c0[0],g.c0
   const sym=e.ctrlKey||e.metaKey;let L1=g.L0+g.acc*(sym?2:1);
   if(e.altKey)L1=Math.round(L1*2)/2;
   L1=Math.max(L1,g.L0*.2/g.mn);
+  if(g.loc){const q=g.ps[0],p=q.p,r3=function(v){return Math.round(v*1000)/1000},sh=sym?0:(L1-g.L0)/2;
+    p.size[ax]=r3(L1);for(let i=0;i<3;i++)p.pos[i]=r3(q.pos[i]+g.a.getComponent(i)*sh);
+    const m=M[p.id];if(m)m.scale.set(p.size[0]/q.size[0],p.size[1]/q.size[1],p.size[2]/q.size[2]);quickSync();return}
   const f=L1/g.L0,fixed=sym?(g.lo+g.hi)/2:(g.s>0?g.lo:g.hi),r3=function(v){return Math.round(v*1000)/1000},axes=g.uni?[0,1,2]:[ax];
   g.ps.forEach(function(q){const p=q.p;axes.forEach(function(i){const an=i===ax?fixed:g.c0[i];p.size[i]=r3(q.size[i]*f);p.pos[i]=r3(an+(q.pos[i]-an)*f);if(q.pv&&p.pivot)p.pivot[i]=r3(an+(q.pv[i]-an)*f)});
     const m=M[p.id];if(m)m.scale.set(p.size[0]/q.size[0],p.size[1]/q.size[1],p.size[2]/q.size[2])});
