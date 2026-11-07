@@ -1300,7 +1300,7 @@ function accStatic(o){const sk=[];o.traverse(function(m){if(m.isSkinnedMesh)sk.p
   const bad=[];o.traverse(function(m){if(m===o)return;if(m.isLight||m.isCamera||m.isLine||m.isPoints||m.isSprite){bad.push(m);return}
     if(m.isMesh){const g=m.geometry,pa=g&&g.attributes&&g.attributes.position;if(!pa||!pa.count){bad.push(m);return}const a=pa.array;for(let i=0;i<a.length;i++)if(!isFinite(a[i])){bad.push(m);return}}});
   bad.forEach(function(m){if(m.parent)m.parent.remove(m)});return o}
-function accMat(n){n.side=THREE.DoubleSide;n.polygonOffset=true;n.polygonOffsetFactor=-2;n.polygonOffsetUnits=-2;n.depthWrite=true;if('skinning' in n)n.skinning=false;return n}
+function accMat(n){n.side=THREE.DoubleSide;n.polygonOffset=true;n.polygonOffsetFactor=0;n.polygonOffsetUnits=-1;/* factor 0: a slope-based pull made thin parts seen edge-on (glasses arms) show through the head as lines */n.depthWrite=true;if('skinning' in n)n.skinning=false;return n}
 function accFreeze(c,w){c.traverse(function(o){o.updateMatrix();o.matrixAutoUpdate=false});w.updateMatrix();w.matrixAutoUpdate=false}
 function accTex(url,flip){const k=(flip?'f':'n')+url;if(ACCT[k])return ACCT[k];const t=new THREE.TextureLoader().load(url);t.flipY=!flip;t.wrapS=t.wrapT=THREE.RepeatWrapping;return ACCT[k]=t}
 function shineMat(mt,k){const n=mt.isMeshPhongMaterial?mt:new THREE.MeshPhongMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0});
@@ -1341,12 +1341,16 @@ async function accFind(q){q=String(q||'').trim().toLowerCase();if(!q)return null
   if(sb){try{const r=await sb.from('games').select('data').eq('id',m.id).maybeSingle();let d=r.data&&r.data.data;if(typeof d==='string')d=JSON.parse(d);if(d&&d.removed)return null}catch(e){}}
   return {id:m.id,name:m.name||m.id}}
 async function invChange(id,add){if(!ME)return {ok:false,why:'not signed in'};let av=null;
-  if(sb){try{const r=await sb.auth.getUser(),md=r&&r.data&&r.data.user&&r.data.user.user_metadata;av=md&&md.avatar}catch(e){}}
+  /* An online account must be changed on the server. If the server is not reachable we say so, instead of pretending it worked (the shop would never see the item). */
+  if(!ME.demo&&!sb)return {ok:false,why:'the connection to your BrixBlox account did not load, reload the page and try again'};
+  if(sb){try{const r=await sb.auth.getUser();if(r.error)throw r.error;const u=r.data&&r.data.user;if(!u)throw new Error('you are not signed in to the server');av=(u.user_metadata&&u.user_metadata.avatar)||{}}catch(e){return {ok:false,why:'could not read your account: '+String((e&&e.message)||e)}}}
   av=av||ME.av||{};const own=Array.isArray(av.owned)?av.owned.slice():[],eq=Object.assign({},av.eq||{}),has=own.indexOf(id)>=0;
   if(add===has)return {ok:true,same:true};
   if(add)own.push(id);else{own.splice(own.indexOf(id),1);Object.keys(eq).forEach(function(k){if(eq[k]===id)eq[k]=null})}
   const a=Object.assign({},av,{owned:own,eq:eq,spent:av.spent||0});
-  try{if(sb){const r=await sb.auth.updateUser({data:{avatar:a}});if(r.error)throw r.error}}catch(e){return {ok:false,why:String((e&&e.message)||e)}}
+  try{if(sb){const r=await sb.auth.updateUser({data:{avatar:a}});if(r.error)throw r.error;
+      const sv=r.data&&r.data.user&&r.data.user.user_metadata&&r.data.user.user_metadata.avatar;/* check the server really kept it */
+      if(sv&&Array.isArray(sv.owned)&&(sv.owned.indexOf(id)>=0)!==add)throw new Error('the server did not keep the change')}}catch(e){return {ok:false,why:String((e&&e.message)||e)}}
   ME.av=a;try{store.set('brixblox-me',JSON.stringify(ME))}catch(e){}
   if(!sb){/* offline/demo account: the shop reads the avatar from the demo database, not from brixblox-me, so save it there too */
     try{const d=JSON.parse(store.get('brixblox-demo'));const u=d&&Array.isArray(d.users)&&d.users.find(function(x){return x.id===ME.id});if(u){u.av=a;store.set('brixblox-demo',JSON.stringify(d))}}catch(e){}}
