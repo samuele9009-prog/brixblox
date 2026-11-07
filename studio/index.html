@@ -585,7 +585,7 @@ if(!ME)location.replace('/');
 const PLAYREQ=store.get('brixblox-play');if(PLAYREQ)store.del('brixblox-play');
 const SB_URL='https://ocgjqoeohuahyzhhfdie.supabase.co',SB_KEY='sb_publishable_8O1KHSBnGsoF9QjL0BVVeg_lAgjVlEc';
 let sb=null,cloudErr=false,PEND=false,upBusy=false,upBtn=null;const cpT={};
-try{if(window.supabase&&ME&&!ME.demo)sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,storage:{getItem:function(k){return store.get(k)},setItem:function(k,v){store.set(k,v)},removeItem:function(k){store.del(k)}}}})}catch(e){sb=null}
+try{if(window.supabase&&ME&&!ME.demo)sb=window.supabase.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:40}},auth:{persistSession:true,autoRefreshToken:true,storage:{getItem:function(k){return store.get(k)},setItem:function(k,v){store.set(k,v)},removeItem:function(k){store.del(k)}}}})}catch(e){sb=null}
 /* Published games are also copied to the cloud so other players can find and play them. Uploaded audio stays on this device. */
 /* Thumbnail: an image named Thumbnail becomes the game's card picture (shrunk to 320x180 so the game list stays light). */
 let thCache={s:null,o:null};
@@ -1299,7 +1299,7 @@ function spawnPlayer(name,S){const T=byId(P.avId),av=P.parts.filter(function(p){
 function npAnim(n){return(typeof n==='string'&&n&&Object.prototype.hasOwnProperty.call(P.anims,n))?P.anims[n]:null}
 function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
   NP.forEach(function(q){q.t+=dt;
-    if(q.net&&q.tx!=null&&T){const k=1-Math.exp(-dt*14),g=q.g.position;g.x+=(q.tx-g.x)*k;g.y+=(q.th-g.y)*k;g.z+=(-q.ty-g.z)*k;
+    if(q.net&&q.tx!=null&&T){const rg0=RAG['np:'+q.name],rag=rg0&&!rg0.gone&&(rg0.dead||rg0.t<rg0.end+RRISE),g=q.g.position,far=Math.hypot(q.tx-g.x,q.th-g.y,-q.ty-g.z)>6,k=far?1:1-Math.exp(-dt*14);if(!rag){g.x+=(q.tx-g.x)*k;g.y+=(q.th-g.y)*k;g.z+=(-q.ty-g.z)*k}
       {const a=(q.td-90)*Math.PI/180;if(q.yaw===undefined)q.yaw=a;else{const df=((a-q.yaw+Math.PI*3)%(Math.PI*2))-Math.PI;q.yaw+=df*k;q.yaw=((q.yaw+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI}}
       q.tag.position.set(T.pos[0]+g.x,q.top+.75+g.y,T.pos[2]+g.z);
       if(q.bub){const age=performance.now()-(q.sayAt||0),on=q.say&&age<BUBMS;q.bub.sp.visible=!!on;
@@ -2176,7 +2176,7 @@ function goneKey(k){const e=RAG[k];return !!(e&&e.gone)}
 function gone(p){return goneKey('rig:'+rootOf(p).id)}
 function plist(){const T=byId(P.avId);if(!T)return [];
   const a=[{key:'main',name:P.player.name,x:T.pos[0]+S.x,y:T.pos[1]+S.h,z:T.pos[2]-S.y}];
-  NP.forEach(function(n){if(goneKey('np:'+n.name))return;var q=n.g.position;a.push({key:'np:'+n.name,name:n.name,x:T.pos[0]+q.x,y:T.pos[1]+q.y,z:T.pos[2]+q.z})});return a}
+  NP.forEach(function(n){if(goneKey('np:'+n.name))return;var q=n.g.position,rl=n.net&&n.tx!=null;a.push({key:'np:'+n.name,name:n.name,x:T.pos[0]+(rl?n.tx:q.x),y:T.pos[1]+(rl?n.th:q.y),z:T.pos[2]+(rl?-n.ty:q.z)})});return a}
 function rlist(){const a=[];P.parts.forEach(function(p){if(p.parent||p.av||p.stab||!kids(p).length||!inW(p)||gone(p))return;
   const o=RO[p.id]||[0,0],m=p.model&&byModel(p.model);a.push({key:'rig:'+p.id,name:m?m.name:p.name,x:p.pos[0]+o[0],y:p.pos[1]+(RY[p.id]||0),z:p.pos[2]+o[1]})});return a}
 /* Where a script is "standing": its object if it has one, otherwise you */
@@ -2314,7 +2314,7 @@ function teleKey(key,x,y,z){const T=byId(P.avId);
   if(n.net)return;/* a real player in an online game is only ever moved by their own game, so nobody gets teleported on someone else's screen */
   n.g.position.set(x-T.pos[0],y-feet0(),z-T.pos[2]);n.vy=0;n.tp=true;npTag(n)}
 /* Players that were teleported fall until they land on something */
-function npPhys(dt){const T=byId(P.avId);if(!T)return;NP.forEach(function(n){if(!n.tp||goneKey('np:'+n.name))return;
+function npPhys(dt){const T=byId(P.avId);if(!T)return;NP.forEach(function(n){if(!n.tp||n.net||goneKey('np:'+n.name))return;
   const q=n.g.position,f0=feet0(),g=groundAt(T.pos[0]+q.x,T.pos[2]+q.z,f0+q.y+.01);let fy=f0+q.y;
   n.vy=Math.max(-220,(n.vy||0)-P.rules.grav*dt);fy+=n.vy*dt;
   if(g>-1e8&&n.vy<=0&&fy<=g){fy=g;n.vy=0}
@@ -2352,7 +2352,7 @@ function holdStart(sc){if(!(running||playing))return;const h=sc[0];let st=HL.get
 /* "when this block touched": checked every frame. It fires once when someone starts touching, and ignores the collision setting. */
 function touchTick(){const hs=P.scripts.filter(function(sc){return sc[0].t==='touched'});if(!hs.length)return;const T=byId(P.avId);if(!T)return;
   const R=1.15,f0=feet0(),ents=[{key:'main',name:P.player.name,x:T.pos[0]+S.x,z:T.pos[2]-S.y,fy:f0+S.h}];
-  NP.forEach(function(n){if(goneKey('np:'+n.name))return;const q=n.g.position;ents.push({key:'np:'+n.name,name:n.name,x:T.pos[0]+q.x,z:T.pos[2]+q.z,fy:f0+q.y})});
+  NP.forEach(function(n){if(n.net||goneKey('np:'+n.name))return;const q=n.g.position;ents.push({key:'np:'+n.name,name:n.name,x:T.pos[0]+q.x,z:T.pos[2]+q.z,fy:f0+q.y})});
   hs.forEach(function(sc){const h=sc[0];let set=TM.get(h);if(!set){set=new Set();TM.set(h,set)}
     const ps=[];roots(h.o,true).forEach(function(r){if(r.av||!inW(r)||goneKey('rig:'+r.id))return;rigParts(r).forEach(function(q){if(!q.stab)ps.push(q)})});
     if(!ps.length){if(!set.warned){set.warned=1;log('Warning: "when this block touched" needs a script that belongs to an object. Use the + next to an object in the Explorer.')}return}
