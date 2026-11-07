@@ -1298,10 +1298,10 @@ const TOOLS=[['move','Move'],['scale','Resize'],['rotate','Rotate']];
 function cycleTool(d){if(VIEWONLY||document.getElementById('shome')||playing||running||animOn())return;
   const i=Math.max(0,TOOLS.findIndex(function(q){return q[0]===tool})),n=TOOLS[(i+d+TOOLS.length)%TOOLS.length];
   setTool(n[0]);lockWarn('Tool: '+n[1]+(n[0]==='move'?' (drag the arrows)':n[0]==='scale'?' (drag a ball, Ctrl = both sides)':' (drag a ring, Shift = snap 15 degrees, double-click a ring to reset)')+'  \u00B7  R for next, Shift+R for previous')}
-/* Ctrl+R: mirror the selection left-to-right as you see it. The mirror is a flat wall that runs along the way you are facing, so a plank leaning right
+/* Ctrl+R: mirror the selection left-to-right as you see it. Your facing is snapped to the nearest compass direction (north, south, east or west) and the mirror is a flat wall that runs along it, so a plank leaning right
    (as seen from your camera) ends up leaning left. A single part stays where it is; several parts also swap sides around the middle of the selection. */
 function mirrorRot(){const rs=rotRoots();if(!rs.length){msg('Select a part first, then press Ctrl+R to mirror it the way you are facing.');return}
-  const rv=new THREE.Vector3(Math.cos(cam.yaw),0,Math.sin(cam.yaw)),k=180/Math.PI,r3=function(v){return Math.round(v*1000)/1000+0},
+  const cr=Math.cos(cam.yaw),sr=Math.sin(cam.yaw),rv=Math.abs(cr)>=Math.abs(sr)?new THREE.Vector3(1,0,0):new THREE.Vector3(0,0,1),k=180/Math.PI,r3=function(v){return Math.round(v*1000)/1000+0},
     M=new THREE.Matrix4().set(1-2*rv.x*rv.x,-2*rv.x*rv.y,-2*rv.x*rv.z,0,-2*rv.y*rv.x,1-2*rv.y*rv.y,-2*rv.y*rv.z,0,-2*rv.z*rv.x,-2*rv.z*rv.y,1-2*rv.z*rv.z,0,0,0,0,1),
     c=rotCenter(rs),multi=rs.length>1;let n=0;
   rs.forEach(function(p){let ch=false;
