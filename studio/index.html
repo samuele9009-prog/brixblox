@@ -519,6 +519,7 @@ const BD={
  idleanim:{c:'pl',l:'set player idle to _',a:['idle'],raw:1,tip:'Uses an animation from the rig as the idle animation.'},
  fov:{c:'pl',l:'set camera fov to _',a:['80'],tip:'Sets how wide the camera sees, from 30 (zoomed in) to 120 (very wide). The default is 70. It goes back to the game setting when the game restarts.'},
  pspeed:{c:'pl',l:'set player speed to _',a:['24'],tip:'How fast the player walks (default 16).'},
+ playercol:{c:'pl',l:'set player collisions to _',a:['true'],dd:{0:'bool'},tip:'true: players can not walk through each other, so you bump into the other players in the server. false: players walk straight through each other (the default). It goes back to false when the game restarts.'},
  shiftlockon:{c:'pl',l:'enable shiftlock',a:[],tip:'Lets the player use shift lock while playing. It does not turn it on by itself: the player presses Shift to switch it on and off. When it is on, the camera moves over the shoulder, the mouse is locked so moving it turns the camera, and the character faces where the camera looks.'},
  shiftlockoff:{c:'pl',l:'disable shiftlock',a:[],tip:'Stops the player from using shift lock. If it is on, it switches off and the normal camera comes back.'},
  addplayer:{c:'pl',l:'add player to game _',a:['Friend'],raw:1,tip:'Adds another player to the server. They show up next to you with a name tag. A banned player can not join.'},
@@ -604,7 +605,7 @@ function blobUrl(b){return new Promise(function(res){const r=new FileReader();r.
 async function cloudAudio(v,room){const id=bigId(v),c=audCache();if(c[id])return {u:c[id],inl:0};
   let rec=null;try{rec=await idbDo('readonly',function(st){return st.get(id)})}catch(e){}
   if(!rec||!rec.blob)return null;const b=rec.blob;
-  if(sb&&ME){try{const ext=(/\/(mpeg|mp3)/.test(b.type)?'mp3':/ogg/.test(b.type)?'ogg':/wav/.test(b.type)?'wav':/mp4|aac|m4a/.test(b.type)?'m4a':'bin'),path=ME.id+'/'+id+'.'+ext;
+  if(sb&&ME){try{const ext=(/json/.test(b.type)?'json':/\/(mpeg|mp3)/.test(b.type)?'mp3':/ogg/.test(b.type)?'ogg':/wav/.test(b.type)?'wav':/mp4|aac|m4a/.test(b.type)?'m4a':'bin'),path=ME.id+'/'+id+'.'+ext;
       const up=await sb.storage.from(AUDB).upload(path,b,{contentType:b.type||'audio/mpeg',upsert:false});
       if(!up.error||/exist|duplicate/i.test(String(up.error.message||''))||up.error.statusCode==409||up.error.status==409){const u=sb.storage.from(AUDB).getPublicUrl(path).data.publicUrl;if(u){audCacheSet(id,u);return {u:u,inl:0}}}}catch(e){}}
   if(b.size<=1.5*1048576&&room>=b.size*1.4){const u=await blobUrl(b);if(u)return {u:u,inl:u.length}}
@@ -613,6 +614,7 @@ async function cloudData(id){const g=glib()[id];if(!g)return null;let d;try{d=JS
   try{const au=d.assets.audio;let room=4.2e6,bad=[];
     for(const k of Object.keys(au)){const v=au[k];if(!bigRef(v))continue;const r=await cloudAudio(v,room);if(r){au[k]=r.u;room-=r.inl}else{delete au[k];bad.push(k)}}
     audWarn=bad.length?('The sound'+(bad.length>1?'s ':' ')+bad.join(', ')+' could not be sent online, so other computers will not hear '+(bad.length>1?'them':'it')+'. Open this game on the computer you uploaded it on and run the one-time storage setup (see the note in the Assets list).'):''}catch(e){}
+  try{await meshCloud(d,4.2e6)}catch(e){}
   return JSON.stringify(d)}
 /* Saving never sends a game to the normal BrixBlox site by itself any more. persistGame() only saves in this Studio; this runs when you press Publish or Update.
    g.lh remembers a fingerprint of the version that is live, so the Studio can tell when you have changes that are not live yet. */
@@ -869,7 +871,7 @@ function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('p
 
 
 /* BricBloc as text */
-const KW={unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
+const KW={unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
 
@@ -962,6 +964,7 @@ async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0
     case'shiftlockon':S.sla=true;break;
     case'shiftlockoff':S.sla=false;S.sl=false;break;
     case'pspeed':S.speed=Math.max(0,Math.min(120,n(0)));break;
+    case'playercol':{const v=String(val(a[0],S)).trim().toLowerCase();S.pcol=!(v==='false'||v==='0'||v==='off'||v==='no');break}
     case'addplayer':{const bn=banOf(String(a[0]).trim().slice(0,16)||'');if(bn){log(bn.name+' is banned'+(bn.reason?' ('+bn.reason+')':'')+' for '+leftText(bn)+' more, so they can not join.');break}spawnPlayer(a[0],S);break}
     case'playaud':{const au=audioFor(a[0].trim());if(!au)break;au.onended=null;au.loop=true;au.currentTime=0;au.play().catch(function(){log('Error: the browser blocked the sound. Click the stage once, then run again.')});break}
     case'playonce':{const au=audioFor(a[0].trim());if(!au)break;let ended=false;au.loop=false;au.currentTime=0;au.onended=function(){ended=true};
@@ -1026,7 +1029,7 @@ function addFace(m,p){if(!FACE){const c=document.createElement('canvas');c.width
   m.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({map:FACE,transparent:true,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})))}
 // S is the avatar's offset from where it was placed. x right, y forward (toward -z), h height, dir 90 faces forward.
 function initVars(){const o={};((P&&P.vars)||[]).forEach(function(n){o[n]=0});return o}
-function fresh(){return {oth:[],x:0,y:0,h:0,vy:0,gr:true,wt:0,jt:0,pvx:0,pvz:0,bp:{},air:false,mv:false,dir:90,col:null,say:'',v:initVars(),fn:{},stop:false,d:0,sl:false,sla:false,slo:0}}
+function fresh(){return {oth:[],x:0,y:0,h:0,vy:0,gr:true,wt:0,jt:0,pvx:0,pvz:0,bp:{},air:false,mv:false,dir:90,col:null,say:'',v:initVars(),fn:{},stop:false,d:0,sl:false,sla:false,slo:0,pcol:false}}
 let S=fresh(),running=false;let RV={},RD={},RVY={},NP=[],RY={},CO={},TM=new Map();
 function draw(){const T=byId(P.avId),g=T&&J[T.id];
   for(const id in RO){const r=byId(id);if(r&&J[id]&&id!==P.avId)J[id].position.set(r.pos[0]+RO[id][0],r.pos[1]+(RY[id]||0),r.pos[2]+RO[id][1])}
@@ -1039,7 +1042,7 @@ function draw(){const T=byId(P.avId),g=T&&J[T.id];
 
 /* ===== Parts, welds, rig editor, animator ===== */
 P.parts=P.parts||[];P.models=P.models||[];P.anims=P.anims||{};P.nid=P.nid||1;
-P.vars=Array.isArray(P.vars)?P.vars:[];P.assets=P.assets||{};P.assets.images=P.assets.images||{};P.assets.audio=P.assets.audio||{};P.bans=Array.isArray(P.bans)?P.bans:[];
+P.vars=Array.isArray(P.vars)?P.vars:[];P.assets=P.assets||{};P.assets.images=P.assets.images||{};P.assets.audio=P.assets.audio||{};P.assets.meshes=P.assets.meshes||{};P.bans=Array.isArray(P.bans)?P.bans:[];
 P.env=Object.assign({sky:'#8fd3ff',tod:14,bright:1,sun:1,fog:0},P.env||{});P.rules=Object.assign({grav:190,jump:48,speed:16,cam:14,fov:70},P.rules||{});P.audio=Object.assign({vol:.5,mute:false},P.audio||{});
 P.squads=P.squads||[{id:'q1',name:'Red Squad',color:'#e5484d'},{id:'q2',name:'Blue Squad',color:'#3b82f6'}];P.player=P.player||{name:'Player1',squad:''};
 const byId=function(id){return P.parts.find(function(p){return p.id===id})};
@@ -1201,7 +1204,7 @@ function rebuildParts(){
   if(hline.parent)hline.parent.remove(hline);hov=null;if(PG){scene.remove(PG);PG.traverse(function(o){if(o.geometry&&!o.geometry.userData.keep)o.geometry.dispose();if(o.material)o.material.dispose()})}
   PG=new THREE.Group();scene.add(PG);J={};M={};
   P.parts.forEach(function(p){const g=new THREE.Group(),v=piv(p),geo=((p.av&&!p.acc)||p.sm||(p.parent&&/^(Head|Torso|[RL](arm|leg))$/.test(p.name)))?avGeo(p):cachedGeo(p,false,shapeGeo),md=MATS[p.mat]||MATS.plastic;if(TX[p.mat])boxUV(geo,md.ts||6);const m=new THREE.Mesh(geo,mkMat(p));m.receiveShadow=true;m.castShadow=!md.op&&!p.stab;m.layers.enable(1);
-    m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);m.userData.id=p.id;if(p.face)addFace(m,p);if(p.stab)m.visible=false;if(p.light&&!p.stab){const L=new THREE.PointLight(p.light.c,p.light.i,p.light.r,1);L.userData.isL=1;m.add(L)}g.add(m);J[p.id]=g;M[p.id]=m});
+    m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);m.userData.id=p.id;if(p.face)addFace(m,p);if(p.stab)m.visible=false;if(p.light&&!p.stab){const L=new THREE.PointLight(p.light.c,p.light.i,p.light.r,1);L.userData.isL=1;m.add(L)}if(p.shape==='mesh'){m.material.visible=false;m.castShadow=false;try{meshHook(m,p)}catch(e){}}g.add(m);J[p.id]=g;M[p.id]=m});
   const hk={};P.parts.forEach(function(p){if(p.parent)hk[p.parent]=1});
   P.parts.forEach(function(p){const g=J[p.id],v=piv(p),pa=p.parent&&byId(p.parent);
     if(pa){const q=piv(pa);g.position.set(v[0]-q[0],v[1]-q[1],v[2]-q[2]);J[pa.id].add(g)}else{g.position.set(v[0],v[1],v[2]);g.visible=inW(p);PG.add(g)}g.userData.base=g.position.clone();g.userData.gry=!p.parent&&hk[p.id]&&p.ry?p.ry*Math.PI/180:0});
@@ -1294,7 +1297,7 @@ function clearNP(){NP.forEach(function(n){if(n.bub){scene.remove(n.bub.sp);n.bub
 function spawnPlayer(name,S){const T=byId(P.avId),av=P.parts.filter(function(p){return p.av}),MM={};
   if(!T||!av.length){log('Error: there is no player character to copy.');return}
   const nm=String(name).trim().slice(0,16)||'Player'+(NP.length+2),n=NP.length,grp=new THREE.Group(),JJ={},dx=(n%2?-1:1)*(4+Math.floor(n/2)*3);
-  av.forEach(function(p){const g=new THREE.Group(),v=piv(p),m=new THREE.Mesh(p.acc?cachedGeo(p,false,shapeGeo):avGeo(p),mkMat(p));m.castShadow=!p.stab;m.receiveShadow=true;
+  av.forEach(function(p){const g=new THREE.Group(),v=piv(p),m=new THREE.Mesh(p.acc?cachedGeo(p,false,shapeGeo):avGeo(p),mkMat(p));m.castShadow=!p.stab;m.receiveShadow=true;if(p.shape==='mesh'){m.material.visible=false;m.castShadow=false;try{meshHook(m,p)}catch(e){}}
     if(p.name==='Torso'){if(NETCOL)m.material.color.set(NETCOL);else m.material.color.offsetHSL((n+1)*.17,0,0)}
     m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);if(p.face)addFace(m,p);if(p.stab)m.visible=false;if(p.name==='Head'||p.name==='Torso')MM[p.name]=m;g.add(m);JJ[p.id]=g});
   av.forEach(function(p){const g=JJ[p.id],v=piv(p),pa=p.parent&&byId(p.parent);
@@ -1603,7 +1606,8 @@ function props(){const d=$('p-props');d.replaceChildren();if(!selModel&&!sel.len
   d.append(lab('Name (arms must be Rarm and Larm)',nm),lab('Material',matSel(p.mat,function(k){setMat(p,k);all()})),lab('Color',col),vec('Position',p.pos,true),vec('Size',p.size,false));
   if(!p.parent){const c=el('input');c.type='checkbox';c.checked=!!p.movable;c.onchange=function(){p.movable=c.checked;save()};const l=el('label','','Movable (push it with your character)');l.append(c);d.append(l);
     const c2=el('input');c2.type='checkbox';c2.checked=!p.nocol;c2.onchange=function(){if(c2.checked)delete p.nocol;else p.nocol=true;save()};const l2=el('label','','Collision (solid: blocks your character)');l2.append(c2);d.append(l2)}
-  else d.append(el('p','note','Welded: moves with the part it is welded to.'));if((!p.av||p.acc)&&!p.sm&&!p.stab){const ss=el('select');[['box','Block'],['cyl','Cylinder'],['sphere','Sphere'],['wedge','Triangle']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ss.append(op)});ss.value=p.shape||'box';ss.onchange=function(){if(ss.value==='box')delete p.shape;else p.shape=ss.value;all()};d.append(lab('Shape',ss))}
+  else d.append(el('p','note','Welded: moves with the part it is welded to.'));if((!p.av||p.acc)&&!p.sm&&!p.stab&&p.shape!=='mesh'){const ss=el('select');[['box','Block'],['cyl','Cylinder'],['sphere','Sphere'],['wedge','Triangle']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ss.append(op)});ss.value=p.shape||'box';ss.onchange=function(){if(ss.value==='box')delete p.shape;else p.shape=ss.value;all()};d.append(lab('Shape',ss))}
+  if(p.shape==='mesh')meshProps(d,p);
   if(!p.stab&&(p.acc||(!p.av&&!p.parent&&!p.model))){const as=el('select');[['','Not an accessory'],['hat','Hat (top of the head)'],['face','Face accessory (front of the head)'],['neck','Neck (where the head meets the body)'],['back','Back (on the back)']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];as.append(op)});
     as.value=p.acc||'';as.onchange=function(){setAcc(p,as.value)};d.append(lab('Accessory (wear it on your character)',as));
     if(p.acc)d.append(el('p','note','It is welded to your character, shows on you and on other players, and has no collision. Change Position and Size above to fit it.'))}
@@ -1651,10 +1655,10 @@ function loadBig(){Object.keys(P.assets.audio).forEach(function(n){const v=P.ass
   idbDo('readonly',function(st){return st.get(id)}).then(function(rec){if(rec&&rec.blob){AURL[id]=URL.createObjectURL(rec.blob);if(selSvc==='assets')renderParts()}}).catch(function(){})})}
 function dropBig(v){if(!bigRef(v))return;const id=bigId(v);if(AURL[id]){try{URL.revokeObjectURL(AURL[id])}catch(e){}delete AURL[id]}idbDo('readwrite',function(st){return st.delete(id)}).catch(function(){})}
 /* Tidy up: sounds nobody refers to any more (and older than two days) are removed */
-function gcBig(){idbDo('readonly',function(st){return st.getAllKeys()}).then(function(keys){const used=new Set(),scan=function(o){try{Object.keys(o.assets.audio).forEach(function(n){const v=o.assets.audio[n];if(bigRef(v))used.add(bigId(v))})}catch(e){}};
+function gcBig(){idbDo('readonly',function(st){return st.getAllKeys()}).then(function(keys){const used=new Set(),scan=function(o){try{Object.keys(o.assets.audio).forEach(function(n){const v=o.assets.audio[n];if(bigRef(v))used.add(bigId(v))})}catch(e){}try{Object.keys(o.assets.meshes||{}).forEach(function(n){const v=o.assets.meshes[n];if(bigRef(v))used.add(bigId(v))})}catch(e){}};
   scan(P);const L=glib();Object.keys(L).forEach(function(id){try{scan(JSON.parse(L[id].data))}catch(e){}});
   (keys||[]).filter(function(k){return !used.has(k)}).forEach(function(k){idbDo('readonly',function(st){return st.get(k)}).then(function(rec){if(rec&&Date.now()-(rec.at||0)>2*864e5)idbDo('readwrite',function(st){return st.delete(k)})})})}).catch(function(){})}
-function dropGameBig(g){try{const d=JSON.parse(g.data);Object.keys(d.assets.audio).forEach(function(n){dropBig(d.assets.audio[n])})}catch(e){}}
+function dropGameBig(g){try{const d=JSON.parse(g.data);Object.keys(d.assets.audio).forEach(function(n){dropBig(d.assets.audio[n])});Object.keys(d.assets.meshes||{}).forEach(function(n){dropBig(d.assets.meshes[n])})}catch(e){}}
 function addAudioBig(f){
   const base=f.name.replace(/\.[^.]+$/,'').replace(/[^A-Za-z0-9_]/g,'').slice(0,20)||'audio';
   if(f.size>AUDIO_FILE){msg('That audio is over '+Math.round(AUDIO_FILE/1048576)+' MB. Try a shorter or compressed one (mp3 or ogg).');return}
@@ -1687,6 +1691,102 @@ function addAsset(kind,f,inline){
     P.assets[col][nm]=rd.result;updSkyTex();save();selSvc='assets';sel=[];selModel=null;renderParts();
     msg('Added '+kind+' "'+nm+'"'+(kind==='audio'?'. Use it with the play block.':(nm==='Thumbnail'&&kind==='image'?'. It is now the thumbnail of your game.':nm==='Sun'||nm==='Moon'?'. The '+nm.toLowerCase()+' in the sky now uses this image.':'.'))+(gameId?'':' Publish the game to keep it.'))};
   rd.readAsDataURL(f)}
+/* ===== Imported meshes (.obj + .mtl, .fbx, .glb) with their textures =====
+   A mesh and its texture images are packed into one JSON file {fmt,main,mtl,tex}. It is stored like big audio (in this browser's file store, "idb:" in the game)
+   and is uploaded online with the game when you press Publish or Update. A mesh in the world is a normal part (shape "mesh"): its box is its size, collision and click area. */
+const MESH_FILE=24*1024*1024,MESH_TOTAL=96*1024*1024,MESHI={};
+function meshKey(v){return v.length>200?hsh(v):v}
+function meshLibs(fmt){const B='https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/',L={obj:['loaders/MTLLoader.js','loaders/OBJLoader.js'],glb:['loaders/GLTFLoader.js'],fbx:['libs/fflate.min.js','loaders/FBXLoader.js']}[fmt]||[],T={obj:'OBJLoader',glb:'GLTFLoader',fbx:'FBXLoader'}[fmt];
+  const have=function(){return !!(T&&THREE[T]&&(fmt!=='obj'||THREE.MTLLoader))};
+  return new Promise(function(ok,no){let i=0;(function nx(){if(have())return ok();if(i>=L.length){no(new Error('Could not load the '+String(fmt).toUpperCase()+' loader. Check your internet connection.'));return}const sc=document.createElement('script');sc.src=B+L[i++];sc.onload=nx;sc.onerror=nx;document.head.append(sc)})()})}
+function d2buf(u){const b=atob(u.slice(u.indexOf(',')+1)),a=new Uint8Array(b.length);for(let k=0;k<b.length;k++)a[k]=b.charCodeAt(k);return a.buffer}
+/* Turns a packed mesh into a 3D object, centred on its middle. userData.nz is its natural size. Textures are found by file name. */
+function meshBuild(pk){return meshLibs(pk.fmt).then(function(){return new Promise(function(ok,no){
+  const tex=pk.tex||{},names=Object.keys(tex),mgr=new THREE.LoadingManager();
+  mgr.setURLModifier(function(u){let k=String(u).split(/[?#]/)[0].split(/[\\/]/).pop().toLowerCase();try{k=decodeURIComponent(k)}catch(e){}return tex[k]||u});
+  const fin=function(o){try{
+      if(pk.fmt!=='obj')accStatic(o);/* flatten skinned meshes into plain ones */
+      let anyMap=false;const mats=[];
+      o.traverse(function(m){if(m.geometry)m.geometry.userData.keep=true;if(!m.isMesh)return;(Array.isArray(m.material)?m.material:[m.material]).forEach(function(mt){if(!mt)return;mats.push(mt);if(mt.map)anyMap=true})});
+      /* One picture and nothing in the file uses a texture: put that picture on the whole mesh */
+      if(names.length===1&&!anyMap){const t=new THREE.TextureLoader(mgr).load(tex[names[0]]);t.flipY=pk.fmt!=='glb';t.wrapS=t.wrapT=THREE.RepeatWrapping;mats.forEach(function(mt){mt.map=t;if(mt.color)mt.color.set(0xffffff);mt.needsUpdate=true})}
+      o.updateMatrixWorld(true);const bx=new THREE.Box3().setFromObject(o);
+      if(bx.isEmpty()){no(new Error('That file has no 3D shape in it.'));return}
+      const sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),w=new THREE.Group();o.position.sub(ct);w.add(o);w.userData.nz=[sz.x,sz.y,sz.z];ok({obj:w,fmt:pk.fmt})}catch(e){no(e)}};
+  try{
+    if(pk.fmt==='obj'){const L=new THREE.OBJLoader(mgr);if(pk.mtl){const mc=new THREE.MTLLoader(mgr).parse(pk.mtl,'');mc.preload();L.setMaterials(mc)}fin(L.parse(pk.main))}
+    else if(pk.fmt==='fbx')fin(new THREE.FBXLoader(mgr).parse(d2buf(pk.main),''));
+    else if(pk.fmt==='glb')new THREE.GLTFLoader(mgr).parse(d2buf(pk.main),'',function(g){fin(g.scene)},function(e){no(new Error((e&&e.message)||'That .glb file could not be read.'))});
+    else no(new Error('Unknown mesh type.'))}catch(e){no(e)}})})}
+function meshPack(v){
+  if(bigRef(v))return idbDo('readonly',function(st){return st.get(bigId(v))}).then(function(rec){if(!rec||!rec.blob)throw new Error('This mesh is not stored on this computer. Open the game on the computer you imported it on, then press Publish or Update.');return rec.blob.text()}).then(function(t){return JSON.parse(t)});
+  return fetch(v).then(function(r){if(!r.ok)throw new Error('The mesh could not be downloaded.');return r.json()})}
+function meshLoad(nm){const v=(P.assets.meshes||{})[nm];if(!v)return Promise.resolve(null);const k=meshKey(v);let E=MESHI[k];if(E)return E.p||Promise.resolve(E);
+  E=MESHI[k]={obj:null,fmt:'',fail:'',p:null};
+  E.p=meshPack(v).then(meshBuild).then(function(r){E.obj=r.obj;E.fmt=r.fmt;E.p=null;meshAll();return E}).catch(function(e){E.fail=String((e&&e.message)||e||'error');E.p=null;try{msg('Could not load the mesh "'+nm+'": '+E.fail)}catch(x){}return E});
+  return E.p}
+function meshAll(){P.parts.forEach(function(q){const m=q.shape==='mesh'&&M[q.id];if(m)meshHook(m,q)})}
+/* A copy of the mesh scaled to the part's size. Own copies of the materials, so a texture picked for one part does not change another. */
+function meshInst(E,p){const w=E.obj.clone(true),nz=E.obj.userData.nz||[1,1,1],sz=p.size,g=new THREE.Group(),src=p.mtex&&P.assets.images[p.mtex];
+  w.traverse(function(m){if(!m.isMesh)return;m.castShadow=!p.stab;m.receiveShadow=true;m.frustumCulled=false;
+    const f=function(mt){const n=mt.clone();n.side=THREE.DoubleSide;if(src){n.map=accTex(src,E.fmt==='glb');if(n.color)n.color.set(0xffffff)}n.needsUpdate=true;return n};
+    m.material=Array.isArray(m.material)?m.material.map(f):f(m.material)});
+  g.add(w);g.scale.set(nz[0]>1e-6?sz[0]/nz[0]:1,nz[1]>1e-6?sz[1]/nz[1]:1,nz[2]>1e-6?sz[2]/nz[2]:1);g.userData.mesh=1;return g}
+function meshHook(m,p){if(m.userData.mi)return;const v=p.mesh&&(P.assets.meshes||{})[p.mesh];if(!v)return;const E=MESHI[meshKey(v)];
+  if(E&&E.obj){const g=meshInst(E,p);m.add(g);m.userData.mi=g}else if(!E)meshLoad(p.mesh)}
+function fileURL(f){return new Promise(function(res,rej){const r=new FileReader();r.onload=function(){res(r.result)};r.onerror=function(){rej(new Error('Could not read '+f.name))};r.readAsDataURL(f)})}
+function fileText(f){return new Promise(function(res,rej){const r=new FileReader();r.onload=function(){res(String(r.result))};r.onerror=function(){rej(new Error('Could not read '+f.name))};r.readAsText(f)})}
+/* Big pictures are shrunk to 1024 pixels so a mesh stays small enough to save and send online */
+function texPack(f){return fileURL(f).then(function(u){return new Promise(function(res){const i=new Image();i.onload=function(){try{const mx=Math.max(i.width,i.height);if(mx<=1024){res(u);return}const k=1024/mx,c=document.createElement('canvas');c.width=Math.max(1,Math.round(i.width*k));c.height=Math.max(1,Math.round(i.height*k));c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL(/png|gif/i.test(f.type||f.name)?'image/png':'image/jpeg',.9))}catch(e){res(u)}};i.onerror=function(){res(u)};i.src=u})})}
+function meshBytes(){let n=0;Object.keys(P.assets.meshes||{}).forEach(function(k){const v=P.assets.meshes[k];n+=bigRef(v)?bigSize(v):v.length});return n}
+function pickMesh(){const i=document.createElement('input');i.type='file';i.multiple=true;i.accept='.obj,.mtl,.fbx,.glb,.png,.jpg,.jpeg,.webp,.gif,.bmp,image/*';
+  i.onchange=function(){if(i.files&&i.files.length)importMesh(Array.from(i.files))};i.click()}
+async function importMesh(fs){
+  const mod=fs.filter(function(f){return /\.(obj|fbx|glb)$/i.test(f.name)}),imgs=fs.filter(function(f){return /\.(png|jpe?g|webp|gif|bmp)$/i.test(f.name)}),mtl=fs.find(function(f){return /\.mtl$/i.test(f.name)});
+  if(!mod.length&&fs.some(function(f){return /\.gltf$/i.test(f.name)})){msg('A .gltf file points at other files. Save or convert it as a .glb (one file) and import that instead.');return}
+  if(mod.length!==1){msg(mod.length?'Import one mesh at a time. You picked '+mod.length+' mesh files.':'Choose a mesh file (.obj, .fbx or .glb) together with its texture pictures (and the .mtl file for an .obj). Hold Ctrl or Shift to pick several files at once.');return}
+  const f=mod[0],fmt=f.name.split('.').pop().toLowerCase();
+  if(f.size>MESH_FILE){msg('That mesh is over '+Math.round(MESH_FILE/1048576)+' MB. Try a simpler one.');return}
+  const base=f.name.replace(/\.[^.]+$/,'').replace(/[^A-Za-z0-9_]/g,'').slice(0,20)||'mesh';
+  msg('Importing '+f.name+'...');
+  try{
+    const pk={v:1,fmt:fmt,tex:{}};
+    if(fmt==='obj'){pk.main=await fileText(f);pk.mtl=mtl?await fileText(mtl):''}else pk.main=await fileURL(f);
+    for(const im of imgs)pk.tex[im.name.toLowerCase()]=await texPack(im);
+    const r=await meshBuild(pk);/* makes sure the file really loads before anything is saved */
+    const blob=new Blob([JSON.stringify(pk)],{type:'application/json'});
+    if(blob.size>MESH_FILE){msg('That mesh with its textures is over '+Math.round(MESH_FILE/1048576)+' MB. Use smaller texture pictures.');return}
+    if(meshBytes()+blob.size>MESH_TOTAL){msg('The meshes in this game are full (about '+Math.round(MESH_TOTAL/1048576)+' MB). Delete one first.');return}
+    const id='m'+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36);let ref;
+    try{await idbDo('readwrite',function(st){return st.put({blob:blob,at:Date.now(),name:f.name},id)});ref='idb:'+id+':'+blob.size}
+    catch(e){if(blob.size>1.5*1048576){msg('Browser file storage is not available here, so a mesh can only be up to 1.5 MB.');return}ref=await blobUrl(blob);if(!ref){msg('Could not save that mesh.');return}}
+    let nm=base,n=1;while(P.assets.meshes[nm])nm=base+(++n);
+    P.assets.meshes[nm]=ref;MESHI[meshKey(ref)]={obj:r.obj,fmt:r.fmt,fail:'',p:null};
+    save();selSvc='assets';sel=[];selModel=null;renderParts();
+    msg('Imported mesh "'+nm+'"'+(imgs.length?' with '+imgs.length+' texture picture'+(imgs.length>1?'s':''):' (no texture pictures, so it uses the colours in the file)')+'. Press Place in game to put it in the world.'+(gameId?'':' Publish the game to keep it.'))
+  }catch(e){msg('Could not import that mesh: '+((e&&e.message)||e))}}
+/* Put a mesh in the world in front of the camera, sized so its longest side is 4 studs */
+function newMeshPart(nm){if(animOn()||!(P.assets.meshes||{})[nm])return;const p=newPart('box');if(!p)return;p.shape='mesh';p.mesh=nm;p.name=nm;save();
+  meshLoad(nm).then(function(E){if(!E||!E.obj){P.parts=P.parts.filter(function(q){return q!==p});sel=[];all();return}
+    const nz=E.obj.userData.nz,k=4/(Math.max(nz[0],nz[1],nz[2])||1);p.size=nz.map(function(x){return Math.max(.2,Math.round(x*k*20)/20)});p.pos[1]=Math.max(p.pos[1],p.size[1]/2);
+    msg('Added mesh "'+nm+'" in front of you. Use Position and Size to adjust it.');all()})}
+function meshProps(d,p){
+  d.append(el('p','note','Imported mesh "'+(p.mesh||'?')+'". Standing on it, bumping into it and clicking it all use its box (the Size above).'));
+  const ts=el('select');[['','Original texture']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})).forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ts.append(op)});
+  ts.value=p.mtex&&P.assets.images[p.mtex]?p.mtex:'';ts.onchange=function(){if(ts.value)p.mtex=ts.value;else delete p.mtex;save();rebuildParts()};
+  d.append(lab('Texture (the mesh\'s own, or any image from Assets)',ts));
+  const rb=el('button','btn ghost small','Reset size to the mesh\'s own shape');rb.type='button';
+  rb.onclick=function(){const E=MESHI[meshKey((P.assets.meshes||{})[p.mesh]||'')];if(!E||!E.obj){msg('The mesh is still loading.');return}const nz=E.obj.userData.nz,k=Math.max(p.size[0],p.size[1],p.size[2])/(Math.max(nz[0],nz[1],nz[2])||1);p.size=nz.map(function(x){return Math.max(.2,Math.round(x*k*20)/20)});all();props()};
+  d.append(rb)}
+function meshRows(d){const ks=Object.keys(P.assets.meshes||{});if(!ks.length){d.append(el('p','empty','Nothing here yet.'));return}
+  ks.forEach(function(n){const v=P.assets.meshes[n],w=el('div','arow');w.append(el('span','nm',n+(bigRef(v)?'  ('+(bigSize(v)/1048576).toFixed(1)+' MB)':'')));
+    w.append(mb('Place in game','',function(){newMeshPart(n)}));
+    w.append(mb('Delete','ghost',function(){const used=P.parts.filter(function(q){return q.shape==='mesh'&&q.mesh===n});P.parts=P.parts.filter(function(q){return !(q.shape==='mesh'&&q.mesh===n)});delete P.assets.meshes[n];try{cleanModels()}catch(e){}sel=[];selModel=null;msg('Deleted '+n+(used.length?' and the '+used.length+' part'+(used.length>1?'s':'')+' that used it':'')+'.');all()}));d.append(w)})}
+/* Meshes go online with the game the same way big sounds do */
+async function meshCloud(d,room){const me=d.assets&&d.assets.meshes;if(!me)return room;const bad=[];
+  for(const k of Object.keys(me)){const v=me[k];if(!bigRef(v))continue;const r=await cloudAudio(v,room);if(r){me[k]=r.u;room-=r.inl}else{delete me[k];bad.push(k)}}
+  if(bad.length)audWarn=(audWarn?audWarn+' ':'')+'The mesh'+(bad.length>1?'es ':' ')+bad.join(', ')+' could not be sent online, so other computers will not see '+(bad.length>1?'them':'it')+'. Open this game on the computer you imported it on and run the one-time storage setup (see the note in the Assets list).';
+  return room}
 function ac(){actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();return actx}
 function noise(){if(!nbuf){const n=actx.sampleRate;nbuf=actx.createBuffer(1,n,n);const d=nbuf.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1}const q=actx.createBufferSource();q.buffer=nbuf;q.loop=true;return q}
 /* Jump: a little cartoon "boing" (quick upward pitch bend with a bouncy wobble), kept quiet */
@@ -2153,6 +2253,13 @@ function collide(){const T=byId(P.avId);if(!T)return;const R=1.1,fy=feet0()+S.h;
     if(d>1e-4){pen=R-d;dx/=d;dz/=d}
     else{const m=[cx-(bx-hx),bx+hx-cx,cz-(bz-hz),bz+hz-cz],mn=Math.min.apply(null,m),i=m.indexOf(mn);dx=i===0?-1:i===1?1:0;dz=i===2?-1:i===3?1:0;pen=mn+R}
     if(r.movable)RO[r.id]=[o[0]-dx*pen,o[1]-dz*pen];else{S.x+=dx*pen;S.y-=dz*pen}})}
+/* Player collisions (the "set player collisions" block): when on, you can not walk through the other players. Players are pushed apart sideways. */
+function pcollide(){if(!S.pcol||S.rag)return;const T=byId(P.avId);if(!T)return;const R=1.1;
+  plist().forEach(function(o){if(o.key==='main')return;const cx=T.pos[0]+S.x,cz=T.pos[2]-S.y;
+    if(Math.abs(o.y-(T.pos[1]+S.h))>5)return;/* one is standing well above or below the other */
+    let dx=cx-o.x,dz=cz-o.z;const d=Math.hypot(dx,dz);if(d>=R*2)return;
+    if(d<1e-4){dx=1;dz=0}else{dx/=d;dz/=d}
+    const pen=R*2-d;S.x+=dx*pen;S.y-=dz*pen})}
 /* ===== Gravity: the player falls, lands on top of parts, and respawns after dropping into the void ===== */
 const STEP=2.5;
 function rootOf(p){while(p.parent&&byId(p.parent))p=byId(p.parent);return p}
@@ -2560,7 +2667,8 @@ function svcProps(d){const s=SV.find(function(x){return x.k===selSvc});if(!s)ret
       b.onclick=function(){P.parts.forEach(function(p){if(!p.parent&&p.svc===s.k)delete p.svc});all()};d.append(b)}}
   else if(s.k==='scripts'){P.scripts.forEach(function(sc){const h=sc[0],D=BD[h.t];d.append(el('p','note',(D.hat?(KW[h.t]||h.t)+' '+h.a.join(' '):'Loose blocks')+'  —  '+(sc.length-(D.hat?1:0))+' block(s)'))});
     if(!P.scripts.length)d.append(el('p','empty','No scripts yet.'))}
-  else if(s.k==='assets'){const r=el('div','tb');r.append(mb('Upload image','',function(){pickFile('image')}),mb('Upload audio','',function(){pickFile('audio')}));d.append(r);
+  else if(s.k==='assets'){const r=el('div','tb');r.append(mb('Upload image','',function(){pickFile('image')}),mb('Upload audio','',function(){pickFile('audio')}),mb('Import mesh','',pickMesh));d.append(r);
+    d.append(el('p','note','Meshes: pick a .obj, .fbx or .glb file together with its texture pictures (png or jpg) in one go. For an .obj also pick its .mtl file. Up to 24 MB per mesh. Big pictures are shrunk to 1024 pixels. Press Place in game to add it, then change its Texture in the part properties.'));
     d.append(el('p','note','Images: up to 2 MB each. Audio: up to 64 MB per file and about 320 MB per game. Play sounds with the blocks "play _" (loops), "play _ once until done" and "stop audio _". Name an image Sun or Moon to change the sun or moon in the sky (the clouds are fixed and cannot be replaced). Other images are stored for objects and GUIs later. Sounds are sent online with the game when it is saved so you can hear them on other computers (big sounds need the one-time Supabase storage bucket named game-audio).'));
     const rows=function(col,kind){const ks=Object.keys(P.assets[col]);if(!ks.length)d.append(el('p','empty','Nothing here yet.'));
       ks.forEach(function(n){const w=el('div','arow'),src=P.assets[col][n];
@@ -2568,7 +2676,7 @@ function svcProps(d){const s=SV.find(function(x){return x.k===selSvc});if(!s)ret
         w.append(el('span','nm',n+(kind==='audio'&&bigRef(src)?'  ('+(bigSize(src)/1048576).toFixed(1)+' MB)':'')));
         if(kind==='audio'){const au=el('audio'),as=audioSrc(n);au.controls=true;au.preload='none';if(as)au.src=as;else w.append(el('span','note','loading...'));w.append(au)}
         w.append(mb('Delete','ghost',function(){delete P.assets[col][n];if(kind==='audio'){stopAudio(n);delete AUD[n];dropBig(src)}updSkyTex();save();msg('Deleted '+n+'.');renderParts()}));d.append(w)})};
-    d.append(el('p','note','Images'));rows('images','image');d.append(el('p','note','Audio'));rows('audio','audio')}
+    d.append(el('p','note','Images'));rows('images','image');d.append(el('p','note','Audio'));rows('audio','audio');d.append(el('p','note','Meshes'));meshRows(d)}
   else if(s.k==='world')d.append(el('p','note','Use + Part or press P to add things. Click a part or model in the list to edit it.'))}
 /* ===== Explorer: a tree with a hover "+" that opens a mini menu of things to put inside an object ===== */
 const PLUSOK=['world','shared','vault','scripts','squads','assets'];
@@ -2672,7 +2780,7 @@ function renderParts(){const l=$('p-list');l.replaceChildren();
     P.parts.filter(function(p){return !p.parent&&!p.model&&svcOf(p)===key}).forEach(function(p){n++;prow(p,1,false)});return n}
   SV.forEach(function(s){const ex=EXP.indexOf(s.k)>=0,open=openS[s.k]===undefined?s.k==='world':openS[s.k];let cnt=null;
     if(s.k==='world'||s.k==='shared'||s.k==='vault')cnt=P.parts.filter(function(p){return !p.parent&&svcOf(p)===s.k}).length;
-    else if(s.k==='squads')cnt=P.squads.length;else if(s.k==='scripts')cnt=P.scripts.length;else if(s.k==='tags')cnt=Object.keys(tagMap()).length;else if(s.k==='roster')cnt=1+S.oth.length;else if(s.k==='assets')cnt=Object.keys(P.assets.images).length+Object.keys(P.assets.audio).length;
+    else if(s.k==='squads')cnt=P.squads.length;else if(s.k==='scripts')cnt=P.scripts.length;else if(s.k==='tags')cnt=Object.keys(tagMap()).length;else if(s.k==='roster')cnt=1+S.oth.length;else if(s.k==='assets')cnt=Object.keys(P.assets.images).length+Object.keys(P.assets.audio).length+Object.keys(P.assets.meshes||{}).length;
     const go=function(){if(animOn())return;selSvc=s.k;sel=[];selModel=null;hl();buildEdit();renderParts()};
     xrow({svc:1,d:0,ic:s.i,nm:s.n,bd:cnt==null?null:[String(cnt)],open:ex?open:undefined,onTg:ex?function(){openS[s.k]=!open;renderParts()}:null,title:s.d,
       on:selSvc===s.k&&!sel.length&&!selModel,go:go,plus:PLUSOK.indexOf(s.k)>=0?{t:'svc',k:s.k}:null});
@@ -2683,7 +2791,7 @@ function renderParts(){const l=$('p-list');l.replaceChildren();
     else if(s.k==='squads')P.squads.forEach(function(q){plain(q.name,go,'\u25A0',q.color)});
     else if(s.k==='tags'){const m=tagMap();Object.keys(m).forEach(function(t){plain('# '+t+'   ('+m[t].length+')',function(){pickTag(t)})});if(!Object.keys(m).length)plain('(no tags yet)',go)}
     else if(s.k==='scripts'){P.scripts.forEach(function(sc){scrRow(sc,1,true)});if(!P.scripts.length)plain('(no scripts yet)',go)}
-    else if(s.k==='assets'){const im=Object.keys(P.assets.images),au=Object.keys(P.assets.audio);im.forEach(function(n){plain(n,go,'\u25A7','#2f78d0')});au.forEach(function(n){plain(n,go,'\u266A','#a3a31c')});if(!im.length&&!au.length)plain('(nothing uploaded yet)',go)}});
+    else if(s.k==='assets'){const im=Object.keys(P.assets.images),au=Object.keys(P.assets.audio),ms=Object.keys(P.assets.meshes||{});im.forEach(function(n){plain(n,go,'\u25A7','#2f78d0')});au.forEach(function(n){plain(n,go,'\u266A','#a3a31c')});ms.forEach(function(n){plain(n,go,'\u25C8','#8a5cf6')});if(!im.length&&!au.length&&!ms.length)plain('(nothing uploaded yet)',go)}});
   props();joints()}
 
 /* Play camera: it never goes through solid parts (it slides in at once and eases back out), and zooming all the way in is first person */
@@ -2701,7 +2809,7 @@ function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.
   if(playing)play(dt,f);
   else{const sp=(keys.ShiftLeft?36:12)*dt,r=[Math.cos(cam.yaw),0,Math.sin(cam.yaw)],go=function(v,k){cam.x+=v[0]*k;cam.y+=v[1]*k;cam.z+=v[2]*k};
     if(keys.KeyW)go(f,sp);if(keys.KeyS)go(f,-sp);if(keys.KeyD)go(r,sp);if(keys.KeyA)go(r,-sp);if(keys.KeyQ)cam.y-=sp;if(keys.KeyE)cam.y+=sp;if(Math.abs(zq)>.001){const zs=zq*(1-Math.exp(-dt*12));zq-=zs;go(f,zs)}else zq=0}
-  if(playing||running){collide();physics(dt);objMove(dt);npPhys(dt);touchTick()}npTick(dt);
+  if(playing||running){collide();pcollide();physics(dt);objMove(dt);npPhys(dt);touchTick()}npTick(dt);
   draw();entTick(dt);
   if(playing){const T=byId(P.avId);if(T){S.ch=S.ch===undefined?S.h:S.ch+(S.h-S.ch)*(1-Math.exp(-dt*9));
     const fx=T.pos[0]+S.x,fy=T.pos[1]+S.ch+1,fz=T.pos[2]-S.y;cd+=(cdT-cd)*(1-Math.exp(-dt*10));if(Math.abs(cdT-cd)<.002)cd=cdT;
@@ -2795,7 +2903,7 @@ if(!P.v11){P.v11=1;const av=function(n){return P.parts.find(function(p){return p
     const ST=P.parts.find(function(p){return p.av&&p.stab});if(ST)delete rig0[ST.id]}
   save()}
 applyEnv();rebuildParts();renderParts();anims();requestAnimationFrame(frame);loadBig();setTimeout(gcBig,4000);
-if(gameId&&!VIEWONLY&&sb&&!PEND&&Object.keys(P.assets.audio).some(function(n){return bigRef(P.assets.audio[n])}))setTimeout(function(){cloudPush(gameId)},3000);
+if(gameId&&!VIEWONLY&&sb&&!PEND&&(Object.keys(P.assets.audio).some(function(n){return bigRef(P.assets.audio[n])})||Object.keys(P.assets.meshes||{}).some(function(n){return bigRef(P.assets.meshes[n])})))setTimeout(function(){cloudPush(gameId)},3000);
 
 /* Undo / redo: Ctrl+Z undoes, Ctrl+Shift+Z or Ctrl+Y redoes (parts, models and animations) */
 const hist=[],redoS=[];let histLast=null,histT=0,histBusy=false;const saveRaw=save;
