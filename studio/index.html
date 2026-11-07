@@ -451,7 +451,7 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
     <section id="s-ws" class="ws" aria-label="Scripts"></section>
     <aside class="side">
       <div class="cvw"><canvas id="s-cv" width="480" height="360" aria-label="Stage"></canvas><span id="rz-l" class="rz l" title="Right-click and drag to resize"></span><span id="rz-r" class="rz r" title="Right-click and drag to resize"></span><div id="chat" hidden><button id="chat-tg" type="button" title="Show or hide chat" aria-label="Show or hide chat">💬</button><div id="chat-log"></div><input id="chat-in" maxlength="120" placeholder="Press / to chat" autocomplete="off" aria-label="Chat"></div></div>
-      <p class="note" style="margin:0">Hold right mouse and drag to look. W A S D to fly, Q down, E up, scroll to zoom. Click a part for move arrows, press R to switch tools (move, resize, rotate; Shift+R goes back). Rotate: drag a ring, hold Shift to snap. Right-click and drag a bottom corner of the stage to resize it. Press Play to walk around with WASD and Space.</p>
+      <p class="note" style="margin:0">Hold right mouse and drag to look. Hold right mouse on a part or model and drag to move it around the map. W A S D to fly, Q down, E up, scroll to zoom. Click a part for move arrows, press R to switch tools (move, resize, rotate; Shift+R goes back). Rotate: drag a ring, hold Shift to snap. Right-click and drag a bottom corner of the stage to resize it. Press Play to walk around with WASD and Space.</p>
       <div class="tabs"><button id="t-out" type="button" class="on">Output</button><button id="t-code" type="button">Code</button><button id="t-parts" type="button">Explorer</button><button id="t-anim" type="button">Animator</button></div>
       <pre id="s-out" class="pre"></pre><pre id="s-code" class="pre" hidden></pre>
       <div id="s-parts" class="pnl" hidden>
@@ -1887,7 +1887,7 @@ function lockWarn(t){if(!lockWarnEl){lockWarnEl=document.createElement('div');lo
 cv.addEventListener('mouseup',function(e){if(e.button===2){look=false;if(document.pointerLockElement===cv&&!(playing&&cdT<=.01))document.exitPointerLock()}});
 cv.addEventListener('mousedown',function(e){if(e.button===0&&playing&&cdT<=.01&&document.pointerLockElement!==cv)lockPtr()});
 cv.style.touchAction='none';cv.oncontextmenu=function(e){e.preventDefault()};
-cv.onpointerdown=function(e){cv.setPointerCapture(e.pointerId);lx=e.clientX;ly=e.clientY;if(e.button===2){look=true;return}if(e.button===0&&playing){playClick(e);return}if(e.button!==0||playing)return;if(animOn()){ray.setFromCamera(ndc(e),camera);const gh=ray.intersectObjects(gizmo,false)[0];if(gh){animGizStart(gh.object,e);return}animClick(e);return}
+cv.onpointerdown=function(e){cv.setPointerCapture(e.pointerId);lx=e.clientX;ly=e.clientY;if(e.button===2){if(!playing&&!animOn()&&!rigOn&&rmoveStart(e))return;look=true;return}if(e.button===0&&playing){playClick(e);return}if(e.button!==0||playing)return;if(animOn()){ray.setFromCamera(ndc(e),camera);const gh=ray.intersectObjects(gizmo,false)[0];if(gh){animGizStart(gh.object,e);return}animClick(e);return}
   ray.setFromCamera(ndc(e),camera);let h=ray.intersectObjects(gizmo,false)[0];
   if(h&&h.object.userData.rotAx!==undefined){snapSel();const rs=rotStart(h.object.userData.rotAx,e);if(rs)gd=rs;return}
   if(h&&h.object.userData.scale){scaleStart(h.object);return}
@@ -1914,9 +1914,21 @@ function marqueeSel(e){const x0=e.clientX,y0=e.clientY,add0=e.ctrlKey||e.metaKey
     sel=out;selSvc=null;{const ms={};out.forEach(function(id){const p=byId(id);ms[p&&p.model||'']=1});const k=Object.keys(ms);selModel=k.length===1&&k[0]&&partsOf(k[0]).length===out.length?k[0]:null}
     hl();buildEdit();renderParts();msg(ids.length?'Selected '+out.length+' part'+(out.length>1?'s':'')+'.':'Nothing inside the box.')};
   addEventListener('pointermove',mv);addEventListener('pointerup',up);addEventListener('pointercancel',up)}
+/* Hold right mouse on a part or model and drag: it slides around the map (snaps to half studs, hold Alt for free movement). Right mouse on empty space or on the huge
+   ground part still looks around. A part that is not selected gets selected first; if it is already selected the whole selection moves together. */
+function rmoveStart(e){ray.setFromCamera(ndc(e),camera);const h=ray.intersectObjects(pickSel(),false)[0];if(!h)return false;
+  const p=byId(h.object.userData.id);if(!p||rootOf(p).av||p.size[0]>=64||p.size[2]>=64)return false;
+  if(sel.indexOf(p.id)<0)pick(p.id,false,false);snapSel();
+  gd={rm:1,y:h.point.y,x0:h.point.x,z0:h.point.z,ax:0,az:0};cv.style.cursor='grabbing';return true}
+function rmoveDrag(e){const g=gd;ray.setFromCamera(ndc(e),camera);
+  const pt=ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),-g.y),new THREE.Vector3());if(!pt)return;
+  let dx=pt.x-g.x0,dz=pt.z-g.z0;const L=Math.hypot(dx,dz);if(L>500){dx*=500/L;dz*=500/L}
+  if(!e.altKey){dx=Math.round(dx*2)/2;dz=Math.round(dz*2)/2}
+  if(dx===g.ax&&dz===g.az)return;moveSel([dx-g.ax,0,dz-g.az]);g.ax=dx;g.az=dz;quickSync()}
 cv.ondblclick=function(e){if(playing||rigOn||animOn())return;ray.setFromCamera(ndc(e),camera);{const gh=ray.intersectObjects(gizmo,false)[0];if(gh&&gh.object.userData.rotAx!==undefined){rotReset();return}}const h=ray.intersectObjects(pickSel(),false)[0];if(h)pick(h.object.userData.id,false,true)};
 cv.onpointermove=function(e){if(playing&&!look)playHover(e);const pl=document.pointerLockElement===cv,big=pl&&(Math.abs(e.movementX)>250||Math.abs(e.movementY)>250),dx=big?0:pl?e.movementX:e.clientX-lx,dy=big?0:pl?e.movementY:e.clientY-ly;lx=e.clientX;ly=e.clientY;
   if(look||(playing&&cdT<=.01&&pl)){cam.yaw+=dx*.005;cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.005))}
+  else if(gd&&gd.rm)rmoveDrag(e);
   else if(gd&&gd.an)animDrag(e,dx,dy);
   else if(gd&&gd.rg)rotDrag(e);
   else if(gd&&gd.sc)scaleDrag(e,dx,dy);
