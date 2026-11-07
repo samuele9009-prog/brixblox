@@ -437,6 +437,8 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
   #studio:not(.fs):not(.vo) .sgrid>*{min-height:0}
 }
 #studio::after{display:none}
+/* Use the whole window width: the block palette sits at the far left instead of floating in a centred 1280px column */
+#studio .bar,#studio .sgrid{max-width:none;margin-left:0;margin-right:0}
 </style>
 </head>
 <body>
