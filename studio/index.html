@@ -451,7 +451,7 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
     <section id="s-ws" class="ws" aria-label="Scripts"></section>
     <aside class="side">
       <div class="cvw"><canvas id="s-cv" width="480" height="360" aria-label="Stage"></canvas><span id="rz-l" class="rz l" title="Right-click and drag to resize"></span><span id="rz-r" class="rz r" title="Right-click and drag to resize"></span><div id="chat" hidden><button id="chat-tg" type="button" title="Show or hide chat" aria-label="Show or hide chat">💬</button><div id="chat-log"></div><input id="chat-in" maxlength="120" placeholder="Press / to chat" autocomplete="off" aria-label="Chat"></div></div>
-      <p class="note" style="margin:0">Hold right mouse and drag to look. W A S D to fly, Q down / Space up, scroll to zoom. Click a part for move arrows, press E for the resize tool (Ctrl = both sides). Right-click and drag a bottom corner of the stage to resize it. Press Play to walk around with WASD and Space.</p>
+      <p class="note" style="margin:0">Hold right mouse and drag to look. W A S D to fly, Q down, E or Space up, scroll to zoom. Click a part for move arrows, press R to switch tools (move, resize, rotate; Shift+R goes back). Right-click and drag a bottom corner of the stage to resize it. Press Play to walk around with WASD and Space.</p>
       <div class="tabs"><button id="t-out" type="button" class="on">Output</button><button id="t-code" type="button">Code</button><button id="t-parts" type="button">Explorer</button><button id="t-anim" type="button">Animator</button></div>
       <pre id="s-out" class="pre"></pre><pre id="s-code" class="pre" hidden></pre>
       <div id="s-parts" class="pnl" hidden>
@@ -1232,6 +1232,9 @@ function buildEdit(){try{updTool()}catch(e){}while(editG.children.length)editG.r
     const j=byId(selJ);if(j&&j.parent)c=j.pivot}
   else{const bx=selBox(),q0=byId(sel[0]);if(bx&&q0&&inW(q0)){c=bx.c;half=bx.h}}
   if(!c)return;
+  if(tool==='rotate'&&!rigOn){if(!sel.some(function(id){const q=byId(id);return q&&!rootOf(q).av}))return;
+    const g=new THREE.Group(),m=new THREE.Mesh(new THREE.TorusGeometry(1.7,.12,10,56),new THREE.MeshBasicMaterial({color:'#44dd44',depthTest:false}));
+    m.rotation.x=Math.PI/2;m.renderOrder=10;m.userData.rotY=true;g.add(m);g.userData.ri=-1;g.position.set(c[0],c[1],c[2]);editG.add(g);gizmo.push(m);return}
   if(tool==='scale'&&!rigOn){
     const sb=scaleBox();if(!canScale()||!sb)return;c=sb.c;half=sb.h;
     const ln=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(half[0]*2,half[1]*2,half[2]*2)),new THREE.LineBasicMaterial({color:'#ffffff',depthTest:false,transparent:true,opacity:.9}));
@@ -1274,7 +1277,12 @@ function scaleBox(){const a=scaleSet().filter(function(p){return !p.stab});if(!a
   a.forEach(function(p){for(let i=0;i<3;i++){lo[i]=Math.min(lo[i],p.pos[i]-p.size[i]/2);hi[i]=Math.max(hi[i],p.pos[i]+p.size[i]/2)}});
   return {c:[0,1,2].map(function(i){return (lo[i]+hi[i])/2}),h:[0,1,2].map(function(i){return (hi[i]-lo[i])/2})}}
 function canScale(){return sel.length>0&&scaleSet().length>0}
-function setTool(t){tool=t;if(t==='scale'&&(rigOn||!canScale()))lockWarn(rigOn?'Close the rig editor to resize.':'Select a part first, then press E to resize it.');buildEdit()}
+function setTool(t){tool=t;if(t==='scale'&&(rigOn||!canScale()))lockWarn(rigOn?'Close the rig editor to resize.':'Select a part first, then press R to switch tools.');
+  if(t==='rotate'&&(rigOn||!sel.length))lockWarn(rigOn?'Close the rig editor to rotate.':'Select a part first, then use the ring to rotate it.');buildEdit()}
+const TOOLS=[['move','Move'],['scale','Resize'],['rotate','Rotate']];
+function cycleTool(d){if(VIEWONLY||document.getElementById('shome')||playing||running||animOn())return;
+  const i=Math.max(0,TOOLS.findIndex(function(q){return q[0]===tool})),n=TOOLS[(i+d+TOOLS.length)%TOOLS.length];
+  setTool(n[0]);lockWarn('Tool: '+n[1]+(n[0]==='move'?' (drag the arrows)':n[0]==='scale'?' (drag a ball, Ctrl = both sides)':' (drag the ring, snaps to 90 degrees)')+'  \u00B7  R for next, Shift+R for previous')}
 function scaleStart(o){const bx=scaleBox();if(!bx)return;const a=o.userData.axis.clone(),ax=a.x?0:a.y?1:2,s=a.getComponent(ax)>0?1:-1,
   ps=scaleSet().map(function(p){return {p:p,pos:p.pos.slice(),size:p.size.slice(),pv:p.pivot?p.pivot.slice():null}}),lo=bx.c[ax]-bx.h[ax],hi=bx.c[ax]+bx.h[ax];
   const uni=ps.length>1;let mn=1e9;ps.forEach(function(q){if(!q.p.stab)(uni?[0,1,2]:[ax]).forEach(function(i){mn=Math.min(mn,q.size[i])})});
@@ -1292,8 +1300,6 @@ function scaleDrag(e,dx,dy){const g=gd,ax=g.ax,pt=new THREE.Vector3(g.c0[0],g.c0
     const m=M[p.id];if(m)m.scale.set(p.size[0]/q.size[0],p.size[1]/q.size[1],p.size[2]/q.size[2])});
   g.rs.forEach(function(id){const r=byId(id);if(r&&kids(r).length){delete rig0[id];snapRig(r)}});
   quickSync()}
-addEventListener('keydown',function(e){if(e.code!=='KeyE'||e.repeat||e.ctrlKey||e.metaKey||e.altKey||e.shiftKey||playing||running||VIEWONLY||document.getElementById('shome')||animOn()||!$('studio').getClientRects().length)return;
-  const a=document.activeElement;if(a&&(/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a.isContentEditable))return;e.preventDefault();if(a&&a.blur&&a.tagName==='BUTTON')a.blur();setTool(tool==='scale'?'move':'scale')});
 /* Clicking a piece of a model selects the whole model. Alt+click, double-click, or the Workspace list picks one piece. */
 function pick(id,add,indiv){{const q=id&&byId(id);if(q)snapRig(rootOf(q))}if(animOn()){animPickId(id);return}selSvc=null;const p=id&&byId(id);
   if(!p){sel=[];selModel=null}
@@ -1654,9 +1660,9 @@ function mirrorRig(){const say=function(t){const h=$('a-hint');if(h)h.textConten
   ps.forEach(function(q){if(out[q.id].length)A.keys[q.id]=out[q.id];else delete A.keys[q.id]});
   aSelKeys=[];live={};save();animUI();preview();say('Mirrored '+r.name+': left and right limbs swapped.')}
 addEventListener('keydown',function(e){if(nHit||e.code!=='KeyR'||!e.shiftKey||e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||(document.activeElement&&document.activeElement.isContentEditable)||playing||running)return;
-  e.preventDefault();if(animOn())mirrorRig();else if(edArea)rotateSel(-1)});
+  e.preventDefault();if(animOn())mirrorRig();else if(edArea)cycleTool(-1)});
 addEventListener('keydown',function(e){if(nHit){nHit=false;return}if(e.code!=='KeyR'||e.shiftKey||e.ctrlKey||e.metaKey||e.altKey||e.repeat||playing||running||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||(document.activeElement&&document.activeElement.isContentEditable))return;
-  if(animOn()){e.preventDefault();aGM=aGM==='rot'?'move':'rot';buildEdit();animHint()}else if(edArea&&$('studio').getClientRects().length){e.preventDefault();rotateSel(1)}});
+  if(animOn()){e.preventDefault();aGM=aGM==='rot'?'move':'rot';buildEdit();animHint()}else if(edArea&&$('studio').getClientRects().length){e.preventDefault();cycleTool(1)}});
 addEventListener('keydown',function(e){if(e.code!=='KeyX'||e.ctrlKey||e.metaKey||e.altKey||playing||running||!animOn()||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||(document.activeElement&&document.activeElement.isContentEditable))return;
   e.preventDefault();if(animT)animSelect(null)});
 
@@ -1809,6 +1815,7 @@ cv.addEventListener('mouseup',function(e){if(e.button===2){look=false;if(documen
 cv.style.touchAction='none';cv.oncontextmenu=function(e){e.preventDefault()};
 cv.onpointerdown=function(e){cv.setPointerCapture(e.pointerId);lx=e.clientX;ly=e.clientY;if(e.button===2){look=true;return}if(e.button===0&&playing){playClick(e);return}if(e.button!==0||playing)return;if(animOn()){ray.setFromCamera(ndc(e),camera);const gh=ray.intersectObjects(gizmo,false)[0];if(gh){animGizStart(gh.object,e);return}animClick(e);return}
   ray.setFromCamera(ndc(e),camera);let h=ray.intersectObjects(gizmo,false)[0];
+  if(h&&h.object.userData.rotY){snapSel();const c=selBox();if(c){const sc=animScr(new THREE.Vector3(c.c[0],c.c[1],c.c[2]));gd={ry:1,sc0:sc,last:Math.atan2(-(e.clientY-sc.y),e.clientX-sc.x),acc:0}}return}
   if(h&&h.object.userData.scale){scaleStart(h.object);return}
   if(h){snapSel();gd={a:h.object.userData.axis.clone(),rig:rigOn,p:rigOn?byId(selJ):byId(sel[0])};return}
   if(rigOn){h=ray.intersectObjects(balls,false)[0];if(h){selJ=h.object.userData.joint;buildEdit();return}}
@@ -1817,6 +1824,9 @@ cv.ondblclick=function(e){if(playing||rigOn||animOn())return;ray.setFromCamera(n
 cv.onpointermove=function(e){if(playing&&!look)playHover(e);const pl=document.pointerLockElement===cv,big=pl&&(Math.abs(e.movementX)>250||Math.abs(e.movementY)>250),dx=big?0:pl?e.movementX:e.clientX-lx,dy=big?0:pl?e.movementY:e.clientY-ly;lx=e.clientX;ly=e.clientY;
   if(look){cam.yaw+=dx*.005;cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.005))}
   else if(gd&&gd.an)animDrag(e,dx,dy);
+  else if(gd&&gd.ry){const ang=Math.atan2(-(e.clientY-gd.sc0.y),e.clientX-gd.sc0.x);let da=ang-gd.last;gd.last=ang;
+    while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;gd.acc+=da*(fwd()[1]<=0?1:-1);
+    while(gd.acc>=Math.PI/4){rotateSel(1);gd.acc-=Math.PI/2}while(gd.acc<=-Math.PI/4){rotateSel(-1);gd.acc+=Math.PI/2}}
   else if(gd&&gd.sc)scaleDrag(e,dx,dy);
   else if(gd&&gd.p){const p=gd.p,c=gd.rig?p.pivot:(selBox()||{c:p.pos}).c,v=new THREE.Vector3(c[0],c[1],c[2]),w=cv.getBoundingClientRect();
     const sc=function(q){const u=q.clone().project(camera);return new THREE.Vector2(u.x*w.width/2,-u.y*w.height/2)};
@@ -2395,7 +2405,7 @@ let lt=performance.now(),camF=null;
 function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.1,(now-lt)/1000);lt=now;const f=fwd();
   if(playing)play(dt,f);
   else{const sp=(keys.ShiftLeft?36:12)*dt,r=[Math.cos(cam.yaw),0,Math.sin(cam.yaw)],go=function(v,k){cam.x+=v[0]*k;cam.y+=v[1]*k;cam.z+=v[2]*k};
-    if(keys.KeyW)go(f,sp);if(keys.KeyS)go(f,-sp);if(keys.KeyD)go(r,sp);if(keys.KeyA)go(r,-sp);if(keys.Space)cam.y+=sp;if(keys.KeyQ)cam.y-=sp}
+    if(keys.KeyW)go(f,sp);if(keys.KeyS)go(f,-sp);if(keys.KeyD)go(r,sp);if(keys.KeyA)go(r,-sp);if(keys.Space)cam.y+=sp;if(keys.KeyQ)cam.y-=sp;if(keys.KeyE)cam.y+=sp}
   if(playing||running){collide();physics(dt);objMove(dt);npPhys(dt);touchTick()}npTick(dt);
   gizmoFit();draw();entTick(dt);
   if(playing){const T=byId(P.avId);if(T){cam.x=T.pos[0]+S.x-f[0]*cd;S.ch=S.ch===undefined?S.h:S.ch+(S.h-S.ch)*(1-Math.exp(-dt*9));cam.y=T.pos[1]+S.ch+1-f[1]*cd;cam.z=T.pos[2]-S.y-f[2]*cd}}else camF=null;
