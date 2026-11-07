@@ -1319,7 +1319,15 @@ function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
     const D=Math.PI/180;
     for(const id in q.JJ){const g=q.JJ[id],r=fp[id]||[0,0,0],o=fp['p:'+id]||[0,0,0],bs=g.userData.base;
       if(id===P.avId)g.rotation.set(r[0]*D,(q.yaw||0)+r[1]*D,r[2]*D);else g.rotation.set(r[0]*D,r[1]*D,r[2]*D);
-      if(bs)g.position.set(bs.x+o[0],bs.y+o[1],bs.z+o[2])}})}
+      if(bs)g.position.set(bs.x+o[0],bs.y+o[1],bs.z+o[2])}
+    /* another player's ragdoll: show the exact pose their own game is simulating (it is sent with their position), then ease back to normal when they get up */
+    if(q.net&&q.rgT){const act=performance.now()-(q.rgAt||0)<450;
+      if(act)q.rgOut=.35;else q.rgOut=Math.max(0,(q.rgOut||0)-dt);
+      if(act||q.rgOut>0){const kk=1-Math.exp(-dt*18),u=act?1:q.rgOut/.35;q.rgC=q.rgC||{};
+        for(const id in q.JJ){const tg=q.rgT[id];if(!tg)continue;const g=q.JJ[id],bs=g.userData.base,c=q.rgC[id]||(q.rgC[id]=tg.slice());
+          if(act)q.rgC[id]=qS(c,tg,kk);const cc=q.rgC[id];if(act&&bs)g.position.set(bs.x,bs.y,bs.z);
+          const r=u>=1?cc:qS([g.quaternion.x,g.quaternion.y,g.quaternion.z,g.quaternion.w],cc,u);g.quaternion.set(r[0],r[1],r[2],r[3])}}
+      else{q.rgT=null;q.rgC=null}}})}
 
 /* Rig editor: balls at anchor points, arrows to move them */
 function buildEdit(){try{updTool()}catch(e){}while(editG.children.length)editG.remove(editG.children[0]);gizmo=[];balls=[];gz=[];agT=null;if(playing)return;if(animOn()){buildAnimGizmo();return}
@@ -2306,7 +2314,7 @@ function entTick(dt){Object.keys(Object.assign({},RAG,RSZ)).forEach(function(key
     else u=Math.max(0,1-(e.t-e.end)/RRISE);
     if(e.dead&&e.t>=e.end){finishDead(key,T);return}
     if(!e.dead&&e.t>=e.end+RRISE){simFinish(key,T,e,arm);delete RAG[key];if(key==='main')S.rag=false;return}
-    simPose(key,T,e,u,arm);return}
+    e.u=u;simPose(key,T,e,u,arm);return}
   g.position.y=(key==='main'?g.position.y:r.pos[1]+(RY[r.id]||0))+(s-1)*arm})}
 
 /* ===== Teleport, kick, ban ===== */
@@ -2912,6 +2920,8 @@ async function netJoin(){
     ch.on('presence',{event:'leave'},function(e){(e.leftPresences||[]).forEach(function(m){netDrop(m.id)})});
     ch.subscribe(function(st){if(st==='SUBSCRIBED'){NET.on=true;NET.fail=false;ch.track({id:NET.id,n:ME.username})}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')NET.fail=true})
   }catch(e){NET.fail=true}}
+function ragOut(){const e=RAG.main;if(!e||!e.sim||e.gone)return null;const sm=e.sim,B=sm.bodies,u=e.u==null?1:e.u,o={},r3=function(v){return Math.round(v*1000)/1000};
+  B.forEach(function(b){const q=b.par<0?qS(sm.q0,b.q,u):qS([0,0,0,1],qm(qc(B[b.par].q),b.q),u);o[b.p.id]=q.map(r3)});return o}
 function netRecv(q){if(!q||!q.id||q.id===NET.id||!NET.on||!(running||playing))return;
   let e=NP.find(function(n){return n.net===q.id});
   if(!e){NETCOL=/^#[0-9a-f]{6}$/i.test(q.c)?q.c:null;spawnPlayer(String(q.n),S);NETCOL=null;e=NP[NP.length-1];if(!e)return;e.net=q.id;e.g.position.set(q.x,q.h,-q.y)}
@@ -2919,7 +2929,7 @@ function netRecv(q){if(!q||!q.id||q.id===NET.id||!NET.on||!(running||playing))re
   const nm=function(v){return typeof v==='string'?v.slice(0,40):''};
   e.un=String(q.n||e.name).slice(0,24);e.air=!!q.g;e.wa=nm(q.wa);e.ia=nm(q.ia);e.ja=nm(q.ja);
   {const es=typeof q.e==='string'?q.e.slice(0,200):'';if(es!==e.eqs){e.eqs=es;try{netEq(e,es)}catch(x){}}}
-  if(e.rc===undefined)e.rc=q.rc;else if(q.rc!==e.rc){e.rc=q.rc;startRag('np:'+e.name,false)}/* they were ragdolled: show it on this screen too (never as a kill, they respawn on their own screen) */
+  e.rc=q.rc;if(q.rg&&typeof q.rg==='object'){const t={};Object.keys(q.rg).forEach(function(id){const a=q.rg[id];if(e.JJ[id]&&Array.isArray(a)&&a.length===4&&a.every(Number.isFinite))t[id]=a});e.rgT=t;e.rgAt=performance.now()}/* they were ragdolled: show it on this screen too (never as a kill, they respawn on their own screen) */
   if(e.ac===undefined)e.ac=q.ac;/* first packet: do not replay an old animation */
   else if(q.ac!==e.ac){e.ac=q.ac;if(nm(q.an)){e.an=nm(q.an);e.at=0}}}
 function netSay(id,t){const e=NP.find(function(n){return n.net===id});if(!e)return;
@@ -2930,7 +2940,7 @@ function netDrop(id){const i=NP.findIndex(function(n){return n.net===id});if(i<0
   n.g.traverse(function(o){if(o.geometry&&!o.geometry.userData.keep)o.geometry.dispose();if(o.material)o.material.dispose()});n.tag.material.map.dispose();n.tag.material.dispose();
   NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);chatSys(n.name+' left the game');renderParts()}
 setInterval(function(){if(!NET.on||!(running||playing))return;
-  const q={id:NET.id,n:ME.username,c:ME.color||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:Math.round(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,e:accStr(ME&&ME.av&&ME.av.eq)},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.an,q.ac,q.rc,q.e].join();
+  const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:Math.round(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,e:accStr(ME&&ME.av&&ME.av.eq)},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.an,q.ac,q.rc,q.e].join()+(rgo?JSON.stringify(rgo):'');
   if(j===NET.last&&++NET.idle<10)return;NET.last=j;NET.idle=0;NET.ch.send({type:'broadcast',event:'p',payload:q});
   const now=performance.now();NP.slice().forEach(function(n){if(n.net&&now-n.seen>20000)netDrop(n.net)})},100);
 function bbHud(){const lb=el('button','btn ghost small','Leave game');lb.id='bb-leave';lb.style.cssText='position:fixed;top:10px;right:10px;z-index:60';lb.onclick=leaveGame;
