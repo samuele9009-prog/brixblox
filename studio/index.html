@@ -1295,12 +1295,12 @@ const TOOLS=[['move','Move'],['scale','Resize'],['rotate','Rotate']];
 function cycleTool(d){if(VIEWONLY||document.getElementById('shome')||playing||running||animOn())return;
   const i=Math.max(0,TOOLS.findIndex(function(q){return q[0]===tool})),n=TOOLS[(i+d+TOOLS.length)%TOOLS.length];
   setTool(n[0]);lockWarn('Tool: '+n[1]+(n[0]==='move'?' (drag the arrows)':n[0]==='scale'?' (drag a ball, Ctrl = both sides)':' (drag a ring, Shift = snap 15 degrees, double-click a ring to reset)')+'  \u00B7  R for next, Shift+R for previous')}
-/* 1 = move, 2 = rotate, 3 = resize */
-addEventListener('keydown',function(e){const t=({Digit1:'move',Numpad1:'move',Digit2:'rotate',Numpad2:'rotate',Digit3:'scale',Numpad3:'scale'})[e.code];
+/* 2 = move, 3 = resize, 4 = rotate */
+addEventListener('keydown',function(e){const t=({Digit2:'move',Numpad2:'move',Digit3:'scale',Numpad3:'scale',Digit4:'rotate',Numpad4:'rotate'})[e.code];
   if(!t||e.ctrlKey||e.metaKey||e.altKey||e.shiftKey||e.repeat||VIEWONLY||document.getElementById('shome')||playing||running||animOn()||menuEl)return;
   const a=document.activeElement;if(a&&(/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a.isContentEditable))return;
   if(!edArea||$('studio').getClientRects().length===0)return;e.preventDefault();
-  setTool(t);const q=TOOLS.find(function(z){return z[0]===t});lockWarn('Tool: '+q[1]+'  \u00B7  1 Move, 2 Rotate, 3 Resize')});
+  setTool(t);const q=TOOLS.find(function(z){return z[0]===t});lockWarn('Tool: '+q[1]+'  \u00B7  2 Move, 3 Resize, 4 Rotate')});
 function scaleStart(o){const bx=scaleBox();if(!bx)return;const a=o.userData.axis.clone(),ax=a.x?0:a.y?1:2,s=a.getComponent(ax)>0?1:-1,
   ps=scaleSet().map(function(p){return {p:p,pos:p.pos.slice(),size:p.size.slice(),pv:p.pivot?p.pivot.slice():null}}),lo=bx.c[ax]-bx.h[ax],hi=bx.c[ax]+bx.h[ax];
   const uni=ps.length>1;let mn=1e9;ps.forEach(function(q){if(!q.p.stab)(uni?[0,1,2]:[ax]).forEach(function(i){mn=Math.min(mn,q.size[i])})});
