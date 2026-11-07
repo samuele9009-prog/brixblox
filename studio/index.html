@@ -2234,6 +2234,7 @@ function teleKey(key,x,y,z){const T=byId(P.avId);
   if(key==='main'){if(!T)return;S.x=x-T.pos[0];S.y=T.pos[2]-z;S.h=y-feet0();S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0;S.gr=false;S.ch=S.h;return}
   if(key.slice(0,4)==='rig:'){const id=key.slice(4),r=byId(id);if(!r)return;RO[id]=[x-r.pos[0],z-r.pos[2]];RY[id]=y-feetOf(r);delete RV[id];return}
   const n=NP.find(function(q){return 'np:'+q.name===key});if(!n||!T)return;
+  if(n.net)return;/* a real player in an online game is only ever moved by their own game, so nobody gets teleported on someone else's screen */
   n.g.position.set(x-T.pos[0],y-feet0(),z-T.pos[2]);n.vy=0;n.tp=true;npTag(n)}
 /* Players that were teleported fall until they land on something */
 function npPhys(dt){const T=byId(P.avId);if(!T)return;NP.forEach(function(n){if(!n.tp||goneKey('np:'+n.name))return;
