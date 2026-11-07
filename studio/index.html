@@ -237,6 +237,21 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
 @media(min-width:981px){.sgrid{grid-template-columns:190px minmax(0,1fr) var(--sw,420px)}}
 .cvw{position:relative}.rz{position:absolute;bottom:0;width:24px;height:24px;border:0 solid rgba(255,255,255,.85)}
 .rz.l{left:0;border-left-width:4px;border-bottom-width:4px;border-radius:0 0 0 8px;cursor:nesw-resize}.rz.r{right:0;border-right-width:4px;border-bottom-width:4px;border-radius:0 0 8px 0;cursor:nwse-resize}
+.cvw.gedit .rz{z-index:6}
+#gui-bar{position:absolute;left:6px;right:6px;z-index:7;display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:5px;border-radius:10px;background:rgba(20,22,24,.9);border:1px solid #4a4c4e;color:#fff;font:600 11px/1.25 var(--body)}
+#gui-bar[hidden]{display:none}
+#gui-bar .gb{min-height:24px;padding:0 8px;border:1px solid #4a4c4e;border-radius:7px;background:#393b3d;color:#fff;font:700 11px var(--body);cursor:pointer}
+#gui-bar .gb:hover{background:#4a4c4e}#gui-bar .gb.on{background:#00b06f;border-color:#00b06f}#gui-bar .gb.red{background:#7a2c2c;border-color:#7a2c2c}
+#gui-bar .gt{font-weight:800;color:#00e08a;margin-right:4px}#gui-bar .sp{flex:1}
+#gui-bar .gh{flex-basis:100%;opacity:.75;font-weight:500;font-size:10px}
+.gsb{position:absolute;box-sizing:border-box;outline:2px solid #00e08a;pointer-events:none;z-index:2}
+.gsb[hidden]{display:none}
+.gsl{position:absolute;left:0;top:-22px;white-space:nowrap;background:#00b06f;color:#fff;font:700 10px/1 var(--body);padding:4px 6px;border-radius:5px}
+.gsb.low .gsl{top:auto;bottom:-22px}
+.gsh{position:absolute;width:11px;height:11px;margin:-5.5px;box-sizing:border-box;background:#fff;border:2px solid #00b06f;border-radius:3px;pointer-events:auto;touch-action:none}
+.gsh.nw{left:0;top:0;cursor:nwse-resize}.gsh.n{left:50%;top:0;cursor:ns-resize}.gsh.ne{left:100%;top:0;cursor:nesw-resize}.gsh.e{left:100%;top:50%;cursor:ew-resize}
+.gsh.se{left:100%;top:100%;cursor:nwse-resize}.gsh.s{left:50%;top:100%;cursor:ns-resize}.gsh.sw{left:0;top:100%;cursor:nesw-resize}.gsh.w{left:0;top:50%;cursor:ew-resize}
+.gg{position:absolute;background:#ff3dac;pointer-events:none;z-index:3}
 .pnl input[type=checkbox]{min-height:0;width:auto;margin-left:8px}
 .pnl{flex:1;min-height:220px;overflow:auto;padding:8px;background:var(--paper);border:1px solid var(--line);border-radius:8px}
 .tb{display:flex;gap:6px;flex-wrap:wrap}.tb .btn[aria-pressed=true]{background:#00b06f!important;color:#fff!important}
@@ -2830,53 +2845,186 @@ function applyEnv(){updSkyTex();const e=P.env,a=(e.tod-6)/12*Math.PI,day=Math.ma
 
 /* ===== GUI: text, buttons, frames and images that sit on top of the stage. Sizes are percentages of the stage, so they fit any window size. ===== */
 let selGui=null,GR={};
+const CVW=document.querySelector('.cvw');
 const GL=document.createElement('div');GL.id='gui-layer';GL.style.cssText='position:absolute;left:0;top:0;overflow:hidden;pointer-events:none;z-index:4';
-document.querySelector('.cvw').append(GL);
+const GB=document.createElement('div');GB.id='gui-bar';GB.hidden=true;
+CVW.append(GL,GB);
 const GTYPE={text:{n:'Text',i:'T',c:'#2fa95a'},button:{n:'Button',i:'▭',c:'#00b06f'},frame:{n:'Frame',i:'□',c:'#3b82f6'},image:{n:'Image',i:'▧',c:'#2f78d0'}};
+const GFONT={'':'inherit',serif:'Georgia,"Times New Roman",serif',mono:'"Courier New",ui-monospace,monospace',round:'"Trebuchet MS","Segoe UI",system-ui,sans-serif',hand:'"Brush Script MT","Comic Sans MS",cursive'};
+const GRIDBG='linear-gradient(to right,rgba(255,255,255,.16) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.16) 1px,transparent 1px)';
+const GED={grid:0,mag:true},GE={};let SB=null,gKeyT=0;
 function hexA(h,a){const m=/^#?([0-9a-f]{6})$/i.exec(h||''),n=m?parseInt(m[1],16):0;return 'rgba('+(n>>16&255)+','+(n>>8&255)+','+(n&255)+','+a+')'}
 function guiState(g){const r=GR[g.id]||{};return {vis:r.vis!==undefined?r.vis:g.vis!==false,text:r.text!==undefined?r.text:g.text}}
 function guiByName(n){const k=String(n).trim().toLowerCase();return P.guis.filter(function(g){return g.name.toLowerCase()===k})}
 function guiClick(g){if(!(running||playing))return;S.v.clicker=P.player.name;const k=g.name.toLowerCase();
   P.scripts.forEach(function(sc){const h=sc[0];if(h.t==='guiclick'&&String(h.a[0]).trim().toLowerCase()===k)fireScript(sc)})}
-function renderGui(){const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;GL.style.width=w+'px';GL.style.height=h+'px';GL.replaceChildren();
-  const live=running||playing,k=w/480;
-  (P.guis||[]).forEach(function(g){const st=guiState(g);if(!st.vis)return;
-    const btn=g.type==='button',e=document.createElement(btn?'button':'div'),s=e.style;if(btn)e.type='button';
+/* GUI edit mode is ON only while the GUI folder is open in the Explorer (and you are not playing). Then the stage only talks to the GUI. */
+function guiEdit(){return !!openS.gui&&!running&&!playing&&!VIEWONLY&&!animOn()}
+function guiCur(){return selGui?P.guis.find(function(x){return x.id===selGui}):null}
+function guiRad(g,k){const r=g.rc===false?0:(g.round||0)*k,c=g.cn||[1,1,1,1];return c.map(function(v){return v?r+'px':'0'}).join(' ')}
+function guiPaint(e,g,k,ed){const s=e.style;
+  s.left=g.x+'%';s.top=g.y+'%';s.width=g.w+'%';s.height=g.h+'%';
+  s.backgroundColor=hexA(g.bg,g.op);s.color=g.color;s.fontSize=Math.max(6,g.fs*k)+'px';s.borderRadius=guiRad(g,k);
+  s.border=g.bw>0?Math.max(1,g.bw*k)+'px solid '+(g.bc||'#ffffff'):'0';
+  s.boxShadow=g.sh?'0 '+(3*k)+'px '+(10*k)+'px rgba(0,0,0,.5)':'none';
+  s.opacity=(g.alpha===undefined?1:g.alpha)*(ed&&g.vis===false?.35:1);
+  s.fontWeight=g.bold===false?'400':'700';s.fontFamily=GFONT[g.ff||'']||'inherit';
+  s.textAlign=g.al||'center';s.justifyContent=g.al==='left'?'flex-start':g.al==='right'?'flex-end':'center'}
+function guiPlace(g){const e=GE[g.id];if(e){e.style.left=g.x+'%';e.style.top=g.y+'%';e.style.width=g.w+'%';e.style.height=g.h+'%'}guiBox()}
+function makeSB(){const b=document.createElement('div');b.className='gsb';const lb=document.createElement('div');lb.className='gsl';b.append(lb);
+  ['nw','n','ne','e','se','s','sw','w'].forEach(function(d){const h=document.createElement('div');h.className='gsh '+d;h.onpointerdown=function(ev){guiResizeStart(ev,d)};b.append(h)});return b}
+function guiBox(){if(!SB)return;const g=guiCur();if(!g||!guiEdit()||(!GE[g.id])){SB.hidden=true;return}
+  SB.hidden=false;const s=SB.style;s.left=g.x+'%';s.top=g.y+'%';s.width=g.w+'%';s.height=g.h+'%';
+  SB.classList.toggle('low',g.y<9);SB.firstChild.textContent=g.name+'  '+Math.round(g.w*10)/10+'% × '+Math.round(g.h*10)/10+'%'+(g.lock?'  🔒':'')}
+function renderGui(){const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
+  const ed=guiEdit(),live=running||playing,k=w/480;
+  GL.style.width=w+'px';GL.style.height=h+'px';GL.replaceChildren();CVW.classList.toggle('gedit',ed);
+  GL.style.pointerEvents=ed?'auto':'none';GL.style.boxShadow=ed?'inset 0 0 0 2px #00e08a':'none';
+  GL.style.backgroundImage=ed&&GED.grid?GRIDBG:'none';GL.style.backgroundSize=ed&&GED.grid?GED.grid+'% '+GED.grid+'%':'';
+  GL.onpointerdown=ed?function(ev){if(ev.target===GL&&ev.button===0){ev.preventDefault();if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();guiSelect(null)}}:null;
+  GL.oncontextmenu=ed?function(ev){ev.preventDefault()}:null;
+  for(const id in GE)delete GE[id];
+  (P.guis||[]).forEach(function(g){const st=guiState(g);if(!ed&&!st.vis)return;
+    const btn=g.type==='button'&&!ed,e=document.createElement(btn?'button':'div'),s=e.style;if(btn)e.type='button';
     s.cssText='position:absolute;box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;margin:0;padding:0 .3em;border:0;white-space:pre-wrap;line-height:1.15;font-family:inherit;font-weight:700;pointer-events:none';
-    s.left=g.x+'%';s.top=g.y+'%';s.width=g.w+'%';s.height=g.h+'%';s.backgroundColor=hexA(g.bg,g.op);s.color=g.color;s.fontSize=Math.max(6,g.fs*k)+'px';s.borderRadius=(g.round*k)+'px';
+    guiPaint(e,g,k,ed);
     if(g.type==='image'&&g.img&&P.assets.images[g.img]){s.backgroundImage='url("'+P.assets.images[g.img]+'")';s.backgroundSize='contain';s.backgroundRepeat='no-repeat';s.backgroundPosition='center'}
-    e.textContent=st.text||'';
-    if(btn&&live){s.pointerEvents='auto';s.cursor='pointer';e.tabIndex=-1;e.onmousedown=function(ev){ev.preventDefault()};e.onclick=function(){guiClick(g)}}
-    if(!live&&selGui===g.id)s.outline='2px dashed #00b06f';
-    GL.append(e)})}
+    e.textContent=ed?(g.text||''):(st.text||'');
+    if(ed){s.pointerEvents='auto';s.cursor=g.lock?'not-allowed':'move';s.userSelect='none';s.outline='1px dashed rgba(255,255,255,.5)';s.outlineOffset='-1px';
+      e.onpointerdown=function(ev){guiDown(ev,g)};e.ondblclick=function(ev){ev.stopPropagation();guiInline(g)}}
+    else if(btn&&live){s.pointerEvents='auto';s.cursor='pointer';e.tabIndex=-1;e.onmousedown=function(ev){ev.preventDefault()};e.onclick=function(){guiClick(g)}}
+    GE[g.id]=e;GL.append(e)});
+  if(ed){SB=makeSB();GL.append(SB);guiBox()}else SB=null;
+  guiBar(ed)}
 try{new ResizeObserver(function(){renderGui()}).observe(cv)}catch(e){}
-function addGui(type){if(animOn())return;const T=GTYPE[type];if(!T)return;let n=1,nm=T.n;
-  while(P.guis.some(function(g){return g.name.toLowerCase()===nm.toLowerCase()}))nm=T.n+(++n);
+/* picking, moving, resizing */
+function guiSelect(id){if(selGui===id)return;selGui=id;if(id){sel=[];selModel=null;selSvc=null;hl();buildEdit()}renderParts()}
+function near(vals,cands){let best=null;vals.forEach(function(v){cands.forEach(function(c){const d=c-v;if(Math.abs(d)<1.2&&(!best||Math.abs(d)<Math.abs(best.d)))best={d:d,at:c}})});return best}
+function guiLines(g){const X=[0,50,100],Y=[0,50,100];P.guis.forEach(function(o){if(o===g)return;X.push(o.x,o.x+o.w/2,o.x+o.w);Y.push(o.y,o.y+o.h/2,o.y+o.h)});return {x:X,y:Y}}
+function guiGuides(gx,gy){Array.from(GL.querySelectorAll('.gg')).forEach(function(n){n.remove()});
+  if(gx!=null&&gx!==undefined){const v=document.createElement('div');v.className='gg';v.style.cssText='left:'+gx+'%;top:0;width:1px;height:100%';GL.append(v)}
+  if(gy!=null&&gy!==undefined){const v=document.createElement('div');v.className='gg';v.style.cssText='top:'+gy+'%;left:0;height:1px;width:100%';GL.append(v)}}
+const clamp=function(v,a,b){return Math.max(a,Math.min(b,v))},r1=function(v){return Math.round(v*10)/10};
+function guiSnapMove(g,x,y,alt){x=clamp(x,0,100-g.w);y=clamp(y,0,100-g.h);let gx=null,gy=null;
+  if(GED.grid&&!alt){x=clamp(Math.round(x/GED.grid)*GED.grid,0,100-g.w);y=clamp(Math.round(y/GED.grid)*GED.grid,0,100-g.h)}
+  if(GED.mag&&!alt){const o=guiLines(g),bx=near([x,x+g.w/2,x+g.w],o.x),by=near([y,y+g.h/2,y+g.h],o.y);if(bx){x+=bx.d;gx=bx.at}if(by){y+=by.d;gy=by.at}}
+  return {x:r1(clamp(x,0,100-g.w)),y:r1(clamp(y,0,100-g.h)),gx:gx,gy:gy}}
+function guiDown(ev,g){if(ev.button!==0)return;if(ev.currentTarget&&ev.currentTarget.isContentEditable)return;ev.preventDefault();ev.stopPropagation();
+  if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+  guiSelect(g.id);if(g.lock){msg('"'+g.name+'" is locked. Untick Locked in the properties to move it.');return}
+  const W=GL.clientWidth,H=GL.clientHeight,x0=ev.clientX,y0=ev.clientY,ox=g.x,oy=g.y;let moved=false;
+  const mv=function(m){if(!moved&&Math.abs(m.clientX-x0)+Math.abs(m.clientY-y0)<4)return;moved=true;
+    const r=guiSnapMove(g,ox+(m.clientX-x0)/W*100,oy+(m.clientY-y0)/H*100,m.altKey);g.x=r.x;g.y=r.y;guiPlace(g);guiGuides(r.gx,r.gy)};
+  const up=function(){removeEventListener('pointermove',mv);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);guiGuides();if(moved){save();props()}};
+  addEventListener('pointermove',mv);addEventListener('pointerup',up);addEventListener('pointercancel',up)}
+function guiResizeStart(ev,d){if(ev.button!==0)return;ev.preventDefault();ev.stopPropagation();const g=guiCur();if(!g)return;if(g.lock){msg('"'+g.name+'" is locked.');return}
+  const W=GL.clientWidth,H=GL.clientHeight,x0=ev.clientX,y0=ev.clientY,o={x:g.x,y:g.y,w:g.w,h:g.h},has=function(c){return d.indexOf(c)>=0};
+  const mv=function(m){const dx=(m.clientX-x0)/W*100,dy=(m.clientY-y0)/H*100;let L=o.x,T=o.y,R=o.x+o.w,B=o.y+o.h,gx=null,gy=null;
+    if(has('w'))L+=dx;if(has('e'))R+=dx;if(has('n'))T+=dy;if(has('s'))B+=dy;
+    if(m.shiftKey&&d.length===2){/* keep the shape */
+      const s0=Math.max((R-L)/o.w,(B-T)/o.h),sMax=Math.min(has('w')?(o.x+o.w)/o.w:(100-o.x)/o.w,has('n')?(o.y+o.h)/o.h:(100-o.y)/o.h),
+        sc=Math.max(Math.min(s0,sMax),Math.max(1/o.w,1/o.h)),nw=o.w*sc,nh=o.h*sc;
+      L=has('w')?o.x+o.w-nw:o.x;R=L+nw;T=has('n')?o.y+o.h-nh:o.y;B=T+nh}
+    else{
+      const sn=function(v,ax){let r=v;if(GED.grid&&!m.altKey)r=Math.round(r/GED.grid)*GED.grid;if(GED.mag&&!m.altKey){const n=near([r],guiLines(g)[ax]);if(n){r+=n.d;if(ax==='x')gx=n.at;else gy=n.at}}return r};
+      if(has('w'))L=sn(L,'x');if(has('e'))R=sn(R,'x');if(has('n'))T=sn(T,'y');if(has('s'))B=sn(B,'y');
+      L=Math.max(0,L);T=Math.max(0,T);R=Math.min(100,R);B=Math.min(100,B);
+      if(R-L<1){if(has('w'))L=R-1;else R=L+1}if(B-T<1){if(has('n'))T=B-1;else B=T+1}}
+    g.x=r1(L);g.y=r1(T);g.w=r1(R-L);g.h=r1(B-T);guiPlace(g);guiGuides(gx,gy)};
+  const up=function(){removeEventListener('pointermove',mv);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);guiGuides();save();props()};
+  addEventListener('pointermove',mv);addEventListener('pointerup',up);addEventListener('pointercancel',up)}
+/* typing straight onto the stage: double-click a GUI (or press Enter) */
+function guiInline(g){if(g.type==='image')return;const e=GE[g.id];if(!e||e.isContentEditable)return;
+  e.contentEditable='true';e.style.cursor='text';e.style.userSelect='text';e.style.outline='2px solid #00e08a';e.focus();
+  try{const r=document.createRange();r.selectNodeContents(e);const s=getSelection();s.removeAllRanges();s.addRange(r)}catch(x){}
+  let cancel=false;
+  e.onkeydown=function(k){k.stopPropagation();if(k.key==='Enter'&&k.shiftKey){k.preventDefault();document.execCommand('insertText',false,'\n')}
+    else if(k.key==='Enter'){k.preventDefault();e.blur()}else if(k.key==='Escape'){k.preventDefault();cancel=true;e.blur()}};
+  e.onblur=function(){e.onblur=null;e.contentEditable='false';if(!cancel){g.text=(e.textContent||'').slice(0,120);save()}renderGui();props()};
+  e.onpointerdown=function(ev){ev.stopPropagation()}}
+addEventListener('keydown',function(e){if(!guiEdit()||!selGui)return;const a=document.activeElement;
+  if(a&&(/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a.isContentEditable))return;const g=guiCur();if(!g)return;
+  const stop=function(){e.preventDefault();e.stopImmediatePropagation()},ctl=e.ctrlKey||e.metaKey;
+  if(ctl&&!e.shiftKey&&!e.altKey&&e.code==='KeyD'){stop();dupGui(g);return}
+  if(ctl||e.altKey)return;
+  if(e.key==='Delete'||e.key==='Backspace'){stop();delGui(g);return}
+  if(e.key==='Escape'){stop();guiSelect(null);return}
+  if(e.key==='Enter'){if(a&&a.classList&&a.classList.contains('exr'))return;stop();guiInline(g);return}
+  const dv={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];
+  if(dv&&!g.lock){stop();const st=e.shiftKey?5:(GED.grid||1);g.x=r1(clamp(g.x+dv[0]*st,0,100-g.w));g.y=r1(clamp(g.y+dv[1]*st,0,100-g.h));guiPlace(g);
+    clearTimeout(gKeyT);gKeyT=setTimeout(function(){save();props()},250)}},true);
+/* adding, copying, deleting */
+function guiName(base){let n=1,nm=base;while(P.guis.some(function(g){return g.name.toLowerCase()===nm.toLowerCase()}))nm=base+(++n);return nm}
+function addGui(type){if(animOn())return;const T=GTYPE[type];if(!T)return;const nm=guiName(T.n);
   const D={text:{x:35,y:5,w:30,h:10,text:'Hello!',bg:'#000000',op:0,color:'#ffffff',fs:26,round:0},
     button:{x:40,y:80,w:20,h:9,text:'Click me',bg:'#00b06f',op:1,color:'#ffffff',fs:20,round:10},
     frame:{x:30,y:30,w:40,h:40,text:'',bg:'#232527',op:.85,color:'#ffffff',fs:20,round:8},
     image:{x:40,y:35,w:20,h:30,text:'',bg:'#ffffff',op:0,color:'#ffffff',fs:20,round:0}}[type];
   const g=Object.assign({id:'u'+P.nid++,name:nm,type:type,vis:true,img:''},D);
-  P.guis.push(g);selGui=g.id;sel=[];selModel=null;selSvc=null;openS.gui=true;save();renderGui();renderParts();
-  msg('Added a '+T.n.toLowerCase()+' GUI called '+nm+'. Change it in the properties below.')}
+  P.guis.push(g);selGui=g.id;sel=[];selModel=null;selSvc=null;openS.gui=true;hl();save();renderParts();
+  msg('Added a '+T.n.toLowerCase()+' GUI called '+nm+'. Drag it on the stage to move it, drag the white squares to resize it.')}
+function dupGui(g){const c=JSON.parse(JSON.stringify(g));c.id='u'+P.nid++;c.name=guiName((g.name.replace(/\d+$/,'')||'GUI'));
+  c.x=r1(Math.min(100-c.w,c.x+3));c.y=r1(Math.min(100-c.h,c.y+3));c.lock=false;P.guis.splice(P.guis.indexOf(g)+1,0,c);selGui=c.id;save();renderParts();msg('Copied to '+c.name+'.')}
+function delGui(g){P.guis=P.guis.filter(function(x){return x!==g});if(selGui===g.id)selGui=null;save();rend();renderParts()}
+function guiMove(g,dir){const i=P.guis.indexOf(g),j=i+dir;if(j<0||j>=P.guis.length)return;P.guis.splice(i,1);P.guis.splice(j,0,g);save();renderParts()}
+/* the little toolbar that floats on the stage in GUI edit mode */
+function guiBar(ed){GB.replaceChildren();if(!ed){GB.hidden=true;return}GB.hidden=false;const g=guiCur();
+  const mk=function(t,fn,cls,tip){const x=document.createElement('button');x.type='button';x.className='gb'+(cls?' '+cls:'');x.textContent=t;if(tip)x.title=tip;x.onclick=fn;GB.append(x);return x};
+  const tt=document.createElement('span');tt.className='gt';tt.textContent='GUI edit mode';GB.append(tt);
+  mk('+ Text',function(){addGui('text')});mk('+ Button',function(){addGui('button')});mk('+ Frame',function(){addGui('frame')});mk('+ Image',function(){addGui('image')});
+  const GR2=[0,2,5,10];
+  mk('Grid: '+(GED.grid?GED.grid+'%':'Off'),function(){GED.grid=GR2[(GR2.indexOf(GED.grid)+1)%GR2.length];renderGui()},GED.grid?'on':'','Snap moving and resizing to a grid');
+  mk('Magnet: '+(GED.mag?'On':'Off'),function(){GED.mag=!GED.mag;renderGui()},GED.mag?'on':'','Snap to the middle, the edges and other GUI (hold Alt while dragging to skip snapping)');
+  if(g){mk('Corners: '+(g.rc===false?'Off':'On'),function(){g.rc=g.rc===false;save();renderGui();props()},g.rc===false?'':'on','Turn rounded corners on or off for the selected GUI');
+    mk('Copy',function(){dupGui(g)},'','Duplicate (Ctrl+D)');mk('Delete',function(){delGui(g)},'red','Delete (Del key)')}
+  const sp=document.createElement('span');sp.className='sp';GB.append(sp);
+  mk('Done',function(){openS.gui=false;selGui=null;renderParts()},'on','Close the GUI folder and go back to the normal 3D view');
+  const hn=document.createElement('div');hn.className='gh';hn.textContent='Drag to move · drag the white squares to resize (hold Shift to keep the shape) · double-click to type · arrow keys nudge · Ctrl+Z undoes. The 3D view is locked until you press Done or close the GUI folder.';GB.append(hn);
+  GB.style.top=g&&g.y+g.h/2>50?'6px':'auto';GB.style.bottom=g&&g.y+g.h/2>50?'auto':'6px'}
 function guiProps(d,g){const T=GTYPE[g.type]||GTYPE.frame;
-  d.append(el('p','note',T.n+' GUI. It sits on top of the stage and shows while playing. Use the blocks "show gui", "hide gui", "set gui text to"'+(g.type==='button'?' and "when gui clicked"':'')+' with its name.'));
+  if(g.alpha===undefined)g.alpha=1;if(g.bw===undefined)g.bw=0;if(!g.bc)g.bc='#ffffff';
+  const head=function(t){const h=el('div','',t);h.style.cssText='font-weight:800;margin:14px 0 4px;font-size:11px;opacity:.75;text-transform:uppercase;letter-spacing:.05em';d.append(h)};
+  const chk=function(t,get,set){const c=el('input');c.type='checkbox';c.checked=!!get();c.onchange=function(){set(c.checked);save();renderGui()};d.append(lab(t,c));return c};
+  d.append(el('p','note',T.n+' GUI. Open the GUI folder to drag it on the stage: drag to move, drag the white squares to resize, double-click to type. Blocks \"show gui\", \"hide gui\", \"set gui text to\"'+(g.type==='button'?' and \"when gui clicked\"':'')+' find it by name.'));
   const nm=el('input');nm.value=g.name;nm.maxLength=24;nm.oninput=function(){const v=nm.value.trim();if(v){g.name=v;save()}};
   nm.onchange=function(){let v=g.name,n=1;const base=v;while(P.guis.some(function(x){return x!==g&&x.name.toLowerCase()===v.toLowerCase()}))v=base+(++n);g.name=v;save();rend();renderParts()};
   d.append(lab('Name (blocks find it by this name)',nm));
   if(g.type!=='image'){const tx=el('input');tx.value=g.text||'';tx.maxLength=120;tx.oninput=function(){g.text=tx.value;save();renderGui()};d.append(lab('Text',tx))}
-  slider(d,'Left (%)',g,'x',0,100,1,null,renderGui);slider(d,'Top (%)',g,'y',0,100,1,null,renderGui);
-  slider(d,'Width (%)',g,'w',1,100,1,null,renderGui);slider(d,'Height (%)',g,'h',1,100,1,null,renderGui);
+  head('Position and size');
+  slider(d,'Left (%)',g,'x',0,100,.5,null,renderGui);slider(d,'Top (%)',g,'y',0,100,.5,null,renderGui);
+  slider(d,'Width (%)',g,'w',1,100,.5,null,renderGui);slider(d,'Height (%)',g,'h',1,100,.5,null,renderGui);
+  const ar=el('div','tb');
+  [['Center across',function(){g.x=r1((100-g.w)/2)}],['Center down',function(){g.y=r1((100-g.h)/2)}],['Full width',function(){g.x=0;g.w=100}],['Full height',function(){g.y=0;g.h=100}]].forEach(function(q){
+    const b=el('button','btn ghost small',q[0]);b.type='button';b.onclick=function(){q[1]();save();renderGui();props()};ar.append(b)});d.append(ar);
+  head('Look');
   const bg=el('input');bg.type='color';bg.value=g.bg;bg.oninput=function(){g.bg=bg.value;save();renderGui()};d.append(lab('Background colour',bg));
   slider(d,'Background opacity',g,'op',0,1,.05,function(v){return Math.round(v*100)+'%'},renderGui);
-  if(g.type!=='image'){const tc=el('input');tc.type='color';tc.value=g.color;tc.oninput=function(){g.color=tc.value;save();renderGui()};d.append(lab('Text colour',tc));
-    slider(d,'Text size',g,'fs',8,80,1,null,renderGui)}
-  slider(d,'Rounded corners',g,'round',0,50,1,null,renderGui);
-  if(g.type==='image'){const is=el('select');[['','None']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})).forEach(function(o){const op=el('option','',o[1]);op.value=o[0];is.append(op)});
+  slider(d,'Whole GUI opacity',g,'alpha',0,1,.05,function(v){return Math.round(v*100)+'%'},renderGui);
+  slider(d,'Border width',g,'bw',0,12,1,null,renderGui);
+  const bc=el('input');bc.type='color';bc.value=g.bc;bc.oninput=function(){g.bc=bc.value;save();renderGui()};d.append(lab('Border colour',bc));
+  chk('Shadow',function(){return g.sh},function(v){g.sh=v});
+  if(g.type!=='image'){head('Text');
+    const tc=el('input');tc.type='color';tc.value=g.color;tc.oninput=function(){g.color=tc.value;save();renderGui()};d.append(lab('Text colour',tc));
+    slider(d,'Text size',g,'fs',8,80,1,null,renderGui);
+    chk('Bold',function(){return g.bold!==false},function(v){g.bold=v});
+    const al=el('select');[['center','Centre'],['left','Left'],['right','Right']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];al.append(op)});al.value=g.al||'center';al.onchange=function(){g.al=al.value;save();renderGui()};d.append(lab('Text align',al));
+    const ff=el('select');[['','Default'],['round','Rounded'],['serif','Serif'],['mono','Typewriter'],['hand','Handwriting']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ff.append(op)});ff.value=g.ff||'';ff.onchange=function(){g.ff=ff.value;save();renderGui()};d.append(lab('Font',ff))}
+  head('Corners');
+  chk('Rounded corners',function(){return g.rc!==false},function(v){g.rc=v;props()});
+  if(g.rc!==false){slider(d,'Corner radius',g,'round',0,100,1,null,renderGui);
+    const cr=el('div','');cr.style.cssText='display:flex;flex-wrap:wrap;gap:2px 10px';g.cn=g.cn||[1,1,1,1];
+    ['Top-left','Top-right','Bottom-right','Bottom-left'].forEach(function(t,i){const c=el('input');c.type='checkbox';c.checked=!!g.cn[i];c.onchange=function(){g.cn=g.cn.slice();g.cn[i]=c.checked?1:0;save();renderGui()};cr.append(lab(t,c))});d.append(cr);
+    }
+  const ac=el('button','btn ghost small','Use these corners on every GUI');ac.type='button';ac.style.marginTop='6px';
+  ac.onclick=function(){P.guis.forEach(function(x){x.rc=g.rc;x.round=g.round;x.cn=g.cn?g.cn.slice():[1,1,1,1]});save();renderGui();msg('Applied to all GUI.')};d.append(ac);
+  if(g.type==='image'){head('Picture');const is=el('select');[['','None']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})).forEach(function(o){const op=el('option','',o[1]);op.value=o[0];is.append(op)});
     is.value=P.assets.images[g.img]?g.img:'';is.onchange=function(){g.img=is.value;save();renderGui()};d.append(lab('Picture (upload under Assets first)',is))}
-  const vc=el('input');vc.type='checkbox';vc.checked=g.vis!==false;vc.onchange=function(){g.vis=vc.checked;save();renderGui()};d.append(lab('Visible at the start',vc));
-  const del=el('button','btn ghost small','Delete this GUI');del.type='button';del.style.marginTop='10px';
-  del.onclick=function(){P.guis=P.guis.filter(function(x){return x!==g});selGui=null;save();renderGui();rend();renderParts()};d.append(del)}
+  head('Behaviour');
+  chk('Visible at the start',function(){return g.vis!==false},function(v){g.vis=v});
+  chk('Locked (cannot be dragged on the stage)',function(){return g.lock},function(v){g.lock=v});
+  const row=el('div','tb');row.style.marginTop='10px';
+  [['Bring forward',function(){guiMove(g,1)}],['Send back',function(){guiMove(g,-1)}],['Copy',function(){dupGui(g)}]].forEach(function(q){const b=el('button','btn ghost small',q[0]);b.type='button';b.onclick=q[1];row.append(b)});d.append(row);
+  const del=el('button','btn ghost small','Delete this GUI');del.type='button';del.style.marginTop='10px';del.onclick=function(){delGui(g)};d.append(del)}
 $('p-gui').onchange=function(){if(this.value)addGui(this.value);this.value=''};
 /* ===== Explorer: services in the game tree ===== */
 const SV=[
@@ -3063,13 +3211,13 @@ function renderParts(){const l=$('p-list');l.replaceChildren();
     if(s.k==='world'||s.k==='shared'||s.k==='vault')cnt=P.parts.filter(function(p){return !p.parent&&svcOf(p)===s.k}).length;
     else if(s.k==='squads')cnt=P.squads.length;else if(s.k==='gui')cnt=P.guis.length;else if(s.k==='scripts')cnt=P.scripts.length;else if(s.k==='tags')cnt=Object.keys(tagMap()).length;else if(s.k==='roster')cnt=1+S.oth.length;else if(s.k==='assets')cnt=Object.keys(P.assets.images).length+Object.keys(P.assets.audio).length+Object.keys(P.assets.meshes||{}).length;
     const go=function(){if(animOn())return;selSvc=s.k;selGui=null;sel=[];selModel=null;hl();buildEdit();renderParts()};
-    xrow({svc:1,d:0,ic:s.i,nm:s.n,bd:cnt==null?null:[String(cnt)],open:ex?open:undefined,onTg:ex?function(){openS[s.k]=!open;renderParts()}:null,title:s.d,
+    xrow({svc:1,d:0,ic:s.i,nm:s.n,bd:cnt==null?null:[String(cnt)],open:ex?open:undefined,onTg:ex?function(){openS[s.k]=!open;if(s.k==='gui'){if(open)selGui=null;else{sel=[];selModel=null;selSvc=null;selGui=null;hl();buildEdit()}}renderParts()}:null,title:s.d,
       on:selSvc===s.k&&!sel.length&&!selModel,go:go,plus:PLUSOK.indexOf(s.k)>=0?{t:'svc',k:s.k}:null});
     if(!ex||!open)return;
     if(s.k==='world'||s.k==='shared'||s.k==='vault'){if(!listIn(s.k)&&s.k!=='world')plain('(empty)',go)}
     else if(s.k==='roster'){const q=P.squads.find(function(z){return z.id===P.player.squad});plain(P.player.name+' (you)'+(q?'  \u2014  '+q.name:''),function(){pick((avTorso()||byId(P.avId)||{}).id,false,true)},'\u263A','#2fa95a');
       S.oth.forEach(function(n){plain(n,go,'\u263A','#3b82f6')})}
-    else if(s.k==='gui'){P.guis.forEach(function(g){const T=GTYPE[g.type]||GTYPE.frame;xrow({d:1,ic:T.i,icc:T.c,nm:g.name,bd:[T.n],on:selGui===g.id,go:function(){if(animOn())return;selGui=g.id;sel=[];selModel=null;selSvc=null;hl();buildEdit();renderParts()}})});if(!P.guis.length)plain('(no GUI yet)',go)}
+    else if(s.k==='gui'){P.guis.forEach(function(g){const T=GTYPE[g.type]||GTYPE.frame;xrow({d:1,ic:T.i,icc:T.c,nm:g.name,bd:[T.n],on:selGui===g.id,go:function(){if(animOn())return;guiSelect(g.id)}})});if(!P.guis.length)plain('(no GUI yet)',go)}
     else if(s.k==='squads')P.squads.forEach(function(q){plain(q.name,go,'\u25A0',q.color)});
     else if(s.k==='tags'){const m=tagMap();Object.keys(m).forEach(function(t){plain('# '+t+'   ('+m[t].length+')',function(){pickTag(t)})});if(!Object.keys(m).length)plain('(no tags yet)',go)}
     else if(s.k==='scripts'){P.scripts.forEach(function(sc){scrRow(sc,1,true)});if(!P.scripts.length)plain('(no scripts yet)',go)}
@@ -3151,7 +3299,8 @@ addEventListener('keyup',function(e){const n=keyNames(e);
   n.forEach(function(k){KP.delete(k)})});
 addEventListener('blur',function(){HL.forEach(function(st){st.down=false})});
 function animOn(){return curTab==='anim'&&!playing}
-function setTab(k){const was=animOn();curTab=k;
+function setTab(k){setTab0(k);try{renderGui()}catch(e){}}
+function setTab0(k){const was=animOn();curTab=k;
   ['out','code','parts','anim'].forEach(function(j){$('t-'+j).classList.toggle('on',j===k);$('s-'+j).hidden=fsOn?(j==='parts'?false:j!==k):j!==k});
   $('s-view').value=k;$('s-parts').querySelector('.tb').style.display=k==='anim'?'none':'';$('p-props').style.display=k==='anim'?'none':'';
   if(k==='anim'){if(rigOn)$('p-rig').click();if(!was)camSave={x:cam.x,y:cam.y,z:cam.z,yaw:cam.yaw,pit:cam.pit};const p=sel.length?byId(sel[0]):null;let r=p&&rootOf(p);if(!(r&&kids(r).length)){const av=byId(P.avId);r=av?rootOf(av):null}animSelect(r&&kids(r).length?r:null);preview()}
@@ -3196,12 +3345,12 @@ if(gameId&&!VIEWONLY&&sb&&!PEND&&(Object.keys(P.assets.audio).some(function(n){r
 
 /* Undo / redo: Ctrl+Z undoes, Ctrl+Shift+Z or Ctrl+Y redoes (parts, models and animations) */
 const hist=[],redoS=[];let histLast=null,histT=0,histBusy=false;const saveRaw=save;
-function snapState(){return JSON.stringify({parts:P.parts,models:P.models,anims:P.anims,nid:P.nid,avId:P.avId})}
+function snapState(){return JSON.stringify({parts:P.parts,models:P.models,anims:P.anims,guis:P.guis,nid:P.nid,avId:P.avId})}
 histLast=snapState();
 save=function(){saveRaw();if(histBusy)return;const cur=snapState();if(cur===histLast)return;const now=performance.now();
   if(!hist.length||now-histT>500){hist.push(histLast);if(hist.length>100)hist.shift()}
   histT=now;histLast=cur;redoS.length=0};
-function histApply(str){histBusy=true;try{const st=JSON.parse(str);P.parts=st.parts;P.models=st.models;P.anims=st.anims;P.nid=st.nid;P.avId=st.avId;
+function histApply(str){histBusy=true;try{const st=JSON.parse(str);P.parts=st.parts;P.models=st.models;P.anims=st.anims;if(st.guis){P.guis=st.guis;if(selGui&&!P.guis.some(function(g){return g.id===selGui}))selGui=null}P.nid=st.nid;P.avId=st.avId;
   sel=sel.filter(function(id){return byId(id)});if(selModel&&!byModel(selModel))selModel=null;if(selJ&&!byId(selJ))selJ=null;
   aSelKeys=[];live={};fixA();aJFix();
   rebuildParts();renderParts();
