@@ -451,7 +451,7 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
     <section id="s-ws" class="ws" aria-label="Scripts"></section>
     <aside class="side">
       <div class="cvw"><canvas id="s-cv" width="480" height="360" aria-label="Stage"></canvas><span id="rz-l" class="rz l" title="Right-click and drag to resize"></span><span id="rz-r" class="rz r" title="Right-click and drag to resize"></span><div id="chat" hidden><button id="chat-tg" type="button" title="Show or hide chat" aria-label="Show or hide chat">💬</button><div id="chat-log"></div><input id="chat-in" maxlength="120" placeholder="Press / to chat" autocomplete="off" aria-label="Chat"></div></div>
-      <p class="note" style="margin:0">Hold right mouse and drag to look. W A S D to fly, Q down, E or Space up, scroll to zoom. Click a part for move arrows, press R to switch tools (move, resize, rotate; Shift+R goes back). Rotate: drag a ring, hold Shift to snap. Right-click and drag a bottom corner of the stage to resize it. Press Play to walk around with WASD and Space.</p>
+      <p class="note" style="margin:0">Hold right mouse and drag to look. W A S D to fly, Q down, E up, scroll to zoom. Click a part for move arrows, press R to switch tools (move, resize, rotate; Shift+R goes back). Rotate: drag a ring, hold Shift to snap. Right-click and drag a bottom corner of the stage to resize it. Press Play to walk around with WASD and Space.</p>
       <div class="tabs"><button id="t-out" type="button" class="on">Output</button><button id="t-code" type="button">Code</button><button id="t-parts" type="button">Explorer</button><button id="t-anim" type="button">Animator</button></div>
       <pre id="s-out" class="pre"></pre><pre id="s-code" class="pre" hidden></pre>
       <div id="s-parts" class="pnl" hidden>
@@ -2434,7 +2434,7 @@ let lt=performance.now(),camF=null;
 function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.1,(now-lt)/1000);lt=now;const f=fwd();
   if(playing)play(dt,f);
   else{const sp=(keys.ShiftLeft?36:12)*dt,r=[Math.cos(cam.yaw),0,Math.sin(cam.yaw)],go=function(v,k){cam.x+=v[0]*k;cam.y+=v[1]*k;cam.z+=v[2]*k};
-    if(keys.KeyW)go(f,sp);if(keys.KeyS)go(f,-sp);if(keys.KeyD)go(r,sp);if(keys.KeyA)go(r,-sp);if(keys.Space)cam.y+=sp;if(keys.KeyQ)cam.y-=sp;if(keys.KeyE)cam.y+=sp}
+    if(keys.KeyW)go(f,sp);if(keys.KeyS)go(f,-sp);if(keys.KeyD)go(r,sp);if(keys.KeyA)go(r,-sp);if(keys.KeyQ)cam.y-=sp;if(keys.KeyE)cam.y+=sp}
   if(playing||running){collide();physics(dt);objMove(dt);npPhys(dt);touchTick()}npTick(dt);
   draw();entTick(dt);
   if(playing){const T=byId(P.avId);if(T){cam.x=T.pos[0]+S.x-f[0]*cd;S.ch=S.ch===undefined?S.h:S.ch+(S.h-S.ch)*(1-Math.exp(-dt*9));cam.y=T.pos[1]+S.ch+1-f[1]*cd;cam.z=T.pos[2]-S.y-f[2]*cd}}else camF=null;
