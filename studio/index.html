@@ -3258,7 +3258,9 @@ let coPtr=false,coMid=0,coSidN=0;
 const COCH=40000,COSKIP=/^(parts|models|anims|scripts|assets|nid)$/;
 const coBad=function(x){return x==='__proto__'||x==='constructor'||x==='prototype'};
 const coSid=function(){return COP.id+Math.random().toString(36).slice(2,6)+(coSidN++)};
-const coHue=function(id){let h=7;for(let i=0;i<id.length;i++)h=(h*31+id.charCodeAt(i))%360;return 'hsl('+h+',70%,58%)'};
+function coHash(s){let h=2166136261;s=String(s).toLowerCase();for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+const coHueDeg=function(n){return coHash(n)%360};
+const coHue=function(n){return 'hsl('+coHueDeg(n)+',75%,55%)'};
 function coTime(){const t=Math.max(Date.now(),COP.clock+1);COP.clock=t;return t}
 function coMembers(){const o=[];try{const s=COP.ch.presenceState();Object.keys(s).forEach(function(k){const m=(s[k]||[])[0];if(m)o.push({id:k,n:String(m.n||'?').slice(0,24),at:+m.at||0,h:!!m.h})})}catch(e){}return o}
 function coLeader(){const m=coMembers().filter(function(x){return x.id!==COP.id||COP.on});if(!m.length)return true;const h=m.find(function(x){return x.h});if(h)return h.id===COP.id;
@@ -3315,7 +3317,7 @@ function coPieces(k,v,t,extra){const base=Object.assign({e:'d',by:COP.id,k:k,t:t
 function coPump(){if(!COP.ch)return;let p=COP.cq.shift();
   if(!p&&COP.on&&!COP.joining){const e=COP.out.entries().next();if(!e.done){const k=e.value[0],o=e.value[1];COP.out.delete(k);const a=coPieces(k,o.v,o.t);p=a.shift();COP.cq.push.apply(COP.cq,a)}}
   if(p){try{COP.ch.send({type:'broadcast',event:'co',payload:p})}catch(e){}}}
-setInterval(coPump,30);
+setInterval(coPump,40);
 function coFixNid(){if(COP.on){COP.next=Math.max(COP.next||0,P.nid||0);if(!(P.nid>=COP.next))P.nid=COP.next}}
 /* Work out what this person changed since the last sync and queue it (newest value per piece only) */
 function coDiff(){COP.tm=0;if(!COP.on||COP.joining||running||playing)return;coFixNid();
@@ -3335,6 +3337,7 @@ function coRecv(p){if(!p||typeof p!=='object'||p.by===COP.id)return;if(p.to&&p.t
     case 'ss':if(COP.joining&&p.to===COP.id)coBeginJoin(p);break;
     case 'se':if(COP.joining&&p.to===COP.id&&COP.gotSS)coEndJoin();break;
     case 'end':if(!COP.host&&(COP.on||COP.joining)){const h=coMembers().find(function(x){return x.id===p.by});if(!h||h.h)coEnded()}break;
+    case 'c':coAvSet(p);break;
     case 'd':coRecvD(p);break}}
 function coRecvD(p){const k=String(p.k||'');if(!/^(part|model|anim|script|asset|meta):/.test(k))return;let v=null;
   if(!p.del){const n=p.n|0;if(n>1){const r=COP.rx[p.mid]||(COP.rx[p.mid]={a:new Array(n),c:0});if(r.a[p.i|0]===undefined){r.a[p.i|0]=String(p.s);r.c++}if(r.c<n)return;v=r.a.join('');delete COP.rx[p.mid]}else v=String(p.s)}
@@ -3407,8 +3410,9 @@ function coUi(){const mem=COP.ch?coMembers():[];coBtn.textContent=COP.on?'Co-op 
   coChip.style.display=(COP.on||COP.detached)?'flex':'none';coChip.replaceChildren();
   if(COP.detached&&!COP.on){coChip.append(el('span','','Session ended - this copy is not synced. Click to leave.'))}
   else{const code=el('span','','Co-op '+COP.code);coChip.append(code);mem.forEach(function(m){const d=el('span','',(m.h?'\u2605 ':'')+m.n+(m.id===COP.id?' (you)':''));d.style.cssText='display:inline-flex;align-items:center;gap:5px';
-      const dot=el('i');dot.style.cssText='width:9px;height:9px;border-radius:50%;background:'+coHue(m.id);d.prepend(dot);coChip.append(d)});
+      const dot=el('i');dot.style.cssText='width:9px;height:9px;border-radius:50%;background:'+coHue(m.n);d.prepend(dot);coChip.append(d)});
     if(!COP.host&&COP.on&&mem.length&&!mem.some(function(m){return m.h}))coChip.append(el('span','','(host left)'))}
+  try{coAvSync(mem)}catch(e){}
   if(COP.ui)try{COP.ui()}catch(e){}}
 function coDlg(pre){mdl('Co-op editing',function(c,close){
   const body=el('div'),err=el('p','');err.style.cssText='color:#c2321f;min-height:1.2em;margin:0;font-size:.85rem';body.style.cssText='display:flex;flex-direction:column;gap:10px';c.append(body,err);
@@ -3429,7 +3433,7 @@ function coDlg(pre){mdl('Co-op editing',function(c,close){
     const cc=mb('Copy code','ghost',function(){try{navigator.clipboard.writeText(COP.code).then(function(){cc.textContent='Copied'},function(){})}catch(e){}});
     const lr=el('div');lr.style.cssText='display:flex;gap:6px';lr.append(li,cp,cc);
     const ls=el('div');ls.style.cssText='display:flex;flex-direction:column;gap:4px';coMembers().forEach(function(m){const d=el('div','',(m.h?'\u2605 ':'')+m.n+(m.id===COP.id?' (you)':'')+(m.h?'  host':''));d.style.cssText='display:flex;align-items:center;gap:8px';
-      const dot=el('i');dot.style.cssText='width:10px;height:10px;border-radius:50%;background:'+coHue(m.id);d.prepend(dot);ls.append(d)});
+      const dot=el('i');dot.style.cssText='width:10px;height:10px;border-radius:50%;background:'+coHue(m.n);d.prepend(dot);ls.append(d)});
     body.append(el('p','note',COP.host?'Share this code or link with friends who are signed in to BrixBlox. Anyone with it can join and edit, so only share it with people you trust.':'You are editing '+(COP.hostName||'the host')+'\'s game.'),big);
     if(COP.host)body.append(lr);
     body.append(el('p','note','In this session:'),ls,
@@ -3440,6 +3444,37 @@ function coDlg(pre){mdl('Co-op editing',function(c,close){
     r.append(mb('Close','ghost',close));body.append(r)};
   COP.ui=draw;draw()})}
 coChip.onclick=function(){coDlg()};
+
+/* ---- seeing each other: an orb with an arrow at every friend's camera, in their own colour (picked from their username) ---- */
+COP.av={};
+function coAvMake(name){const g=new THREE.Group(),col=new THREE.Color().setHSL(coHueDeg(name)/360,.75,.55);
+  const mat=function(){return new THREE.MeshBasicMaterial({color:col,depthTest:false,transparent:true,opacity:.92})};
+  const orb=new THREE.Mesh(new THREE.SphereGeometry(.55,20,14),mat()),arrow=new THREE.Group();
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,1.6,10),mat()),head=new THREE.Mesh(new THREE.ConeGeometry(.34,.7,14),mat());
+  shaft.position.y=.55+.8;head.position.y=.55+1.6+.35;arrow.add(shaft,head);[orb,shaft,head].forEach(function(m){m.renderOrder=998});
+  const c=document.createElement('canvas');c.width=256;c.height=64;const x=c.getContext('2d');x.font='700 30px Montserrat,system-ui,sans-serif';x.textAlign='center';x.textBaseline='middle';
+  x.lineWidth=6;x.strokeStyle='rgba(0,0,0,.75)';x.strokeText(name,128,32);x.fillStyle='#fff';x.fillText(name,128,32);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true}));sp.scale.set(4,1,1);sp.position.y=1.6;sp.renderOrder=999;
+  g.add(orb,arrow,sp);g.userData.arrow=arrow;g.visible=false;scene.add(g);return g}
+function coAvDrop(id){const a=COP.av[id];delete COP.av[id];if(!a||!a.g)return;try{scene.remove(a.g);a.g.traverse(function(o){try{if(o.geometry)o.geometry.dispose();if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose()}}catch(e){}})}catch(e){}}
+function coAvSync(mem){const ids=COP.on?mem.map(function(m){return m.id}):[];Object.keys(COP.av).forEach(function(id){if(ids.indexOf(id)<0||id===COP.id)coAvDrop(id)})}
+function coAvSet(p){if(!COP.on)return;const id=String(p.by),m=coMembers().find(function(x){return x.id===id});if(!m)return;
+  const x=+p.x,y=+p.y,z=+p.z,w=+p.w,pi=+p.p;if(![x,y,z,w,pi].every(isFinite))return;
+  let a=COP.av[id];if(!a){a={g:null,px:x,py:y,pz:z,dx:0,dy:0,dz:-1};try{a.g=coAvMake(m.n)}catch(e){}COP.av[id]=a}
+  a.tx=x;a.ty=y;a.tz=z;a.tdx=Math.sin(w)*Math.cos(pi);a.tdy=Math.sin(pi);a.tdz=-Math.cos(w)*Math.cos(pi);a.seen=Date.now()}
+function coAvTick(){const ids=Object.keys(COP.av);if(!ids.length)return;const now=Date.now(),up=new THREE.Vector3(0,1,0);
+  ids.forEach(function(id){const a=COP.av[id];if(!a||!a.g||a.tx===undefined)return;
+    if(now-a.seen>9000||playing||running||!COP.on){a.g.visible=false;return}
+    a.px+=(a.tx-a.px)*.35;a.py+=(a.ty-a.py)*.35;a.pz+=(a.tz-a.pz)*.35;a.dx+=(a.tdx-a.dx)*.35;a.dy+=(a.tdy-a.dy)*.35;a.dz+=(a.tdz-a.dz)*.35;
+    const d=new THREE.Vector3(a.dx,a.dy,a.dz);if(d.lengthSq()<1e-6)d.set(0,0,-1);d.normalize();
+    a.g.position.set(a.px,a.py,a.pz);a.g.userData.arrow.quaternion.setFromUnitVectors(up,d);
+    const dist=Math.hypot(a.px-cam.x,a.py-cam.y,a.pz-cam.z);a.g.scale.setScalar(Math.max(1,Math.min(6,dist/30)));a.g.visible=true})}
+(function l(){try{coAvTick()}catch(e){}requestAnimationFrame(l)})();
+let coCamSent={x:1e9,y:0,z:0,w:0,p:0,t:0};
+setInterval(function(){if(!COP.on||!COP.ch||COP.joining||VIEWONLY)return;const n=Date.now(),s=coCamSent;
+  const moved=Math.abs(cam.x-s.x)+Math.abs(cam.y-s.y)+Math.abs(cam.z-s.z)>.02||Math.abs(cam.yaw-s.w)>.004||Math.abs(cam.pit-s.p)>.004;
+  if(!moved&&n-s.t<2000)return;coCamSent={x:cam.x,y:cam.y,z:cam.z,w:cam.yaw,p:cam.pit,t:n};
+  try{COP.ch.send({type:'broadcast',event:'co',payload:{e:'c',by:COP.id,x:+cam.x.toFixed(2),y:+cam.y.toFixed(2),z:+cam.z.toFixed(2),w:+cam.yaw.toFixed(3),p:+cam.pit.toFixed(3)}})}catch(e){}},140);
 
 /* ---- hooks into the Studio ---- */
 {const saveUndo=save;save=function(){saveUndo();coSchedule()}}
