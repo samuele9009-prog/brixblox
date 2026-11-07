@@ -668,7 +668,7 @@ async function cloudData(id){const g=glib()[id];if(!g)return null;let d;try{d=JS
    g.lh remembers a fingerprint of the version that is live, so the Studio can tell when you have changes that are not live yet. */
 function hsh(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return h+':'+s.length}
 function calcPend(){if(!sb||!ME||!gameId||VIEWONLY)return false;const g=glib()[gameId];return !!(g&&g.lh!==undefined&&g.lh!==hsh(g.data))}
-let cloudWhy='';
+let cloudWhy='',liveAt='';
 function cloudPush(id,now){if(!sb||!ME)return;clearTimeout(cpT[id]);cpT[id]=setTimeout(async function(){
   const done=function(){if(id===gameId)upBusy=false;updateStat()};
   try{
@@ -680,6 +680,13 @@ function cloudPush(id,now){if(!sb||!ME)return;clearTimeout(cpT[id]);cpT[id]=setT
     let r=await sb.from('games').upsert(Object.assign({thumb:th},row));
     if(r.error&&/thumb/i.test(r.error.message||''))r=await sb.from('games').upsert(row);
     cloudErr=!!r.error;cloudWhy=r.error?String(r.error.message||r.error.code||'unknown error'):'';
+    if(!r.error){/* read it back, so a save the server quietly ignored is not reported as live */
+      try{const v=await sb.from('games').select('updated_at,data').eq('id',id).maybeSingle();
+        if(v.error)throw v.error;
+        if(!v.data){cloudErr=true;cloudWhy='the server did not keep the game (it may only let the owner update it)'}
+        else{let vd=v.data.data;if(typeof vd!=='string')vd=JSON.stringify(vd);
+          if(vd.length!==data.length&&hsh(vd)!==hsh(data)){cloudErr=true;cloudWhy='the server still has an older copy (the save was ignored - check the games table permissions)'}
+          else{cloudWhy='';liveAt=new Date().toLocaleTimeString()}}}catch(e){/* cannot check: keep the normal result */}}
     if(r.error)console.error('BrixBlox cloud save failed:',r.error);
     else{const L2=glib();if(L2[id]){L2[id].lh=hs;store.set(GKEY,JSON.stringify(L2))}}
   }catch(e){cloudErr=true;cloudWhy=String((e&&e.message)||e);console.error('BrixBlox cloud save failed:',e)}
@@ -3767,8 +3774,8 @@ function mdl(title,build){const ov=document.createElement('div');ov.style.cssTex
 function mb(t,cls,fn){const b=el('button','btn small '+cls,t);b.type='button';b.onclick=fn;return b}
 function ask(text,yes,fn){mdl('Are you sure?',function(c,close){c.append(el('p','',text));const r=el('div','tb');r.append(mb(yes,'',function(){close();fn()}),mb('Cancel','ghost',close));c.append(r)})}
 const statEl=el('span','','');statEl.style.cssText='font-size:.8rem;font-weight:700;white-space:nowrap';
-function updateStat(){statEl.textContent=gameId?'Published ('+(gameVis==='public'?'Public':'Private')+')'+(cloudErr?' - NOT live, upload failed'+(cloudWhy?': '+cloudWhy:''):PEND?' - saved here, not live yet':''):'Unpublished - not saved';statEl.style.color=gameId&&!cloudErr&&!PEND?'#4be3a0':'#ffb347';
-  if(upBtn){upBtn.hidden=!(gameId&&sb&&ME);upBtn.disabled=upBusy||!(PEND||cloudErr);upBtn.textContent=upBusy?'Updating...':'Update'}}
+function updateStat(){statEl.textContent=gameId?'Published ('+(gameVis==='public'?'Public':'Private')+')'+(cloudErr?' - NOT live, upload failed'+(cloudWhy?': '+cloudWhy:''):PEND?' - saved here, not live yet':(liveAt?' - live since '+liveAt:'')):'Unpublished - not saved';statEl.style.color=gameId&&!cloudErr&&!PEND?'#4be3a0':'#ffb347';
+  if(upBtn){upBtn.hidden=!(gameId&&sb&&ME);upBtn.disabled=upBusy;upBtn.textContent=upBusy?'Updating...':'Update'}}
 function publish(v){if(!gameId)gameId='g'+Date.now().toString(36)+Math.floor(Math.random()*1e3).toString(36);gameVis=v;persistGame();cloudPush(gameId,true);store.set('brixblox-cur',gameId);baseStr=JSON.stringify(P);updateStat()}
 function updateLive(){if(!gameId||!sb||!ME||upBusy)return;upBusy=true;cloudErr=false;updateStat();cloudPush(gameId,true)}
 function publishDlg(){mdl(gameId?'Publish settings':'Publish game',function(c,close){
