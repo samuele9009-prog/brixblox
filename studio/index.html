@@ -3947,6 +3947,28 @@ function coUi(){const mem=COP.ch?coMembers():[];coBtn.textContent=COP.on?'Co-op 
     if(!COP.host&&COP.on&&mem.length&&!mem.some(function(m){return m.h}))coChip.append(el('span','','(host left)'))}
   try{coAvSync(mem)}catch(e){}
   if(COP.ui)try{COP.ui()}catch(e){}}
+/* ---- invites: send a friend a pop-up instead of a code. Everyone who has the Studio open and is signed in listens on their own name. ---- */
+function coInvKey(n){return 'bbinv:'+String(n).trim().toLowerCase().replace(/[^a-z0-9_]/g,'_')}
+function coRecent(){try{return JSON.parse(store.get('brixblox-coinv'))||[]}catch(e){return []}}
+function coRecentAdd(n){const a=coRecent().filter(function(x){return x.toLowerCase()!==n.toLowerCase()});a.unshift(n);try{store.set('brixblox-coinv',JSON.stringify(a.slice(0,12)))}catch(e){}}
+async function coInvite(name){name=String(name||'').trim();if(!name)throw new Error('Type a username.');if(!COP.on||!COP.code)throw new Error('Start a session first.');
+  if(name.toLowerCase()===String(ME.username).toLowerCase())throw new Error('That is you.');
+  const ch=sb.channel(coInvKey(name),{config:{broadcast:{self:false}}});
+  await new Promise(function(ok,bad){let d=0;ch.subscribe(function(st){if(d)return;if(st==='SUBSCRIBED'){d=1;ok()}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED'){d=1;bad(new Error('Could not reach the server.'))}});setTimeout(function(){if(!d){d=1;bad(new Error('The connection timed out.'))}},8000)}).catch(function(e){try{sb.removeChannel(ch)}catch(x){}throw e});
+  try{await ch.send({type:'broadcast',event:'inv',payload:{from:ME.username,code:COP.code,game:String(P.name||'').slice(0,40),at:Date.now()}})}finally{setTimeout(function(){try{sb.removeChannel(ch)}catch(x){}},600)}
+  coRecentAdd(name)}
+let coInvCh=null,coInvShown=0;
+function coInvListen(){if(coInvCh||!sb||!ME||ME.demo||VIEWONLY)return;
+  try{coInvCh=sb.channel(coInvKey(ME.username),{config:{broadcast:{self:false}}});
+    coInvCh.on('broadcast',{event:'inv'},function(m){const p=m&&m.payload;if(!p||!p.code||!p.from||Date.now()-coInvShown<1500)return;coInvShown=Date.now();
+      const code=String(p.code).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,14),from=String(p.from).slice(0,24);
+      if(COP.on||COP.joining||COP.ch||running||playing)return;
+      mdl('Co-op invite',function(c,close){const er=el('p','');er.style.cssText='color:#c2321f;min-height:1.2em;margin:0;font-size:.85rem';
+        c.append(el('p','',from+' invited you to edit '+(p.game?'"'+p.game+'"':'their game')+' together, live.'),el('p','note','Joining opens their game in your Studio. Your own games are not touched.'),er);
+        const r=el('div','tb'),jb=mb('Join','',async function(){jb.disabled=true;er.textContent='Joining...';try{await coJoin(code);close()}catch(e){er.textContent=(e&&e.message)||String(e);jb.disabled=false}});
+        r.append(jb,mb('No thanks','ghost',close));c.append(r)})});
+    coInvCh.subscribe()}catch(e){coInvCh=null}}
+setTimeout(coInvListen,1500);
 function coDlg(pre){mdl('Co-op editing',function(c,close){
   const body=el('div'),err=el('p','');err.style.cssText='color:#c2321f;min-height:1.2em;margin:0;font-size:.85rem';body.style.cssText='display:flex;flex-direction:column;gap:10px';c.append(body,err);
   const inp=function(){const i=el('input');i.type='text';i.style.cssText='min-height:34px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);width:100%';return i};
@@ -3969,6 +3991,15 @@ function coDlg(pre){mdl('Co-op editing',function(c,close){
       const dot=el('i');dot.style.cssText='width:10px;height:10px;border-radius:50%;background:'+coHue(m.n);d.prepend(dot);ls.append(d)});
     body.append(el('p','note',COP.host?'Share this code or link with friends who are signed in to BrixBlox. Anyone with it can join and edit, so only share it with people you trust.':'You are editing '+(COP.hostName||'the host')+'\'s game.'),big);
     if(COP.host)body.append(lr);
+    {const iv=el('div');iv.style.cssText='display:flex;flex-direction:column;gap:6px';const ie=el('p','');ie.style.cssText='margin:0;font-size:.82rem;min-height:1.1em';
+      const ii=inp();ii.placeholder='Friend\'s username';ii.maxLength=24;
+      const send=async function(n,b){if(b)b.disabled=true;ie.style.color='';ie.textContent='Sending...';try{await coInvite(n);ie.textContent='Invite sent to '+n+'. They need BrixBlox Studio open.';ie.style.color='#1c8a4c';draw()}catch(e){ie.textContent=(e&&e.message)||String(e);ie.style.color='#c2321f';if(b)b.disabled=false}};
+      const ib=mb('Invite','',function(){send(ii.value,ib)});ii.onkeydown=function(e){if(e.key==='Enter')ib.click()};
+      const ir=el('div');ir.style.cssText='display:flex;gap:6px';ir.append(ii,ib);
+      const rc=coRecent().filter(function(n){return !coMembers().some(function(m){return String(m.n).toLowerCase()===n.toLowerCase()})});
+      iv.append(el('p','note','Invite a friend (no code needed):'),ir);
+      if(rc.length){const rw=el('div');rw.style.cssText='display:flex;gap:6px;flex-wrap:wrap';rc.forEach(function(n){const b=mb(n,'ghost',function(){send(n,b)});rw.append(b)});iv.append(rw)}
+      iv.append(ie);body.append(iv)}
     body.append(el('p','note','In this session:'),ls,
       el('p','note','Everything syncs live: parts, models, animations, scripts, images, settings. Sounds and meshes that are too big to send stay on the computer they were uploaded on. Undo (Ctrl+Z) can also undo a friend\'s change made after yours. Only the host can publish.'));
     const r=el('div','tb');
