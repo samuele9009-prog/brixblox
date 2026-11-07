@@ -461,7 +461,7 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 <body>
 <main id="studio" class="screen">
   <header class="bar">
-    <div class="logo sm"><span class="blk b1"></span><span class="blk b2"></span><span class="blk b3"></span><h1>BrixBlox Studio</h1><small id="bb-who" style="opacity:.6;margin-left:6px">build 2026-11-07</small></div>
+    <div class="logo sm"><span class="blk b1"></span><span class="blk b2"></span><span class="blk b3"></span><h1>BrixBlox Studio</h1><small id="bb-who" style="opacity:.6;margin-left:6px">build 2026-11-07 v2</small></div>
     <input id="s-name" class="sname" maxlength="30" aria-label="Project name">
     <div class="who"><button id="s-play" class="btn small" type="button">&#9654; Play</button><button id="s-run" class="btn ghost small" type="button">{ } Run code</button><button id="s-stop" class="btn ghost small" type="button" disabled>&#9632; Stop</button><select id="s-view" class="sview fsonly" aria-label="Panel"><option value="out">Output</option><option value="code">Code</option><option value="anim">Animator</option><option value="parts">No panel</option></select><button id="s-fs" class="btn ghost small" type="button">&#9974; Fullscreen</button><button id="s-theme" class="btn ghost small" type="button">Light / Dark</button><button id="s-back" class="btn ghost small" type="button">&larr; BrixBlox</button></div>
   </header>
@@ -666,31 +666,33 @@ async function cloudData(id){const g=glib()[id];if(!g)return null;let d;try{d=JS
   return JSON.stringify(d)}
 /* Saving never sends a game to the normal BrixBlox site by itself any more. persistGame() only saves in this Studio; this runs when you press Publish or Update.
    g.lh remembers a fingerprint of the version that is live, so the Studio can tell when you have changes that are not live yet. */
+function withTimeout(p,ms,why){return new Promise(function(res,rej){const t=setTimeout(function(){rej(new Error(why))},ms);Promise.resolve(p).then(function(v){clearTimeout(t);res(v)},function(e){clearTimeout(t);rej(e)})})}
 function hsh(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return h+':'+s.length}
 function calcPend(){if(!sb||!ME||!gameId||VIEWONLY)return false;const g=glib()[gameId];return !!(g&&g.lh!==undefined&&g.lh!==hsh(g.data))}
 let cloudWhy='',liveAt='';
 function cloudPush(id,now){if(!sb||!ME)return;clearTimeout(cpT[id]);cpT[id]=setTimeout(async function(){
   const done=function(){if(id===gameId)upBusy=false;updateStat()};
   try{
-    const g=glib()[id];if(!g)return;const hs=hsh(g.data);const data=await cloudData(id);
+    const g=glib()[id];if(!g)return;const hs=hsh(g.data);let ch=null,ct=0;const data=await withTimeout(cloudData(id),90000,'sending the sounds/meshes took too long - check your internet and press Update again');
     if(!data){cloudErr=true;cloudWhy='could not read the game data';return}
     if(data.length>6e6){cloudErr=true;cloudWhy='game is too big to upload ('+(data.length/1e6).toFixed(1)+' MB, limit is 6 MB) - remove large images, sounds or meshes';return}
-    let th=null;try{th=await thumbFor(JSON.parse(data))}catch(e){}
+    let th=null;try{th=await withTimeout(thumbFor(JSON.parse(data)),5000,'thumb')}catch(e){}
     const row={id:id,owner_id:(g.owner&&g.owner.id)||ME.id,owner_name:(g.owner&&g.owner.name)||ME.username,name:g.name,vis:g.vis,data:data,updated_at:new Date().toISOString()};
-    let r=await sb.from('games').upsert(Object.assign({thumb:th},row));
-    if(r.error&&/thumb/i.test(r.error.message||''))r=await sb.from('games').upsert(row);
+    let r=await withTimeout(sb.from('games').upsert(Object.assign({thumb:th},row)),60000,'the server did not answer in time - check your internet and press Update again');
+    if(r.error&&/thumb/i.test(r.error.message||''))r=await withTimeout(sb.from('games').upsert(row),60000,'the server did not answer in time - check your internet and press Update again');
     cloudErr=!!r.error;cloudWhy=r.error?String(r.error.message||r.error.code||'unknown error'):'';
     if(!r.error){/* read it back, so a save the server quietly ignored is not reported as live */
       try{const v=await sb.from('games').select('updated_at,data').eq('id',id).maybeSingle();
         if(v.error)throw v.error;
         if(!v.data){cloudErr=true;cloudWhy='the server did not keep the game (it may only let the owner update it)'}
-        else{let vd=v.data.data;if(typeof vd!=='string')vd=JSON.stringify(vd);
+        else{let vd=v.data.data;if(typeof vd!=='string')vd=JSON.stringify(vd);ch=hsh(vd);ct=Date.parse(v.data.updated_at)||0;
           if(vd.length!==data.length&&hsh(vd)!==hsh(data)){cloudErr=true;cloudWhy='the server still has an older copy (the save was ignored - check the games table permissions)'}
           else{cloudWhy='';liveAt=new Date().toLocaleTimeString()}}}catch(e){/* cannot check: keep the normal result */}}
     if(r.error)console.error('BrixBlox cloud save failed:',r.error);
-    else{const L2=glib();if(L2[id]){L2[id].lh=hs;store.set(GKEY,JSON.stringify(L2))}}
+    else{const L2=glib();if(L2[id]){L2[id].lh=hs;if(!cloudErr&&ch){L2[id].ch=ch;if(ct)L2[id].ct=ct}store.set(GKEY,JSON.stringify(L2))}}
   }catch(e){cloudErr=true;cloudWhy=String((e&&e.message)||e);console.error('BrixBlox cloud save failed:',e)}
-  finally{PEND=calcPend();done();if(audWarn)try{msg(audWarn)}catch(e){}}
+  finally{PEND=calcPend();done();if(audWarn)try{msg(audWarn)}catch(e){}
+    if(now)try{if(cloudErr)mdl('Update did NOT go live',function(c,close){c.append(el('p','','Your changes are saved in this Studio, but they were not sent online, so other players still see the old version.'),el('p','note','Reason: '+(cloudWhy||'unknown error')));c.append(mb('OK','',close))});else msg('Update is live online ('+new Date().toLocaleTimeString()+'). Other players get it the next time they join the game.')}catch(e){}}
   },now?0:1500)}
 /* Changing only Public / Private updates just that setting online, not the rest of your changes */
 function cloudVis(id,v){if(!sb||!ME)return;sb.from('games').update({vis:v,updated_at:new Date().toISOString()}).eq('id',id).then(function(r){if(r&&r.error)cloudPush(id,true)},function(){cloudPush(id,true)})}
@@ -718,7 +720,7 @@ const mineG=function(g){return ADMIN||!g.owner||!ME||g.owner.id===ME.id};
 if(P.name==='My first BricBloc game')P.name='My first BrixBlox game';
 PEND=calcPend();
 function persistGame(){const L=glib(),pv=L[gameId],js=JSON.stringify(P),lh=pv?(pv.lh!==undefined?pv.lh:hsh(pv.data)):undefined;
-  L[gameId]={id:gameId,name:P.name,vis:gameVis||'private',at:Date.now(),owner:(pv&&pv.owner&&pv.owner.id)?pv.owner:(ME?{id:ME.id,name:ME.username}:undefined),data:js,lh:lh,thumb:(pv&&pv.thumb)||undefined};store.set(GKEY,JSON.stringify(L));PEND=calcPend();try{updateStat()}catch(e){}
+  L[gameId]={id:gameId,name:P.name,vis:gameVis||'private',at:Date.now(),owner:(pv&&pv.owner&&pv.owner.id)?pv.owner:(ME?{id:ME.id,name:ME.username}:undefined),data:js,lh:lh,ch:pv&&pv.ch,ct:pv&&pv.ct,thumb:(pv&&pv.thumb)||undefined};store.set(GKEY,JSON.stringify(L));PEND=calcPend();try{updateStat()}catch(e){}
   if(PEND&&!VIEWONLY&&sb&&ME&&gameId)cloudPush(gameId);
   const gid=gameId;thumbFor(P).then(function(th){const L2=glib();if(!L2[gid]||(L2[gid].thumb||null)===(th||null))return;if(th)L2[gid].thumb=th;else delete L2[gid].thumb;store.set(GKEY,JSON.stringify(L2))})}
 function save(){if(gameId)persistGame()}
@@ -3640,6 +3642,7 @@ if(!P.v11){P.v11=1;const av=function(n){return P.parts.find(function(p){return p
 if(!P.v12){P.v12=1;if(P.avId&&!P.anims['hold item'])holdAnim();save()}
 applyEnv();rebuildParts();renderParts();anims();requestAnimationFrame(frame);loadBig();setTimeout(gcBig,4000);
 if(gameId&&!VIEWONLY&&sb&&!PEND&&(Object.keys(P.assets.audio).some(function(n){return bigRef(P.assets.audio[n])})||Object.keys(P.assets.meshes||{}).some(function(n){return bigRef(P.assets.meshes[n])})))setTimeout(function(){cloudPush(gameId)},3000);
+if(gameId&&!VIEWONLY&&sb&&PEND)setTimeout(function(){cloudPush(gameId)},2500);
 
 
 /* ===== Folders: keep the Explorer tidy. Parts and models get p.fold = the folder id. Ctrl+Shift+F makes one from the selection, Ctrl+U ungroups a model or dissolves a folder. ===== */
@@ -3774,10 +3777,11 @@ function mdl(title,build){const ov=document.createElement('div');ov.style.cssTex
 function mb(t,cls,fn){const b=el('button','btn small '+cls,t);b.type='button';b.onclick=fn;return b}
 function ask(text,yes,fn){mdl('Are you sure?',function(c,close){c.append(el('p','',text));const r=el('div','tb');r.append(mb(yes,'',function(){close();fn()}),mb('Cancel','ghost',close));c.append(r)})}
 const statEl=el('span','','');statEl.style.cssText='font-size:.8rem;font-weight:700;white-space:nowrap';
-function updateStat(){statEl.textContent=gameId?'Published ('+(gameVis==='public'?'Public':'Private')+')'+(cloudErr?' - NOT live, upload failed'+(cloudWhy?': '+cloudWhy:''):PEND?' - saved here, not live yet':(liveAt?' - live since '+liveAt:'')):'Unpublished - not saved';statEl.style.color=gameId&&!cloudErr&&!PEND?'#4be3a0':'#ffb347';
-  if(upBtn){upBtn.hidden=!(gameId&&sb&&ME);upBtn.disabled=upBusy;upBtn.textContent=upBusy?'Updating...':'Update'}}
+function updateStat(){statEl.textContent=gameId?'Published ('+(gameVis==='public'?'Public':'Private')+')'+(!sb?' - NOT live: not connected online (reload this page)':cloudErr?' - NOT live, upload failed'+(cloudWhy?': '+cloudWhy:''):PEND?' - saved here, not live yet':(liveAt?' - live since '+liveAt:'')):'Unpublished - not saved';statEl.style.color=gameId&&sb&&!cloudErr&&!PEND?'#4be3a0':'#ffb347';
+  if(upBtn){upBtn.hidden=!(gameId&&ME);upBtn.disabled=upBusy;upBtn.textContent=upBusy?'Updating...':'Update'}}
 function publish(v){if(!gameId)gameId='g'+Date.now().toString(36)+Math.floor(Math.random()*1e3).toString(36);gameVis=v;persistGame();cloudPush(gameId,true);store.set('brixblox-cur',gameId);baseStr=JSON.stringify(P);updateStat()}
-function updateLive(){if(!gameId||!sb||!ME||upBusy)return;upBusy=true;cloudErr=false;updateStat();cloudPush(gameId,true)}
+function updateLive(){if(gameId&&ME&&!sb){mdl('Cannot update',function(c,close){c.append(el('p','','This page is not connected online (the online library did not load, or you are in demo mode). Reload the page while connected to the internet, then press Update.'));c.append(mb('OK','',close))});return}
+  if(!gameId||!sb||!ME||upBusy)return;upBusy=true;cloudErr=false;updateStat();cloudPush(gameId,true)}
 function publishDlg(){mdl(gameId?'Publish settings':'Publish game',function(c,close){
   const mxp=el('input');mxp.type='number';mxp.min=1;mxp.max=30;mxp.value=P.maxp||10;mxp.style.cssText='min-height:32px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);width:100%';
   const nm=el('input');nm.value=P.name;nm.maxLength=30;nm.style.cssText='min-height:32px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink)';
@@ -4174,6 +4178,13 @@ async function studioHome(){
       row.append(mb('Edit','',async function(){
         if(g.cloud){try{const r=await sb.from('games').select('data').eq('id',g.id).single();if(r.error)throw r.error;
           const L2=glib();L2[g.id]={id:g.id,name:g.name,vis:g.vis,at:Date.now(),owner:{id:g.oid||ME.id,name:g.oname||ME.username},data:r.data.data};store.set(GKEY,JSON.stringify(L2))}catch(e){return}}
+        else if(sb){try{const r=await withTimeout(sb.from('games').select('data,updated_at,name,vis').eq('id',g.id).maybeSingle(),8000,'slow');
+          if(!r.error&&r.data){let cd=r.data.data;if(typeof cd!=='string')cd=JSON.stringify(cd);const L2=glib(),lo=L2[g.id],cur=hsh(cd);
+            if(lo&&lo.ch!==cur){const pending=lo.lh!==undefined&&lo.lh!==hsh(lo.data);let useOnline=!pending&&lo.ch!==undefined;
+              if(!useOnline)useOnline=confirm('The online copy of "'+(g.name||'this game')+'" is different from the copy saved on this computer (it was probably changed on another computer).\n\nOK = open the ONLINE copy'+(pending?' (your unsent changes on this computer will be lost)':'')+'\nCancel = keep THIS computer\'s copy and make it the live one');
+              if(useOnline)L2[g.id]=Object.assign({},lo,{data:cd,name:r.data.name||lo.name,vis:r.data.vis||lo.vis,at:Date.now(),lh:hsh(cd),ch:cur,ct:Date.parse(r.data.updated_at)||0});
+              else L2[g.id]=Object.assign({},lo,{ch:cur,lh:'keep-local'});
+              store.set(GKEY,JSON.stringify(L2))}}}catch(e){}}
         reloadInto(g.id)}));
       if(adm){const tb=mb(g.official?'Remove from BrixBlox section':'Add to BrixBlox section','ghost',async function(){
           try{const r=await sb.from('games').update({official:!g.official}).eq('id',g.id);if(r.error)throw r.error;g.official=!g.official;tb.textContent=g.official?'Remove from BrixBlox section':'Add to BrixBlox section';officialBox()}
