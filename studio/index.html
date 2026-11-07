@@ -622,7 +622,7 @@ function cloudPush(id,now){if(!sb||!ME)return;clearTimeout(cpT[id]);cpT[id]=setT
   const g=glib()[id];if(!g){done();return}const hs=hsh(g.data);const data=await cloudData(id);if(!data){done();return}
   if(data.length>6e6){cloudErr=true;done();return}
   try{let th=null;try{th=await thumbFor(JSON.parse(data))}catch(e){}
-    const row={id:id,owner_id:ME.id,owner_name:ME.username,name:g.name,vis:g.vis,data:data,updated_at:new Date().toISOString()};
+    const row={id:id,owner_id:(g.owner&&g.owner.id)||ME.id,owner_name:(g.owner&&g.owner.name)||ME.username,name:g.name,vis:g.vis,data:data,updated_at:new Date().toISOString()};
     let r=await sb.from('games').upsert(Object.assign({thumb:th},row));
     if(r.error&&/thumb/i.test(r.error.message||''))r=await sb.from('games').upsert(row);
     cloudErr=!!r.error;if(!r.error){const L2=glib();if(L2[id]){L2[id].lh=hs;store.set(GKEY,JSON.stringify(L2))}}}catch(e){cloudErr=true}PEND=calcPend();done();if(audWarn)try{msg(audWarn)}catch(e){}},now?0:1500)}
@@ -632,9 +632,11 @@ function cloudDel(id){if(!sb)return;sb.from('games').delete().eq('id',id).then(f
 /* In a real game your character looks like your BrixBlox avatar: yellow head and arms, your shirt colour, green legs. */
 function siteLook(Q){const T=(Q.parts||[]).find(function(p){return p.av&&p.name==='Torso'});
   if(T){const SH={Head:[[0,1.65,0],[1.4,1.5,1.4]],Rarm:[[1.1,-.1,0],[.7,2,.7]],Larm:[[-1.1,-.1,0],[.7,2,.7]],Rleg:[[.4,-2,0],[.75,2,.75]],Lleg:[[-.4,-2,0],[.75,2,.75]]};
-    T.size=[1.6,2,.8];Q.parts.forEach(function(p){const q=p.av&&SH[p.name];if(!q)return;p.pos=[T.pos[0]+q[0][0],T.pos[1]+q[0][1],T.pos[2]+q[0][2]];p.size=q[1].slice();p.pivot=defPivot(p)})}
-const sk='#f0c49a',lg='#a4bd47',tc=(ME&&ME.color)||'#ff6b57';(Q.parts||[]).forEach(function(p){if(!p.av)return;if(p.name==='Head'||/arm$/.test(p.name))p.color=sk;else if(p.name==='Torso')p.color=tc;else if(/leg$/.test(p.name))p.color=lg})}
-const mineG=function(g){return !g.owner||!ME||g.owner.id===ME.id};
+    T.size=[1.6,2,.8];Q.parts.forEach(function(p){const q=p.av&&!p.acc&&SH[p.name];if(!q)return;p.pos=[T.pos[0]+q[0][0],T.pos[1]+q[0][1],T.pos[2]+q[0][2]];p.size=q[1].slice();p.pivot=defPivot(p)})}
+const sk='#f0c49a',lg='#a4bd47',tc=(ME&&ME.color)||'#ff6b57';(Q.parts||[]).forEach(function(p){if(!p.av||p.acc)return;if(p.name==='Head'||/arm$/.test(p.name))p.color=sk;else if(p.name==='Torso')p.color=tc;else if(/leg$/.test(p.name))p.color=lg})}
+/* The BrixBlox account is the admin: it can open and edit every game. (The database has to allow it too, see the SQL I gave you.) */
+const ADMIN=!!(ME&&!ME.demo&&String(ME.username).trim().toLowerCase()==='brixblox');
+const mineG=function(g){return ADMIN||!g.owner||!ME||g.owner.id===ME.id};
 (function(){const L=glib();
   if(PLAYREQ){try{const o=JSON.parse(PLAYREQ);P=JSON.parse(o.data);if(P&&Array.isArray(P.scripts)){VIEWONLY=true;PLAYINFO=o;P.player=P.player||{};P.player.name=ME.username;P.player.squad=P.player.squad||'';siteLook(P)}else P=null}catch(e){P=null}if(P)return}
   try{const old=store.get('brixblox-studio');if(old&&!Object.keys(L).length){const o=JSON.parse(old);if(o&&Array.isArray(o.scripts)){const id='g'+Date.now().toString(36);L[id]={id:id,name:o.name||'My game',vis:'private',at:Date.now(),data:old};store.set(GKEY,JSON.stringify(L));store.set('brixblox-cur',id)}}}catch(e){}
@@ -645,7 +647,7 @@ const mineG=function(g){return !g.owner||!ME||g.owner.id===ME.id};
 if(P.name==='My first BricBloc game')P.name='My first BrixBlox game';
 PEND=calcPend();
 function persistGame(){const L=glib(),pv=L[gameId],js=JSON.stringify(P),lh=pv?(pv.lh!==undefined?pv.lh:hsh(pv.data)):undefined;
-  L[gameId]={id:gameId,name:P.name,vis:gameVis||'private',at:Date.now(),owner:ME?{id:ME.id,name:ME.username}:undefined,data:js,lh:lh,thumb:(pv&&pv.thumb)||undefined};store.set(GKEY,JSON.stringify(L));PEND=calcPend();try{updateStat()}catch(e){}
+  L[gameId]={id:gameId,name:P.name,vis:gameVis||'private',at:Date.now(),owner:(pv&&pv.owner&&pv.owner.id)?pv.owner:(ME?{id:ME.id,name:ME.username}:undefined),data:js,lh:lh,thumb:(pv&&pv.thumb)||undefined};store.set(GKEY,JSON.stringify(L));PEND=calcPend();try{updateStat()}catch(e){}
   const gid=gameId;thumbFor(P).then(function(th){const L2=glib();if(!L2[gid]||(L2[gid].thumb||null)===(th||null))return;if(th)L2[gid].thumb=th;else delete L2[gid].thumb;store.set(GKEY,JSON.stringify(L2))})}
 function save(){if(gameId)persistGame()}
 function clean(){P.scripts=P.scripts.filter(function(s){return s.length})}
@@ -1198,7 +1200,7 @@ function quickSync(){if(qsPend)return;qsPend=true;requestAnimationFrame(function
 function rebuildParts(){
   if(hline.parent)hline.parent.remove(hline);hov=null;if(PG){scene.remove(PG);PG.traverse(function(o){if(o.geometry&&!o.geometry.userData.keep)o.geometry.dispose();if(o.material)o.material.dispose()})}
   PG=new THREE.Group();scene.add(PG);J={};M={};
-  P.parts.forEach(function(p){const g=new THREE.Group(),v=piv(p),geo=(p.av||p.sm||(p.parent&&/^(Head|Torso|[RL](arm|leg))$/.test(p.name)))?avGeo(p):cachedGeo(p,false,shapeGeo),md=MATS[p.mat]||MATS.plastic;if(TX[p.mat])boxUV(geo,md.ts||6);const m=new THREE.Mesh(geo,mkMat(p));m.receiveShadow=true;m.castShadow=!md.op&&!p.stab;m.layers.enable(1);
+  P.parts.forEach(function(p){const g=new THREE.Group(),v=piv(p),geo=((p.av&&!p.acc)||p.sm||(p.parent&&/^(Head|Torso|[RL](arm|leg))$/.test(p.name)))?avGeo(p):cachedGeo(p,false,shapeGeo),md=MATS[p.mat]||MATS.plastic;if(TX[p.mat])boxUV(geo,md.ts||6);const m=new THREE.Mesh(geo,mkMat(p));m.receiveShadow=true;m.castShadow=!md.op&&!p.stab;m.layers.enable(1);
     m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);m.userData.id=p.id;if(p.face)addFace(m,p);if(p.stab)m.visible=false;if(p.light&&!p.stab){const L=new THREE.PointLight(p.light.c,p.light.i,p.light.r,1);L.userData.isL=1;m.add(L)}g.add(m);J[p.id]=g;M[p.id]=m});
   const hk={};P.parts.forEach(function(p){if(p.parent)hk[p.parent]=1});
   P.parts.forEach(function(p){const g=J[p.id],v=piv(p),pa=p.parent&&byId(p.parent);
@@ -1232,7 +1234,7 @@ function clearNP(){NP.forEach(function(n){if(n.bub){scene.remove(n.bub.sp);n.bub
 function spawnPlayer(name,S){const T=byId(P.avId),av=P.parts.filter(function(p){return p.av});
   if(!T||!av.length){log('Error: there is no player character to copy.');return}
   const nm=String(name).trim().slice(0,16)||'Player'+(NP.length+2),n=NP.length,grp=new THREE.Group(),JJ={},dx=(n%2?-1:1)*(4+Math.floor(n/2)*3);
-  av.forEach(function(p){const g=new THREE.Group(),v=piv(p),m=new THREE.Mesh(avGeo(p),mkMat(p));m.castShadow=!p.stab;m.receiveShadow=true;
+  av.forEach(function(p){const g=new THREE.Group(),v=piv(p),m=new THREE.Mesh(p.acc?cachedGeo(p,false,shapeGeo):avGeo(p),mkMat(p));m.castShadow=!p.stab;m.receiveShadow=true;
     if(p.name==='Torso'){if(NETCOL)m.material.color.set(NETCOL);else m.material.color.offsetHSL((n+1)*.17,0,0)}
     m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);if(p.face)addFace(m,p);if(p.stab)m.visible=false;g.add(m);JJ[p.id]=g});
   av.forEach(function(p){const g=JJ[p.id],v=piv(p),pa=p.parent&&byId(p.parent);
@@ -1492,6 +1494,19 @@ function newPart(shape){shape=typeof shape==='string'?shape:'box';if(animOn())re
   pos=pos.map(function(v){return Math.round(v*2)/2});pos[1]=Math.max(pos[1],1);
   const p=mkPart(SHN[shape]||'Part',pos,[2,2,2]);if(shape!=='box')p.shape=shape;sel=[p.id];selModel=null;msg('Added a '+(SHN[shape]||'part').toLowerCase()+' in front of you.');all();return p}
 function hum(p){const n=rigParts(p).map(function(c){return c.name});return n.indexOf('Rarm')>=0&&n.indexOf('Larm')>=0}
+/* Accessories: a normal part that is welded to the player's Head or Torso, so it moves with the player and other players see it too */
+function setAcc(p,slot){
+  if(!slot){if(!p.acc)return;delete p.acc;p.av=false;p.parent=null;p.pivot=null;delete p.model;cleanModels();msg('Removed from your character.');all();props();return}
+  const H=P.parts.find(function(q){return q.av&&q.name==='Head'&&!q.acc}),T=avTorso();
+  const to=(slot==='hat'||slot==='face')?H:T;
+  if(!to){msg('There is no player character to wear this on.');props();return}
+  const r=function(v){return Math.round(v*100)/100};let x;
+  if(slot==='hat')x=[H.pos[0],H.pos[1]+H.size[1]/2+p.size[1]/2,H.pos[2]];
+  else if(slot==='face')x=[H.pos[0],H.pos[1],H.pos[2]-(H.size[2]/2+p.size[2]/2)];
+  else if(slot==='neck')x=[T.pos[0],T.pos[1]+T.size[1]/2,T.pos[2]];
+  else x=[T.pos[0],T.pos[1],T.pos[2]+T.size[2]/2+p.size[2]/2];
+  p.pos=x.map(r);p.acc=slot;p.av=true;p.parent=to.id;p.pivot=defPivot(p);ensureRigModel(rootOf(to));
+  msg('Now a '+slot+' accessory. Use Position and Size to fit it, and press Play to see it on your character.');all();props()}
 function avTorso(){return P.parts.find(function(p){return p.av&&p.name==='Torso'})}
 function lab(t,x){const l=el('label','',t);l.append(x);return l}
 function vec(t,a,mv){const w=el('div','v3');a.forEach(function(v,i){const n=el('input');n.type='number';n.step='.5';n.value=v;
@@ -1513,7 +1528,10 @@ function props(){const d=$('p-props');d.replaceChildren();if(!selModel&&!sel.len
   d.append(lab('Name (arms must be Rarm and Larm)',nm),lab('Material',matSel(p.mat,function(k){setMat(p,k);all()})),lab('Color',col),vec('Position',p.pos,true),vec('Size',p.size,false));
   if(!p.parent){const c=el('input');c.type='checkbox';c.checked=!!p.movable;c.onchange=function(){p.movable=c.checked;save()};const l=el('label','','Movable (push it with your character)');l.append(c);d.append(l);
     const c2=el('input');c2.type='checkbox';c2.checked=!p.nocol;c2.onchange=function(){if(c2.checked)delete p.nocol;else p.nocol=true;save()};const l2=el('label','','Collision (solid: blocks your character)');l2.append(c2);d.append(l2)}
-  else d.append(el('p','note','Welded: moves with the part it is welded to.'));if(!p.av&&!p.sm&&!p.stab){const ss=el('select');[['box','Block'],['cyl','Cylinder'],['sphere','Sphere'],['wedge','Triangle']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ss.append(op)});ss.value=p.shape||'box';ss.onchange=function(){if(ss.value==='box')delete p.shape;else p.shape=ss.value;all()};d.append(lab('Shape',ss))}
+  else d.append(el('p','note','Welded: moves with the part it is welded to.'));if((!p.av||p.acc)&&!p.sm&&!p.stab){const ss=el('select');[['box','Block'],['cyl','Cylinder'],['sphere','Sphere'],['wedge','Triangle']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ss.append(op)});ss.value=p.shape||'box';ss.onchange=function(){if(ss.value==='box')delete p.shape;else p.shape=ss.value;all()};d.append(lab('Shape',ss))}
+  if(!p.stab&&(p.acc||(!p.av&&!p.parent&&!p.model))){const as=el('select');[['','Not an accessory'],['hat','Hat (top of the head)'],['face','Face accessory (front of the head)'],['neck','Neck (where the head meets the body)'],['back','Back (on the back)']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];as.append(op)});
+    as.value=p.acc||'';as.onchange=function(){setAcc(p,as.value)};d.append(lab('Accessory (wear it on your character)',as));
+    if(p.acc)d.append(el('p','note','It is welded to your character, shows on you and on other players, and has no collision. Change Position and Size above to fit it.'))}
   if(p.stab)d.append(el('p','note','Stabilizer: holds the rig up so the Torso can move and rotate freely. It is hidden and is never animated.'));lightBox(d,p);lightBox(d,p);tagBox(d,p);contSel(d)}
 $('p-add').onclick=function(){newPart()};$('p-shape').onchange=function(){if(this.value)newPart(this.value);this.value=''};$('p-group').onclick=group;$('p-ungroup').onclick=ungroup;$('p-copy').onclick=copySel;$('p-paste').onclick=pasteClip;$('p-dup').onclick=dupSel;
 $('p-weld').onclick=function(){if(sel.length<2){msg('Select the Torso first, then ctrl-click the parts to weld to it.');return}
@@ -2080,7 +2098,7 @@ addEventListener('keydown',function(e){if(e.code!=='KeyL'||e.ctrlKey||e.metaKey|
   const a=document.activeElement;if(a&&(/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a.isContentEditable))return;if($('studio').getClientRects().length===0||animOn())return;
   e.preventDefault();toggleLock()});
 function vv(x){return Math.max(.0002,x*P.audio.vol*2)}
-function feet0(){let m=1e9;P.parts.forEach(function(p){if(p.av)m=Math.min(m,p.pos[1]-p.size[1]/2)});return m===1e9?0:m}
+function feet0(){let m=1e9;P.parts.forEach(function(p){if(p.av&&!p.acc)m=Math.min(m,p.pos[1]-p.size[1]/2)});return m===1e9?0:m}
 /* Highest surface under the feet that is no more than STEP above them */
 function groundAt(cx,cz,fy){let best=-1e9;
   P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;const rq=rootOf(q);if(!solid(rq))return;const o=RO[rq.id]||[0,0],eq=eh(q),top=q.pos[1]+(RY[rq.id]||0)+eq[1];
@@ -2117,7 +2135,7 @@ function startRag(key,dead){if(!key||goneKey(key))return;if(key==='main'&&!byId(
   if(e){if(e.dead)return;
     if(e.t>e.end)e.t=e.end;
     if(dead){e.dead=true;e.end=e.t+3}else e.end=Math.max(e.end,e.t+3.5);return}
-  RAG[key]={t:0,end:dead?3:4,dead:!!dead,side:Math.random()<.5?-1:1,seed:Math.random()*1000};if(key==='main')S.rag=true}
+  RAG[key]={t:0,end:dead?3:4,dead:!!dead,side:Math.random()<.5?-1:1,seed:Math.random()*1000};if(key==='main'){S.rag=true;NRAG.c++}}
 /* Unit direction (world space) for a push: front/back/left/right follow the way the thing faces, up/down are vertical */
 function dirOf(key,nm){nm=String(nm==null?'front':nm).trim().toLowerCase();let fx=0,fz=-1;
   if(key==='main'){const r=S.dir*Math.PI/180;fx=Math.cos(r);fz=-Math.sin(r)}
@@ -2765,17 +2783,33 @@ async function studioHome(){
   if(sb){try{const r=await sb.from('games').select('id,name,vis,updated_at').eq('owner_id',ME.id);
     if(!r.error)r.data.forEach(function(x){if(String(x.id).indexOf('acc_')===0)return;const t=Date.parse(x.updated_at)||0,o=map[x.id];if(!o||t>o.at)map[x.id]={id:x.id,name:x.name||'Untitled',vis:x.vis,at:t,cloud:!o}})}catch(e){}}
   const list=Object.keys(map).map(function(k){return map[k]}).sort(function(a,b){return b.at-a.at});
-  if(!list.length){box.append(el('p','empty','You have not published any games yet. Press Create a new game, build it, then press Publish.'));return}
-  box.className='gcards';
-  list.forEach(function(g){let h=0;for(let i=0;i<g.id.length;i++)h=(h*31+g.id.charCodeAt(i))>>>0;
-    const c=el('div','gc'),th=el('div','th',(g.name.trim().charAt(0)||'?').toUpperCase()),bd=el('div','bd');th.style.background='hsl('+(h%360)+',55%,42%)';
-    bd.append(el('b','',g.name),el('small','',g.vis==='public'?'Public':'Private'));
-    const row=el('div','row');
-    row.append(mb('Edit','',async function(){
-      if(g.cloud){try{const r=await sb.from('games').select('data').eq('id',g.id).single();if(r.error)throw r.error;
-        const L2=glib();L2[g.id]={id:g.id,name:g.name,vis:g.vis,at:Date.now(),owner:{id:ME.id,name:ME.username},data:r.data.data};store.set(GKEY,JSON.stringify(L2))}catch(e){return}}
-      reloadInto(g.id)}));
-    bd.append(row);c.append(th,bd);box.append(c)})}
+  const cards=function(host,items,adm){host.className='gcards';
+    items.forEach(function(g){let h=0;for(let i=0;i<g.id.length;i++)h=(h*31+g.id.charCodeAt(i))>>>0;
+      const c=el('div','gc'),th=el('div','th',(g.name.trim().charAt(0)||'?').toUpperCase()),bd=el('div','bd');th.style.background='hsl('+(h%360)+',55%,42%)';
+      bd.append(el('b','',g.name),el('small','',(g.vis==='public'?'Public':'Private')+(adm&&g.oname?' \u00b7 by '+g.oname:'')));
+      const row=el('div','row');
+      row.append(mb('Edit','',async function(){
+        if(g.cloud){try{const r=await sb.from('games').select('data').eq('id',g.id).single();if(r.error)throw r.error;
+          const L2=glib();L2[g.id]={id:g.id,name:g.name,vis:g.vis,at:Date.now(),owner:{id:g.oid||ME.id,name:g.oname||ME.username},data:r.data.data};store.set(GKEY,JSON.stringify(L2))}catch(e){return}}
+        reloadInto(g.id)}));
+      if(adm){const tb=mb(g.official?'Remove from BrixBlox section':'Add to BrixBlox section','ghost',async function(){
+          try{const r=await sb.from('games').update({official:!g.official}).eq('id',g.id);if(r.error)throw r.error;g.official=!g.official;tb.textContent=g.official?'Remove from BrixBlox section':'Add to BrixBlox section';officialBox()}
+          catch(e){try{msg('Could not change that game. The database needs the BrixBlox setup SQL first.')}catch(x){}}});row.append(tb)}
+      bd.append(row);c.append(th,bd);host.append(c)})};
+  if(!list.length)box.append(el('p','empty','You have not published any games yet. Press Create a new game, build it, then press Publish.'));
+  else cards(box,list,false);
+  if(!ADMIN||!sb)return;
+  /* Admin only: the Made by BrixBlox section and every game on the site */
+  let all=[];
+  try{let r=await sb.from('games').select('id,name,vis,updated_at,owner_id,owner_name,official').order('updated_at',{ascending:false}).limit(500);
+    if(r.error)r=await sb.from('games').select('id,name,vis,updated_at,owner_id,owner_name').order('updated_at',{ascending:false}).limit(500);
+    if(!r.error)all=(r.data||[]).filter(function(x){return String(x.id).indexOf('acc_')!==0}).map(function(x){return {id:x.id,name:x.name||'Untitled',vis:x.vis,at:Date.parse(x.updated_at)||0,cloud:true,oid:x.owner_id,oname:x.owner_name,official:!!x.official}})}catch(e){}
+  const offH=el('h2','big','Made by BrixBlox'),offBox=el('div'),allH=el('h2','big','All games'),allBox=el('div');
+  offH.style.marginTop=allH.style.marginTop='28px';pg.insertBefore(offH,pg.firstChild);pg.insertBefore(offBox,offH.nextSibling);pg.append(allH,allBox);
+  function officialBox(){offBox.replaceChildren();const o=all.filter(function(g){return g.official});
+    if(!o.length)offBox.append(el('p','empty','Nothing here yet. Press Add to BrixBlox section on any game below.'));else cards(offBox,o,true)}
+  officialBox();
+  if(!all.length)allBox.append(el('p','empty','No games found.'));else cards(allBox,all,true)}
 if(HOME&&!VIEWONLY)studioHome();
 /* Ctrl+S would save the web page as a file, and Ctrl+W would close the tab. Ctrl+S is blocked and just tells you how saving works. Browsers do not let a page cancel
    Ctrl+W outright, so it is blocked where the browser allows it, and otherwise the browser asks "Leave site?" so you can stay. */
@@ -2787,6 +2821,7 @@ addEventListener('keydown',function(e){if(!(e.ctrlKey||e.metaKey)||e.altKey)retu
   else if(e.code==='KeyW'){e.preventDefault();e.stopPropagation();ctlW=performance.now()}},true);
 addEventListener('beforeunload',function(e){if(skipUnload)return;if(dirty()||performance.now()-ctlW<1500){e.preventDefault();e.returnValue=''}});
 /* ===== Online play: everyone playing the same game is put in a server of up to 10. Joining picks a server that is already running, or starts a new one. ===== */
+const NRAG={c:0};/* counts how many times this player was ragdolled, so other players see it too */
 const NANIM={n:'',c:0};/* the last animation this player started on their own character, and a counter so other players never miss it */
 const NETMAX=10,NET={id:Math.random().toString(36).slice(2,10),lob:null,ch:null,sid:'',on:false,fail:false,last:'',idle:0};let NETCOL=null;
 function leaveGame(){try{S.stop=true}catch(e){}netLeave();if(window.parent!==window)parent.postMessage({bb:'leave'},location.origin);else location.href=SITE_URL}
@@ -2815,6 +2850,7 @@ function netRecv(q){if(!q||!q.id||q.id===NET.id||!NET.on||!(running||playing))re
   e.tx=q.x;e.ty=q.y;e.th=q.h;e.td=q.d;e.mv=q.m;e.seen=performance.now();
   const nm=function(v){return typeof v==='string'?v.slice(0,40):''};
   e.air=!!q.g;e.wa=nm(q.wa);e.ia=nm(q.ia);e.ja=nm(q.ja);
+  if(e.rc===undefined)e.rc=q.rc;else if(q.rc!==e.rc){e.rc=q.rc;startRag('np:'+e.name,false)}/* they were ragdolled: show it on this screen too (never as a kill, they respawn on their own screen) */
   if(e.ac===undefined)e.ac=q.ac;/* first packet: do not replay an old animation */
   else if(q.ac!==e.ac){e.ac=q.ac;if(nm(q.an)){e.an=nm(q.an);e.at=0}}}
 function netSay(id,t){const e=NP.find(function(n){return n.net===id});if(!e)return;
@@ -2825,7 +2861,7 @@ function netDrop(id){const i=NP.findIndex(function(n){return n.net===id});if(i<0
   n.g.traverse(function(o){if(o.geometry&&!o.geometry.userData.keep)o.geometry.dispose();if(o.material)o.material.dispose()});n.tag.material.map.dispose();n.tag.material.dispose();
   NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);chatSys(n.name+' left the game');renderParts()}
 setInterval(function(){if(!NET.on||!(running||playing))return;
-  const q={id:NET.id,n:ME.username,c:ME.color||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:Math.round(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',an:NANIM.n,ac:NANIM.c},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.an,q.ac].join();
+  const q={id:NET.id,n:ME.username,c:ME.color||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:Math.round(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.an,q.ac,q.rc].join();
   if(j===NET.last&&++NET.idle<10)return;NET.last=j;NET.idle=0;NET.ch.send({type:'broadcast',event:'p',payload:q});
   const now=performance.now();NP.slice().forEach(function(n){if(n.net&&now-n.seen>20000)netDrop(n.net)})},100);
 function bbHud(){const lb=el('button','btn ghost small','Leave game');lb.id='bb-leave';lb.style.cssText='position:fixed;top:10px;right:10px;z-index:60';lb.onclick=leaveGame;
