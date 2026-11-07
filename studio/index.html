@@ -1470,7 +1470,14 @@ function modelProps(d,m){const ps=partsOf(m.id),nm=el('input');nm.value=m.name;n
   const ms=matSel(ps[0]&&ps[0].mat,function(k){ps.forEach(function(q){setMat(q,k)});all()}),col=el('input');col.type='color';col.value=ps[0]?ps[0].color:'#ffffff';
   col.oninput=function(){ps.forEach(function(q){q.color=col.value;M[q.id].material.color.set(col.value)});hl();save()};
   d.append(lab('Model name',nm),lab('Material (all pieces)',ms),lab('Color (all pieces)',col),el('p','note','Model with '+ps.length+' pieces. Drag the arrows to move all of it. To move one piece, Alt+click it, double-click it, or pick it in the list above.'));contSel(d)}
-function props(){const d=$('p-props');d.replaceChildren();if(!selModel&&!sel.length&&selSvc){svcProps(d);return}if(selModel){const mm=byModel(selModel);if(mm){modelProps(d,mm);return}}const p=byId(sel[0]);if(!p)return;
+/* Several parts picked at once (Shift/Ctrl-click or a Shift-drag box): material and colour apply to every one of them */
+function multiProps(d,ps){const ms=el('select'),ph=el('option','','Choose a material for all...');ph.value='';ms.append(ph);
+  Object.keys(MATS).forEach(function(k){const o=el('option','',MATS[k].n);o.value=k;ms.append(o)});ms.value='';
+  ms.onchange=function(){const k=ms.value;if(!k)return;ps.forEach(function(q){setMat(q,k)});msg('Set the material of '+ps.length+' parts to '+MATS[k].n+'.');all()};
+  const col=el('input');col.type='color';col.value=ps[0].color;
+  col.oninput=function(){ps.forEach(function(q){q.color=col.value;const m=M[q.id];if(m){m.material.color.set(col.value);if(q.mat==='neon')m.material.emissive.set(col.value)}});hl();save()};
+  d.append(el('p','note',ps.length+' parts selected. Material and colour below change all of them at once.'),lab('Material (all selected)',ms),lab('Color (all selected)',col));contSel(d)}
+function props(){const d=$('p-props');d.replaceChildren();if(!selModel&&!sel.length&&selSvc){svcProps(d);return}if(selModel){const mm=byModel(selModel);if(mm){modelProps(d,mm);return}}{const mp=sel.map(function(id){return byId(id)}).filter(function(q){return q&&!q.stab});if(mp.length>1){multiProps(d,mp);return}}const p=byId(sel[0]);if(!p)return;
   const nm=el('input');nm.value=p.name;nm.oninput=function(){p.name=nm.value;save()};nm.onchange=function(){renderParts()};
   const col=el('input');col.type='color';col.value=p.color;col.oninput=function(){p.color=col.value;M[p.id].material.color.set(col.value);hl();save()};
   d.append(lab('Name (arms must be Rarm and Larm)',nm),lab('Material',matSel(p.mat,function(k){setMat(p,k);all()})),lab('Color',col),vec('Position',p.pos,true),vec('Size',p.size,false));
