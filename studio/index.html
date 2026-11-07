@@ -1126,30 +1126,29 @@ const olMat=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrit
   uniforms:{tM:{value:null},uTex:{value:new THREE.Vector2(1,1)},uPx:OLU.uPx,uSel:{value:new THREE.Vector3(.239,.647,1)},uHov:{value:new THREE.Vector3(1,1,1)}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}',
   fragmentShader:'uniform sampler2D tM;uniform vec2 uTex;uniform float uPx;uniform vec3 uSel;uniform vec3 uHov;varying vec2 vUv;'+
-  'void main(){vec4 c=texture2D(tM,vUv);if(c.r>0.5||c.g>0.5)discard;'+
-  'float ds=99.0,dh=99.0;'+
+  'void main(){vec4 c=texture2D(tM,vUv);float ds=99.0,dh=99.0;'+
   'for(int i=0;i<24;i++){float a=float(i)*0.2617994;vec2 d=vec2(cos(a),sin(a));'+
   'for(int k=1;k<=4;k++){float r=uPx*float(k)*0.25+0.5;vec4 s=texture2D(tM,vUv+d*r/uTex);'+
   'if(s.r>0.5)ds=min(ds,r);if(s.g>0.5)dh=min(dh,r);}}'+
-  'float as=clamp(uPx+1.0-ds,0.0,1.0),ah=clamp(uPx+1.0-dh,0.0,1.0);'+
-  'if(as<=0.0&&ah<=0.0)discard;'+
+  'float out_=(c.r>0.5||c.g>0.5)?0.0:1.0;'+
+  'float as=clamp(uPx+1.0-ds,0.0,1.0)*out_,ah=clamp(uPx+1.0-dh,0.0,1.0)*out_;'+
   'if(as>=ah)gl_FragColor=vec4(uSel,as);else gl_FragColor=vec4(uHov,ah);}'});
 olScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),olMat));
-function hovIds(){const p=hov&&byId(hov);if(!p||p.stab)return {};const ids={};
-  if(p.model)partsOf(p.model).forEach(function(q){ids[q.id]=1});else ids[p.id]=1;return ids}
+function hovIds(){const p=hov&&byId(hov);if(!p||p.stab)return {};const ids={},r=rootOf(p);
+  if(p.model)partsOf(p.model).forEach(function(q){ids[q.id]=1});else if(kids(r).length)treeOf(r).forEach(function(q){ids[q.id]=1});else ids[p.id]=1;return ids}
 function outlinePass(){if(playing||running)return;
   const S1={};sel.forEach(function(id){const p=byId(id);if(p&&!p.stab)S1[id]=1});const H1=hovIds();
   if(!Object.keys(S1).length&&!Object.keys(H1).length)return;
   const sz=renderer.getDrawingBufferSize(new THREE.Vector2());
   if(!olRT||olRT.width!==sz.x||olRT.height!==sz.y){if(olRT)olRT.dispose();
-    olRT=new THREE.WebGLRenderTarget(sz.x,sz.y,{minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,depthBuffer:true,stencilBuffer:false})}
+    olRT=new THREE.WebGLRenderTarget(sz.x,sz.y,{minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,depthBuffer:true,stencilBuffer:false,generateMipmaps:false})}
   const old=[];
   Object.keys(M).forEach(function(id){const m=M[id];old.push([m,m.material]);m.material=OLMASK[S1[id]?0:H1[id]?1:2]});
   const bg=scene.background,fg=scene.fog,cl=camera.layers.mask,ca=renderer.getClearAlpha(),cc=new THREE.Color(),au=renderer.shadowMap.autoUpdate;renderer.getClearColor(cc);
   scene.background=null;scene.fog=null;camera.layers.set(1);renderer.shadowMap.autoUpdate=false;
-  renderer.setRenderTarget(olRT);renderer.setClearColor(0x000000,0);renderer.clear();renderer.render(scene,camera);renderer.setRenderTarget(null);
-  renderer.setClearColor(cc,ca);renderer.shadowMap.autoUpdate=au;camera.layers.mask=cl;scene.background=bg;scene.fog=fg;
-  old.forEach(function(q){q[0].material=q[1]});
+  try{renderer.setRenderTarget(olRT);renderer.setClearColor(0x000000,0);renderer.clear();renderer.render(scene,camera)}
+  finally{renderer.setRenderTarget(null);renderer.setClearColor(cc,ca);renderer.shadowMap.autoUpdate=au;camera.layers.mask=cl;scene.background=bg;scene.fog=fg;
+    old.forEach(function(q){q[0].material=q[1]})}
   olMat.uniforms.tM.value=olRT.texture;olMat.uniforms.uTex.value.set(sz.x,sz.y);
   renderer.autoClear=false;renderer.render(olScene,olCam);renderer.autoClear=true}
 function hl(){P.parts.forEach(function(p){const m=M[p.id];if(!m)return;m.material.emissive.setHex(animOn()&&aJ===p.id?0x8a6a10:emi(p))})}
@@ -1294,6 +1293,8 @@ function pick(id,add,indiv){{const q=id&&byId(id);if(q)snapRig(rootOf(q))}if(ani
   else if(p.model&&!indiv){const ids=[id].concat(partsOf(p.model).map(function(q){return q.id}).filter(function(x){return x!==id}));
     if(add){const have=ids.every(function(x){return sel.indexOf(x)>=0});sel=have?sel.filter(function(x){return ids.indexOf(x)<0}):sel.concat(ids.filter(function(x){return sel.indexOf(x)<0}));selModel=null}
     else{sel=ids;selModel=p.model}}
+  else if(!indiv&&kids(rootOf(p)).length){const ids=[id].concat(treeOf(rootOf(p)).map(function(q){return q.id}).filter(function(x){return x!==id}));
+    if(add){const have=ids.every(function(x){return sel.indexOf(x)>=0});sel=have?sel.filter(function(x){return ids.indexOf(x)<0}):sel.concat(ids.filter(function(x){return sel.indexOf(x)<0}))}else sel=ids;selModel=null}
   else if(add){sel=sel.indexOf(id)>=0?sel.filter(function(x){return x!==id}):sel.concat(id);selModel=null}
   else{sel=[id];selModel=null}
   hl();buildEdit();renderParts()}
