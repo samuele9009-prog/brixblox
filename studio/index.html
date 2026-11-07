@@ -1253,7 +1253,7 @@ function syncPos(){refreshRot();P.parts.forEach(function(p){const g=J[p.id],m=M[
   if(pa){const q=piv(pa);g.position.set(v[0]-q[0],v[1]-q[1],v[2]-q[2])}else g.position.set(v[0],v[1],v[2]);g.userData.base=g.position.clone()})}
 function quickSync(){if(qsPend)return;qsPend=true;requestAnimationFrame(function(){qsPend=false;syncPos();buildEdit();if(rigOn)applyPose({});else preview()})}
 function rebuildParts(){
-  if(hline.parent)hline.parent.remove(hline);hov=null;if(PG){scene.remove(PG);PG.traverse(function(o){if(o.geometry&&!o.geometry.userData.keep)o.geometry.dispose();if(o.material)o.material.dispose()})}
+  if(hline.parent)hline.parent.remove(hline);hov=null;if(PG){scene.remove(PG);freeTree(PG)}
   PG=new THREE.Group();scene.add(PG);J={};M={};
   P.parts.forEach(function(p){const g=new THREE.Group(),v=piv(p),geo=((p.av&&!p.acc)||p.sm||(p.parent&&/^(Head|Torso|[RL](arm|leg))$/.test(p.name)))?avGeo(p):cachedGeo(p,false,shapeGeo),md=MATS[p.mat]||MATS.plastic;if(TX[p.mat])boxUV(geo,md.ts||6);const m=new THREE.Mesh(geo,mkMat(p));m.receiveShadow=true;m.castShadow=!md.op&&!p.stab&&!(p.tr>.3);m.layers.enable(1);
     m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);m.userData.id=p.id;if(p.face)addFace(m,p);if(p.stab)m.visible=false;if(p.light&&!p.stab){const L=new THREE.PointLight(p.light.c,p.light.i,p.light.r,1);L.userData.isL=1;m.add(L)}if(p.shape==='mesh'){m.material.visible=false;m.castShadow=false;try{meshHook(m,p)}catch(e){}}g.add(m);J[p.id]=g;M[p.id]=m});
@@ -1418,7 +1418,7 @@ function accLocal(){/* put your own equipped items on your character */
 function netEq(e,t){/* another player's items */
   const H=P.parts.find(function(p){return p.av&&p.name==='Head'});accDress(e.MM||{},accParse(t),H?Math.max(.3,Math.min(3,H.size[1]/1.5)):1)}
 /* Extra players: copies of your character with a name tag, standing next to you */
-function clearNP(){NP.forEach(function(n){if(n.bub){scene.remove(n.bub.sp);n.bub.t.dispose();n.bub.sp.material.dispose()}scene.remove(n.g);scene.remove(n.tag);n.g.traverse(function(o){if(o.geometry&&!o.geometry.userData.keep)o.geometry.dispose();if(o.material)o.material.dispose()});n.tag.material.map.dispose();n.tag.material.dispose()});NP.length=0}
+function clearNP(){NP.slice().forEach(function(n){npFree(n)});NP.length=0}
 function spawnPlayer(name,S){const T=byId(P.avId),av=P.parts.filter(function(p){return p.av}),MM={};
   if(!T||!av.length){log('Error: there is no player character to copy.');return}
   const nm=String(name).trim().slice(0,16)||'Player'+(NP.length+2),n=NP.length,grp=new THREE.Group(),JJ={},dx=(n%2?-1:1)*(4+Math.floor(n/2)*3);
@@ -1434,7 +1434,7 @@ function spawnPlayer(name,S){const T=byId(P.avId),av=P.parts.filter(function(p){
   x.fillStyle='rgba(20,22,24,.82)';x.fillRect(4,10,248,44);x.fillStyle='#fff';x.font='700 26px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(nm,128,33);
   const tag=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthTest:false}));tag.scale.set(3.2,.8,1);tag.renderOrder=8;
   let top=0;av.forEach(function(p){top=Math.max(top,p.pos[1]+p.size[1]/2)});tag.position.set(T.pos[0]+dx,top+1.3,T.pos[2]);scene.add(tag);
-  NP.push({g:grp,tag:tag,JJ:JJ,MM:MM,t:n*.7,dx:dx,name:nm,top:top});S.oth.push(nm);log(nm+' joined the game');renderParts()}
+  NP.push({g:grp,tag:tag,JJ:JJ,MM:MM,t:n*.7,dx:dx,name:nm,top:top});S.oth.push(nm);log(nm+' joined the game');renderParts();gmPlRefresh()}
 function npAnim(n){return(typeof n==='string'&&n&&Object.prototype.hasOwnProperty.call(P.anims,n))?P.anims[n]:null}
 function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
   NP.forEach(function(q){q.t+=dt;
@@ -2436,10 +2436,20 @@ function groundAt(cx,cz,fy){let best=-1e9;
     if(top>fy+STEP||Math.abs(cx-(q.pos[0]+o[0]))>eq[0]+.6||Math.abs(cz-(q.pos[2]+o[1]))>eq[2]+.6)return;
     if(top>best)best=top});
   return best}
+/* Head bump: a solid part above you stops your head instead of being treated as a wall (which threw you sideways to its edge).
+   Returns the highest feet height that keeps your head just under the lowest part above you, or null when nothing is in the way. */
+function headStop(cx,cz,f0,h0,nh){const R=1.1,PH=6,head0=f0+h0+PH,head1=f0+nh+PH;let best=Infinity;
+  P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;const rq=rootOf(q);if(!solid(rq))return;
+    const o=RO[rq.id]||[0,0],eq=eh(q),by=q.pos[1]+(RY[rq.id]||0)-eq[1];if(by<head0-.05||by>=best)return;
+    const bx=q.pos[0]+o[0],bz=q.pos[2]+o[1],dx=cx-Math.max(bx-eq[0],Math.min(bx+eq[0],cx)),dz=cz-Math.max(bz-eq[2],Math.min(bz+eq[2],cz));
+    if(dx*dx+dz*dz>=R*R)return;best=by});
+  return head1>best-.01?best-.01-PH-f0:null}
 function physics(dt){const T=byId(P.avId);if(!T)return;const f0=feet0(),g=groundAt(T.pos[0]+S.x,T.pos[2]-S.y,f0+S.h);
+  const hcx=T.pos[0]+S.x,hcz=T.pos[2]-S.y;
   if(S.fly&&!S.rag&&amAdmin()){/* admin flight: Space up, Q down, no gravity */
-    const dv=((keys.Space?1:0)-(keys.KeyQ?1:0))*38;let nh=S.h+dv*dt;if(g>-1e8&&f0+nh<=g){nh=g-f0;S.gr=true}else S.gr=false;S.h=nh;S.vy=0}
-  else{S.vy=Math.max(-220,S.vy-P.rules.grav*dt);const nh=S.h+S.vy*dt;
+    const dv=((keys.Space?1:0)-(keys.KeyQ?1:0))*38;let nh=S.h+dv*dt;if(dv>0){const hs=headStop(hcx,hcz,f0,S.h,nh);if(hs!==null)nh=hs}if(g>-1e8&&f0+nh<=g){nh=g-f0;S.gr=true}else S.gr=false;S.h=nh;S.vy=0}
+  else{S.vy=Math.max(-220,S.vy-P.rules.grav*dt);let nh=S.h+S.vy*dt;
+  if(S.vy>0){const hs=headStop(hcx,hcz,f0,S.h,nh);if(hs!==null){nh=hs;S.vy=-Math.max(8,S.vy*.4)}}/* bonk: you get knocked back down */
   if(S.vy<=0&&g>-1e8&&f0+nh<=g){S.h=g-f0;S.vy=0;S.gr=true}else{S.h=nh;S.gr=false}}
   if(f0+S.h<-150){S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0}}
 
@@ -2602,9 +2612,16 @@ function npPhys(dt){const T=byId(P.avId);if(!T)return;NP.forEach(function(n){if(
 function playersOf(str){return resolve(str).filter(function(t){return t.key==='main'||t.key.slice(0,3)==='np:'})}
 function banOf(name){const nm=String(name).trim().toLowerCase(),now=Date.now();return P.bans.find(function(b){return b.name.toLowerCase()===nm&&(b.until===null||b.until>now)})||null}
 function leftText(b){if(b.until===null)return 'ever (forever)';const s=Math.max(0,Math.round((b.until-Date.now())/1000)),m=Math.floor(s/60),h=Math.floor(m/60),d=Math.floor(h/24);return d>=1?d+' day'+(d>1?'s':'')+' '+(h%24)+' h':h>=1?h+' h '+(m%60)+' min':m>=1?m+' min '+(s%60)+' s':s+' s'}
-function dropNP(n){scene.remove(n.g);scene.remove(n.tag);n.g.traverse(function(o){if(o.geometry&&!o.geometry.userData.keep)o.geometry.dispose();if(o.material)o.material.dispose()});
-  if(n.tag.material.map)n.tag.material.map.dispose();n.tag.material.dispose();
-  const i=NP.indexOf(n);if(i>=0)NP.splice(i,1);S.oth=S.oth.filter(function(x){return x!==n.name});delete RAG['np:'+n.name];delete RSZ['np:'+n.name];TM.forEach(function(st){st.delete('np:'+n.name)});renderParts()}
+/* Frees a player's 3D objects. Meshes can have a LIST of materials (an accessory with a different material per side); calling .dispose() on a list crashed,
+   and because that crash happened before the player was removed, they stayed on the player list and no "left the game" message appeared. */
+function freeTree(root){try{root.traverse(function(o){try{if(o.geometry&&!(o.geometry.userData&&o.geometry.userData.keep))o.geometry.dispose()}catch(e){}
+    try{if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(function(m){try{m.dispose()}catch(e){}})}catch(e){}})}catch(e){}}
+function npFree(n){try{scene.remove(n.g);scene.remove(n.tag)}catch(e){}
+  freeTree(n.g);
+  try{if(n.tag&&n.tag.material){if(n.tag.material.map)n.tag.material.map.dispose();n.tag.material.dispose()}}catch(e){}
+  try{if(n.bub){scene.remove(n.bub.sp);n.bub.t.dispose();n.bub.sp.material.dispose()}}catch(e){}}
+function dropNP(n){npFree(n);
+  const i=NP.indexOf(n);if(i>=0)NP.splice(i,1);S.oth=S.oth.filter(function(x){return x!==n.name});delete RAG['np:'+n.name];delete RSZ['np:'+n.name];TM.forEach(function(st){st.delete('np:'+n.name)});renderParts();gmPlRefresh()}
 function endGameFor(kind,why,b){S.stop=true;running=false;playing=false;sync();resetWorld();
   mdl(kind==='banned'?'You were banned from this game':'You were kicked from this game',function(c,close){
     c.append(el('p','','Reason: '+(why||'No reason given')));
@@ -2687,17 +2704,19 @@ $('chat-in').onblur=function(){$('chat').classList.remove('focus');$('chat-log')
 $('chat-tg').onclick=function(){$('chat').classList.toggle('min')};
 
 /* ===== Game menu: press Esc while playing or running ===== */
-let menuEl=null;
+let menuEl=null,gmPlFill=null;
+function gmPlRefresh(){if(gmPlFill)try{gmPlFill()}catch(e){}}/* redraws the Players list in the game menu when someone joins or leaves */
 function respawnMe(){delete RAG.main;S.rag=false;S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0;S.gr=false;S.ch=undefined;S.pd=null;const T=entTargets('main');if(T)limbsRest(T,T.root);chatSys('You respawned.')}
-function closeGM(){if(menuEl){menuEl.remove();menuEl=null}}
+function closeGM(){gmPlFill=null;if(menuEl){menuEl.remove();menuEl=null}}
 function openGM(){if(menuEl||!(running||playing))return;for(const k in keys)keys[k]=false;look=false;if(document.pointerLockElement)document.exitPointerLock();
   const ov=el('div','gm'),pn=el('div','gmp');ov.append(pn);
   const hd=el('div','gmh'),tt=el('div');tt.append(el('h3','','Game menu'),el('small','',P.name));const x=el('button','gmx','✕');x.type='button';x.setAttribute('aria-label','Close menu');x.onclick=closeGM;hd.append(tt,x);pn.append(hd);
   const bt=el('div','gmc');
   bt.append(mb('▶  Resume','',closeGM),mb('↻  Respawn character','ghost',function(){closeGM();respawnMe()}),mb('◎  Reset camera','ghost',function(){cdT=P.rules.cam}),mb('■  Leave game  (L)','danger',function(){closeGM();$('s-stop').click()}));pn.append(bt);
   pn.append(el('div','gmt','Players'));
-  const q=P.squads.find(function(z){return z.id===P.player.squad}),pl=[[P.player.name+' (you)',q?q.color:'#2fa95a']].concat(S.oth.map(function(n){return [n,'#3b82f6']}));
-  pl.forEach(function(p){const r=el('div','arow'),dt=el('i');dt.style.cssText='width:12px;height:12px;border-radius:4px;flex:none;background:'+p[1];r.append(dt,el('span','nm',p[0]));pn.append(r)});
+  const plBox=el('div');pn.append(plBox);
+  gmPlFill=function(){plBox.replaceChildren();const q=P.squads.find(function(z){return z.id===P.player.squad}),pl=[[P.player.name+' (you)',q?q.color:'#2fa95a']].concat(S.oth.map(function(n){return [n,'#3b82f6']}));
+    pl.forEach(function(p){const r=el('div','arow'),dt=el('i');dt.style.cssText='width:12px;height:12px;border-radius:4px;flex:none;background:'+p[1];r.append(dt,el('span','nm',p[0]));plBox.append(r)})};gmPlFill();
   pn.append(el('div','gmt','Settings'));
   slider(pn,'Volume',P.audio,'vol',0,1,.05,function(v){return Math.round(v*100)+'%'},liveVol);
   const mt=el('input');mt.type='checkbox';mt.checked=P.audio.mute;mt.onchange=function(){P.audio.mute=mt.checked;save();liveVol()};pn.append(lab('Mute all sounds',mt));
@@ -3008,6 +3027,13 @@ function camLimit(fx,fy,fz,f,want){
     const h=CRAY.intersectObjects(CAMM,false)[0];if(h)best=Math.min(best,Math.max(0,h.distance-.45))});
   return best}
 /* Hides your own character (but keeps its shadow) while the camera is inside it */
+/* Camera inside a big accessory (like a box worn over the whole head): hide your own accessory while the camera is inside it.
+   Otherwise the camera sees the inside walls of the box and the whole game looks invisible. */
+function accCamClip(on){const T=byId(P.avId),g=T&&J[T.id];if(!g)return;const cp=new THREE.Vector3(cam.x,cam.y,cam.z),bx=new THREE.Box3();
+  g.traverse(function(o){if(!o.userData||!o.userData.acc)return;
+    if(!on){if(o.userData.clip){o.userData.clip=false;if(!avHid)o.visible=true}return}
+    if(avHid)return;
+    try{const was=!!o.userData.clip;bx.setFromObject(o);if(bx.isEmpty())return;bx.expandByScalar(was?.9:.5);const inside=bx.containsPoint(cp);o.userData.clip=inside;o.visible=!inside}catch(e){}})}
 function avVis(v){const T=byId(P.avId),g=T&&J[T.id];if(!g)return;g.traverse(function(o){if(o.userData&&o.userData.acc)o.visible=v;if(o.isMesh&&o.material&&!Array.isArray(o.material)){o.material.colorWrite=v;o.material.depthWrite=v}})}
 let lt=performance.now(),camF=null;
 function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.1,(now-lt)/1000);lt=now;const f=fwd();
@@ -3026,7 +3052,7 @@ function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.
       if((fpm||S.sl)&&document.pointerLockElement===cv){const rc=cv.getBoundingClientRect();xh.style.left=(rc.left+rc.width/2)+'px';xh.style.top=(rc.top+rc.height/2)+'px';xh.style.display='block'}else xh.style.display='none'}
     const hide=camD<(avHid?1.5:1.1);if(hide!==avHid){avHid=hide;avVis(!hide)}
     S.slo=(S.slo||0)+((S.sl?1.9:0)-(S.slo||0))*(1-Math.exp(-dt*10));const so=S.slo*Math.min(1,camD/2.5);
-    cam.x=fx-f[0]*camD+Math.cos(cam.yaw)*so;cam.y=fy-f[1]*camD;cam.z=fz-f[2]*camD+Math.sin(cam.yaw)*so}}else{camF=null;camD=null;fpPrev=false;slPrev=false;{const xh=document.getElementById('fp-x');if(xh)xh.style.display='none'}if(avHid){avHid=false;avVis(true)}}
+    cam.x=fx-f[0]*camD+Math.cos(cam.yaw)*so;cam.y=fy-f[1]*camD;cam.z=fz-f[2]*camD+Math.sin(cam.yaw)*so;accCamClip(true)}}else{accCamClip(false);camF=null;camD=null;fpPrev=false;slPrev=false;{const xh=document.getElementById('fp-x');if(xh)xh.style.display='none'}if(avHid){avHid=false;avVis(true)}}
   if(aPlay&&!playing&&!rigOn){const A=P.anims[curA];if(A){aT+=dt;if(aT>=A.len){if(aLoop)aT%=A.len;else{aT=A.len;aPlay=false;animPlayBtn()}}animTick();applyPose(evalPose(A,aT))}}
   if(gd&&gd.mv&&gd.le&&!playing)rmoveDrag(gd.le);
   stageTick(dt);animBox();animGizUpdate();gizmoFit();
@@ -3289,9 +3315,9 @@ function netSay(id,t){const e=NP.find(function(n){return n.net===id});if(!e)retu
   if(!e.bub){const c=document.createElement('canvas');c.width=1024;c.height=384;const x=c.getContext('2d');x.scale(2,2);const tx=new THREE.CanvasTexture(c);tx.minFilter=THREE.LinearFilter;tx.generateMipmaps=false;
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthTest:false}));sp.renderOrder=9;sp.visible=false;scene.add(sp);e.bub={x:x,t:tx,sp:sp}}
   e.say=t.slice(0,90);e.sayAt=performance.now();bubPaint(e.say,e.bub.x,e.bub.t)}
-function netDrop(id){const i=NP.findIndex(function(n){return n.net===id});if(i<0)return;const n=NP[i];if(n.bub){scene.remove(n.bub.sp);n.bub.t.dispose();n.bub.sp.material.dispose()}scene.remove(n.g);scene.remove(n.tag);
-  n.g.traverse(function(o){if(o.geometry&&!o.geometry.userData.keep)o.geometry.dispose();if(o.material)o.material.dispose()});n.tag.material.map.dispose();n.tag.material.dispose();
-  NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);chatSys(n.name+' left the game');renderParts()}
+function netDrop(id){const i=NP.findIndex(function(n){return n.net===id});if(i<0)return;const n=NP[i];
+  NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);/* remove them first, so nothing below can stop it */
+  chatSys(n.name+' left the game');npFree(n);delete RAG['np:'+n.name];delete RSZ['np:'+n.name];try{renderParts()}catch(e){}gmPlRefresh()}
 setInterval(function(){if(!NET.on||!(running||playing))return;
   const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,e:accStr(ME&&ME.av&&ME.av.eq)},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.an,q.ac,q.rc,q.e].join()+(rgo?JSON.stringify(rgo):'');
   const nowT=performance.now();if(j===NET.last&&nowT-(NET.lt||0)<1500)return;NET.last=j;NET.idle=0;NET.lt=nowT;NET.ch.send({type:'broadcast',event:'p',payload:q})},100);
