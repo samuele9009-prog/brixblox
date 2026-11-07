@@ -1433,7 +1433,7 @@ function npAnim(n){return(typeof n==='string'&&n&&Object.prototype.hasOwnPropert
 function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
   NP.forEach(function(q){q.t+=dt;
     if(q.net&&q.tx!=null&&T){const rg0=RAG['np:'+q.name],rag=rg0&&!rg0.gone&&(rg0.dead||rg0.t<rg0.end+RRISE),g=q.g.position,far=Math.hypot(q.tx-g.x,q.th-g.y,-q.ty-g.z)>6,k=far?1:1-Math.exp(-dt*14);if(!rag){g.x+=(q.tx-g.x)*k;g.y+=(q.th-g.y)*k;g.z+=(-q.ty-g.z)*k}
-      {const a=(q.td-90)*Math.PI/180;if(q.yaw===undefined)q.yaw=a;else{const df=((a-q.yaw+Math.PI*3)%(Math.PI*2))-Math.PI;q.yaw+=df*k;q.yaw=((q.yaw+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI}}
+      {const W=function(x){return x-2*Math.PI*Math.floor((x+Math.PI)/(2*Math.PI))},a=W((q.td-90)*Math.PI/180);/* wrap every angle to -180..180 so a big or negative direction can never make the model whirl round */if(isFinite(a)){if(!isFinite(q.yaw))q.yaw=a;else q.yaw=W(q.yaw+W(a-q.yaw)*k)}}
       q.tag.position.set(T.pos[0]+g.x,q.top+.75+g.y,T.pos[2]+g.z);
       if(q.bub){const age=performance.now()-(q.sayAt||0),on=q.say&&age<BUBMS;q.bub.sp.visible=!!on;
         if(on){const k=Math.max(0,Math.min(1,(BUBMS-age)/BUBFADE)),e=k*k*(3-2*k),z=.4+.6*e;q.bub.sp.material.opacity=e;q.bub.sp.scale.set(6.6*z,2.475*z,1);q.bub.sp.position.set(T.pos[0]+g.x,q.top+2.25-(1-z)+g.y,T.pos[2]+g.z)}}}
@@ -3212,7 +3212,7 @@ addEventListener('beforeunload',function(e){if(skipUnload)return;if(dirty()||per
 /* ===== Online play: everyone playing the same game is put in a server of up to 10. Joining picks a server that is already running, or starts a new one. ===== */
 const NRAG={c:0};/* counts how many times this player was ragdolled, so other players see it too */
 const NANIM={n:'',c:0};/* the last animation this player started on their own character, and a counter so other players never miss it */
-const NETMAX=10,NET={id:Math.random().toString(36).slice(2,10),lob:null,ch:null,sid:'',on:false,fail:false,last:'',idle:0};let NETCOL=null,NETSK=null,NETPN=null;
+const NETMAX=10,NET={id:Math.random().toString(36).slice(2,10),lob:null,ch:null,sid:'',on:false,fail:false,last:'',idle:0};let NETCOL=null,NETSK=null,NETPN=null;const NDIR=function(x){x=+x;return isFinite(x)?Math.round(((x%360)+540)%360-180):0};
 /* Leaving a game you only play: cover the screen at once, so the editor behind it can never be seen or used while the page is closing */
 let leavingEl=null;
 function showLeaving(){if(leavingEl)return;const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:9999;background:#232527;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font:700 1.1rem Montserrat,system-ui,sans-serif';
@@ -3257,7 +3257,7 @@ function ragOut(){const e=RAG.main;if(!e||!e.sim||e.gone)return null;const sm=e.
 function netRecv(q){if(!q||!q.id||q.id===NET.id||!NET.on||!(running||playing))return;
   let e=NP.find(function(n){return n.net===q.id});
   if(!e){NETCOL=/^#[0-9a-f]{6}$/i.test(q.c)?q.c:null;NETSK=/^#[0-9a-f]{6}$/i.test(q.sk)?q.sk:null;NETPN=/^#[0-9a-f]{6}$/i.test(q.pn)?q.pn:null;spawnPlayer(String(q.n),S);NETCOL=null;NETSK=null;NETPN=null;e=NP[NP.length-1];if(!e)return;e.net=q.id;e.g.position.set(q.x,q.h,-q.y)}
-  e.tx=q.x;e.ty=q.y;e.th=q.h;e.td=q.d;e.mv=q.m;e.seen=performance.now();
+  e.tx=q.x;e.ty=q.y;e.th=q.h;e.td=(q.d!=null&&isFinite(+q.d))?+q.d:(e.td||0);e.mv=q.m;e.seen=performance.now();
   const nm=function(v){return typeof v==='string'?v.slice(0,40):''};
   e.un=String(q.n||e.name).slice(0,24);e.air=!!q.g;e.wa=nm(q.wa);e.ia=nm(q.ia);e.ja=nm(q.ja);
   {const es=typeof q.e==='string'?q.e.slice(0,200):'';if(es!==e.eqs){e.eqs=es;try{netEq(e,es)}catch(x){}}}
@@ -3272,7 +3272,7 @@ function netDrop(id){const i=NP.findIndex(function(n){return n.net===id});if(i<0
   n.g.traverse(function(o){if(o.geometry&&!o.geometry.userData.keep)o.geometry.dispose();if(o.material)o.material.dispose()});n.tag.material.map.dispose();n.tag.material.dispose();
   NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);chatSys(n.name+' left the game');renderParts()}
 setInterval(function(){if(!NET.on||!(running||playing))return;
-  const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:Math.round(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,e:accStr(ME&&ME.av&&ME.av.eq)},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.an,q.ac,q.rc,q.e].join()+(rgo?JSON.stringify(rgo):'');
+  const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,e:accStr(ME&&ME.av&&ME.av.eq)},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.an,q.ac,q.rc,q.e].join()+(rgo?JSON.stringify(rgo):'');
   if(j===NET.last&&++NET.idle<10)return;NET.last=j;NET.idle=0;NET.ch.send({type:'broadcast',event:'p',payload:q});
   const now=performance.now();NP.slice().forEach(function(n){if(n.net&&now-n.seen>20000)netDrop(n.net)})},100);
 function bbHud(){const lb=el('button','btn ghost small','Leave game');lb.id='bb-leave';lb.style.cssText='position:fixed;top:10px;right:10px;z-index:60';lb.onclick=leaveGame;
