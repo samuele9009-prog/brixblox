@@ -720,7 +720,7 @@ function mkx(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=n
 async function loadGames(){
   const map={},L=localGames();
   Object.keys(L).forEach(function(id){const g=L[id];map[id]={id:id,name:g.name||'Untitled',vis:g.vis||'private',at:g.at||0,ownerId:g.owner?g.owner.id:me.id,ownerName:g.owner?g.owner.name:me.username,data:g.data,thumb:g.thumb||null}});
-  try{const rows=await api.listGames(me.id);rows.forEach(function(r){if(String(r.id).indexOf('acc_')===0)return;const t=Date.parse(r.updated_at)||0,o=map[r.id];
+  try{const rows=await api.listGames(me.id);rows.forEach(function(r){if(String(r.id).indexOf('acc_')===0||String(r.id).indexOf('sys_')===0)return;const t=Date.parse(r.updated_at)||0,o=map[r.id];
     if(!o||t>o.at)map[r.id]={id:r.id,name:r.name||'Untitled',vis:r.vis,at:t,ownerId:r.owner_id,ownerName:r.owner_name||'?',data:o&&o.data||null,thumb:r.thumb||(o&&o.thumb)||null}})}catch(e){}
   if(!me)return;
   const all=Object.keys(map).map(function(k){return map[k]}).filter(function(g){return g.vis==='public'||g.ownerId===me.id}).sort(function(a,b){return b.at-a.at});
