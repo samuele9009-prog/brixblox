@@ -666,7 +666,7 @@ function thumbFor(d){return new Promise(function(res){try{const im=d&&d.assets&&
     const o=c.toDataURL('image/jpeg',.8);thCache={s:src,o:o};res(o)}catch(e){res(null)}};i.onerror=function(){res(null)};i.src=src}catch(e){res(null)}})}
 /* Big sounds live in this browser's file store, so other computers never had them. When a game is saved online its sounds are now uploaded too:
    first to the Supabase Storage bucket "game-audio" (any size up to 64 MB), and if that bucket is not set up, small sounds (about 1.5 MB or less) are packed inside the game instead. */
-const AUDB='game-audio';let audWarn='';
+const AUDB='game-audio';let audWarn='',audErr='';
 function audCache(){try{return JSON.parse(store.get('brixblox-audurl'))||{}}catch(e){return {}}}
 function audCacheSet(id,u){const c=audCache();c[id]=u;store.set('brixblox-audurl',JSON.stringify(c))}
 function blobUrl(b){return new Promise(function(res){const r=new FileReader();r.onload=function(){res(r.result)};r.onerror=function(){res(null)};r.readAsDataURL(b)})}
@@ -675,13 +675,13 @@ async function cloudAudio(v,room){const id=bigId(v),c=audCache();if(c[id])return
   if(!rec||!rec.blob)return null;const b=rec.blob;
   if(sb&&ME){try{const ext=(/json/.test(b.type)?'json':/\/(mpeg|mp3)/.test(b.type)?'mp3':/ogg/.test(b.type)?'ogg':/wav/.test(b.type)?'wav':/mp4|aac|m4a/.test(b.type)?'m4a':'bin'),path=ME.id+'/'+id+'.'+ext;
       const up=await sb.storage.from(AUDB).upload(path,b,{contentType:b.type||'audio/mpeg',upsert:false});
-      if(!up.error||/exist|duplicate/i.test(String(up.error.message||''))||up.error.statusCode==409||up.error.status==409){const u=sb.storage.from(AUDB).getPublicUrl(path).data.publicUrl;if(u){audCacheSet(id,u);return {u:u,inl:0}}}}catch(e){}}
+      if(!up.error||/exist|duplicate/i.test(String(up.error.message||''))||up.error.statusCode==409||up.error.status==409){const u=sb.storage.from(AUDB).getPublicUrl(path).data.publicUrl;if(u){audCacheSet(id,u);return {u:u,inl:0}}}else audErr=String(up.error.message||up.error.error||'upload refused')+' ('+(b.size/1048576).toFixed(1)+' MB)'}catch(e){audErr=String((e&&e.message)||e)}}
   if(b.size<=1.5*1048576&&room>=b.size*1.4){const u=await blobUrl(b);if(u)return {u:u,inl:u.length}}
   return null}
 async function cloudData(id){const g=glib()[id];if(!g)return null;let d;try{d=JSON.parse(g.data)}catch(e){return null}
   try{const au=d.assets.audio;let room=4.2e6,bad=[];
-    for(const k of Object.keys(au)){const v=au[k];if(!bigRef(v))continue;const r=await cloudAudio(v,room);if(r){au[k]=r.u;room-=r.inl}else{delete au[k];bad.push(k)}}
-    audWarn=bad.length?('The sound'+(bad.length>1?'s ':' ')+bad.join(', ')+' could not be sent online, so other computers will not hear '+(bad.length>1?'them':'it')+'. Open this game on the computer you uploaded it on and run the one-time storage setup (see the note in the Assets list).'):''}catch(e){}
+    for(const k of Object.keys(au)){const v=au[k];if(!bigRef(v))continue;const r=await cloudAudio(v,room);if(r){au[k]=r.u;room-=r.inl}else{au[k]='missing:'+k;bad.push(k)}}
+    audWarn=bad.length?('The sound'+(bad.length>1?'s ':' ')+bad.join(', ')+' could not be sent online, so other computers will not hear '+(bad.length>1?'them':'it')+(audErr?'. Server said: '+audErr:'')+'. Open this game on the computer you uploaded it on and run the one-time storage setup (see the note in the Assets list).'):''}catch(e){}
   try{await meshCloud(d,4.2e6)}catch(e){}
   return JSON.stringify(d)}
 /* Saving never sends a game to the normal BrixBlox site by itself any more. persistGame() only saves in this Studio; this runs when you press Publish or Update.
@@ -2027,16 +2027,18 @@ const AUD={},AVR={};
 /* Volume of one sound = game volume x that sound's own volume (slider under Assets) x what the "set volume of _ to _" block set while the game runs */
 function audVol(nm){if(P.audio.mute)return 0;const b=P.assets.avol&&P.assets.avol[nm]!==undefined?P.assets.avol[nm]:1,r=AVR[nm]!==undefined?AVR[nm]:1,g=AVR.all!==undefined?AVR.all:1;return Math.max(0,Math.min(1,P.audio.vol*2*b*r*g))}
 function audioFor(nm){if(!P.assets.audio[nm]){log('Error: no audio named "'+nm+'". Upload it under Assets in the Explorer.');return null}
+  if(missB(P.assets.audio[nm])){log('Error: the sound "'+nm+'" was never sent online, so it can not play here. The game owner has to set up the game-audio storage and press Update.');return null}
   const src=audioSrc(nm);if(!src){log('Error: the audio "'+nm+'" is still loading from storage. Try again in a moment.');return null}
   let a=AUD[nm];if(!a||a._src!==src){a=new Audio(src);a._src=src;AUD[nm]=a}a.volume=audVol(nm);return a}
 function stopAudio(nm){for(const k in AUD)if(!nm||k===nm){AUD[k].onended=null;AUD[k].pause();try{AUD[k].currentTime=0}catch(e){}}}
 function liveVol(){for(const k in AUD)AUD[k].volume=audVol(k)}
 const ASSET_FILE=2*1024*1024,ASSET_TOTAL=4.5*1024*1024;
 /* Big audio: sounds live in IndexedDB (the browser's file store). The game only remembers "idb:<id>:<bytes>", so the small game-save limit does not apply to them. */
-const AUDIO_FILE=64*1024*1024,AUDIO_TOTAL=320*1024*1024,AURL={};let IDBP=null;
+const AUDIO_FILE=200*1024*1024,AUDIO_TOTAL=1000*1024*1024,AURL={};let IDBP=null;
 function idb(){if(!IDBP)IDBP=new Promise(function(res,rej){try{const q=indexedDB.open('brixblox-audio',1);q.onupgradeneeded=function(){q.result.createObjectStore('a')};q.onsuccess=function(){res(q.result)};q.onerror=function(){rej(q.error||new Error('idb'))};q.onblocked=function(){rej(new Error('blocked'))}}catch(e){rej(e)}});return IDBP}
 function idbDo(mode,fn){return idb().then(function(db){return new Promise(function(res,rej){const tx=db.transaction('a',mode),r=fn(tx.objectStore('a'));tx.oncomplete=function(){res(r&&r.result)};tx.onerror=tx.onabort=function(){rej(tx.error||new Error('idb'))}})})}
 const bigRef=function(v){return typeof v==='string'&&v.slice(0,4)==='idb:'},bigId=function(v){return v.split(':')[1]},bigSize=function(v){return +v.split(':')[2]||0};
+function missB(v){return typeof v==='string'&&v.slice(0,8)==='missing:'}
 function audioSrc(nm){const v=P.assets.audio[nm];if(!v)return null;return bigRef(v)?(AURL[bigId(v)]||null):v}
 function loadBig(){Object.keys(P.assets.audio).forEach(function(n){const v=P.assets.audio[n];if(!bigRef(v)||AURL[bigId(v)])return;const id=bigId(v);
   idbDo('readonly',function(st){return st.get(id)}).then(function(rec){if(rec&&rec.blob){AURL[id]=URL.createObjectURL(rec.blob);if(selSvc==='assets')renderParts()}}).catch(function(){})})}
@@ -3595,13 +3597,14 @@ function svcProps(d){const s=SV.find(function(x){return x.k===selSvc});if(!s)ret
   else if(s.k==='itemservice'){d.append(el('p','note','All your items live here. To make one, go to Assets, right-click a mesh and press Create item. Give it to a player with the "give item" block.'));itemRows(d)}
   else if(s.k==='assets'){const r=el('div','tb');r.append(mb('Upload image','',function(){pickFile('image')}),mb('Upload audio','',function(){pickFile('audio')}),mb('Sound effects','',function(){sfxOpen=!sfxOpen;renderParts()}),mb('Import mesh','',pickMesh));d.append(r);if(sfxOpen)sfxPanel(d);
     d.append(el('p','note','Meshes: pick a .obj, .fbx or .glb file together with its texture pictures (png or jpg) in one go. For an .obj also pick its .mtl file. Up to 24 MB per mesh. Big pictures are shrunk to 1024 pixels. Press Place in game to add it, then change its Texture in the part properties.'));
-    d.append(el('p','note','Images: up to 2 MB each. Audio: up to 64 MB per file and about 320 MB per game. Play sounds with the blocks "play _" (loops), "play _ once until done" and "stop audio _". Name an image Sun or Moon to change the sun or moon in the sky (the clouds are fixed and cannot be replaced). Other images are stored for objects and GUIs later. Sounds are sent online with the game when it is saved so you can hear them on other computers (big sounds need the one-time Supabase storage bucket named game-audio).'));
+    d.append(el('p','note','Images: up to 2 MB each. Audio: up to 200 MB per file and about 1000 MB per game (online storage may allow less, see your Supabase storage limit). Play sounds with the blocks "play _" (loops), "play _ once until done" and "stop audio _". Name an image Sun or Moon to change the sun or moon in the sky (the clouds are fixed and cannot be replaced). Other images are stored for objects and GUIs later. Sounds are sent online with the game when it is saved so you can hear them on other computers (big sounds need the one-time Supabase storage bucket named game-audio).'));
     const rows=function(col,kind){const ks=Object.keys(P.assets[col]);if(!ks.length)d.append(el('p','empty','Nothing here yet.'));
       ks.forEach(function(n){const w=el('div','arow'),src=P.assets[col][n];
         if(kind==='image'){const im=el('img');im.src=src;im.alt=n;w.append(im)}
         w.append(el('span','nm',n+(kind==='audio'&&bigRef(src)?'  ('+(bigSize(src)/1048576).toFixed(1)+' MB)':'')));
-        if(kind==='audio'){const au=el('audio'),as=audioSrc(n);au.controls=true;au.preload='none';if(as)au.src=as;else w.append(el('span','note','loading...'));w.append(au)}
-        if(kind==='audio'){const vr=el('input');vr.type='range';vr.min=0;vr.max=1;vr.step=.05;vr.value=P.assets.avol[n]!==undefined?P.assets.avol[n]:1;vr.title='Volume of this sound';vr.setAttribute('aria-label','Volume of '+n);vr.style.cssText='width:90px;min-height:0;padding:0';vr.oninput=function(){P.assets.avol[n]=+vr.value;save();liveVol()};w.append(vr)}
+        if(kind==='audio'&&missB(src)){w.append(el('span','note','Not sent online: the owner has to set up the game-audio storage and press Update.'))}
+        else if(kind==='audio'){const au=el('audio'),as=audioSrc(n);au.controls=true;au.preload='none';if(as)au.src=as;else w.append(el('span','note','loading...'));w.append(au)}
+        if(kind==='audio'&&!missB(src)){const vr=el('input');vr.type='range';vr.min=0;vr.max=1;vr.step=.05;vr.value=P.assets.avol[n]!==undefined?P.assets.avol[n]:1;vr.title='Volume of this sound';vr.setAttribute('aria-label','Volume of '+n);vr.style.cssText='width:90px;min-height:0;padding:0';vr.oninput=function(){P.assets.avol[n]=+vr.value;save();liveVol()};w.append(vr)}
         if(kind==='image')w.append(mb('Put on selected part','ghost',function(){const t=lastPS.map(byId).filter(Boolean);if(!t.length){msg('Click a part first, then come back and press this.');return}applyTex(t,n)}));
         w.append(mb('Delete','ghost',function(){delete P.assets[col][n];if(kind==='audio'){delete P.assets.avol[n];stopAudio(n);delete AUD[n];dropBig(src)}updSkyTex();save();msg('Deleted '+n+'.');renderParts()}));d.append(w)})};
     d.append(el('p','note','Images'));rows('images','image');d.append(el('p','note','Audio'));rows('audio','audio');d.append(el('p','note','Meshes'));meshRows(d);d.append(el('p','note','Items (give them with the "give item" block)'));itemRows(d);d.append(el('p','note','Badges (give them with the "give badge" block)'));badgeUI(d)}
