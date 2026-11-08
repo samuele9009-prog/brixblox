@@ -4604,7 +4604,7 @@ async function studioHome(){
               store.set(GKEY,JSON.stringify(L2))}}}catch(e){}}
         reloadInto(g.id)}));
       if(adm){const tb=mb(g.official?'Remove from BrixBlox section':'Add to BrixBlox section','ghost',async function(){
-          try{const r=await sb.from('games').update({official:!g.official}).eq('id',g.id);if(r.error)throw r.error;g.official=!g.official;tb.textContent=g.official?'Remove from BrixBlox section':'Add to BrixBlox section';officialBox()}
+          try{let r=await sb.rpc('set_official',{p_game:String(g.id),p_on:!g.official});if(r.error){r=await sb.from('games').update({official:!g.official}).eq('id',g.id);if(r.error)throw r.error}g.official=!g.official;tb.textContent=g.official?'Remove from BrixBlox section':'Add to BrixBlox section';officialBox()}
           catch(e){try{msg('Could not change that game. The database needs the BrixBlox setup SQL first.')}catch(x){}}});row.append(tb)}
       bd.append(row);c.append(th,bd);host.append(c)})};
   if(!list.length)box.append(el('p','empty','You have not published any games yet. Press Create a new game, build it, then press Publish.'));
