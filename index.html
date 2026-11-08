@@ -53,6 +53,7 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--berry);outline-
 .btn{min-height:46px;padding:0 20px;border:1px solid var(--line);border-radius:12px;background:var(--sun);color:var(--ink);font-family:var(--display);font-size:1.1rem;box-shadow:none;cursor:pointer;transition:transform .06s,box-shadow .06s}
 .btn:active{transform:translateY(3px);box-shadow:none}
 .btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.locked{opacity:.55;cursor:not-allowed;filter:grayscale(.5)}
 .btn.ghost{background:var(--paper)}
 .btn.small{min-height:36px;padding:0 14px;font-size:.95rem}
 form .btn{width:100%;margin-top:16px}
@@ -850,16 +851,39 @@ function gfill(box,list,empty){box.replaceChildren();if(!list.length){box.classN
   list.forEach(function(g){const mine=g.ownerId===me.id,c=mkx('div','gc'),th=mkx('div','th',(g.name||'?').trim().charAt(0).toUpperCase()||'?'),bd=mkx('div','bd');
     th.style.background='hsl('+hue(g.id)+',55%,42%)';if(g.thumb){th.textContent='';th.style.background='center/cover url("'+g.thumb+'")'}
     bd.append(mkx('b','',g.name),mkx('small','','by '+(mine?'you':g.ownerName)+(mine?'  -  '+(g.vis==='public'?'Public':'Private'):'')));
-    const row=mkx('div','row'),pl=mkx('button','btn small','Join');pl.type='button';pl.onclick=function(){playGame(g)};row.append(pl);
+    const row=mkx('div','row'),pl=mkx('button','btn small joinb','Join');pl.type='button';pl.onclick=function(){playGame(g)};row.append(pl);
     if(mine){const ed=mkx('button','btn ghost small','Edit');ed.type='button';ed.onclick=function(){editGame(g)};row.append(ed)}
-    bd.append(row);c.append(th,bd);box.append(c)})}
+    bd.append(row);c.append(th,bd);box.append(c)});lockPaint()}
 async function gameData(g){if(g.data)return g.data;try{return await api.gameData(g.id)}catch(e){return null}}
-async function playGame(g){const d=await gameData(g);if(!d){toast('Could not load that game.');return}
+async function playGame(g){
+  if(joining||$('pl-frame'))return;
+  if(lockHeld()){lockPaint();toast(LOCK_MSG);return}
+  joining=true;lockStart(g.id);/* claim the account right away so a second tab can't start a game while this one loads */
+  try{await playGame2(g)}catch(e){joining=false;if(!$('pl-frame'))lockEnd();throw e}
+  joining=false;if(!$('pl-frame'))lockEnd()}
+async function playGame2(g){const d=await gameData(g);if(!d){toast('Could not load that game.');return}
   await Promise.race([Promise.resolve(api.recordPlay(me.id,g.id,g.ownerId)).catch(function(){}),new Promise(function(r){setTimeout(r,1500)})]);
   store.set('brixblox-play',JSON.stringify({id:g.id,data:d,owner:g.ownerName}));openPlayer()}
 /* Games run right here on BrixBlox in a full-screen player (no Studio buttons). The Studio only saves the game. */
 function openPlayer(){if($('pl-frame'))return;const f=document.createElement('iframe');f.id='pl-frame';f.src=STUDIO_URL+'?player=1';f.setAttribute('allow','fullscreen; autoplay');f.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:60;background:#111';document.body.append(f)}
-function closePlayer(){const f=$('pl-frame');if(f)f.remove();const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}if(me){loadBank();loadGames()}}
+function closePlayer(){const f=$('pl-frame');if(f)f.remove();lockEnd();const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}if(me){loadBank();loadGames()}}
+
+/* ===== One game at a time per account =====
+   While a tab has a game open it writes a heartbeat to localStorage. Every other tab (or window) of the same browser sees it,
+   puts a lock on its Join buttons and refuses to start another game until the first one is left. A closed or crashed tab stops
+   beating, so the lock clears itself after a few seconds. */
+var TAB_ID=Math.random().toString(36).slice(2,10),LOCK_KEY='brixblox-ingame',LOCK_TTL=7000,LOCK_MSG='You are already in a game in another tab. Leave it first.',lockBeat=0,joining=false;
+function lockRead(){try{const o=JSON.parse(localStorage.getItem(LOCK_KEY));return o&&typeof o==='object'?o:null}catch(e){return null}}
+function lockHeld(){const o=lockRead();return !!(o&&me&&o.u===me.id&&o.tab!==TAB_ID&&Date.now()-(+o.t||0)<LOCK_TTL)}
+function lockWrite(gid){try{if(me)localStorage.setItem(LOCK_KEY,JSON.stringify({u:me.id,tab:TAB_ID,g:String(gid),t:Date.now()}))}catch(e){}}
+function lockStart(gid){lockWrite(gid);clearInterval(lockBeat);lockBeat=setInterval(function(){if($('pl-frame')||joining)lockWrite(gid);else lockEnd()},2000)}
+function lockEnd(){clearInterval(lockBeat);lockBeat=0;const o=lockRead();if(o&&o.tab===TAB_ID){try{localStorage.removeItem(LOCK_KEY)}catch(e){}}lockPaint()}
+function lockPaint(){const on=lockHeld();
+  document.querySelectorAll('.btn.joinb').forEach(function(b){b.classList.toggle('locked',on);b.setAttribute('aria-disabled',on?'true':'false');
+    b.textContent=on?'\uD83D\uDD12 Join':'Join';b.title=on?LOCK_MSG:''})}
+addEventListener('storage',function(e){if(e.key===LOCK_KEY||e.key===null)lockPaint()});
+setInterval(lockPaint,2000);
+addEventListener('pagehide',function(){if(lockBeat)lockEnd()});
 addEventListener('message',function(e){if(e.origin===location.origin&&e.data&&e.data.bb==='leave')closePlayer()});
 async function editGame(g){const L=localGames();
   if(!L[g.id]){const d=await gameData(g);if(!d){toast('Could not load that game.');return}
