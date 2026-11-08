@@ -858,7 +858,7 @@ async function gameData(g){if(g.data)return g.data;try{return await api.gameData
 async function playGame(g){
   if(joining||$('pl-frame'))return;
   if(lockHeld()){lockPaint();toast(LOCK_MSG);return}
-  joining=true;lockStart(g.id);/* claim the account right away so a second tab can't start a game while this one loads */
+  goFull();joining=true;lockStart(g.id);/* claim the account right away so a second tab can't start a game while this one loads */
   try{await playGame2(g)}catch(e){joining=false;if(!$('pl-frame'))lockEnd();throw e}
   joining=false;if(!$('pl-frame'))lockEnd()}
 async function playGame2(g){const d=await gameData(g);if(!d){toast('Could not load that game.');return}
@@ -866,7 +866,7 @@ async function playGame2(g){const d=await gameData(g);if(!d){toast('Could not lo
   store.set('brixblox-play',JSON.stringify({id:g.id,data:d,owner:g.ownerName}));openPlayer()}
 /* Games run right here on BrixBlox in a full-screen player (no Studio buttons). The Studio only saves the game. */
 function openPlayer(){if($('pl-frame'))return;const f=document.createElement('iframe');f.id='pl-frame';f.src=STUDIO_URL+'?player=1';f.setAttribute('allow','fullscreen; autoplay');f.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:60;background:#111';document.body.append(f)}
-function closePlayer(){const f=$('pl-frame');if(f)f.remove();lockEnd();const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}if(me){loadBank();loadGames()}}
+function closePlayer(){const f=$('pl-frame');if(f)f.remove();lockEnd();try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}kbLockTop();const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}if(me){loadBank();loadGames()}}
 
 /* ===== One game at a time per account =====
    While a tab has a game open it writes a heartbeat to localStorage. Every other tab (or window) of the same browser sees it,
@@ -884,6 +884,11 @@ function lockPaint(){const on=lockHeld();
 addEventListener('storage',function(e){if(e.key===LOCK_KEY||e.key===null)lockPaint()});
 setInterval(lockPaint,2000);
 addEventListener('pagehide',function(){if(lockBeat)lockEnd()});
+/* Ctrl+W: browsers only let a page take that key while it is fullscreen (Keyboard Lock, Chrome/Edge/Chromebook), so Join goes fullscreen and locks it. */
+function goFull(){try{const r=document.documentElement.requestFullscreen;if(r&&!document.fullscreenElement)r.call(document.documentElement).then(kbLockTop,function(){})}catch(e){}}
+function kbLockTop(){try{const k=navigator.keyboard;if(!k)return;if(document.fullscreenElement&&(joining||$('pl-frame'))){if(k.lock)k.lock(['KeyW']).catch(function(){})}else if(k.unlock)k.unlock()}catch(e){}}
+document.addEventListener('fullscreenchange',kbLockTop);
+addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.code==='KeyW'&&(joining||$('pl-frame'))){e.preventDefault();e.stopPropagation()}},true);
 addEventListener('message',function(e){if(e.origin===location.origin&&e.data&&e.data.bb==='leave')closePlayer()});
 async function editGame(g){const L=localGames();
   if(!L[g.id]){const d=await gameData(g);if(!d){toast('Could not load that game.');return}
