@@ -613,6 +613,7 @@ const BD={
  ragdoll:{c:'en',l:'ragdoll _',a:['target'],tip:'Makes a rig or player go limp and fall over for a few seconds. It stays down for as long as the block keeps running (for example inside a forever loop) and gets up a few seconds after. Type a name, a variable, or player (the first player in the server; player2 is the second, and so on) (a comma list from the get nearest blocks works too).'},
  unragdoll:{c:'en',l:'unragdoll _',a:['target'],tip:'Makes a ragdolled rig or player get back up right away. Type a name, a variable, or player (the first player in the server; player2 is the second, and so on). Does nothing if they are not ragdolled (and cannot save someone who was killed).'},
  pushparent:{c:'en',l:'push parent rig _ studs in _ seconds toward _',a:['5','0.5','front'],dd:{2:'dir'},tip:'Pushes the rig this script belongs to forward by exactly this many studs, taking this many seconds. To push your own character, put the script inside the character. A script that belongs to nothing does nothing. It eases in and out. A negative number pushes backward. Works even while ragdolled and even if Movable is off. If it is already being pushed, a new push waits until the first one is done, so a forever loop gives one push after another.'},
+ setrig:{c:'pl',l:'set _ to rig _',a:['player','Rig'],tip:'Turns a player into a rig you made. Type the player (a name, a variable like toucher, or player for you, player2 for the second one) and the name of the rig (a rig is named after its model). The player keeps walking and turning like normal but looks like the rig. Type default (or leave the rig empty) to turn them back into a normal player.'},
  rigsize:{c:'en',l:'set rig size _ to _',a:['target','2'],tip:'Scales a rig or player. 1 is normal, 2 is double. Type a name, a variable, or player (the first player in the server; player2 is the second, and so on).'},
  teleport:{c:'en',l:'teleport _ to x _ y _ z _',a:['target','0','5','0'],tip:'Moves a rig or player to this spot in the world. y is the height of the feet (the floor is usually 0). Type a name, a variable, or player (the first player in the server; player2 is the second, and so on).'},
  say:{c:'lk',l:'say _',a:['Hello!'],tip:'Shows a chat bubble above your head for a few seconds.'},
@@ -1002,7 +1003,7 @@ function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('p
 
 
 /* BricBloc as text */
-const KW={skybox:'set skybox to',spawnon:'turn on spawnpoint',spawnrep:'replace current spawnpoint with',spawnoff:'turn off spawnpoint',giveattr:'give attribute',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
+const KW={skybox:'set skybox to',spawnon:'turn on spawnpoint',spawnrep:'replace current spawnpoint with',spawnoff:'turn off spawnpoint',giveattr:'give attribute',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',setrig:'set player to rig',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
 
@@ -1169,6 +1170,11 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
     case'kill':startRag(origin(o).self,true);break;
     case'pushparent':{if(!roots(o,true).length){log('Error: "push parent rig" must be in a script that belongs to an object. To push yourself, put it inside your character.');break}
       pushKey(origin(o).self,n(0),a[1]===undefined?.5:Math.min(60,n(1)),String(val(a[2]===undefined?'front':a[2],S)));break}
+    case'setrig':{const tg=playersOf(String(val(a[0],S))),rn=String(val(a[1]===undefined?'':a[1],S)).trim();
+      if(!tg.length){log('Error: no player named \"'+String(val(a[0],S)).trim()+'\" for the \"set player to rig\" block.');break}
+      if(!rn||/^(default|player|none|normal)$/i.test(rn)){tg.forEach(function(t){skinClear(t.key)});break}
+      const rr=skinFind(rn);if(!rr){log('Error: there is no rig named \"'+rn+'\". A rig is named after its model (parts welded together).');break}
+      tg.forEach(function(t){skinSet(t.key,rr.id)});break}
     case'rigsize':{const sz=Math.max(.1,Math.min(20,n(1)));resolve(String(val(a[0],S))).forEach(function(t){RSZ[t.key]=sz});break}
     case'transparency':{let rs=roots(o,true);if(!rs.length){const T=byId(P.avId);if(T)rs=[rootOf(T)]}
       const v=Math.max(0,Math.min(1,n(0)));rs.forEach(function(r){rigParts(r).forEach(function(q){if(!q.stab)setTr(q,v)})});break}
@@ -1408,7 +1414,7 @@ function tex(k){if(!TC[k]){const S=256,c=document.createElement('canvas');c.widt
 const ITX={};
 function imgTex(nm){const src=P.assets.images[nm];if(!src)return null;const k=nm+'|'+src.length+'|'+src.slice(-32);let t=ITX[k];if(t)return t;
   const im=new Image();t=new THREE.Texture(im);im.onload=function(){t.needsUpdate=true};im.src=src;ITX[k]=t;return t}
-function texOK(p){return !!p&&!p.stab&&p.shape!=='mesh'&&!(p.av&&!p.acc)&&!p.sm&&!(p.parent&&/^(Head|Torso|[RL](arm|leg))$/.test(p.name))}
+function texOK(p){return !!p&&!p.stab&&p.shape!=='mesh'&&!(p.av&&!p.acc)&&!(!p.bk&&(p.sm||(p.parent&&/^(Head|Torso|[RL](arm|leg))$/.test(p.name))))}
 function hasTex(p){return texOK(p)&&!!p.tex&&!!P.assets.images[p.tex]}
 function texPng(k){return /^data:image\/(png|gif|webp)/i.test(P.assets.images[k]||'')}
 /* used by the "set image" block: swaps the picture while the game runs, the part setting is not changed */
@@ -1483,7 +1489,7 @@ function quickSync(){if(qsPend)return;qsPend=true;requestAnimationFrame(function
 function rebuildParts(){
   if(hline.parent)hline.parent.remove(hline);hov=null;if(PG){scene.remove(PG);freeTree(PG)}
   PG=new THREE.Group();scene.add(PG);J={};M={};
-  P.parts.forEach(function(p){const g=new THREE.Group(),v=piv(p),geo=((p.av&&!p.acc)||p.sm||(p.parent&&/^(Head|Torso|[RL](arm|leg))$/.test(p.name)))?avGeo(p):(p.shape==='union'&&p.un?unionGeo(p):hasTex(p)?shapeGeo(p):cachedGeo(p,false,shapeGeo)),md=MATS[p.mat]||MATS.plastic;if(TX[p.mat]&&!hasTex(p))boxUV(geo,md.ts||6);const m=new THREE.Mesh(geo,mkMat(p));m.receiveShadow=true;m.castShadow=!md.op&&!p.stab&&!(p.tr>.3);m.layers.enable(1);
+  P.parts.forEach(function(p){const g=new THREE.Group(),v=piv(p),geo=(!p.bk&&((p.av&&!p.acc)||p.sm||(p.parent&&/^(Head|Torso|[RL](arm|leg))$/.test(p.name))))?avGeo(p):(p.shape==='union'&&p.un?unionGeo(p):hasTex(p)?shapeGeo(p):cachedGeo(p,false,shapeGeo)),md=MATS[p.mat]||MATS.plastic;if(TX[p.mat]&&!hasTex(p))boxUV(geo,md.ts||6);const m=new THREE.Mesh(geo,mkMat(p));m.receiveShadow=true;m.castShadow=!md.op&&!p.stab&&!(p.tr>.3);m.layers.enable(1);
     m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);m.userData.id=p.id;if(p.face)addFace(m,p);if(p.spawn&&!p.stab)try{spawnImg(m,p)}catch(e){}if(p.stab)m.visible=false;if(p.light&&!p.stab){const L=new THREE.PointLight(p.light.c,p.light.i,p.light.r,1);L.userData.isL=1;m.add(L)}if(p.shape==='mesh'){m.material.visible=false;m.castShadow=false;try{meshHook(m,p)}catch(e){}}g.add(m);J[p.id]=g;M[p.id]=m});
   const hk={};P.parts.forEach(function(p){if(p.parent)hk[p.parent]=1});
   P.parts.forEach(function(p){const g=J[p.id],v=piv(p),pa=p.parent&&byId(p.parent);
@@ -2573,6 +2579,15 @@ function revertRig(){const an=animOn(),p0=an?(animT&&byId(animT)):(sel.length&&b
 addEventListener('keydown',function(e){if(e.code!=='KeyY'||!(e.ctrlKey||e.metaKey)||!e.shiftKey||e.altKey)return;
   if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||(document.activeElement&&document.activeElement.isContentEditable)||playing||running)return;
   e.preventDefault();revertRig()});
+/* Ctrl+Shift+B: make the selected rig(s) blocky instead of smooth. Parts keep their size, colour, face and animations. */
+function blockyRig(){const an=animOn(),say=function(t){if(an)$('a-hint').textContent=t;else msg(t)};
+  const ids=an?[animT]:sel.slice(),rs=[];ids.forEach(function(id){const p=id&&byId(id),r=p&&rootOf(p);if(r&&!r.av&&kids(r).length&&rs.indexOf(r)<0)rs.push(r)});
+  if(!rs.length){say('Select a rig first, then press Ctrl+Shift+B.');return}
+  let n=0;rs.forEach(function(r){rigParts(r).forEach(function(q){if(q.sm||!q.bk)n++;delete q.sm;q.bk=true})});
+  save();rebuildParts();renderParts();if(an)animUI();say(rs.length>1?'Made '+rs.length+' rigs blocky.':'Made '+rs[0].name+' blocky.')}
+addEventListener('keydown',function(e){if(e.code!=='KeyB'||!(e.ctrlKey||e.metaKey)||!e.shiftKey||e.altKey)return;
+  if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||(document.activeElement&&document.activeElement.isContentEditable)||playing||running)return;
+  e.preventDefault();blockyRig()});
 /* The old blue hover box around the whole rig (it also boxed the hidden stabilizer down at the feet) is gone: only the selected parts get an outline now. */
 function animBox(){abox.visible=false}
 
@@ -3179,7 +3194,32 @@ function simFinish(key,T,e,arm){const sm=e.sim,st=simStand(sm,arm),r=T.root,g=T.
   if(key==='main'){S.x=st[0]-r.pos[0];S.y=r.pos[2]-st[2];S.h=st[1]-r.pos[1];S.vy=0;S.gr=false;S.fp=null;S.pvx=S.pvz=0;S.ix=S.iy=0;S.ch=S.h;g.position.set(st[0],st[1],st[2])}
   else if(key.slice(0,4)==='rig:'){RO[r.id]=[st[0]-r.pos[0],st[2]-r.pos[2]];RY[r.id]=st[1]-r.pos[1];delete RV[r.id];g.position.set(st[0],st[1],st[2])}
   else{const n=T.np,q=n.g.position;q.set(st[0]-r.pos[0],st[1]-r.pos[1],st[2]-r.pos[2]);g.position.set(r.pos[0],r.pos[1],r.pos[2]);n.vy=0;n.tp=true;npTag(n)}}
-function entTick(dt){Object.keys(Object.assign({},RAG,RSZ)).forEach(function(key){
+
+/* ===== Skins: "set player to rig" turns a player into a copy of a rig you made ===== */
+let SKIN={};
+function skinFind(nm){nm=String(nm).trim().toLowerCase();let f=null;
+  P.parts.forEach(function(p){if(f||p.parent||p.av||p.stab||!kids(p).length)return;const m=p.model&&byModel(p.model);if((m?m.name:p.name).toLowerCase()===nm||p.name.toLowerCase()===nm)f=p});return f}
+function skinSet(key,rid){skinDrop(key);SKIN[key]={rid:rid,grp:null,host:null}}
+function skinDrop(key){const s=SKIN[key];if(s&&s.grp&&s.grp.parent)s.grp.parent.remove(s.grp);if(s)s.grp=null,s.host=null}
+function skinClear(key){skinDrop(key);delete SKIN[key];skinShow(key,true)}
+function skinAvMeshes(key){const T=entTargets(key);if(!T)return [];const a=[];
+  T.parts.forEach(function(p){const g=T.gs[p.id];if(!g)return;g.children.forEach(function(c){if(c.isMesh)a.push(c)})});return a}
+function skinShow(key,on){skinAvMeshes(key).forEach(function(m){m.visible=on})}
+function skinBuild(key,s){const T=entTargets(key),R=byId(s.rid);if(!T||!R||!J[R.id])return false;
+  const host=T.g;if(s.grp&&s.host===host&&s.grp.parent===host)return true;skinDrop(key);
+  const rp=rigParts(R);let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9,y0=1e9;
+  rp.forEach(function(p){if(p.stab)return;x0=Math.min(x0,p.pos[0]-p.size[0]/2);x1=Math.max(x1,p.pos[0]+p.size[0]/2);z0=Math.min(z0,p.pos[2]-p.size[2]/2);z1=Math.max(z1,p.pos[2]+p.size[2]/2);y0=Math.min(y0,p.pos[1]-p.size[1]/2)});
+  if(x0>x1){x0=x1=R.pos[0];z0=z1=R.pos[2];y0=R.pos[1]}
+  let ay=1e9;T.parts.forEach(function(p){ay=Math.min(ay,p.pos[1]-p.size[1]/2)});
+  const A=T.root,Ap=piv(A),Rp=piv(R),c=J[R.id].clone(true);
+  c.rotation.set(0,0,0);c.visible=true;
+  /* put the rig's feet-centre where the player's feet-centre is, in the player's own space */
+  c.position.set((A.pos[0]-Ap[0])-((x0+x1)/2-Rp[0]),(ay-Ap[1])-(y0-Rp[1]),(A.pos[2]-Ap[2])-((z0+z1)/2-Rp[2]));
+  c.userData.skin=1;host.add(c);s.grp=c;s.host=host;return true}
+function skinTick(){for(const key in SKIN){const s=SKIN[key];
+  if(!byId(s.rid)){skinClear(key);continue}
+  if(skinBuild(key,s))skinShow(key,false)}}
+function entTick(dt){skinTick();Object.keys(Object.assign({},RAG,RSZ)).forEach(function(key){
   const T=entTargets(key),e=RAG[key];if(!T||(e&&e.gone))return;
   const g=T.g,r=T.root,s=RSZ[key]||1;let lo=1e9;T.parts.forEach(function(p){lo=Math.min(lo,p.pos[1]-p.size[1]/2)});const arm=r.pos[1]-lo;
   g.scale.setScalar(s);
@@ -3315,7 +3355,7 @@ function npFree(n){try{scene.remove(n.g);scene.remove(n.tag)}catch(e){}
   try{if(n.tag&&n.tag.material){if(n.tag.material.map)n.tag.material.map.dispose();n.tag.material.dispose()}}catch(e){}
   try{if(n.bub){scene.remove(n.bub.sp);n.bub.t.dispose();n.bub.sp.material.dispose()}}catch(e){}}
 function dropNP(n){npFree(n);
-  const i=NP.indexOf(n);if(i>=0)NP.splice(i,1);S.oth=S.oth.filter(function(x){return x!==n.name});delete RAG['np:'+n.name];delete RSZ['np:'+n.name];TM.forEach(function(st){st.delete('np:'+n.name)});renderParts();gmPlRefresh();firePJ('pleave',n.name)}
+  const i=NP.indexOf(n);if(i>=0)NP.splice(i,1);S.oth=S.oth.filter(function(x){return x!==n.name});delete RAG['np:'+n.name];delete RSZ['np:'+n.name];delete SKIN['np:'+n.name];TM.forEach(function(st){st.delete('np:'+n.name)});renderParts();gmPlRefresh();firePJ('pleave',n.name)}
 function endGameFor(kind,why,b){S.stop=true;running=false;playing=false;sync();resetWorld();
   mdl(kind==='banned'?'You were banned from this game':'You were kicked from this game',function(c,close){
     c.append(el('p','','Reason: '+(why||'No reason given')));
@@ -4005,7 +4045,7 @@ function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing);try{hotRender()}catch(e){}try{renderGui()}catch(e){}}
 function setRun(v){running=v;sync()}
-function resetWorld(){Object.keys(ATTR).forEach(function(k){delete ATTR[k]});KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();SKYO=null;SPW={};RO={};RV={};RD={};RVY={};RY={};CO={};TM=new Map();RAG={};RSZ={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
+function resetWorld(){Object.keys(ATTR).forEach(function(k){delete ATTR[k]});KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();SKYO=null;SPW={};RO={};RV={};RD={};RVY={};RY={};CO={};TM=new Map();RAG={};RSZ={};SKIN={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
 function boot(my){reser();try{spawnHere()}catch(e){}const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
   hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
   setTimeout(function(){if(my===S&&(running||playing))firePJ('pjoin',P.player.name)},120);
@@ -4804,7 +4844,7 @@ function netSay(id,t){const e=NP.find(function(n){return n.net===id});if(!e)retu
   e.say=t.slice(0,90);e.sayAt=performance.now();bubPaint(e.say,e.bub.x,e.bub.t)}
 function netDrop(id){const i=NP.findIndex(function(n){return n.net===id});if(i<0)return;const n=NP[i];
   NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);/* remove them first, so nothing below can stop it */
-  chatSys(n.name+' left the game');npFree(n);delete RAG['np:'+n.name];delete RSZ['np:'+n.name];try{renderParts()}catch(e){}gmPlRefresh();firePJ('pleave',n.name)}
+  chatSys(n.name+' left the game');npFree(n);delete RAG['np:'+n.name];delete RSZ['np:'+n.name];delete SKIN['np:'+n.name];try{renderParts()}catch(e){}gmPlRefresh();firePJ('pleave',n.name)}
 setInterval(function(){if(!NET.on||!(running||playing))return;
   const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',fa:S.fallA||'',ha:S.holdA||'',hw:S.holdWA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,hp:Math.round(hpGet('main')),hi:S.heldItem||'',e:accStr(Object.assign({},(ME&&ME.av&&ME.av.eq)||{},S.xeq||{}))},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.fa,q.ha,q.hw,q.an,q.ac,q.rc,q.e,q.hi].join()+(rgo?JSON.stringify(rgo):'');
   const nowT=performance.now();if(j===NET.last&&nowT-(NET.lt||0)<1500)return;NET.last=j;NET.idle=0;NET.lt=nowT;NET.ch.send({type:'broadcast',event:'p',payload:q})},100);
