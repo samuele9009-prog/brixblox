@@ -682,8 +682,9 @@ function makeSupa(){
     async logIn(f){if(f.username.indexOf('@')>=0){const r=await sb.auth.signInWithPassword({email:f.username,password:f.password});if(r.error)throw r.error;return {profile:await profile(r.data.user.id,r.data.user)}}return viaFn({action:'login',username:f.username,password:f.password})},
     async friends(id){const r=await sb.rpc('list_friends');if(r.error)throw r.error;
       const names=r.data.filter(function(x){return x.status==='accepted'||x.status==='pending'}).map(function(x){return x.username}),avs={};
-      if(names.length){try{const q=await sb.from('games').select('owner_name,data').like('id','sys_av_%').in('owner_name',names);
-        if(q.error)console.warn('Friend avatars',q.error);else q.data.forEach(function(row){let d=row.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d=null}if(d)avs[row.owner_name]=d})}catch(e){}}
+      if(names.length){try{const f=await sb.rpc('friend_avatars',{p_names:names});if(f.error)console.warn('friend_avatars',f.error);else(f.data||[]).forEach(function(row){let d=row.avatar;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d=null}if(d)avs[row.username]=d})}catch(e){console.warn(e)}
+        try{const q=await sb.from('games').select('owner_name,data').like('id','sys_av_%').in('owner_name',names);
+        if(q.error)console.warn('Friend avatars',q.error);else q.data.forEach(function(row){if(avs[row.owner_name])return;let d=row.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d=null}if(d)avs[row.owner_name]=d})}catch(e){}}
       return r.data.map(function(x){let a=avs[x.username]||x.avatar;if(typeof a==='string'){try{a=JSON.parse(a)}catch(e){a=null}}return {fid:x.fid,name:x.username,color:x.avatar_color,av:normAv(a),status:x.status,incoming:x.incoming}})},
     async addFriend(id,n){const r=await sb.rpc('send_friend_request',{p_username:n});if(r.error)throw r.error;return r.data},
     async answerFriend(id,fid,yes){const r=await sb.rpc('answer_friend',{p_id:fid,p_accept:yes});if(r.error)throw r.error},
