@@ -555,6 +555,10 @@ const BD={
  fov:{c:'pl',l:'set camera fov to _',a:['80'],tip:'Sets how wide the camera sees, from 30 (zoomed in) to 120 (very wide). The default is 70. It goes back to the game setting when the game restarts.'},
  pspeed:{c:'pl',l:'set player speed to _',a:['24'],tip:'How fast the player walks (default 16).'},
  playercol:{c:'pl',l:'set player collisions to _',a:['true'],dd:{0:'bool'},tip:'true: players can not walk through each other, so you bump into the other players in the server. false: players walk straight through each other (the default). It goes back to false when the game restarts.'},
+ damageplayer:{c:'pl',l:'damage player _ by _',a:['toucher','10'],tip:'Takes health off a player (max health is 100). Type the player name, or a variable like toucher inside "when this block touched". At 0 health the player dies and respawns with full health. The health bar only shows when health is below 100.'},
+ healplayer:{c:'pl',l:'heal player _ by _',a:['toucher','25'],tip:'Gives health back to a player, up to the max of 100. Type the player name, or a variable like toucher.'},
+ sethealth:{c:'pl',l:'set health of player _ to _',a:['toucher','100'],tip:'Sets a player\'s health to an exact number from 0 to 100.'},
+ gethealth:{c:'pl',l:'get health of player _ into _',a:['player','hp'],dd:{1:'var'},tip:'Stores a player\'s current health (0 to 100) in a variable.'},
  givebadge:{c:'pl',l:'give badge _ to player _',a:['Winner','player'],tip:'Gives a player a badge you made under Assets in the Explorer (Badges). Type the badge name. The player is a name, a variable, or player (the first player in the server) (like toucher). The player sees a pop-up and the badge is saved to their account, once per badge per game. Anyone can earn a badge themselves; only the game owner or an admin can give one to another player.'},
  giveitem:{c:'pl',l:'give item _ to player _',a:['Sword','player'],dd:{0:'item'},tip:'Gives a player an item you made (right-click a mesh under Assets, then Create item). It shows up in the hotbar at the bottom: click it or press its number to hold it. The player is a name, a variable, or player (you).'},
  removeitem:{c:'pl',l:'remove item _ from player _',a:['Sword','player'],dd:{0:'item'},tip:'Takes an item away from a player.'},
@@ -1149,6 +1153,9 @@ async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0
     case'giveitem':case'removeitem':{const nm=String(val(a[0],S)).trim(),it=itemBy(nm);if(!it){log('Error: no item named "'+nm+'". Right-click a mesh under Assets and press Create item.');break}
       const pl=playersOf(String(val(a[1],S)));if(!pl.length){log('Error: no player matches "'+String(val(a[1],S))+'".');break}
       pl.forEach(function(t){if(t.key!=='main'){log('Warning: items can only be given to your own player for now.');return}if(b.t==='giveitem')itemGive(it);else itemTake(it)});break}
+    case'damageplayer':case'healplayer':case'sethealth':case'gethealth':{const pl=playersOf(String(val(a[0],S)));if(!pl.length){log('Error: no player matches "'+String(val(a[0],S))+'".');break}
+      if(b.t==='gethealth'){const vn=String(a[1]).trim();if(!vn){log('Error: type a variable name to store the health in.');break}S.v[vn]=hpGet(pl[0].key);break}
+      const amt=Math.max(0,Number(val(a[1],S))||0);pl.forEach(function(t){const h=hpGet(t.key);hpPut(t.key,b.t==='damageplayer'?h-amt:b.t==='healplayer'?h+amt:Math.min(amt,MAXHP))});break}
     case'givebadge':case'awardbadge':{const bn=String(val(a[0],S)).trim().toLowerCase();let bd=P.badges.find(function(x){return String(x.name).trim().toLowerCase()===bn});
       if(!bd&&b.t==='awardbadge'&&bn){const ic=String(val(a[2]===undefined?'':a[2],S)).trim().slice(0,4)||'\uD83C\uDFC5';
         bd={id:'bd'+hsh(bn).replace(/[^0-9a-z]/gi,'').slice(0,12),name:String(val(a[0],S)).trim().slice(0,24),icon:ic,desc:''};P.badges.push(bd);save()}
@@ -2822,7 +2829,21 @@ function entTargets(key){
   const av=P.parts.filter(function(p){return p.av}),r=av.find(function(p){return !p.parent});return r&&n.JJ[r.id]?{g:n.JJ[r.id],root:r,parts:av,gs:n.JJ,np:n}:null}
 function flop(id,seed){let h=0;for(let i=0;i<id.length;i++)h=h*31+id.charCodeAt(i);const r=RNG(h+Math.floor(seed));return [(r()-.5)*1.4,(r()-.5)*.8,(r()-.5)*1.8]}
 function limbsRest(T,r){T.parts.forEach(function(p){if(p!==r&&T.gs[p.id])T.gs[p.id].rotation.set(0,0,0)})}
-function finishDead(key,T){if(key==='main'){S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0;S.rag=false;delete RAG.main;T.g.rotation.z=0;limbsRest(T,T.root);log('You were respawned.')}
+/* ===== Health: max 100, per player. The bar (top right, by the leaderboard) only shows while health is below the max. ===== */
+const MAXHP=100,HPM={};
+function hpGet(k){const v=k==='main'?S.hp:HPM[k];return v==null?MAXHP:v}
+function hpPut(k,v){v=Math.max(0,Math.min(MAXHP,v));if(k==='main')S.hp=v;else HPM[k]=v;
+  if(v<=0&&!RAG[k]){startRag(k,true);if(k!=='main')HPM[k]=MAXHP}}
+let hpEl=null,hpFill=null,hpTxt=null;
+function hpHud(){if(!hpEl){hpEl=document.createElement('div');hpEl.id='hpbar';
+    hpEl.style.cssText='position:fixed;top:52px;right:10px;z-index:60;width:190px;padding:5px 8px;border-radius:10px;background:rgba(20,22,24,.78);color:#fff;font:800 12px/1.2 system-ui,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.3);pointer-events:none;display:none';
+    const t=document.createElement('div');t.style.cssText='display:flex;justify-content:space-between;margin-bottom:3px';t.append('Health');hpTxt=document.createElement('span');t.append(hpTxt);
+    const tr=document.createElement('div');tr.style.cssText='height:12px;border-radius:6px;background:rgba(255,255,255,.22);overflow:hidden';hpFill=document.createElement('div');hpFill.style.cssText='height:100%;width:100%;transition:width .15s,background .15s';tr.append(hpFill);hpEl.append(t,tr);document.body.append(hpEl)}
+  if(!(playing||running)){S.hp=MAXHP;for(const k in HPM)delete HPM[k];hpEl.style.display='none';return}
+  const h=hpGet('main');if(h>=MAXHP){hpEl.style.display='none';return}
+  hpEl.style.display='block';hpTxt.textContent=Math.ceil(h)+' / '+MAXHP;hpFill.style.width=(h/MAXHP*100)+'%';hpFill.style.background=h>60?'#3ccf5e':h>30?'#f5b400':'#ff4d3d'}
+setInterval(hpHud,100);
+function finishDead(key,T){if(key==='main'){S.hp=MAXHP;S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0;S.rag=false;delete RAG.main;T.g.rotation.z=0;limbsRest(T,T.root);log('You were respawned.')}
   else{RAG[key].gone=true;T.g.visible=false;if(T.np)T.np.tag.visible=false}}
 /* ===== Physics ragdoll: every part becomes a rigid body, joined at its pivot, with joint limits. They fall, land and tumble for real. ===== */
 const qm=function(a,b){return [a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],a[3]*b[3]-a[0]*b[0]-a[1]*b[1]-a[2]*b[2]]},
@@ -3140,7 +3161,7 @@ $('chat-tg').onclick=function(){$('chat').classList.toggle('min')};
 /* ===== Game menu: press Esc while playing or running ===== */
 let menuEl=null,gmPlFill=null;
 function gmPlRefresh(){if(gmPlFill)try{gmPlFill()}catch(e){}}/* redraws the Players list in the game menu when someone joins or leaves */
-function respawnMe(){delete RAG.main;S.rag=false;S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0;S.gr=false;S.ch=undefined;S.pd=null;const T=entTargets('main');if(T)limbsRest(T,T.root);chatSys('You respawned.')}
+function respawnMe(){S.hp=MAXHP;delete RAG.main;S.rag=false;S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0;S.gr=false;S.ch=undefined;S.pd=null;const T=entTargets('main');if(T)limbsRest(T,T.root);chatSys('You respawned.')}
 function closeGM(){gmPlFill=null;if(menuEl){menuEl.remove();menuEl=null}}
 function openGM(){if(menuEl||!(running||playing))return;for(const k in keys)keys[k]=false;look=false;if(document.pointerLockElement)document.exitPointerLock();
   const ov=el('div','gm'),pn=el('div','gmp');ov.append(pn);
