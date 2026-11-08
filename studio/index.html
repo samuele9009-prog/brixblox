@@ -636,6 +636,7 @@ const BD={
  opletter:{c:'op',rep:1,l:'letter _ of _',a:['1','apple'],sk:'nt',f:function(x){return 'letter('+x[0]+', '+x[1]+')'}},
  oplen:{c:'op',rep:1,l:'length of _',a:['apple'],sk:'t',f:function(x){return 'length('+x[0]+')'}},
  opcontains:{c:'op',rep:1,bool:1,l:'_ contains _ ?',a:['apple','a'],sk:'tt',f:function(x){return 'contains('+x[0]+', '+x[1]+')'}},
+ opholdkey:{c:'op',rep:1,bool:1,l:'player _ holding key _ ?',a:['player','q'],dd:{1:'keys'},sk:'td',tip:'True while the player is holding the key you pick down. Put it in an if block, like: if player holding Q. Type the player name, a variable like toucher, or player (you). It only works for the person playing on this computer, so other players always count as not holding it.',f:function(x){return 'holdingkey('+x[0]+', '+x[1]+')'}},
  opkeyheld:{c:'op',rep:1,bool:1,l:'key _ is being held',a:['space'],dd:{0:'keys'},sk:'d',f:function(x){return 'keyheld('+x[0]+')'}},
  opmod:{c:'op',rep:1,l:'_ mod _',a:['',''],sk:'nn',f:function(x){return 'mod('+x[0]+', '+x[1]+')'}},
  opround:{c:'op',rep:1,l:'round _',a:[''],sk:'n',f:function(x){return 'round('+x[0]+')'}},
@@ -1002,7 +1003,7 @@ const ATTR={};
 function attrKeys(str){const q=String(str).trim().toLowerCase(),pl=plist(),m=pl.filter(function(x){return String(x.name).toLowerCase()===q});if(m.length)return m.map(function(x){return String(x.name).toLowerCase()});
   const pm=/^player(\d*)$/.exec(q);if(pm){const x=pl[pm[1]?+pm[1]-1:0];if(x)return [String(x.name).toLowerCase()]}return []}
 function attrNm(a){return String(a).trim().toLowerCase()}
-const FN={hasattr:function(p,a){const n=attrNm(a);return attrKeys(p).some(function(k){return ATTR[k]&&ATTR[k].has(n)})},playercount:function(){return 1+S.oth.length},keyheld:function(k){return KH.has(String(k).trim().toLowerCase())},join:function(a,b){return String(a)+String(b)},letter:function(n,s){return String(s).charAt(Math.floor(+n)-1)},length:function(s){return String(s).length},
+const FN={holdingkey:function(p,k){const me=attrKeys('player')[0];return !!me&&attrKeys(p).indexOf(me)>=0&&KH.has(String(k).trim().toLowerCase())},hasattr:function(p,a){const n=attrNm(a);return attrKeys(p).some(function(k){return ATTR[k]&&ATTR[k].has(n)})},playercount:function(){return 1+S.oth.length},keyheld:function(k){return KH.has(String(k).trim().toLowerCase())},join:function(a,b){return String(a)+String(b)},letter:function(n,s){return String(s).charAt(Math.floor(+n)-1)},length:function(s){return String(s).length},
   contains:function(s,q){return String(s).toLowerCase().indexOf(String(q).toLowerCase())>=0},
   random:function(a,b){a=+a||0;b=+b||0;const lo=Math.min(a,b),hi=Math.max(a,b);return(Number.isInteger(a)&&Number.isInteger(b))?lo+Math.floor(Math.random()*(hi-lo+1)):lo+Math.random()*(hi-lo)},
   round:function(x){return Math.round(+x||0)},mod:function(a,b){a=+a||0;b=+b||0;return b?((a%b)+b)%b:0},
