@@ -1206,12 +1206,12 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
       await accLoad([it.id]);const e=ACCI[it.id];if(wear&&!(e&&e.obj)){log('Error: the accessory "'+it.name+'" could not be loaded.');break}
       let slot=sl0;if(!ACCS[slot]){const d=(e&&e.it)||{};slot=['slot','type','cat','kind','cls'].map(function(k){return String(d[k]||'').toLowerCase()}).find(function(v){return ACCS[v]})||'hat'}
       pl.forEach(function(t){xeqSet(t,slot,it.id,wear)});break}
-    case'setvol':{const nm=String(a[0]).trim(),key=nm.toLowerCase()==='all'?'all':nm;
-      if(key!=='all'&&!P.assets.audio[key]){log('Error: no audio named "'+nm+'".');break}
+    case'setvol':{const nm=String(a[0]).trim(),key=nm.toLowerCase()==='all'?'all':audKey(nm);
+      if(key!=='all'&&!P.assets.audio[key]){log(audNone(nm));break}
       AVR[key]=Math.max(0,Math.min(100,n(1)))/100;liveVol();break}
     case'guishow':case'guihide':case'guitext':case'guivis':case'guitoggle':{const gg=(String(a[0]).trim().toLowerCase()==='this'&&guiById(o))?[guiById(o)]:guiByName(a[0]);if(!gg.length){log('Error: no GUI named "'+String(a[0]).trim()+'". Add one under GUI in the Explorer.');break}
       gg.forEach(function(g){const r=GR[g.id]=GR[g.id]||{};if(b.t==='guitext')r.text=String(val(a[1]===undefined?'':a[1],S));else if(b.t==='guivis'){const tv=val(a[1],S);r.vis=!(tv===false||tv===0||tv===''||String(tv).toLowerCase()==='false')}else if(b.t==='guitoggle')r.vis=!guiState(g).vis;else r.vis=b.t==='guishow'});renderGui();break}
-    case'stopaud':{const nm=a[0].trim();if(!nm||nm==='all')stopAudio();else if(!P.assets.audio[nm])log('Error: no audio named "'+nm+'".');else stopAudio(nm);break}}
+    case'stopaud':{const nm=a[0].trim()==='all'?'all':audKey(a[0]);if(!nm||nm==='all')stopAudio();else if(!P.assets.audio[nm])log(audNone(nm));else stopAudio(nm);break}}
   draw()}
 
 /* ===== 3D stage: x is right, y is forward, jump lifts the brick ===== */
@@ -2026,7 +2026,12 @@ let nbuf=null;
 const AUD={},AVR={};
 /* Volume of one sound = game volume x that sound's own volume (slider under Assets) x what the "set volume of _ to _" block set while the game runs */
 function audVol(nm){if(P.audio.mute)return 0;const b=P.assets.avol&&P.assets.avol[nm]!==undefined?P.assets.avol[nm]:1,r=AVR[nm]!==undefined?AVR[nm]:1,g=AVR.all!==undefined?AVR.all:1;return Math.max(0,Math.min(1,P.audio.vol*2*b*r*g))}
-function audioFor(nm){if(!P.assets.audio[nm]){log('Error: no audio named "'+nm+'". Upload it under Assets in the Explorer.');return null}
+/* Sound names ignore capital letters, spaces and symbols, so "Crystal Night", "crystalnight" and "CrystalNight" are all the same sound */
+function audKey(nm){nm=String(nm==null?'':nm).trim();const A=P.assets.audio;if(A[nm]!==undefined)return nm;
+  const nz=function(t){return String(t).toLowerCase().replace(/[^a-z0-9]/g,'')},q=nz(nm);if(!q)return nm;
+  const k=Object.keys(A).find(function(x){return nz(x)===q});return k===undefined?nm:k}
+function audNone(nm){const ks=Object.keys(P.assets.audio);return 'Error: no audio named "'+nm+'". '+(ks.length?'Sounds in this game: '+ks.join(', ')+'.':'This game has no sounds yet. Upload one under Assets in the Explorer (if a friend uploaded it, they must press Update after setting up storage).')}
+function audioFor(nm){nm=audKey(nm);if(!P.assets.audio[nm]){log(audNone(nm));return null}
   if(missB(P.assets.audio[nm])){log('Error: the sound "'+nm+'" was never sent online, so it can not play here. The game owner has to set up the game-audio storage and press Update.');return null}
   const src=audioSrc(nm);if(!src){log('Error: the audio "'+nm+'" is still loading from storage. Try again in a moment.');return null}
   let a=AUD[nm];if(!a||a._src!==src){a=new Audio(src);a._src=src;AUD[nm]=a}a.volume=audVol(nm);return a}
