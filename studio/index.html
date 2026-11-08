@@ -2649,7 +2649,7 @@ $('a-grid').onwheel=function(e){if(!e.ctrlKey)return;e.preventDefault();pps=Math
 
 
 /* Fly camera: right-drag to look, WASD to move, Q/E down/up, wheel for forward/back */
-const cam={x:0,y:9,z:22,yaw:0,pit:-.3},keys={};
+const cam={x:0,y:9,z:22,yaw:0,pit:-.3},keys={};let FC=false;
 const fwd=function(){return [Math.sin(cam.yaw)*Math.cos(cam.pit),Math.sin(cam.pit),-Math.cos(cam.yaw)*Math.cos(cam.pit)]};
 const ndc=function(e){if(playing&&document.pointerLockElement===cv)return new THREE.Vector2(0,0);const r=cv.getBoundingClientRect();return new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1)};
 let look=false,gd=null,lx=0,ly=0,hovE=null,hovP=false;
@@ -2754,9 +2754,12 @@ cv.onpointermove=function(e){if(gd&&gd.mv){gd.le={clientX:e.clientX,clientY:e.cl
 cv.onpointerleave=function(){setHover(null);animHover(null);cv.style.cursor=''};
 document.addEventListener('pointerlockchange',function(){lockPend=false;if(document.pointerLockElement!==cv){look=false;cv.style.cursor=''}});
 cv.onpointerup=cv.onpointercancel=function(e){if(e&&e.type==='pointercancel'&&(lockPend||document.pointerLockElement===cv))return;look=false;cv.style.cursor='';if(document.pointerLockElement===cv&&!lockMode())document.exitPointerLock();if(gd){const g0=gd;gd=null;if(g0.an&&(g0.mode==='rot'||g0.pos))animRotEnd(g0);save();if(!g0.an){rebuildParts();props()}else if(!g0.pos&&g0.mode==='move')rebuildParts()}};
-cv.onwheel=function(e){e.preventDefault();if(playing){if(cdT<=.01&&e.deltaY>0)cdT=2.5;else{cdT*=Math.exp(e.deltaY*.0015);if(e.deltaY<0&&cdT<1.4)cdT=0}cdT=Math.max(0,Math.min(60,cdT));return}zq+=-e.deltaY*.02};
+cv.onwheel=function(e){e.preventDefault();if(playing&&!FC){if(cdT<=.01&&e.deltaY>0)cdT=2.5;else{cdT*=Math.exp(e.deltaY*.0015);if(e.deltaY<0&&cdT<1.4)cdT=0}cdT=Math.max(0,Math.min(60,cdT));return}zq+=-e.deltaY*.02};
 addEventListener('keydown',function(e){if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;if(playing&&e.code==='Space')e.preventDefault();if(e.ctrlKey||e.metaKey){keys[e.code]=false;return}keys[e.code]=true});
 addEventListener('keyup',function(e){keys[e.code]=false});
+/* Admin freecam: Shift+P while playing turns the camera into the free Studio camera (WASD, Q/E, Shift = fast, right-drag to look, scroll to zoom). Press Shift+P again to go back to your character. */
+addEventListener('keydown',function(e){if(e.code!=='KeyP'||!e.shiftKey||e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
+  if(!playing||!amAdmin())return;e.preventDefault();FC=!FC;try{lockWarn(FC?'Freecam on. Shift+P to go back to your character.':'Freecam off.')}catch(x){}});
 addEventListener('blur',function(){for(const k in keys)keys[k]=false});
 
 /* Editor shortcuts: P new part, Backspace/Delete remove, Ctrl+G group, Ctrl+Shift+G union into one part, Ctrl+Alt+U split union, Ctrl+Alt+G ungroup (ignored while typing or in the script area) */
@@ -3803,12 +3806,13 @@ function accCamClip(on){const T=byId(P.avId),g=T&&J[T.id];if(!g)return;const cp=
 function avVis(v){const T=byId(P.avId),g=T&&J[T.id];if(!g)return;g.traverse(function(o){if(o.userData&&o.userData.acc)o.visible=v;if(o.isMesh&&o.material&&!Array.isArray(o.material)){o.material.colorWrite=v;o.material.depthWrite=v}})}
 let lt=performance.now(),camF=null;
 function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.1,(now-lt)/1000);lt=now;const f=fwd();
-  if(playing)play(dt,f);
+  if(!playing)FC=false;
+  if(playing&&!FC)play(dt,f);
   else{const sp=(keys.ShiftLeft?36:12)*dt,r=[Math.cos(cam.yaw),0,Math.sin(cam.yaw)],go=function(v,k){cam.x+=v[0]*k;cam.y+=v[1]*k;cam.z+=v[2]*k};
     if(keys.KeyW)go(f,sp);if(keys.KeyS)go(f,-sp);if(keys.KeyD)go(r,sp);if(keys.KeyA)go(r,-sp);if(keys.KeyQ)cam.y-=sp;if(keys.KeyE)cam.y+=sp;if(Math.abs(zq)>.001){const zs=zq*(1-Math.exp(-dt*12));zq-=zs;go(f,zs)}else zq=0}
   if(playing||running){twTick(dt);collide();pcollide();physics(dt);objMove(dt);rigAI(dt);npPhys(dt);touchTick()}npTick(dt);
   draw();entTick(dt);
-  if(playing){const T=byId(P.avId);if(T){S.ch=S.ch===undefined?S.h:S.ch+(S.h-S.ch)*(1-Math.exp(-dt*9));
+  if(playing&&!FC){const T=byId(P.avId);if(T){S.ch=S.ch===undefined?S.h:S.ch+(S.h-S.ch)*(1-Math.exp(-dt*9));
     const fx=T.pos[0]+S.x,fy=T.pos[1]+S.ch+1,fz=T.pos[2]-S.y;cd+=(cdT-cd)*(1-Math.exp(-dt*10));if(Math.abs(cdT-cd)<.002)cd=cdT;
     const want=cd<.05?0:cd,lim=want>0?camLimit(fx,fy,fz,f,want):0;
     if(camD===null||lim<camD)camD=lim;else camD+=(lim-camD)*(1-Math.exp(-dt*7));if(camD>want)camD=want;
