@@ -1683,11 +1683,11 @@ function buildEdit(){try{updTool()}catch(e){}while(editG.children.length)editG.r
     const j=byId(selJ);if(j&&j.parent)c=j.pivot}
   else{const bx=selBox(),q0=byId(sel[0]);if(bx&&q0&&inW(q0)){c=bx.c;half=bx.h}}
   if(!c)return;
-  if(tool==='rotate'&&!rigOn){const rr=rotRoots();if(!rr.length)return;const rc=rotCenter(rr);
+  if(tool==='rotate'&&!rigOn){const rr=rotRoots();if(!rr.length)return;const rc=rotCenter(rr),oq=rotObjQ(rr);/* one object: the rings sit on its own axes and turn with it */
     [[0,'#ff4444',[1,0,0]],[1,'#44dd44',[0,1,0]],[2,'#4488ff',[0,0,1]]].forEach(function(a){
       const g=new THREE.Group(),m=new THREE.Mesh(new THREE.TorusGeometry(1.7,.1,10,64),new THREE.MeshBasicMaterial({color:a[1],depthTest:false}));
       m.renderOrder=10;m.userData.rotAx=a[0];g.add(m);g.userData.ri=-1;
-      g.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(a[2][0],a[2][1],a[2][2]));
+      g.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(a[2][0],a[2][1],a[2][2])).premultiply(oq);
       g.position.set(rc[0],rc[1],rc[2]);editG.add(g);gizmo.push(m)});return}
   if(tool==='scale'&&!rigOn){
     const sb=scaleBox();if(!canScale()||!sb)return;c=sb.c;half=sb.h;
@@ -1907,11 +1907,12 @@ function rotateSel(dir){if(animOn()||rigOn)return;const ids=sel.slice(),tops=[];
 /* Free rotation (Rotate tool): three rings, X red, Y green, Z blue. Dragging a ring turns the selection smoothly around that world axis (hold Shift to snap to 15 degrees,
    double-click a ring to reset). The angle is stored on the top-level part as p.rot = [x,y,z] degrees, and the whole rig turns with it. The R key still does quarter turns. */
 function rotRoots(){const s={},out=[];sel.forEach(function(id){const p=byId(id);if(!p)return;const r=rootOf(p);if(r.av||s[r.id])return;s[r.id]=1;out.push(r)});return out}
+function rotObjQ(rs){if(rs.length!==1)return new THREE.Quaternion();const r=rs[0].rot||[0,0,0],D=Math.PI/180;return new THREE.Quaternion().setFromEuler(new THREE.Euler(r[0]*D,r[1]*D,r[2]*D,'XYZ'))}
 function rotCenter(rs){if(rs.length===1)return rs[0].pos.slice();const bx=selBox();return bx?bx.c.slice():rs[0].pos.slice()}
 function hasRot(p){const r=p&&!p.parent&&prot(p);return !!(r&&(r[0]||r[1]||r[2]))}
 function refreshRot(){const D=Math.PI/180;P.parts.forEach(function(p){const g=J[p.id];if(!g)return;g.userData.sq=hasRot(p)?new THREE.Quaternion().setFromEuler(new THREE.Euler(prot(p)[0]*D,prot(p)[1]*D,prot(p)[2]*D,'XYZ')):null})}
 function rotStart(ax,e){const rs=rotRoots();if(!rs.length)return null;const c=rotCenter(rs),sc=animScr(new THREE.Vector3(c[0],c[1],c[2])),A=[[1,0,0],[0,1,0],[0,0,1]][ax],D=Math.PI/180;
-  return {rg:1,ax:new THREE.Vector3(A[0],A[1],A[2]),c:c,sc:sc,last:Math.atan2(-(e.clientY-sc.y),e.clientX-sc.x),th:0,
+  return {rg:1,ax:new THREE.Vector3(A[0],A[1],A[2]).applyQuaternion(rotObjQ(rs)),c:c,sc:sc,last:Math.atan2(-(e.clientY-sc.y),e.clientX-sc.x),th:0,
     it:rs.map(function(p){const r=p.rot||[0,0,0];return {p:p,pos:p.pos.slice(),q:new THREE.Quaternion().setFromEuler(new THREE.Euler(r[0]*D,r[1]*D,r[2]*D,'XYZ'))}})}}
 function rotDrag(e){const g=gd;if(!g||!g.rg)return;
   const ang=Math.atan2(-(e.clientY-g.sc.y),e.clientX-g.sc.x);let da=ang-g.last;g.last=ang;
@@ -2412,23 +2413,28 @@ function gizmoFit(){OLU.uRes.value.set(cv.width,cv.height);OLU.uPx.value=3*cv.wi
     if(f){const k=sf(f.b);o.scale.setScalar(k);o.position.copy(f.b).addScaledVector(f.d,f.off*k)}
     else if(o.userData.off||o.userData.ri!==undefined)o.scale.setScalar(sf(o.position))})}
 function animGizCenter(){const o=aGM==='rot'?J[agT]:M[agT];return o.getWorldPosition(new THREE.Vector3())}
-function animGizUpdate(){if(!animOn()||!agT||!J[agT]||!M[agT])return;scene.updateMatrixWorld(true);const c=animGizCenter(),t=byId(agT),par=t&&t.parent&&J[t.parent],qp=new THREE.Quaternion();if(par)par.getWorldQuaternion(qp);
-  const r=J[agT].rotation,qx=new THREE.Quaternion().setFromAxisAngle(AX,r.x),qy=new THREE.Quaternion().setFromAxisAngle(AY,r.y),
-    ax=[AX.clone().applyQuaternion(qp),AY.clone().applyQuaternion(qp.clone().multiply(qx)),AZ.clone().applyQuaternion(qp.clone().multiply(qx).multiply(qy))];
+function animGizUpdate(){if(!animOn()||!agT||!J[agT]||!M[agT])return;scene.updateMatrixWorld(true);const c=animGizCenter(),qw=J[agT].getWorldQuaternion(new THREE.Quaternion()),
+    ax=[AX,AY,AZ].map(function(v){return v.clone().applyQuaternion(qw)});/* the rings sit on the joint's own X, Y and Z, so all three turn with it */
   gz.forEach(function(g){const u=g.userData;if(u.off)g.position.copy(c).add(u.off);else if(u.ri!==undefined){g.position.copy(c);g.quaternion.setFromUnitVectors(AZ,ax[u.ri]);g.children.forEach(function(m){m.userData.axW=ax[u.ri]})}})}
 function animScr(v){const w=cv.getBoundingClientRect(),u=v.clone().project(camera);return new THREE.Vector2(w.left+(u.x+1)/2*w.width,w.top+(1-u.y)/2*w.height)}
 function animGizStart(o,e){if(!agT)return;const A=P.anims[curA];
   if(!A){$('a-hint').textContent='Press + New to make an animation first.';return}
   const ids=aJs.length?aJs.slice():[agT];
   if(o.userData.rotIdx!==undefined){const rs={};ids.forEach(function(id){rs[id]=(live[id]||evalPose(A,aT)[id]||[0,0,0]).slice()});const c=animScr(animGizCenter());
-    gd={an:1,mode:'rot',id:agT,i:o.userData.rotIdx,rs:rs,rot:rs[agT]||[0,0,0],last:Math.atan2(-(e.clientY-c.y),e.clientX-c.x),axW:o.userData.axW.clone()}}
+    gd={an:1,mode:'rot',id:agT,i:o.userData.rotIdx,rs:rs,b:Object.keys(rs).reduce(function(m,k){m[k]=rs[k].slice();return m},{}),th:0,rot:rs[agT]||[0,0,0],last:Math.atan2(-(e.clientY-c.y),e.clientX-c.x),axW:o.userData.axW.clone()}}
   else{const t=byId(agT);snapRig(t&&rootOf(t));const ps={};ids.forEach(function(id){ps[id]=(live['p:'+id]||evalPose(A,aT)['p:'+id]||[0,0,0]).slice()});
     gd={an:1,mode:'move',id:agT,a:o.userData.axis.clone(),ps:ps,pos:ps[agT]||[0,0,0]}}}
+function eulerNear(q,prev,gy){const D=180/Math.PI,e=new THREE.Euler().setFromQuaternion(q,'XYZ'),g=(gy||0)*D,
+    c=[[e.x*D,e.y*D-g,e.z*D],[e.x*D+180,180-e.y*D-g,e.z*D+180]];let best=null,bd=1e18;
+  c.forEach(function(a){const u=a.map(function(v,i){return v+360*Math.round((prev[i]-v)/360)}),d=Math.hypot(u[0]-prev[0],u[1]-prev[1],u[2]-prev[2]);if(d<bd){bd=d;best=u}});
+  return best.map(function(v){return Math.round(v*100)/100})}
 function animDrag(e,dx,dy){const t=byId(gd.id);if(!t)return;
   if(gd.mode==='rot'){const c=animScr(animGizCenter()),ang=Math.atan2(-(e.clientY-c.y),e.clientX-c.x);let da=ang-gd.last;gd.last=ang;
     while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;
-    const sg=camera.getWorldDirection(new THREE.Vector3()).dot(gd.axW)<0?1:-1;const dd=da*180/Math.PI*sg;
-    for(const id in gd.rs){gd.rs[id][gd.i]+=dd;live[id]=gd.rs[id].slice();if(valIns[id])valIns[id].forEach(function(n,i){n.value=Math.round(gd.rs[id][i]*10)/10})}preview();return}
+    const sg=camera.getWorldDirection(new THREE.Vector3()).dot(gd.axW)<0?1:-1;gd.th+=da*sg;const E=[AX,AY,AZ][gd.i],Dg=Math.PI/180;
+    /* turn each joint about its OWN axis, then store the result as the usual x / y / z degrees (the closest equivalent, so animations do not jump) */
+    for(const id in gd.rs){const b=gd.b[id],gy=(J[id]&&J[id].userData.gry)||0,q=new THREE.Quaternion().setFromEuler(new THREE.Euler(b[0]*Dg,b[1]*Dg+gy,b[2]*Dg,'XYZ')).multiply(new THREE.Quaternion().setFromAxisAngle(E,gd.th));
+      gd.rs[id]=eulerNear(q,gd.rs[id],gy);live[id]=gd.rs[id].slice();if(valIns[id])valIns[id].forEach(function(n,i){n.value=Math.round(gd.rs[id][i]*10)/10})}preview();return}
   const v=animGizCenter(),a=gd.a,d=animScr(v.clone().add(a)).sub(animScr(v)),L=d.lengthSq();if(L<1)return;
   const k=(dx*d.x+dy*d.y)/L,dw=a.clone().multiplyScalar(k),par=t.parent&&J[t.parent];
   if(gd.ps){for(const id in gd.ps){const tt=byId(id),pr=tt&&tt.parent&&J[tt.parent],v=dw.clone();if(pr)v.applyQuaternion(pr.getWorldQuaternion(new THREE.Quaternion()).invert());
