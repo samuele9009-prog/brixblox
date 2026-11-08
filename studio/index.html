@@ -2561,8 +2561,11 @@ function lockWarn(t){if(!lockWarnEl){lockWarnEl=document.createElement('div');lo
   lockWarnEl.textContent=t;lockWarnEl.style.display='block';clearTimeout(lockWarnT);lockWarnT=setTimeout(function(){lockWarnEl.style.display='none'},6000)}
 cv.addEventListener('mouseup',function(e){if(e.button===2){look=false;if(document.pointerLockElement===cv&&!lockMode())document.exitPointerLock()}});
 cv.addEventListener('mousedown',function(e){if(e.button===0&&lockMode()&&document.pointerLockElement!==cv)lockPtr()});
+/* Left click while the right button is held (looking around / moving the camera): browsers send no pointerdown for the second button, so it is caught here from mousedown. lcT stops a click that pointerdown already handled from firing twice. */
+let lcT=0;
+cv.addEventListener('mousedown',function(e){if(e.button!==0||!playing||(VIEWONLY&&!playing))return;if(!(look||(e.buttons&2)))return;if(performance.now()-lcT<80)return;lcT=performance.now();screenClick();playClick(e)});
 cv.style.touchAction='none';cv.oncontextmenu=function(e){e.preventDefault()};
-cv.onpointerdown=function(e){if(VIEWONLY&&!playing)return;cv.setPointerCapture(e.pointerId);lx=e.clientX;ly=e.clientY;if(e.button===2){look=true;return}if(e.button===0&&playing){screenClick();playClick(e);return}if(e.button!==0||playing)return;if(animOn()){ray.setFromCamera(ndc(e),camera);const gh=ray.intersectObjects(gizmo,false)[0];if(gh){animGizStart(gh.object,e);return}animClick(e);return}
+cv.onpointerdown=function(e){if(VIEWONLY&&!playing)return;cv.setPointerCapture(e.pointerId);lx=e.clientX;ly=e.clientY;if(e.button===2){look=true;return}if(e.button===0&&playing){lcT=performance.now();screenClick();playClick(e);return}if(e.button!==0||playing)return;if(animOn()){ray.setFromCamera(ndc(e),camera);const gh=ray.intersectObjects(gizmo,false)[0];if(gh){animGizStart(gh.object,e);return}animClick(e);return}
   ray.setFromCamera(ndc(e),camera);let h=ray.intersectObjects(gizmo,false)[0];
   if(h&&h.object.userData.rotAx!==undefined){snapSel();const rs=rotStart(h.object.userData.rotAx,e);if(rs)gd=rs;return}
   if(h&&h.object.userData.scale){scaleStart(h.object);return}
