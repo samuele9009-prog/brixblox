@@ -526,6 +526,7 @@ const BD={
  itemhold:{c:'ev',hat:1,l:'when player holds _ in hand',a:['Sword'],dd:{0:'item'},tip:'Runs when you take the item you pick out of the hotbar and hold it in your hand. Make the item first (right-click a mesh under Assets, then Create item).'},
  itemunhold:{c:'ev',hat:1,l:'when player stops holding _ in hand',a:['Sword'],dd:{0:'item'},tip:'Runs when you put the item you pick away (or switch to another item, or it is taken from you).'},
  screenclick:{c:'ev',hat:1,l:'when player clicks screen',a:[],tip:'Runs every time you click on the game screen while playing (press Play). Clicking the hotbar at the bottom does not count. The variable clicker holds your name.'},
+ landed:{c:'ev',hat:1,l:'when player hits ground from higher than _ studs',a:['20'],tip:'Runs when you land after falling from higher than this many studs (jumping off a ledge, a tall build, or being pushed). The variable fallheight holds how far you fell. Type a small number like 5 to trigger on short drops too.'},
  pleave:{c:'ev',hat:1,l:'when a player leaves',a:[],tip:'Runs when a player leaves, is kicked or banned. The variable leaver holds their name. "number of players" is already updated.'},
  clicked:{c:'ev',hat:1,l:'when this block is clicked from _ studs away',a:['20'],tip:'Runs when you click the object this script belongs to while playing (press Play). The number is how far away you can click from. The variable clicker holds your name.'},
  chat:{c:'ev',hat:1,l:'when player says _ in chat',a:['hello'],raw:1,tip:'Runs when a player types this in the chat box (press / while playing, type, then press Enter to send). It matches the whole message, or the start of it when the message continues after a space (so \"!kick Bob\" matches !kick). Type * to match every message. The variables speaker and message are filled in.'},
@@ -642,7 +643,7 @@ const BD={
  def:{c:'fn',hat:1,l:'define _',a:['spin'],raw:1},
  call:{c:'fn',l:'call _',a:['spin'],raw:1}
 };
-const EVH=['key','keydrop','keyheld','keyrel','recv','touched','clicked','chat','guiclick','guithisclick','pjoin','pleave','itemhold','itemunhold','screenclick'];
+const EVH=['landed','key','keydrop','keyheld','keyrel','recv','touched','clicked','chat','guiclick','guithisclick','pjoin','pleave','itemhold','itemunhold','screenclick'];
 function mk(t,a,k){return {t:t,a:a||BD[t].a.slice(),k:BD[t].k?(k||[]):null}}
 function starter(){return [[mk('start'),mk('say',['Hello!']),mk('repeat',['4'],[mk('move',['6']),mk('turn',['90']),mk('wait',['0.3'])])]]}
 /* Games only exist on disk once they are published. An unpublished game is a draft that is lost when the page closes. */
@@ -773,7 +774,7 @@ function varList(){const v=new Set((P&&Array.isArray(P.vars))?P.vars:[]);
     if(b.k)w(b.k)})};
   P.scripts.forEach(function(sc){w(sc)});
   const has=function(t){return P.scripts.some(function(sc){return sc[0].t===t})};
-  if(has('touched'))v.add('toucher');if(has('pjoin'))v.add('joiner');if(has('pleave'))v.add('leaver');if(has('clicked')||has('guiclick')||has('guithisclick')||has('screenclick'))v.add('clicker');if(has('chat')){v.add('speaker');v.add('message')}
+  if(has('landed'))v.add('fallheight');if(has('touched'))v.add('toucher');if(has('pjoin'))v.add('joiner');if(has('pleave'))v.add('leaver');if(has('clicked')||has('guiclick')||has('guithisclick')||has('screenclick'))v.add('clicker');if(has('chat')){v.add('speaker');v.add('message')}
   return Array.from(v).sort()}
 const KEYOPT=(function(){const o=[];'abcdefghijklmnopqrstuvwxyz'.split('').forEach(function(c){o.push([c,c.toUpperCase()])});'0123456789'.split('').forEach(function(c){o.push([c,c])});
   [['space','Space'],['enter','Enter'],['shift','Shift'],['ctrl','Ctrl'],['alt','Alt'],['tab','Tab'],['escape','Escape'],['backspace','Backspace'],['up','Up arrow'],['down','Down arrow'],['left','Left arrow'],['right','Right arrow']].forEach(function(q){o.push(q)});
@@ -984,7 +985,7 @@ function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('p
 
 
 /* BricBloc as text */
-const KW={tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
+const KW={landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
 
@@ -1019,7 +1020,8 @@ const sl=function(ms){return new Promise(function(r){const end=performance.now()
   const fin=function(){if(done)return;done=true;clearTimeout(tm);r()};
   tm=setTimeout(fin,ms);
   (function tick(){if(done)return;if(performance.now()>=end)fin();else requestAnimationFrame(tick)})()})},cl=function(v,m){return Math.max(-m,Math.min(m,v))};
-function log(m){const o=$('s-out');o.textContent+=m+'\n';o.scrollTop=1e9}
+var OUTB=[];
+function log(m){OUTB.push(String(m));if(OUTB.length>400)OUTB.shift();try{outLive()}catch(e){}const o=$('s-out');o.textContent+=m+'\n';o.scrollTop=1e9}
 /* Broadcasts: start every "when I receive" script with this message. A script that is still running from the last time is not started again. */
 const MR=new Set();
 function fireMsg(msg,S){const m=String(msg).trim().toLowerCase(),ps=[];
@@ -2857,14 +2859,18 @@ function headStop(cx,cz,f0,h0,nh){const R=1.1,PH=6,head0=f0+h0+PH,head1=f0+nh+PH
     const bx=q.pos[0]+o[0],bz=q.pos[2]+o[1],dx=cx-Math.max(bx-eq[0],Math.min(bx+eq[0],cx)),dz=cz-Math.max(bz-eq[2],Math.min(bz+eq[2],cz));
     if(dx*dx+dz*dz>=R*R)return;best=by});
   return head1>best-.01?best-.01-PH-f0:null}
-function physics(dt){const T=byId(P.avId);if(!T)return;const f0=feet0(),g=groundAt(T.pos[0]+S.x,T.pos[2]-S.y,f0+S.h);
+function physics(dt){const T=byId(P.avId);if(!T)return;const f0=feet0(),g=groundAt(T.pos[0]+S.x,T.pos[2]-S.y,f0+S.h),wasGr=S.gr;
   const hcx=T.pos[0]+S.x,hcz=T.pos[2]-S.y;
   if(S.fly&&!S.rag&&amAdmin()){/* admin flight: Space up, Q down, no gravity */
     const dv=((keys.Space?1:0)-(keys.KeyQ?1:0))*38;let nh=S.h+dv*dt;if(dv>0){const hs=headStop(hcx,hcz,f0,S.h,nh);if(hs!==null)nh=hs}if(g>-1e8&&f0+nh<=g){nh=g-f0;S.gr=true}else S.gr=false;S.h=nh;S.vy=0}
   else{S.vy=Math.max(-220,S.vy-P.rules.grav*dt);let nh=S.h+S.vy*dt;
   if(S.vy>0){const hs=headStop(hcx,hcz,f0,S.h,nh);if(hs!==null){nh=hs;S.vy=-Math.max(8,S.vy*.4)}}/* bonk: you get knocked back down */
   if(S.vy<=0&&g>-1e8&&f0+nh<=g){S.h=g-f0;S.vy=0;S.gr=true}else{S.h=nh;S.gr=false}}
-  if(f0+S.h<-150){S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0}}
+  {const cur=f0+S.h;/* S.fp = highest point since leaving the ground; landing from higher than a script's height fires 'when player hits ground' */
+   if(S.fly||S.rag)S.fp=null;else if(S.gr){if(!wasGr&&S.fp!=null){const d=S.fp-cur;S.fp=null;landEvt(d)}S.fp=null}else if(S.fp==null||wasGr||cur>S.fp)S.fp=cur}
+  if(f0+S.h<-150){S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0;S.fp=null}}
+function landEvt(d){if(!(running||playing)||!(d>0))return;
+  P.scripts.filter(function(sc){return sc[0].t==='landed'}).forEach(function(sc){let H=Number(val(sc[0].a[0],S));if(!Number.isFinite(H))H=20;if(d>H){S.v.fallheight=Math.round(d*10)/10;fireScript(sc)}})}
 
 /* ===== Atmosphere: sky colour, time of day, brightness, fog ===== */
 /* ===== Entities: nearest players and rigs, ragdoll, kill, push, size ===== */
@@ -3014,7 +3020,7 @@ function simPose(key,T,e,u,arm){const sm=e.sim,B=sm.bodies,st=u<1?simStand(sm,ar
     S.x=o[0]-r.pos[0];S.y=r.pos[2]-o[2];S.h=o[1]-r.pos[1];S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0}}
 function simFinish(key,T,e,arm){const sm=e.sim,st=simStand(sm,arm),r=T.root,g=T.g;
   limbsRest(T,r);g.rotation.set(sm.rt[0],sm.rt[1],sm.rt[2]);
-  if(key==='main'){S.x=st[0]-r.pos[0];S.y=r.pos[2]-st[2];S.h=st[1]-r.pos[1];S.vy=0;S.gr=false;S.pvx=S.pvz=0;S.ix=S.iy=0;S.ch=S.h;g.position.set(st[0],st[1],st[2])}
+  if(key==='main'){S.x=st[0]-r.pos[0];S.y=r.pos[2]-st[2];S.h=st[1]-r.pos[1];S.vy=0;S.gr=false;S.fp=null;S.pvx=S.pvz=0;S.ix=S.iy=0;S.ch=S.h;g.position.set(st[0],st[1],st[2])}
   else if(key.slice(0,4)==='rig:'){RO[r.id]=[st[0]-r.pos[0],st[2]-r.pos[2]];RY[r.id]=st[1]-r.pos[1];delete RV[r.id];g.position.set(st[0],st[1],st[2])}
   else{const n=T.np,q=n.g.position;q.set(st[0]-r.pos[0],st[1]-r.pos[1],st[2]-r.pos[2]);g.position.set(r.pos[0],r.pos[1],r.pos[2]);n.vy=0;n.tp=true;npTag(n)}}
 function entTick(dt){Object.keys(Object.assign({},RAG,RSZ)).forEach(function(key){
@@ -3128,7 +3134,7 @@ function xeqSet(t,slot,id,wear){
 function feetOf(r){let lo=1e9;rigParts(r).forEach(function(p){lo=Math.min(lo,p.pos[1]-p.size[1]/2)});return lo}
 function npTag(n){const T=byId(P.avId);if(!T)return;const q=n.g.position;n.tag.position.set(T.pos[0]+q.x,n.top+1.3+q.y,T.pos[2]+q.z)}
 function teleKey(key,x,y,z){const T=byId(P.avId);
-  if(key==='main'){if(!T)return;S.x=x-T.pos[0];S.y=T.pos[2]-z;S.h=y-feet0();S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0;S.gr=false;S.ch=S.h;return}
+  if(key==='main'){if(!T)return;S.x=x-T.pos[0];S.y=T.pos[2]-z;S.h=y-feet0();S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0;S.gr=false;S.fp=null;S.ch=S.h;return}
   if(key.slice(0,4)==='rig:'){const id=key.slice(4),r=byId(id);if(!r)return;RO[id]=[x-r.pos[0],z-r.pos[2]];RY[id]=y-feetOf(r);delete RV[id];return}
   const n=NP.find(function(q){return 'np:'+q.name===key});if(!n||!T)return;
   if(n.net)return;/* a real player in an online game is only ever moved by their own game, so nobody gets teleported on someone else's screen */
@@ -3241,7 +3247,7 @@ $('chat-tg').onclick=function(){$('chat').classList.toggle('min')};
 /* ===== Game menu: press Esc while playing or running ===== */
 let menuEl=null,gmPlFill=null;
 function gmPlRefresh(){if(gmPlFill)try{gmPlFill()}catch(e){}}/* redraws the Players list in the game menu when someone joins or leaves */
-function respawnMe(){S.hp=MAXHP;delete RAG.main;S.rag=false;S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0;S.gr=false;S.ch=undefined;S.pd=null;const T=entTargets('main');if(T)limbsRest(T,T.root);chatSys('You respawned.')}
+function respawnMe(){S.hp=MAXHP;delete RAG.main;S.rag=false;S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0;S.gr=false;S.fp=null;S.ch=undefined;S.pd=null;const T=entTargets('main');if(T)limbsRest(T,T.root);chatSys('You respawned.')}
 function closeGM(){gmPlFill=null;if(menuEl){menuEl.remove();menuEl=null}}
 function openGM(){if(menuEl||!(running||playing))return;for(const k in keys)keys[k]=false;look=false;if(document.pointerLockElement)document.exitPointerLock();
   const ov=el('div','gm'),pn=el('div','gmp');ov.append(pn);
@@ -3681,6 +3687,7 @@ function addGroups(c){if(c.t==='gui'){const O2=[];[['text','Text','A text label 
     Sx.push(scr('Script: when player holds item in hand','itemhold','Runs when you hold an item you made'));
     Sx.push(scr('Script: when player stops holding item in hand','itemunhold','Runs when you stop holding an item'));
     Sx.push(scr('Script: when player clicks screen','screenclick','Runs every time you click the game screen'));
+    Sx.push(scr('Script: when player hits ground from higher than','landed','Runs when you land after falling from higher than the height you type'));
     Sx.push(scr('Function','def','A reusable set of blocks'))}
   const G=[];if(O.length)G.push({g:'Objects',items:O});if(Sx.length)G.push({g:own?'Scripts inside this object':'Scripts',items:Sx});if(A.length)G.push({g:'Animation',items:A});return G}
 function addMenu(btn,ctx,done){closeAdd();const G=addGroups(ctx),m=el('div','addm');m.setAttribute('role','menu');m._done=done;
@@ -3807,10 +3814,10 @@ function boot(my){reser();const hs=P.scripts.filter(function(s){return BD[s[0].t
   hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
   setTimeout(function(){if(my===S&&(running||playing))firePJ('pjoin',P.player.name)},120);
   return {hs:hs,done:Promise.all(hs.filter(function(s){return s[0].t==='start'}).map(function(s){return ex(s.slice(1),my,s[0].o).catch(function(e){log('Error: '+e)})}))}}
-$('s-run').onclick=async function(){this.blur();if(banGate())return;S.stop=true;resetWorld();const my=S;$('s-out').textContent='';setRun(true);
+$('s-run').onclick=async function(){this.blur();if(banGate())return;S.stop=true;resetWorld();const my=S;$('s-out').textContent='';OUTB.length=0;try{outLive()}catch(e){};setRun(true);
   const b=boot(my);await b.done;
   if(my===S&&!b.hs.some(function(s){return EVH.indexOf(s[0].t)>=0}))setRun(false)};
-$('s-play').onclick=function(){this.blur();if(banGate())return;S.stop=true;sel=[];selModel=null;selSvc=null;selJ=null;resetWorld();cd=cdT=P.rules.cam;CAMN=0;camD=null;avHid=false;playing=true;sync();stageApply();buildEdit();$('s-out').textContent='';boot(S)};
+$('s-play').onclick=function(){this.blur();if(banGate())return;S.stop=true;sel=[];selModel=null;selSvc=null;selJ=null;resetWorld();cd=cdT=P.rules.cam;CAMN=0;camD=null;avHid=false;playing=true;sync();stageApply();buildEdit();$('s-out').textContent='';OUTB.length=0;try{outLive()}catch(e){};boot(S)};
 $('s-stop').onclick=function(){if(VIEWONLY)showLeaving();S.stop=true;running=false;playing=false;sync();resetWorld();if(VIEWONLY)leaveGame()};
 /* Ctrl+L: start testing the game (Play). Press it again to stop. */
 addEventListener('keydown',function(e){if(e.code!=='KeyL'||!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey||e.repeat)return;
@@ -3964,7 +3971,7 @@ function dropOn(d,t){if(!dropOK(d,t))return;const ps=dragParts(d);let msg0='';
    Every player runs the game on their own computer, so "server side" works by telling every other player's computer to run the very same block
    (only the position of the block is sent, never code, so nothing can be injected). "client side" blocks only ever run on the computer that reached them,
    and are skipped on the other players when they replay a server side block. */
-const LOCALH={touched:1,clicked:1,key:1,keydrop:1,keyheld:1,keyrel:1,chat:1,guiclick:1,guithisclick:1,itemhold:1,itemunhold:1,screenclick:1};
+const LOCALH={landed:1,touched:1,clicked:1,key:1,keydrop:1,keyheld:1,keyrel:1,chat:1,guiclick:1,guithisclick:1,itemhold:1,itemunhold:1,screenclick:1};
 const RSKIP={move:1,turn:1,goto:1,jump:1,animate:1,say:1,color:1,walkanim:1,jumpanim:1,idleanim:1,fallanim:1,holdanim:1,holdwalkanim:1,fov:1,shiftlockon:1,shiftlockoff:1,pspeed:1,playercol:1,tweenset:1,
   givebadge:1,awardbadge:1,giveitem:1,removeitem:1,accadd:1,accrem:1,accwear:1,accstrip:1,kick:1,ban:1,addplayer:1,randplayer:1,getcount:1,print:1,setvol:1};
 const RSELF={tweensize:1,tweentrans:1,tweencolor:1,transparency:1,kill:1,pushparent:1};
@@ -4496,7 +4503,10 @@ addEventListener('keydown',function(e){if(!(e.ctrlKey||e.metaKey)||e.altKey)retu
     const t=gameId?(PEND?'Saved here. Press Update to send your changes live.':'Everything is already saved.'):'Not saved yet. Press Publish to keep this game.';
     try{if(gameId)persistGame()}catch(x){}lockWarn(t)}
   else if(e.code==='KeyW'){e.preventDefault();e.stopPropagation();ctlW=performance.now()}},true);
-addEventListener('beforeunload',function(e){if(skipUnload)return;if(dirty()||performance.now()-ctlW<1500){e.preventDefault();e.returnValue=''}});
+addEventListener('beforeunload',function(e){if(skipUnload)return;if(dirty()||performance.now()-ctlW<1500||running||playing){e.preventDefault();e.returnValue=''}});
+/* In fullscreen, Chrome and Edge let a page take over keys the browser normally keeps (Keyboard Lock), so Ctrl+W reaches the game and no longer closes the tab. */
+function kbLock(){try{const k=navigator.keyboard;if(!k)return;if(document.fullscreenElement){if(k.lock)k.lock(['KeyW']).catch(function(){})}else if(k.unlock)k.unlock()}catch(x){}}
+document.addEventListener('fullscreenchange',kbLock);kbLock();
 /* ===== Online play: everyone playing the same game is put in a server of up to 10. Joining picks a server that is already running, or starts a new one. ===== */
 const NRAG={c:0};/* counts how many times this player was ragdolled, so other players see it too */
 const NANIM={n:'',c:0};/* the last animation this player started on their own character, and a counter so other players never miss it */
@@ -4720,9 +4730,25 @@ function admPanelFill(){admLs.replaceChildren();bbSec.hidden=!(ME&&admIsBB(ME.us
   ADM.list.forEach(function(n){admLs.append(admRow(n,'Remove',async function(){try{await admSave(ADM.list.filter(function(x){return x!==n}));admMsg.textContent=n+' is no longer an admin.';admPanelFill()}catch(e){admMsg.textContent='Could not save: '+((e&&e.message)||e)}}))})}
 admBtn.onclick=function(){admPanel.style.display=admPanel.style.display==='none'?'block':'none';if(admPanel.style.display==='block')admLoad().then(admPanelFill)};
 document.body.append(admBtn,admPanel);setFly(false);admPanelFill();
+/* Admin output: the game's output (print, warnings, errors) normally only shows inside the studio. In a live game, admins can open the same output from the Admin panel. */
+var OUTSHOW=false,outVis=false;
+const outBox=el('div'),outHd=el('div'),outPre=el('pre'),outBtn=el('button','btn small ghost','Show output');
+outBox.style.cssText=UIS+'z-index:62;left:10px;bottom:10px;width:440px;max-width:92vw;height:240px;max-height:50vh;background:rgba(20,22,24,.94);border:1px solid #4a4c4e;border-radius:12px;display:none;flex-direction:column;overflow:hidden';
+outHd.style.cssText='display:flex;align-items:center;gap:6px;padding:6px 8px;background:rgba(0,0,0,.35)';
+outPre.style.cssText='flex:1;margin:0;padding:8px 10px;overflow:auto;font:600 .75rem/1.35 ui-monospace,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;color:#e6e6e6';
+const outT=el('span',null,'Output'),outClr=el('button','btn small ghost','Clear'),outX=el('button','btn small ghost','Close');outT.style.cssText='flex:1';
+[outClr,outX,outBtn].forEach(function(b){b.type='button'});
+[outClr,outX].forEach(function(b){b.style.cssText='width:auto;margin:0;min-height:26px;padding:0 10px;font-size:.78rem'});
+outBtn.style.cssText='width:100%;margin:4px 0 2px';
+outHd.append(admIcon(14),outT,outClr,outX);outBox.append(outHd,outPre);document.body.append(outBox);flyBtn.insertAdjacentElement('afterend',outBtn);
+function outLive(){if(outBox.style.display==='none')return;const st=outPre.scrollTop+outPre.clientHeight>=outPre.scrollHeight-8;outPre.textContent=OUTB.length?OUTB.join('\n'):'Nothing printed yet.';if(st)outPre.scrollTop=1e9}
+function outApply(){const on=!!ME&&(running||playing),sh=!!(OUTSHOW&&VIEWONLY&&on&&amAdmin());outBtn.hidden=!VIEWONLY;outBtn.textContent=OUTSHOW?'Hide output':'Show output';
+  if(sh!==outVis){outVis=sh;outBox.style.display=sh?'flex':'none';if(sh)outLive()}}
+outBtn.onclick=function(){OUTSHOW=!OUTSHOW;outApply()};outX.onclick=function(){OUTSHOW=false;outApply()};outClr.onclick=function(){OUTB.length=0;outLive()};
+outApply();
 addEventListener('keydown',function(e){if(e.code!=='KeyF'||e.repeat||e.ctrlKey||e.metaKey||e.altKey)return;if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;if(!(running||playing)||!amAdmin())return;setFly(!S.fly)});
 setInterval(function(){
-  const on=!!ME&&(running||playing);plBox.style.display=on?'block':'none';admBtn.style.display=on&&amAdmin()?'inline-flex':'none';
+  outApply();const on=!!ME&&(running||playing);plBox.style.display=on?'block':'none';admBtn.style.display=on&&amAdmin()?'inline-flex':'none';
   if(!on){admPanel.style.display='none';return}
   if(!amAdmin()&&S.fly)S.fly=false;
   const others=NP.filter(function(n){return n.net});
