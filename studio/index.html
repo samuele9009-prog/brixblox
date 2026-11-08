@@ -549,7 +549,9 @@ const BD={
  walkanim:{c:'pl',l:'set player walk to _',a:['walk'],raw:1,tip:'Uses an animation from the rig as the walk animation.'},
  jumpanim:{c:'pl',l:'set player jump to _',a:['jump'],raw:1,tip:'Uses an animation from the rig as the jump animation.'},
  idleanim:{c:'pl',l:'set player idle to _',a:['idle'],raw:1,tip:'Uses an animation from the rig as the idle animation.'},
- fallanim:{c:'pl',l:'set player fall to _',a:['fall'],raw:1,tip:'Uses an animation from the rig as the fall animation. It plays while the player is dropping through the air. While holding an item the animations called hold item jump and hold item fall play instead, if they exist.'},
+ fallanim:{c:'pl',l:'set player fall to _',a:['fall'],raw:1,tip:'Uses an animation from the rig as the fall animation. It plays while the player is dropping through the air. While holding an item the animation called hold item jump plays instead, if it exists.'},
+ holdanim:{c:'pl',l:'set player hold item to _',a:['hold item'],raw:1,tip:'Uses an animation from the rig as the pose the player has while holding an item and standing still. Only the parts it has keyframes for are changed. The default is the animation called hold item.'},
+ holdwalkanim:{c:'pl',l:'set player hold item walk to _',a:['hold item walk'],raw:1,tip:'Uses an animation from the rig as the walk animation the player has while holding an item. The default is the animation called hold item walk.'},
  fov:{c:'pl',l:'set camera fov to _',a:['80'],tip:'Sets how wide the camera sees, from 30 (zoomed in) to 120 (very wide). The default is 70. It goes back to the game setting when the game restarts.'},
  pspeed:{c:'pl',l:'set player speed to _',a:['24'],tip:'How fast the player walks (default 16).'},
  playercol:{c:'pl',l:'set player collisions to _',a:['true'],dd:{0:'bool'},tip:'true: players can not walk through each other, so you bump into the other players in the server. false: players walk straight through each other (the default). It goes back to false when the game restarts.'},
@@ -973,7 +975,7 @@ function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('p
 
 
 /* BricBloc as text */
-const KW={tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
+const KW={tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
 
@@ -1105,8 +1107,8 @@ async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0
       else if(k==='jump'){const j0=S.jumpP!=null?S.jumpP:P.rules.jump,j1=cm(v1,0,300);twAdd(S,dur,sty,function(e){S.jumpP=cm(j0+(j1-j0)*e,0,300)},'set:jump')}
       else log('Error: cannot tween "'+k+'". Pick fov, distance, speed or jump.');break}
     case'tweenwait':{const L=TW.slice();while(!S.stop&&L.some(function(t){return !t.done}))await sl(16);break}
-    case'walkanim':case'jumpanim':case'idleanim':case'fallanim':{const nm=a[0].trim();if(!P.anims[nm]){log('Error: no animation named "'+nm+'"');break}
-      S[{walkanim:'walkA',jumpanim:'jumpA',idleanim:'idleA',fallanim:'fallA'}[b.t]]=nm;break}
+    case'walkanim':case'jumpanim':case'idleanim':case'fallanim':case'holdanim':case'holdwalkanim':{const nm=a[0].trim();if(!P.anims[nm]){log('Error: no animation named "'+nm+'"');break}
+      S[{walkanim:'walkA',jumpanim:'jumpA',idleanim:'idleA',fallanim:'fallA',holdanim:'holdA',holdwalkanim:'holdWA'}[b.t]]=nm;break}
     case'fov':S.fov=Math.max(30,Math.min(120,n(0)));break;
     case'shiftlockon':S.sla=true;break;
     case'shiftlockoff':S.sla=false;S.sl=false;break;
@@ -1628,7 +1630,7 @@ function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
       else{const A=(q.mv&&(npAnim(q.wa)||npAnim('walk')))||npAnim(q.ia)||npAnim('idle');if(A)po=evalPose(A,q.t%A.len)}}
     else{const A=P.anims[S.idleA||'idle'];if(A)po=evalPose(A,q.t%A.len)}
     /* an animation this player started with a block overrides the parts it has keyframes for, on this player only */
-    if(q.net&&q.hi){const HA=P.anims['hold item'],HW=P.anims['hold item walk'],HJ=P.anims['hold item jump'],HF=P.anims['hold item fall'];if(nFall&&HF)po=evalPose(HF,q.ft%(HF.len||1));else if(nAir&&!nFall&&HJ)po=evalPose(HJ,Math.min(q.jt,HJ.len||1));else if(HW&&q.mv&&!q.air)po=evalPose(HW,q.t%(HW.len||1));else if(HA)po=Object.assign({},po,evalPose(HA,q.t%(HA.len||1)))}
+    if(q.net&&q.hi){const HA=npAnim(q.ha)||npAnim('hold item'),HW=npAnim(q.hw)||npAnim('hold item walk'),HJ=npAnim('hold item jump');if(nAir&&HJ)po=evalPose(HJ,Math.min(q.jt,HJ.len||1));else if(HW&&q.mv&&!q.air)po=evalPose(HW,q.t%(HW.len||1));else if(HA)po=Object.assign({},po,evalPose(HA,q.t%(HA.len||1)))}
     if(q.net&&q.hi&&!q.itemObj&&!q.hiBusy&&performance.now()>(q.hiRetry||0)){q.hiRetry=performance.now()+1500;try{netItem(q,1)}catch(x){}}
     let fp=po;
     if(q.net&&q.an){const AN=npAnim(q.an);if(!AN)q.an='';else{q.at=(q.at||0)+dt;
@@ -1981,7 +1983,7 @@ function makeAvatar(){const ST=mkPart('Stabilizer',[0,3,0],[.6,.6,.6],'#9aa4ae')
   RA=mkPart('Rarm',[1.5,3,0],[1,2,1],'#f5cd30'),LA=mkPart('Larm',[-1.5,3,0],[1,2,1],'#f5cd30'),RL=mkPart('Rleg',[.5,1,0],[1,2,1],'#a4bd47'),LL=mkPart('Lleg',[-.5,1,0],[1,2,1],'#a4bd47');
   H.face=true;ST.stab=true;[ST,T,H,RA,LA,RL,LL].forEach(function(q){q.av=true});T.parent=ST.id;T.pivot=defPivot(T);[H,RA,LA,RL,LL].forEach(function(c){c.parent=T.id;c.pivot=defPivot(c)});P.avId=ST.id;
   function ks(m){return [[0,0],[.25,35],[.5,0],[.75,-35],[1,0]].map(function(q){return {t:q[0],r:[q[1]*m,0,0]}})}
-  const w={len:1,keys:{}};w.keys[RA.id]=ks(1);w.keys[LA.id]=ks(-1);w.keys[RL.id]=ks(-1);w.keys[LL.id]=ks(1);P.anims.walk=w;curA='walk';jumpAnim();idleAnim();holdAnim();holdWalkAnim();fallAnim();holdJumpAnim();holdFallAnim()}
+  const w={len:1,keys:{}};w.keys[RA.id]=ks(1);w.keys[LA.id]=ks(-1);w.keys[RL.id]=ks(-1);w.keys[LL.id]=ks(1);P.anims.walk=w;curA='walk';jumpAnim();idleAnim();holdAnim();holdWalkAnim();fallAnim();holdJumpAnim()}
 function holdWalkAnim(){const R=P.parts.find(function(p){return p.av&&p.name==='Rarm'&&!p.acc}),W=P.anims.walk;if(!R||!W)return;
   const c=JSON.parse(JSON.stringify(W)),L=c.len||1;c.keys=c.keys||{};c.keys[R.id]=[{t:0,r:[80,0,0]},{t:L,r:[80,0,0]}];c.type='walk';P.anims['hold item walk']=c}
 function holdAnim(){const R=P.parts.find(function(p){return p.av&&p.name==='Rarm'&&!p.acc});if(!R)return;const k={};k[R.id]=[{t:0,r:[80,0,0]},{t:1,r:[80,0,0]}];P.anims['hold item']={len:1,keys:k,type:'other'}}
@@ -1998,7 +2000,6 @@ function fallAnim(){const by=function(n){const q=P.parts.find(function(p){return
 function holdVariant(src,dst){const R=P.parts.find(function(p){return p.av&&p.name==='Rarm'&&!p.acc}),A=P.anims[src];if(!R||!A)return;
   const c=JSON.parse(JSON.stringify(A)),L=c.len||1;c.keys=c.keys||{};c.keys[R.id]=[{t:0,r:[80,0,0]},{t:L,r:[80,0,0]}];c.type='other';P.anims[dst]=c}
 function holdJumpAnim(){holdVariant('jump','hold item jump')}
-function holdFallAnim(){holdVariant('fall','hold item fall')}
 function idleAnim(){const by=function(n){const q=P.parts.find(function(p){return p.av&&p.name===n});return q&&q.id},A={len:4,keys:{}};
   function k(id,f){if(id)A.keys[id]=f.map(function(r,i){return {t:i,r:r}})}
   k(by('Head'),[[0,0,0],[2,9,0],[0,0,0],[2,-9,0],[0,0,0]]);
@@ -2635,7 +2636,7 @@ function play(dt,f){const SP=(S.fly&&amAdmin()?2.2:1)*(S.speed!=null?S.speed:P.r
   const W=P.anims[S.walkA||'walk'],JA=P.anims[S.jumpA||'jump'],FA=P.anims[S.fallA||'fall'],IA=P.anims[S.idleA||'idle'],air=!S.gr,fall=air&&!!FA&&S.vy<-6,inAir=air&&(!!JA||fall),walking=!air&&!!W&&(mv||Math.hypot(S.pvx,S.pvz)>1.5);let tp={};
   if(inAir){S.jt+=dt;S.air=true;if(fall){S.ft=(S.ft||0)+dt;tp=evalPose(FA,S.ft%(FA.len||1))}else{S.ft=0;tp=evalPose(JA,Math.min(S.jt,JA.len))}}
   else{S.ft=0;if(S.air){S.air=false;S.jt=0}if(W&&(mv||Math.hypot(S.pvx,S.pvz)>1.5)){S.wt+=dt*Math.min(1,Math.hypot(S.pvx,S.pvz)/12+.2);const sn=Math.floor(S.wt/(W.len/2));if(S.sn===undefined)S.sn=sn;else if(sn!==S.sn){S.sn=sn;stepSound()}tp=evalPose(W,S.wt%W.len)}else if(IA){S.it=(S.it||0)+dt;tp=evalPose(IA,S.it%IA.len)}}
-  if(S.heldItem){const HW=P.anims['hold item walk'],HA=P.anims['hold item'],HJ=P.anims['hold item jump'],HF=P.anims['hold item fall'];if(inAir&&fall&&HF)tp=evalPose(HF,(S.ft||0)%(HF.len||1));else if(inAir&&!fall&&HJ)tp=evalPose(HJ,Math.min(S.jt,HJ.len||1));else if(HW&&!air&&(mv||Math.hypot(S.pvx,S.pvz)>1.5))tp=evalPose(HW,S.wt%(HW.len||1));else if(HA)tp=Object.assign({},tp,evalPose(HA,((S.ht=(S.ht||0)+dt))%(HA.len||1)))}
+  if(S.heldItem){const HW=P.anims[S.holdWA||'hold item walk'],HA=P.anims[S.holdA||'hold item'],HJ=P.anims['hold item jump'];if(inAir&&HJ)tp=evalPose(HJ,Math.min(S.jt,HJ.len||1));else if(HW&&!air&&(mv||Math.hypot(S.pvx,S.pvz)>1.5))tp=evalPose(HW,S.wt%(HW.len||1));else if(HA)tp=Object.assign({},tp,evalPose(HA,((S.ht=(S.ht||0)+dt))%(HA.len||1)))}
   const ak=(inAir?(fall?'f':'j'):walking?'w':'i')+(S.heldItem?'h':'');if(S.ak!==ak){S.ak=ak;S.bl=.15}S.bl=Math.max(0,(S.bl||0)-dt);const kb=S.bl>0?1-Math.exp(-dt*(air?18:14)):1;P.parts.forEach(function(p){if(p.id===P.avId||!p.av||(S.hold&&S.hold[p.id]>0))return;const t=tp[p.id]||[0,0,0],c=S.bp[p.id]||(S.bp[p.id]=[0,0,0]);for(let i=0;i<3;i++)c[i]+=(t[i]-c[i])*kb;const pk='p:'+p.id,t2=tp[pk]||[0,0,0],c2=S.bp[pk]||(S.bp[pk]=[0,0,0]);for(let i=0;i<3;i++)c2[i]+=(t2[i]-c2[i])*kb});
   applyPose(S.bp,true,S.hold);S.mv=mv}
 function solid(r){return CO[r.id]!==undefined?CO[r.id]:!r.nocol}
@@ -3721,7 +3722,8 @@ if(!P.v11){P.v11=1;const av=function(n){return P.parts.find(function(p){return p
   save()}
 if(!P.v12){P.v12=1;if(P.avId&&!P.anims['hold item'])holdAnim();save()}
 if(!P.v13){P.v13=1;if(P.avId&&P.anims.walk&&!P.anims['hold item walk']){holdWalkAnim();save()}}
-if(!P.v14){P.v14=1;if(P.avId){if(!P.anims.fall)fallAnim();if(!P.anims['hold item jump'])holdJumpAnim();if(!P.anims['hold item fall'])holdFallAnim();save()}}
+if(!P.v14){P.v14=1;if(P.avId){if(!P.anims.fall)fallAnim();if(!P.anims['hold item jump'])holdJumpAnim();save()}}
+if(!P.v15){P.v15=1;if(P.anims['hold item fall']){delete P.anims['hold item fall'];if(curA==='hold item fall')curA=P.anims.walk?'walk':Object.keys(P.anims)[0];save()}}
 applyEnv();rebuildParts();renderParts();anims();requestAnimationFrame(frame);loadBig();setTimeout(gcBig,4000);
 if(gameId&&!VIEWONLY&&sb&&!PEND&&(Object.keys(P.assets.audio).some(function(n){return bigRef(P.assets.audio[n])})||Object.keys(P.assets.meshes||{}).some(function(n){return bigRef(P.assets.meshes[n])})))setTimeout(function(){cloudPush(gameId)},3000);
 if(gameId&&!VIEWONLY&&sb&&PEND)setTimeout(function(){cloudPush(gameId)},2500);
@@ -4381,7 +4383,7 @@ function netRecv(q){if(!q||!q.id||q.id===NET.id||!NET.on||!(running||playing))re
     NP.slice().forEach(function(o){if(o!==e&&o.net&&String(o.un||o.name)===String(q.n)&&performance.now()-(o.seen||0)>1500)netDrop(o.net)})}
   e.tx=q.x;e.ty=q.y;e.th=q.h;e.td=(q.d!=null&&isFinite(+q.d))?+q.d:(e.td||0);e.mv=q.m;e.seen=performance.now();
   const nm=function(v){return typeof v==='string'?v.slice(0,40):''};
-  e.un=String(q.n||e.name).slice(0,24);{const hi=typeof q.hi==='string'?q.hi.slice(0,40):'';if(hi!==(e.hi||'')){e.hi=hi;netItem(e)}}e.air=!!q.g;e.wa=nm(q.wa);e.ia=nm(q.ia);e.ja=nm(q.ja);e.fa=nm(q.fa);
+  e.un=String(q.n||e.name).slice(0,24);{const hi=typeof q.hi==='string'?q.hi.slice(0,40):'';if(hi!==(e.hi||'')){e.hi=hi;netItem(e)}}e.air=!!q.g;e.wa=nm(q.wa);e.ia=nm(q.ia);e.ja=nm(q.ja);e.fa=nm(q.fa);e.ha=nm(q.ha);e.hw=nm(q.hw);
   {const es=typeof q.e==='string'?q.e.slice(0,200):'';if(es!==e.eqs){e.eqs=es;try{netEq(e,es)}catch(x){}}}
   e.rc=q.rc;if(q.rg&&typeof q.rg==='object'){const t={};Object.keys(q.rg).forEach(function(id){const a=q.rg[id];if(e.JJ[id]&&Array.isArray(a)&&a.length===4&&a.every(Number.isFinite))t[id]=a});e.rgT=t;e.rgAt=performance.now()}/* they were ragdolled: show it on this screen too (never as a kill, they respawn on their own screen) */
   if(e.ac===undefined)e.ac=q.ac;/* first packet: do not replay an old animation */
@@ -4409,7 +4411,7 @@ function netDrop(id){const i=NP.findIndex(function(n){return n.net===id});if(i<0
   NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);/* remove them first, so nothing below can stop it */
   chatSys(n.name+' left the game');npFree(n);delete RAG['np:'+n.name];delete RSZ['np:'+n.name];try{renderParts()}catch(e){}gmPlRefresh();firePJ('pleave',n.name)}
 setInterval(function(){if(!NET.on||!(running||playing))return;
-  const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',fa:S.fallA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,hi:S.heldItem||'',e:accStr(Object.assign({},(ME&&ME.av&&ME.av.eq)||{},S.xeq||{}))},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.fa,q.an,q.ac,q.rc,q.e,q.hi].join()+(rgo?JSON.stringify(rgo):'');
+  const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',fa:S.fallA||'',ha:S.holdA||'',hw:S.holdWA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,hi:S.heldItem||'',e:accStr(Object.assign({},(ME&&ME.av&&ME.av.eq)||{},S.xeq||{}))},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.fa,q.ha,q.hw,q.an,q.ac,q.rc,q.e,q.hi].join()+(rgo?JSON.stringify(rgo):'');
   const nowT=performance.now();if(j===NET.last&&nowT-(NET.lt||0)<1500)return;NET.last=j;NET.idle=0;NET.lt=nowT;NET.ch.send({type:'broadcast',event:'p',payload:q})},100);
 /* Ghost sweep, runs on every player's own game (so it works even if the player who left has an old version):
    the server's list of who is online is the truth. Someone who is not on it and has gone quiet is removed. */
