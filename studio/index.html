@@ -4529,7 +4529,7 @@ addEventListener('keydown',function(e){if(!(e.ctrlKey||e.metaKey)||e.altKey)retu
   else if(e.code==='KeyW'){e.preventDefault();e.stopPropagation()}},true);/* Ctrl+W is swallowed whenever the browser lets the page see it */
 addEventListener('beforeunload',function(e){if(skipUnload)return;if(dirty()){e.preventDefault();e.returnValue=''}/* only a brand-new, never-saved game asks before closing; playing and Ctrl+W never do */});
 /* In fullscreen, Chrome and Edge let a page take over keys the browser normally keeps (Keyboard Lock), so Ctrl+W reaches the game and no longer closes the tab. */
-function kbLock(){try{const k=navigator.keyboard;if(!k)return;if(document.fullscreenElement){if(k.lock)k.lock(['KeyW']).catch(function(){})}else if(k.unlock)k.unlock()}catch(x){}}
+function kbLock(){try{if(window.parent!==window)return;/* inside BrixBlox: the main site holds the lock */const k=navigator.keyboard;if(!k)return;if(document.fullscreenElement){if(k.lock)k.lock(['KeyW']).catch(function(){})}else if(k.unlock)k.unlock()}catch(x){}}
 document.addEventListener('fullscreenchange',kbLock);kbLock();
 /* ===== Online play: everyone playing the same game is put in a server of up to 10. Joining picks a server that is already running, or starts a new one. ===== */
 const NRAG={c:0};/* counts how many times this player was ragdolled, so other players see it too */
