@@ -848,8 +848,11 @@ function friendAvatar(color,av){
       FAV.r=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});FAV.r.setPixelRatio(1);FAV.r.setSize(200,200,false);FAV.r.setClearColor(0x000000,0);
       FAV.sc=new THREE.Scene();FAV.sc.add(new THREE.HemisphereLight(0xffffff,0x8899aa,.95));const dl=new THREE.DirectionalLight(0xfff3df,.8);dl.position.set(3,6,5);FAV.sc.add(dl);
       FAV.cam=new THREE.PerspectiveCamera(30,1,.1,50);FAV.cam.position.set(0,1.62,3.5);FAV.cam.lookAt(0,1.62,0)}
+    /* accessory textures load in the background: start them, and if any are not ready yet, draw now but do not keep the picture */
+    let wait=false;Object.keys(av.eq).forEach(function(k){eqArr(av.eq[k]).forEach(function(id){const it=itemById(id);if(it&&it.tex&&FBXC[id]){const t=getTex(it.tex,it.tf);if(!(t.image&&(t.image.naturalWidth||t.image.width)))wait=true}})});
     const a=makeAvatar(color,av.eq,av);a.g.rotation.y=.3;FAV.sc.add(a.g);
     FAV.r.render(FAV.sc,FAV.cam);const u=FAV.r.domElement.toDataURL('image/png');FAV.sc.remove(a.g);
+    if(wait){FAV.pending=true;return u}
     FAV.cache[key]=u;return u}
   catch(e){FAV.fail=true;return null}}
 function favImg(r){const u=friendAvatar(r.color,r.av);if(!u)return null;const i=document.createElement('img');i.className='fav';i.alt='';i.src=u;return i}
@@ -857,6 +860,7 @@ function frow(r,btns,tag){const d=document.createElement('div');d.className='fro
   btns.forEach(function(b){const x=document.createElement('button');x.type='button';x.className='btn small'+(b[2]?' ghost':'');x.textContent=b[0];x.onclick=async function(){try{await api.answerFriend(me.id,r.fid,b[1])}catch(e){toast(errText(e))}loadFriends()};d.append(x)});return d}
 function fill(el,rows,empty){el.innerHTML='';if(!rows.length){const p=document.createElement('p');p.className='empty';p.textContent=empty;el.append(p);return}rows.forEach(function(x){el.append(x)})}
 async function loadFriends(){
+  FAV.pending=false;
   try{const rows=await api.friends(me.id),pend=rows.filter(function(r){return r.status==='pending'});
     const inc=pend.filter(function(r){return r.incoming});
     fill($('f-req'),pend.map(function(r){return r.incoming?frow(r,[['Accept',true],['Decline',false,1]]):frow(r,[['Cancel',false,1]],' (sent)')}),'No pending requests.');
@@ -866,7 +870,8 @@ async function loadFriends(){
     {let dn=$('h-fdbg');if(!dn){dn=document.createElement('p');dn.id='h-fdbg';dn.className='hint';dn.style.cssText='margin:4px 0 0;font-size:.8rem;color:#e0a040';$('h-fh').after(dn)}
       const miss=acc.filter(function(r){return r.has===false}).map(function(r){return r.name});
       dn.textContent=miss.length?('No saved look found for: '+miss.join(', ')+'. '+(window.FAVDBG&&FAVDBG.length?'Reason: '+FAVDBG.join(' | '):'They need to open the game once so their look gets saved.')):''}
-    $('h-fr').replaceChildren.apply($('h-fr'),[tile('Add Friends',0,1)].concat(acc.map(function(r){return tile(r.name,r.color,0,r)})))}
+    $('h-fr').replaceChildren.apply($('h-fr'),[tile('Add Friends',0,1)].concat(acc.map(function(r){return tile(r.name,r.color,0,r)})));
+    if(FAV.pending&&(FAV.tries=(FAV.tries||0)+1)<15)setTimeout(loadFriends,300);else if(!FAV.pending)FAV.tries=0}
   catch(e){$('n-badge').hidden=true;const p=document.createElement('p');p.className='empty';p.textContent=errText(e);$('f-req').replaceChildren(p);$('f-list').replaceChildren()}}
 $('f-add').addEventListener('submit',async function(e){e.preventDefault();const n=$('f-name').value.trim(),m=$('f-msg');if(!n)return;
   try{const r=await api.addFriend(me.id,n);m.className='hint '+(r.ok?'ok':'bad');m.textContent=r.ok?r.msg:r.reason;if(r.ok)$('f-name').value='';loadFriends()}catch(er){m.className='hint bad';m.textContent=errText(er)}});
