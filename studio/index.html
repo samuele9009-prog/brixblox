@@ -3034,7 +3034,8 @@ function entTick(dt){Object.keys(Object.assign({},RAG,RSZ)).forEach(function(key
         dx=(R0.pos[0]+nn.tx-b0.x[0])*k,dy=(R0.pos[1]+nn.th-b0.x[1])*k,dz=(R0.pos[2]-nn.ty-b0.x[2])*k;
         e.sim.bodies.forEach(function(b){b.x[0]+=dx;b.x[1]+=dy;b.x[2]+=dz;if(b.xp){b.xp[0]+=dx;b.xp[1]+=dy;b.xp[2]+=dz}})}}
     else u=Math.max(0,1-(e.t-e.end)/RRISE);
-    if(e.dead&&e.t>=e.end){finishDead(key,T);return}
+    /* a real (online) player who dies is never hidden from anyone: once the ragdoll is over they just stand back up where they really are */
+    if(e.dead&&e.t>=e.end){if(T.np&&T.np.net){simFinish(key,T,e,arm);delete RAG[key];T.g.visible=true;if(T.np.tag)T.np.tag.visible=true;return}finishDead(key,T);return}
     if(!e.dead&&e.t>=e.end+RRISE){simFinish(key,T,e,arm);delete RAG[key];if(key==='main')S.rag=false;return}
     e.u=u;simPose(key,T,e,u,arm);return}
   g.position.y=(key==='main'?g.position.y:r.pos[1]+(RY[r.id]||0))+(s-1)*arm})}
