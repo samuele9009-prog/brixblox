@@ -3855,7 +3855,7 @@ function keyNames(e){const k=e.key===' '?'space':String(e.key).toLowerCase();ret
 addEventListener('keyup',function(e){const n=keyNames(e);
   P.scripts.forEach(function(sc){const h=sc[0],w=String(h.a[0]).trim().toLowerCase(),hit=(w===n[0]||w===n[1]);
     if(h.t==='keyheld'){const st=HL.get(h);if(st&&hit)st.down=false}
-    else if(h.t==='keyrel'&&hit&&(KP.has(n[0])||KP.has(n[1])))fireScript(sc)});
+    else if(h.t==='keyrel'&&hit&&(KP.has(n[0])||KP.has(n[1]))){const hs=P.scripts.filter(function(x){return x[0].t==='keyheld'&&String(x[0].a[0]).trim().toLowerCase()===w}).map(function(x){return HL.get(x[0])}).filter(Boolean);(async function(){const t0=Date.now();while(hs.some(function(q){return q.run})&&Date.now()-t0<5000)await sl(16);fireScript(sc)})()}});
   n.forEach(function(k){KP.delete(k)})});
 addEventListener('blur',function(){HL.forEach(function(st){st.down=false})});
 function animOn(){return curTab==='anim'&&!playing}
