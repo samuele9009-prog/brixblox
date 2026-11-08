@@ -249,8 +249,8 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .hb{width:92px;height:92px;border-radius:8px;background:#3a3c3f;display:grid;place-items:center;transition:background .15s}
 .ht:hover .hb{background:#46484b}
 .hb b{font-size:2.6rem;font-weight:500;line-height:1}
-.hb img.fav{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
-.frow img.fav{width:34px;height:42px;object-fit:contain;flex:none;display:block}
+.hb img.fav{width:100%;height:100%;object-fit:cover;border-radius:8px;display:block;pointer-events:none}
+.frow img.fav{width:44px;height:44px;border-radius:8px;background:#3a3c3f;object-fit:cover;flex:none;display:block}
 .hn{display:block;margin-top:6px;font-size:.8rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mf{position:relative;width:36px;height:56px;display:block}
 .mf i,.mf::before,.mf::after{position:absolute;display:block;border:1px solid rgba(0,0,0,.4);border-radius:2px}
@@ -662,6 +662,7 @@ function makeDemo(){
       if(!b.code||b.code!==String(code).trim().toUpperCase())throw new Error('That code is not valid or was already used.');if(b.saved<b.amt)throw new Error('Not enough blockbucks saved for that code.');
       const n=b.amt;b.saved-=n;b.wallet+=n;b.code=null;b.amt=0;b.log.unshift({amount:-n,reason:'Redeemed to your wallet',created_at:new Date().toISOString()});save(d);return {amount:n,saved:b.saved,wallet:b.wallet}},
     async setAvatar(id,a){const d=load();const u=d.users.find(function(x){return x.id===id});if(u){u.av=a;save(d)}},
+    async pubAvatar(){},
     async setAccount(id,a){const d=load();const u=d.users.find(function(x){return x.id===id});if(u){u.contact=a.email;u.age=a.age;save(d)}return {pending:false}},
     async setColor(id,c){const d=load();const u=d.users.find(function(x){return x.id===id});if(u){u.color=c;save(d)}},
     async submitRun(id,level,ms,coins){const d=load();const k=id+':'+level;const o=d.recs[k];const best=!o||ms<o.time;d.recs[k]={uid:id,level:level,time:o?Math.min(o.time,ms):ms,coins:Math.max(o?o.coins:0,coins)};save(d);return {new_best:best}},
@@ -679,7 +680,11 @@ function makeSupa(){
     async checkUsername(n){const p=nameProblem(n);if(p)return p;const r=await sb.rpc('check_username',{p_name:n});if(r.error)throw r.error;return r.data.ok?null:r.data.reason},
     async signUp(f){const p=nameProblem(f.username);if(p)throw new Error(p);return viaFn({action:'signup',username:f.username,password:f.password})},
     async logIn(f){if(f.username.indexOf('@')>=0){const r=await sb.auth.signInWithPassword({email:f.username,password:f.password});if(r.error)throw r.error;return {profile:await profile(r.data.user.id,r.data.user)}}return viaFn({action:'login',username:f.username,password:f.password})},
-    async friends(id){const r=await sb.rpc('list_friends');if(r.error)throw r.error;return r.data.map(x=>{let a=x.avatar;if(typeof a==='string'){try{a=JSON.parse(a)}catch(e){a=null}}return {fid:x.fid,name:x.username,color:x.avatar_color,av:normAv(a),status:x.status,incoming:x.incoming}})},
+    async friends(id){const r=await sb.rpc('list_friends');if(r.error)throw r.error;
+      const names=r.data.filter(function(x){return x.status==='accepted'||x.status==='pending'}).map(function(x){return x.username}),avs={};
+      if(names.length){try{const q=await sb.from('games').select('owner_name,data').like('id','sys_av_%').in('owner_name',names);
+        if(!q.error)q.data.forEach(function(row){let d=row.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d=null}if(d)avs[row.owner_name]=d})}catch(e){}}
+      return r.data.map(function(x){let a=avs[x.username]||x.avatar;if(typeof a==='string'){try{a=JSON.parse(a)}catch(e){a=null}}return {fid:x.fid,name:x.username,color:x.avatar_color,av:normAv(a),status:x.status,incoming:x.incoming}})},
     async addFriend(id,n){const r=await sb.rpc('send_friend_request',{p_username:n});if(r.error)throw r.error;return r.data},
     async answerFriend(id,fid,yes){const r=await sb.rpc('answer_friend',{p_id:fid,p_accept:yes});if(r.error)throw r.error},
     async listGames(id){const f=['id,name,owner_id,owner_name,vis,updated_at,thumb,official,plays','id,name,owner_id,owner_name,vis,updated_at,thumb,official','id,name,owner_id,owner_name,vis,updated_at,thumb','id,name,owner_id,owner_name,vis,updated_at'];let r;
@@ -700,7 +705,8 @@ function makeSupa(){
     async bankRedeem(id,code){const gift=/^GFT-/i.test(String(code).trim()),r=await sb.rpc(gift?'bank_redeem_gift':'bank_redeem',{p_code:code});if(r.error)throw r.error;return r.data},
     async bankGift(id,n){const r=await sb.rpc('bank_admin_gift',{p_amount:n});if(r.error)throw r.error;return r.data},
     async bankTake(id,n){const r=await sb.rpc('bank_admin_take',{p_amount:n});if(r.error)throw r.error;return r.data},
-    async setAvatar(id,a){const r=await sb.auth.updateUser({data:{avatar:a}});if(r.error)throw r.error;try{await sb.from('profiles').update({avatar:a}).eq('id',id)}catch(e){}},
+    async setAvatar(id,a){const r=await sb.auth.updateUser({data:{avatar:a}});if(r.error)throw r.error;try{await this.pubAvatar(id,a)}catch(e){}},
+    async pubAvatar(id,a){if(!me||!a)return;await sb.from('games').upsert({id:'sys_av_'+id,owner_id:id,owner_name:me.username,name:'avatar',vis:'public',data:JSON.stringify({skin:a.skin,pants:a.pants,eq:a.eq}),updated_at:new Date().toISOString()})},
     async setAccount(id,a,cur){const change=!!a.email&&a.email.toLowerCase()!==(cur||'').toLowerCase();const upd={data:{age:a.age}};if(change)upd.email=a.email;const r=await sb.auth.updateUser(upd,change?{emailRedirectTo:location.origin+location.pathname}:undefined);if(r.error)throw r.error;return {pending:change}},
     async setColor(id,c){const r=await sb.from('profiles').update({avatar_color:c}).eq('id',id);if(r.error)throw r.error},
     async submitRun(id,level,ms,coins){const r=await sb.rpc('submit_run',{p_level:level,p_time_ms:ms,p_coins:coins});if(r.error)throw r.error;return r.data},
@@ -813,7 +819,7 @@ function lobby(){
   show('lobby');{const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}}$('l-name').textContent=me.username;$('l-name2').textContent=me.username;
   {const v=me.av;if(tooAlike(v.skin,v.pants)){const ok=PANTS.find(function(c){return !tooAlike(v.skin,c)});if(ok)v.pants=ok}}/* older saves that are too alike get safe pants */
   setPart('shirt');
-  paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');loadFriends();loadGames();loadBank();loadItems()}
+  paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');loadFriends();loadGames();loadBank();loadItems();try{api.pubAvatar(me.id,me.av)}catch(e){}}
 const PAGES=['home','discover','friends','avatar','bank','settings'];
 function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p)})}
 const IC={discover:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',bank:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 9l9-6 9 6M8 13v3M12 13v3M16 13v3"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
@@ -838,10 +844,10 @@ function friendAvatar(color,av){
   if(FAV.cache[key])return FAV.cache[key];
   try{
     if(!FAV.r){
-      FAV.r=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});FAV.r.setPixelRatio(1);FAV.r.setSize(180,230,false);FAV.r.setClearColor(0x000000,0);
+      FAV.r=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});FAV.r.setPixelRatio(1);FAV.r.setSize(200,200,false);FAV.r.setClearColor(0x000000,0);
       FAV.sc=new THREE.Scene();FAV.sc.add(new THREE.HemisphereLight(0xffffff,0x8899aa,.95));const dl=new THREE.DirectionalLight(0xfff3df,.8);dl.position.set(3,6,5);FAV.sc.add(dl);
-      FAV.cam=new THREE.PerspectiveCamera(30,180/230,.1,50);FAV.cam.position.set(0,1.15,6.4);FAV.cam.lookAt(0,1.1,0)}
-    const a=makeAvatar(color,av.eq,av);a.g.rotation.y=.35;FAV.sc.add(a.g);
+      FAV.cam=new THREE.PerspectiveCamera(30,1,.1,50);FAV.cam.position.set(0,1.62,3.5);FAV.cam.lookAt(0,1.62,0)}
+    const a=makeAvatar(color,av.eq,av);a.g.rotation.y=.3;FAV.sc.add(a.g);
     FAV.r.render(FAV.sc,FAV.cam);const u=FAV.r.domElement.toDataURL('image/png');FAV.sc.remove(a.g);
     FAV.cache[key]=u;return u}
   catch(e){FAV.fail=true;return null}}
