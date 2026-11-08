@@ -886,7 +886,7 @@ setInterval(lockPaint,2000);
 addEventListener('pagehide',function(){if(lockBeat)lockEnd()});
 /* Ctrl+W: browsers only let a page take that key while it is fullscreen (Keyboard Lock, Chrome/Edge/Chromebook), so Join goes fullscreen and locks it. */
 function goFull(){try{const r=document.documentElement.requestFullscreen;if(r&&!document.fullscreenElement)r.call(document.documentElement).then(kbLockTop,function(){})}catch(e){}}
-function kbLockTop(){try{const k=navigator.keyboard;if(!k)return;if(document.fullscreenElement&&(joining||$('pl-frame'))){if(k.lock)k.lock(['KeyW']).catch(function(){})}else if(k.unlock)k.unlock()}catch(e){}}
+function kbLockTop(){try{const k=navigator.keyboard;if(!k)return;if(document.fullscreenElement&&(joining||$('pl-frame'))){if(k.lock)k.lock(['KeyW','Escape']).catch(function(){})}else if(k.unlock)k.unlock()}catch(e){}}
 document.addEventListener('fullscreenchange',kbLockTop);
 addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.code==='KeyW'&&(joining||$('pl-frame'))){e.preventDefault();e.stopPropagation()}},true);
 addEventListener('message',function(e){if(e.origin===location.origin&&e.data&&e.data.bb==='leave')closePlayer()});
