@@ -2044,6 +2044,53 @@ function addAudioBig(f){
     P.assets.audio[nm]='idb:'+id+':'+f.size;save();selSvc='assets';sel=[];selModel=null;renderParts();
     msg('Added audio "'+nm+'" ('+(f.size/1048576).toFixed(1)+' MB). Use it with the play block.'+(gameId?'':' Publish the game to keep it.'))
   }).catch(function(){addAsset('audio',f,true)})}
+/* ===== Built-in sound effects: made from maths (no files), turned into small WAV sounds and added to Assets > Audio like an uploaded sound ===== */
+const SFXR=22050;let sfxOpen=false,sfxPrev=null;
+function sfxTone(dur,f0,f1,type,amp,curve,wob){const n=Math.floor(dur*SFXR),a=new Float32Array(n);let ph=0,lp=0;curve=curve||2;
+  for(let i=0;i<n;i++){const p=i/n,f=f0*Math.pow(f1/f0,p)*(wob?1+wob*Math.sin(i/SFXR*40):1);ph+=f/SFXR;const x=ph%1;let v;
+    if(type==='square')v=x<.5?1:-1;else if(type==='saw')v=2*x-1;else if(type==='tri')v=Math.abs(4*x-2)-1;else if(type==='noise')v=Math.random()*2-1;else v=Math.sin(2*Math.PI*ph);
+    const at=Math.min(1,i/(SFXR*.004));a[i]=v*amp*at*Math.pow(1-p,curve)}return a}
+function sfxNoise(dur,c0,c1,amp,curve){const n=Math.floor(dur*SFXR),a=new Float32Array(n);let y=0;curve=curve||2;
+  for(let i=0;i<n;i++){const p=i/n,c=c0+(c1-c0)*p;y+=c*((Math.random()*2-1)-y);a[i]=y*amp*Math.min(1,i/(SFXR*.004))*Math.pow(1-p,curve)}return a}
+function sfxMix(list){let n=0;list.forEach(function(q){n=Math.max(n,Math.floor(q[0]*SFXR)+q[1].length)});const o=new Float32Array(n);
+  list.forEach(function(q){const s=Math.floor(q[0]*SFXR);for(let i=0;i<q[1].length;i++)o[s+i]+=q[1][i]});return o}
+function sfxNotes(fs,gap,len,type,amp){return sfxMix(fs.map(function(f,i){return [i*gap,sfxTone(len,f,f,type,amp,1.5)]}))}
+const SFX=[
+ ['Coin','A bright pickup ping',function(){return sfxMix([[0,sfxTone(.08,988,988,'square',.35,.5)],[.07,sfxTone(.4,1319,1319,'square',.35,1.6)]])}],
+ ['Gem','A sparkly collect',function(){return sfxMix([[0,sfxTone(.45,1568,1568,'sine',.5,2)],[.08,sfxTone(.45,2093,2093,'sine',.4,2)],[.16,sfxTone(.5,2637,2637,'sine',.3,2)]])}],
+ ['Jump','A hop up',function(){return sfxTone(.26,280,760,'square',.3,1.2)}],
+ ['Bounce','A springy boing',function(){return sfxTone(.4,160,520,'sine',.7,1.5,.08)}],
+ ['PowerUp','Rising arpeggio',function(){return sfxNotes([392,494,587,784,988],.07,.16,'square',.28)}],
+ ['LevelUp','Happy fanfare',function(){return sfxMix([[0,sfxNotes([523,659,784],.1,.14,'square',.28)],[.3,sfxTone(.5,1047,1047,'square',.28,1.4)],[.3,sfxTone(.5,784,784,'tri',.3,1.4)]])}],
+ ['Success','A happy chime',function(){return sfxMix([[0,sfxTone(.6,523,523,'sine',.5,2)],[.1,sfxTone(.6,659,659,'sine',.45,2)],[.2,sfxTone(.7,784,784,'sine',.45,2)]])}],
+ ['Heal','A soft shimmer up',function(){return sfxTone(.55,440,1320,'sine',.5,1,.05)}],
+ ['Laser','Pew pew',function(){return sfxTone(.28,1900,160,'saw',.3,1.2)}],
+ ['Zap','An electric zap',function(){return sfxMix([[0,sfxTone(.25,1200,90,'square',.25,1,.6)],[0,sfxNoise(.2,.7,.7,.35,2)]])}],
+ ['Explosion','A big boom',function(){return sfxMix([[0,sfxNoise(.8,.35,.04,1.6,1.4)],[0,sfxTone(.6,110,30,'sine',.9,1.5)]])}],
+ ['Hit','A punchy thud',function(){return sfxMix([[0,sfxNoise(.12,.5,.2,.9,1.5)],[0,sfxTone(.15,180,50,'sine',.9,1.5)]])}],
+ ['Knock','Knock knock',function(){return sfxMix([[0,sfxTone(.1,200,90,'sine',.9,2)],[.18,sfxTone(.1,200,90,'sine',.9,2)]])}],
+ ['Click','A tiny UI click',function(){return sfxTone(.04,1500,900,'square',.3,2)}],
+ ['Pop','A bubble pop',function(){return sfxTone(.12,700,160,'sine',.8,2)}],
+ ['Whoosh','Air swooshing by',function(){const a=sfxNoise(.5,.04,.5,1.2,0),n=a.length;for(let i=0;i<n;i++)a[i]*=Math.sin(Math.PI*i/n);return a}],
+ ['Splash','Into the water',function(){return sfxNoise(.6,.25,.06,1.2,1.6)}],
+ ['Error','A wrong-answer buzz',function(){return sfxMix([[0,sfxTone(.14,190,190,'square',.3,.6)],[.17,sfxTone(.22,150,150,'square',.3,.8)]])}],
+ ['GameOver','A sad falling tune',function(){return sfxNotes([392,330,262,196],.2,.28,'tri',.5)}]
+];
+let sfxCache={};
+function sfxWav(i){if(sfxCache[i])return sfxCache[i];const a=SFX[i][2]();let pk=0;for(let k=0;k<a.length;k++)pk=Math.max(pk,Math.abs(a[k]));const g=pk>0?.85/pk:1,n=a.length,b=new Uint8Array(44+n*2),w=new DataView(b.buffer);
+  const S=function(o,s){for(let k=0;k<s.length;k++)b[o+k]=s.charCodeAt(k)};
+  S(0,'RIFF');w.setUint32(4,36+n*2,true);S(8,'WAVE');S(12,'fmt ');w.setUint32(16,16,true);w.setUint16(20,1,true);w.setUint16(22,1,true);w.setUint32(24,SFXR,true);w.setUint32(28,SFXR*2,true);w.setUint16(32,2,true);w.setUint16(34,16,true);S(36,'data');w.setUint32(40,n*2,true);
+  for(let k=0;k<n;k++)w.setInt16(44+k*2,Math.max(-1,Math.min(1,a[k]*g))*32767,true);
+  let s='';for(let k=0;k<b.length;k+=8192)s+=String.fromCharCode.apply(null,b.subarray(k,k+8192));
+  return sfxCache[i]='data:audio/wav;base64,'+btoa(s)}
+function sfxPlay(i){try{if(sfxPrev){sfxPrev.pause();sfxPrev=null}const a=new Audio(sfxWav(i));a.volume=P.audio.mute?0:Math.min(1,Math.max(.15,P.audio.vol*2));sfxPrev=a;a.play().catch(function(){msg('The browser blocked the sound. Click the page once and try again.')})}catch(e){}}
+function sfxAdd(i){const src=sfxWav(i);if(assetBytes()+src.length>ASSET_TOTAL){msg('Your game is full. Delete an asset first (about 4 MB total).');return}
+  let nm=SFX[i][0],n=1;const base=nm;while(P.assets.images[nm]||P.assets.audio[nm])nm=base+(++n);
+  P.assets.audio[nm]=src;save();selSvc='assets';sel=[];selModel=null;renderParts();
+  msg('Added sound effect "'+nm+'" to Audio. Use it with the play block.'+(gameId?'':' Publish the game to keep it.'))}
+function sfxPanel(d){d.append(el('p','note','Sound effects: press ▶ to hear one, then Add to put it in your Audio list. Play it with the "play _" or "play _ once until done" blocks.'));
+  SFX.forEach(function(s,i){const w=el('div','arow');w.append(el('span','nm',s[0]+' - '+s[1]));w.append(mb('▶ Play','ghost',function(){sfxPlay(i)}));w.append(mb('Add','',function(){sfxAdd(i)}));d.append(w)})}
+function openSfx(){sfxOpen=true;selSvc='assets';sel=[];selModel=null;renderParts()}
 function assetBytes(){let n=0;['images','audio'].forEach(function(c){Object.keys(P.assets[c]).forEach(function(k){n+=P.assets[c][k].length})});return n}
 function pickFile(kind){const i=document.createElement('input');i.type='file';i.accept=kind==='image'?'image/*':'audio/*';
   i.onchange=function(){const f=i.files&&i.files[0];if(f)addAsset(kind,f)};i.click()}
@@ -3454,7 +3501,7 @@ function svcProps(d){const s=SV.find(function(x){return x.k===selSvc});if(!s)ret
   else if(s.k==='scripts'){P.scripts.forEach(function(sc){const h=sc[0],D=BD[h.t];d.append(el('p','note',(D.hat?(KW[h.t]||h.t)+' '+h.a.join(' '):'Loose blocks')+'  —  '+(sc.length-(D.hat?1:0))+' block(s)'))});
     if(!P.scripts.length)d.append(el('p','empty','No scripts yet.'))}
   else if(s.k==='itemservice'){d.append(el('p','note','All your items live here. To make one, go to Assets, right-click a mesh and press Create item. Give it to a player with the "give item" block.'));itemRows(d)}
-  else if(s.k==='assets'){const r=el('div','tb');r.append(mb('Upload image','',function(){pickFile('image')}),mb('Upload audio','',function(){pickFile('audio')}),mb('Import mesh','',pickMesh));d.append(r);
+  else if(s.k==='assets'){const r=el('div','tb');r.append(mb('Upload image','',function(){pickFile('image')}),mb('Upload audio','',function(){pickFile('audio')}),mb('Sound effects','',function(){sfxOpen=!sfxOpen;renderParts()}),mb('Import mesh','',pickMesh));d.append(r);if(sfxOpen)sfxPanel(d);
     d.append(el('p','note','Meshes: pick a .obj, .fbx or .glb file together with its texture pictures (png or jpg) in one go. For an .obj also pick its .mtl file. Up to 24 MB per mesh. Big pictures are shrunk to 1024 pixels. Press Place in game to add it, then change its Texture in the part properties.'));
     d.append(el('p','note','Images: up to 2 MB each. Audio: up to 64 MB per file and about 320 MB per game. Play sounds with the blocks "play _" (loops), "play _ once until done" and "stop audio _". Name an image Sun or Moon to change the sun or moon in the sky (the clouds are fixed and cannot be replaced). Other images are stored for objects and GUIs later. Sounds are sent online with the game when it is saved so you can hear them on other computers (big sounds need the one-time Supabase storage bucket named game-audio).'));
     const rows=function(col,kind){const ks=Object.keys(P.assets[col]);if(!ks.length)d.append(el('p','empty','Nothing here yet.'));
@@ -3503,7 +3550,8 @@ function addGroups(c){if(c.t==='gui'){const O2=[];[['text','Text','A text label 
   if(c.t==='svc'){
     if(k==='world'||k==='shared'||k==='vault')O.push(mi('\u25A2','#3b82f6','Part','A 2x2x2 block where the camera looks',function(){addPartNear(c)}));
     if(k==='assets'){O.push(mi('\u25A7','#2f78d0','Image','Upload a picture (png, jpg, gif, webp)',function(){pickFile('image')}));
-      O.push(mi('\u266A','#a3a31c','Audio','Upload a sound or music file',function(){pickFile('audio')}))}
+      O.push(mi('\u266A','#a3a31c','Audio','Upload a sound or music file',function(){pickFile('audio')}));
+      O.push(mi('\u266B','#d9622b','Sound effects','Built-in sounds: coin, jump, laser, explosion and more',openSfx))}
     if(k==='gui')[['text','Text','A text label on the screen'],['button','Button','Click it to run "when gui clicked" scripts'],['frame','Frame','A coloured box, good as a panel'],['image','Image','Shows a picture from Assets']].forEach(function(q){const T=GTYPE[q[0]];O.push(mi(T.i,T.c,q[1],q[2],function(){addGui(q[0])}))});
     if(k==='world')O.push(mi('\u263A','#2fa95a','Humanoid rig','Torso, head, arms and legs, ready to animate',function(){newRig()}));
     if(k==='squads')O.push(mi('\u2691','#e5484d','Squad','A team players can join',function(){P.squads.push({id:'q'+P.nid++,name:'Squad '+(P.squads.length+1),color:'#'+Math.floor(Math.random()*0xffffff).toString(16).padStart(6,'0')});save();renderParts()}))}
