@@ -553,6 +553,7 @@ const BD={
  fallanim:{c:'pl',l:'set player fall to _',a:['fall'],raw:1,tip:'Uses an animation from the rig as the fall animation. It plays while the player is dropping through the air. While holding an item the animation called hold item jump plays instead, if it exists.'},
  holdanim:{c:'pl',l:'set player hold item to _',a:['hold item'],raw:1,tip:'Uses an animation from the rig as the pose the player has while holding an item and standing still. Only the parts it has keyframes for are changed. The default is the animation called hold item.'},
  holdwalkanim:{c:'pl',l:'set player hold item walk to _',a:['hold item walk'],raw:1,tip:'Uses an animation from the rig as the walk animation the player has while holding an item. The default is the animation called hold item walk.'},
+ voidh:{c:'pl',l:'set void reset height to _',a:['-150'],tip:'Sets how low the player can fall before they are put back at the start. The default is -150. Negative numbers are fine: -50 resets sooner (right below the baseplate), -500 lets them fall much further. It goes back to -150 when the game restarts.'},
  fov:{c:'pl',l:'set camera fov to _',a:['80'],tip:'Sets how wide the camera sees, from 30 (zoomed in) to 120 (very wide). The default is 70. It goes back to the game setting when the game restarts.'},
  pspeed:{c:'pl',l:'set player speed to _',a:['24'],tip:'How fast the player walks (default 16).'},
  playercol:{c:'pl',l:'set player collisions to _',a:['true'],dd:{0:'bool'},tip:'true: players can not walk through each other, so you bump into the other players in the server. false: players walk straight through each other (the default). It goes back to false when the game restarts.'},
@@ -989,7 +990,7 @@ function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('p
 
 
 /* BricBloc as text */
-const KW={giveattr:'give attribute',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
+const KW={giveattr:'give attribute',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
 
@@ -1131,6 +1132,7 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
     case'tweenwait':{const L=TW.slice();while(!S.stop&&L.some(function(t){return !t.done}))await sl(16);break}
     case'walkanim':case'jumpanim':case'idleanim':case'fallanim':case'holdanim':case'holdwalkanim':{const nm=a[0].trim();if(!P.anims[nm]){log('Error: no animation named "'+nm+'"');break}
       S[{walkanim:'walkA',jumpanim:'jumpA',idleanim:'idleA',fallanim:'fallA',holdanim:'holdA',holdwalkanim:'holdWA'}[b.t]]=nm;break}
+    case'voidh':{const v=Number(val(a[0],S));if(isFinite(v))S.voidY=Math.max(-1e6,Math.min(1e6,v));break}
     case'fov':S.fov=Math.max(30,Math.min(120,n(0)));break;
     case'shiftlockon':S.sla=true;break;
     case'shiftlockoff':S.sla=false;S.sl=false;break;
@@ -2804,7 +2806,8 @@ function solid(r){return CO[r.id]!==undefined?CO[r.id]:!r.nocol}
 function collide(){const T=byId(P.avId);if(!T)return;const R=1.1,fy=feet0()+S.h;
   for(let it=0;it<2;it++)P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;
     const r=rootOf(q);if(!solid(r))return;const eq=eh(q),hx=eq[0],hy=eq[1],hz=eq[2],qy=q.pos[1]+(RY[r.id]||0);if(qy+hy<=fy+STEP||qy-hy>=fy+6)return;
-    const o=RO[r.id]||[0,0],cx=T.pos[0]+S.x,cz=T.pos[2]-S.y,bx=q.pos[0]+o[0],bz=q.pos[2]+o[1];
+    const o=RO[r.id]||[0,0],cx=T.pos[0]+S.x,cz=T.pos[2]-S.y,bx=q.pos[0]+o[0],bz=q.pos[2]+o[1],L=colsOf(q);
+    if(L){if(!colNear(q,L,o,cx,cz,R+.5))return;const pp=colPush(q,L,o,cx,fy,cz);if(pp){if(r.movable)RO[r.id]=[o[0]-pp[0],o[1]-pp[1]];else{S.x+=pp[0];S.y-=pp[1]}}return}/* round shapes and unions */
     if(hasRot(q)){const pp=rotPush(q,o,cx,fy,cz);if(pp){if(r.movable)RO[r.id]=[o[0]-pp[0],o[1]-pp[1]];else{S.x+=pp[0];S.y-=pp[1]}}return}
     let dx=cx-Math.max(bx-hx,Math.min(bx+hx,cx)),dz=cz-Math.max(bz-hz,Math.min(bz+hz,cz));const d2=dx*dx+dz*dz;if(d2>=R*R)return;
     let d=Math.sqrt(d2),pen;
@@ -2863,9 +2866,70 @@ function rotPush(q,o,cx,fy,cz){const R=1.1,h=[q.size[0]/2,q.size[1]/2,q.size[2]/
     if(nh<.3)return;/* mostly a floor or ceiling: standing on it is handled by the ground code */
     const k=Math.min(1.5,r.pen/nh);px+=nx/nh*k;pz+=nz/nh*k});
   return (px||pz)?[px,pz]:null}
+/* ===== Real hitboxes: spheres, cylinders, triangles (wedges) and unions collide as their true shape, not as a box around them ===== */
+function m4mul(a,b){const o=new Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+r]*b[c*4+k];o[c*4+r]=s}return o}
+function m4inv(m){const a=m[0],b=m[4],c=m[8],d=m[1],e=m[5],f=m[9],g=m[2],h=m[6],i=m[10],det=a*(e*i-f*h)-b*(d*i-f*g)+c*(d*h-e*g);if(Math.abs(det)<1e-12)return null;const k=1/det,
+  I=[[(e*i-f*h)*k,-(b*i-c*h)*k,(b*f-c*e)*k],[-(d*i-f*g)*k,(a*i-c*g)*k,-(a*f-c*d)*k],[(d*h-e*g)*k,-(a*h-b*g)*k,(a*e-b*d)*k]],t=[m[12],m[13],m[14]],o=new Array(16);
+  for(let r=0;r<3;r++){for(let q=0;q<3;q++)o[q*4+r]=I[r][q];o[12+r]=-(I[r][0]*t[0]+I[r][1]*t[1]+I[r][2]*t[2]);o[r*4+3]=0}o[15]=1;return o}
+function m4pt(m,x,y,z){return [m[0]*x+m[4]*y+m[8]*z+m[12],m[1]*x+m[5]*y+m[9]*z+m[13],m[2]*x+m[6]*y+m[10]*z+m[14]]}
+function m4dir(m,x,y,z){return [m[0]*x+m[4]*y+m[8]*z,m[1]*x+m[5]*y+m[9]*z,m[2]*x+m[6]*y+m[10]*z]}
+/* Clip the line o+d*t to the half-space no+nd*t <= c */
+function cClip(r,no,nd,c){if(!r)return null;if(Math.abs(nd)<1e-12)return no<=c?r:null;const t=(c-no)/nd;if(nd>0){if(t<r[1])r[1]=t}else if(t>r[0])r[0]=t;return r[0]<=r[1]?r:null}
+/* Where the line o+d*t is inside the quadric sum((o_i+d_i*t)^2)<=1 (terms = [o_i,d_i] already divided by the half sizes) */
+function cQuad(T){let A=0,B=0,C=-1;T.forEach(function(x){A+=x[1]*x[1];B+=x[0]*x[1];C+=x[0]*x[0]});if(A<1e-12)return C<=0?[-1e9,1e9]:null;const D=B*B-A*C;if(D<0)return null;const s=Math.sqrt(D);return [(-B-s)/A,(-B+s)/A]}
+function wedgeDims(z,ry){const odd=(((ry||0)%360+360)%360)%180!==0;return {W:odd?z[2]:z[0],D:odd?z[0]:z[2]}}
+function wedgeUn(ry,v){const a=(ry||0)*Math.PI/180,c=Math.cos(a),s=Math.sin(a);return [c*v[0]-s*v[2],v[1],s*v[0]+c*v[2]]}
+/* The part of the line o+d*t (shape space) that is inside the shape. Returns [t0,t1] or null. */
+function cSeg(s,z,ry,o,d){const hx=z[0]/2,hy=z[1]/2,hz=z[2]/2;let r=[-1e9,1e9];
+  if(s==='sphere')return cQuad([[o[0]/hx,d[0]/hx],[o[1]/hy,d[1]/hy],[o[2]/hz,d[2]/hz]]);
+  if(s==='cyl'){r=cQuad([[o[0]/hx,d[0]/hx],[o[2]/hz,d[2]/hz]]);r=cClip(r,o[1],d[1],hy);return cClip(r,-o[1],-d[1],hy)}
+  if(s==='wedge'){const w=wedgeDims(z,ry),a=wedgeUn(ry||0,o),b=wedgeUn(ry||0,d),W=w.W,D=w.D;
+    r=cClip(r,-a[0],-b[0],W/2);r=cClip(r,-a[1],-b[1],hy);r=cClip(r,a[2],b[2],D/2);r=cClip(r,-a[2],-b[2],D/2);
+    return cClip(r,a[0]/W+a[1]/hy/2,b[0]/W+b[1]/hy/2,0)}
+  for(let i=0;i<3;i++){const h=z[i]/2;r=cClip(r,o[i],d[i],h);r=cClip(r,-o[i],-d[i],h)}return r}
+/* The closest point of the shape to a point (shape space). Returns {p, inside}. */
+function cNearL(s,z,ry,l){const hx=z[0]/2,hy=z[1]/2,hz=z[2]/2,cl=function(v,h){return Math.max(-h,Math.min(h,v))};
+  if(s==='sphere'){const u=[l[0]/hx,l[1]/hy,l[2]/hz],n=Math.hypot(u[0],u[1],u[2]);if(n<=1)return {p:l,inside:true};return {p:[hx*u[0]/n,hy*u[1]/n,hz*u[2]/n],inside:false}}
+  if(s==='cyl'){const ux=l[0]/hx,uz=l[2]/hz,n=Math.hypot(ux,uz),iy=Math.abs(l[1])<=hy;let x=l[0],q=l[2];if(n>1){x=hx*ux/n;q=hz*uz/n}return {p:[x,cl(l[1],hy),q],inside:n<=1&&iy}}
+  if(s==='wedge'){const w=wedgeDims(z,ry),W=w.W,D=w.D;let p=wedgeUn(ry||0,l),ins=false;const q0=p.slice();
+    for(let k=0;k<5;k++){p=[cl(p[0],W/2),cl(p[1],hy),cl(p[2],D/2)];const v=p[0]/W+p[1]/hy/2;if(v>0){const nn=1/(W*W)+1/(4*hy*hy);p=[p[0]-v/(W)/nn,p[1]-v/(2*hy)/nn,p[2]]}}
+    ins=Math.abs(p[0]-q0[0])+Math.abs(p[1]-q0[1])+Math.abs(p[2]-q0[2])<1e-6;return {p:wedgeUn(-(ry||0),p),inside:ins}}
+  const p=[cl(l[0],hx),cl(l[1],hy),cl(l[2],hz)];return {p:p,inside:p[0]===l[0]&&p[1]===l[1]&&p[2]===l[2]}}
+/* Hitbox pieces of a part, in the part's own frame (before the object-move offsets): plain shapes are one piece, a union is one piece per merged shape. */
+const COLC={};
+function colsOf(q){const sh=q.shape,un=sh==='union'&&q.un;if(!(un||sh==='sphere'||sh==='cyl'||sh==='wedge'))return null;
+  const rot=hasRot(q),key=sh+'|'+q.size.join()+'|'+q.pos.join()+'|'+(rot?prot(q).join():'')+'|'+(q.ry||0)+(un?'|'+un.g.length+'|'+un.b.join():'');let c=COLC[q.id];if(c&&c.k===key)return c.l;
+  const R=rot?rotM(q):[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],PM=R.slice();PM[12]=q.pos[0];PM[13]=q.pos[1];PM[14]=q.pos[2];PM[15]=1;let l=[];
+  if(un){const b=un.b,k=[q.size[0]/(b[0]||1),q.size[1]/(b[1]||1),q.size[2]/(b[2]||1)],S=PM.slice();for(let j=0;j<3;j++)for(let r=0;r<3;r++)S[j*4+r]=PM[j*4+r]*k[j];
+    un.g.forEach(function(g){const mm=m4mul(S,g.m),iv=m4inv(mm);if(iv)l.push({s:g.s||'box',z:g.z,ry:g.y||0,mm:mm,inv:iv})})}
+  else{const iv=m4inv(PM);if(iv)l.push({s:sh,z:q.size,ry:q.ry||0,mm:PM,inv:iv})}
+  let rad=Math.hypot(q.size[0],q.size[1],q.size[2])/2+.01;l.rad=rad;COLC[q.id]={k:key,l:l};return l}
+/* Is the player's column (x,z) anywhere near this part? (cheap test before the real shape test) */
+function colNear(q,L,o,x,z,m){const dx=x-(q.pos[0]+o[0]),dz=z-(q.pos[2]+o[1]);return dx*dx+dz*dz<=(L.rad+m)*(L.rad+m)}
+/* The vertical line through (x,z): every [lowest y, highest y] stretch of it that is inside the part (world heights) */
+function colSegs(q,L,o,x,z,out){const rv=RY[rootOf(q).id]||0;L.forEach(function(cl){const lo=m4pt(cl.inv,x-o[0],0,z-o[1]),d=m4dir(cl.inv,0,1,0),r=cSeg(cl.s,cl.z,cl.ry,lo,d);if(r)out.push([r[0]+rv,r[1]+rv])});return out}
+const COLS=[[0,0],[.6,0],[-.6,0],[0,.6],[0,-.6]];
+/* Highest surface of the real shape under the feet that is no more than STEP above them */
+function colTop(q,L,o,cx,cz,fy){let best=null;COLS.forEach(function(a){colSegs(q,L,o,cx+a[0],cz+a[1],[]).forEach(function(sg){if(sg[1]<=fy+STEP&&(best===null||sg[1]>best))best=sg[1]})});return best}
+/* Lowest underside above the head (for the head bump) */
+function colUnder(q,L,o,cx,cz,head0){let bb=Infinity;[[0,0],[.7,0],[-.7,0],[0,.7],[0,-.7]].forEach(function(a){colSegs(q,L,o,cx+a[0],cz+a[1],[]).forEach(function(sg){if(sg[0]>=head0-.05&&sg[0]<bb)bb=sg[0]})});return bb}
+/* Sideways push out of the real shape (the player is two stacked balls); the deepest piece wins for each ball so a union of many pieces does not push several times */
+function colPush(q,L,o,cx,fy,cz){const R=1.1,rv=RY[rootOf(q).id]||0;let px=0,pz=0;
+  [fy+3,fy+4.6].forEach(function(sy){let bst=null;const w=[cx+px-o[0],sy-rv,cz+pz-o[1]];
+    L.forEach(function(cl){const l=m4pt(cl.inv,w[0],w[1],w[2]),nr=cNearL(cl.s,cl.z,cl.ry,l);let n,pen;
+      if(nr.inside){const ct=[cl.mm[12],cl.mm[13],cl.mm[14]];n=[w[0]-ct[0],0,w[2]-ct[2]];const h=Math.hypot(n[0],n[2])||1;n=[n[0]/h,0,n[2]/h];pen=R+.3}
+      else{const cw=m4pt(cl.mm,nr.p[0],nr.p[1],nr.p[2]),d=[w[0]-cw[0],w[1]-cw[1],w[2]-cw[2]],dist=Math.hypot(d[0],d[1],d[2]);if(dist>=R||dist<1e-6)return;n=[d[0]/dist,d[1]/dist,d[2]/dist];pen=R-dist}
+      const nh=Math.hypot(n[0],n[2]);if(nh<.3)return;const k=Math.min(1.5,pen/nh);if(!bst||k>bst.k)bst={k:k,x:n[0]/nh,z:n[2]/nh}});
+    if(bst){px+=bst.x*bst.k;pz+=bst.z*bst.k}});
+  return (px||pz)?[px,pz]:null}
+/* "when this block touched": is the player's body overlapping the real shape? */
+function colTouch(q,L,o,x,z,fy,R){const out=[];[[0,0]].concat([0,1,2,3,4,5,6,7].map(function(i){const a=i*Math.PI/4;return [Math.cos(a)*R,Math.sin(a)*R]}),[0,1,2,3,4,5,6,7].map(function(i){const a=i*Math.PI/4;return [Math.cos(a)*R/2,Math.sin(a)*R/2]})).forEach(function(a){colSegs(q,L,o,x+a[0],z+a[1],out)});
+  return out.some(function(sg){return sg[1]>=fy-.2&&sg[0]<=fy+6})}
 /* Highest surface under the feet that is no more than STEP above them */
 function groundAt(cx,cz,fy,skipId){let best=-1e9;
-  P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;const rq=rootOf(q);if(!solid(rq)||(skipId&&rq.id===skipId))return;const o=RO[rq.id]||[0,0],eq=eh(q);
+  P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;const rq=rootOf(q);if(!solid(rq)||(skipId&&rq.id===skipId))return;const o=RO[rq.id]||[0,0],L=colsOf(q);
+    if(L){if(colNear(q,L,o,cx,cz,.9)){const t=colTop(q,L,o,cx,cz,fy);if(t!==null&&t>best)best=t}return}/* round shapes and unions: the real surface */
+    const eq=eh(q);
     if(Math.abs(cx-(q.pos[0]+o[0]))>eq[0]+.6||Math.abs(cz-(q.pos[2]+o[1]))>eq[2]+.6)return;
     if(hasRot(q)){const t=rotTop(q,o,cx,cz,fy);if(t!==null&&t>best)best=t;return}/* tilted parts: the real surface, so ramps work */
     const top=q.pos[1]+(RY[rq.id]||0)+eq[1];if(top>fy+STEP)return;
@@ -2875,7 +2939,8 @@ function groundAt(cx,cz,fy,skipId){let best=-1e9;
    Returns the highest feet height that keeps your head just under the lowest part above you, or null when nothing is in the way. */
 function headStop(cx,cz,f0,h0,nh){const R=1.1,PH=6,head0=f0+h0+PH,head1=f0+nh+PH;let best=Infinity;
   P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;const rq=rootOf(q);if(!solid(rq))return;
-    const o=RO[rq.id]||[0,0];
+    const o=RO[rq.id]||[0,0],L=colsOf(q);
+    if(L){if(colNear(q,L,o,cx,cz,1.2)){const bb=colUnder(q,L,o,cx,cz,head0);if(bb<best)best=bb}return}
     if(hasRot(q)){let bb=Infinity;[[0,0],[.7,0],[-.7,0],[0,.7],[0,-.7]].forEach(function(a){const sg=rotSeg(q,o,cx+a[0],cz+a[1]);if(sg&&sg[0]>=head0-.05&&sg[0]<bb)bb=sg[0]});if(bb<best)best=bb;return}
     const eq=eh(q),by=q.pos[1]+(RY[rq.id]||0)-eq[1];if(by<head0-.05||by>=best)return;
     const bx=q.pos[0]+o[0],bz=q.pos[2]+o[1],dx=cx-Math.max(bx-eq[0],Math.min(bx+eq[0],cx)),dz=cz-Math.max(bz-eq[2],Math.min(bz+eq[2],cz));
@@ -2890,7 +2955,7 @@ function physics(dt){const T=byId(P.avId);if(!T)return;const f0=feet0(),g=ground
   if(S.vy<=0&&g>-1e8&&f0+nh<=g){S.h=g-f0;S.vy=0;S.gr=true}else{S.h=nh;S.gr=false}}
   {const cur=f0+S.h;/* S.fp = highest point since leaving the ground; landing from higher than a script's height fires 'when player hits ground' */
    if(S.fly||S.rag)S.fp=null;else if(S.gr){if(!wasGr&&S.fp!=null){const d=S.fp-cur;S.fp=null;landEvt(d)}S.fp=null}else if(S.fp==null||wasGr||cur>S.fp)S.fp=cur}
-  if(f0+S.h<-150){S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0;S.fp=null}}
+  if(f0+S.h<(S.voidY!=null?S.voidY:-150)){S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0;S.fp=null}}
 function landEvt(d){if(!(running||playing)||!(d>0))return;
   P.scripts.filter(function(sc){return sc[0].t==='landed'}).forEach(function(sc){let H=Number(val(sc[0].a[0],S));if(!Number.isFinite(H))H=20;if(d>H){S.v.fallheight=Math.round(d*10)/10;fireScript(sc)}})}
 
@@ -3168,7 +3233,7 @@ function npPhys(dt){const T=byId(P.avId);if(!T)return;NP.forEach(function(n){if(
   const q=n.g.position,f0=feet0(),g=groundAt(T.pos[0]+q.x,T.pos[2]+q.z,f0+q.y+.01);let fy=f0+q.y;
   n.vy=Math.max(-220,(n.vy||0)-P.rules.grav*dt);fy+=n.vy*dt;
   if(g>-1e8&&n.vy<=0&&fy<=g){fy=g;n.vy=0}
-  if(fy<-150){q.set(n.dx,0,0);n.vy=0;n.tp=false}else q.y=fy-f0;
+  if(fy<(S.voidY!=null?S.voidY:-150)){q.set(n.dx,0,0);n.vy=0;n.tp=false}else q.y=fy-f0;
   npTag(n)})}
 function playersOf(str){return resolve(str).filter(function(t){return t.key==='main'||t.key.slice(0,3)==='np:'})}
 function banOf(name){const nm=String(name).trim().toLowerCase(),now=Date.now();return P.bans.find(function(b){return b.name.toLowerCase()===nm&&(b.until===null||b.until>now)})||null}
@@ -3215,7 +3280,8 @@ function touchTick(){const hs=P.scripts.filter(function(sc){return sc[0].t==='to
     const ps=[];roots(h.o,true).forEach(function(r){if(r.av||!inW(r)||goneKey('rig:'+r.id))return;rigParts(r).forEach(function(q){if(!q.stab)ps.push(q)})});
     if(!ps.length){if(!set.warned){set.warned=1;log('Warning: "when this block touched" needs a script that belongs to an object. Use the + next to an object in the Explorer.')}return}
     ents.forEach(function(e){let hit=false;
-      for(let i=0;i<ps.length&&!hit;i++){const q=ps[i],r0=rootOf(q),o=RO[r0.id]||[0,0],eq=eh(q),hx=eq[0],hy=eq[1],hz=eq[2],bx=q.pos[0]+o[0],bz=q.pos[2]+o[1],by=q.pos[1]+(RY[r0.id]||0);
+      for(let i=0;i<ps.length&&!hit;i++){const q=ps[i],r0=rootOf(q),o=RO[r0.id]||[0,0],L=colsOf(q);if(L){if(colNear(q,L,o,e.x,e.z,R+.5)&&colTouch(q,L,o,e.x,e.z,e.fy,R))hit=true;continue}
+        const eq=eh(q),hx=eq[0],hy=eq[1],hz=eq[2],bx=q.pos[0]+o[0],bz=q.pos[2]+o[1],by=q.pos[1]+(RY[r0.id]||0);
         if(by+hy<e.fy-.2||by-hy>e.fy+6)continue;
         const dx=e.x-Math.max(bx-hx,Math.min(bx+hx,e.x)),dz=e.z-Math.max(bz-hz,Math.min(bz+hz,e.z));if(dx*dx+dz*dz<=R*R)hit=true}
       if(hit&&!set.has(e.key)){set.add(e.key);S.v.toucher=e.name;fireScript(sc)}else if(!hit&&set.has(e.key))set.delete(e.key)})})}
