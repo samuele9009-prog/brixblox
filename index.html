@@ -312,6 +312,8 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .gc .bd{padding:10px;display:flex;flex-direction:column;gap:3px;flex:1}
 .gc b{overflow-wrap:anywhere}.gc small{color:var(--muted)}
 .gc .row{display:flex;gap:6px;margin-top:auto;padding-top:8px}
+.gc .tg{align-self:flex-start;background:#00b06f;color:#fff;border-radius:99px;padding:1px 8px;font-size:.7rem;font-weight:800;margin-bottom:2px}
+.dsec{margin-bottom:26px}.dsec h2{margin-bottom:4px}.dsec .sub{color:var(--muted);margin:0 0 10px;font-size:.9rem}
 .gc .row .btn{flex:1;padding:0 8px}
 </style>
 </head>
@@ -353,6 +355,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
     <div class="sbu"><strong id="l-name"></strong></div>
     <nav class="snav">
       <button id="n-home" type="button" class="on" data-i="home">Home</button>
+      <button id="n-discover" type="button" data-i="discover">Discover</button>
       <button id="n-friends" type="button" data-i="friends">Friends<em id="n-badge" hidden></em></button>
       <button id="n-avatar" type="button" data-i="avatar">Avatar</button>
       <button id="n-bank" type="button" data-i="bank">Blockbank</button>
@@ -366,6 +369,12 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
     <section><h2 class="big">Home</h2><h3 id="h-fh">Friends (0)</h3><div id="h-fr" class="hfr"></div></section>
     <section><h2>Games</h2><div id="h-games"></div></section>
     <section><h2>Your games</h2><div id="h-mine"></div><div class="seg"><button id="g-new" class="btn small" type="button">Create a new game</button><button id="g-studio" class="btn ghost small" type="button">Open BrixBlox Studio</button></div></section>
+  </div>
+  <div id="p-discover" class="page" hidden>
+    <section class="dsec"><h2 class="big">Discover</h2><p class="sub">Find something new to play.</p></section>
+    <section class="dsec"><h2>Made by BrixBlox</h2><p class="sub">Games picked by the BrixBlox team.</p><div id="d-off"></div></section>
+    <section class="dsec"><h2>Frequently played</h2><p class="sub">The games people join the most.</p><div id="d-pop"></div></section>
+    <section class="dsec"><h2>New and updated</h2><p class="sub">Fresh from BrixBlox Studio.</p><div id="d-new"></div></section>
   </div>
   <div id="p-avatar" class="page" hidden>
     <section class="panel">
@@ -625,6 +634,8 @@ function makeDemo(){
       d.fr.push({id:Date.now(),a:id,b:t.id,status:'pending'});save(d);return {ok:true,msg:'Request sent to '+t.username+'.'}},
     async answerFriend(id,fid,yes){const d=load();const f=(d.fr||[]).find(x=>x.id===fid);if(!f)return;if(yes&&f.b===id)f.status='accepted';else d.fr=d.fr.filter(x=>x!==f);save(d)},
     async listGames(){return []},
+    async bumpPlay(){},
+    async setOfficial(){},
     async gameData(){return null},
     async listAcc(){try{return (JSON.parse(store.get('brixblox-acc'))||[]).map(function(x){return Object.assign({c:'#4a4c4e'},x)})}catch(e){return []}},
     async saveAcc(it){let a=[];try{a=JSON.parse(store.get('brixblox-acc'))||[]}catch(e){}a=a.filter(function(x){return x.id!==it.id});a.push(it);store.set('brixblox-acc',JSON.stringify(a))},
@@ -666,7 +677,11 @@ function makeSupa(){
     async friends(id){const r=await sb.rpc('list_friends');if(r.error)throw r.error;return r.data.map(x=>({fid:x.fid,name:x.username,color:x.avatar_color,status:x.status,incoming:x.incoming}))},
     async addFriend(id,n){const r=await sb.rpc('send_friend_request',{p_username:n});if(r.error)throw r.error;return r.data},
     async answerFriend(id,fid,yes){const r=await sb.rpc('answer_friend',{p_id:fid,p_accept:yes});if(r.error)throw r.error},
-    async listGames(id){let r=await sb.from('games').select('id,name,owner_id,owner_name,vis,updated_at,thumb').or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(60);if(r.error&&/thumb/i.test(r.error.message||''))r=await sb.from('games').select('id,name,owner_id,owner_name,vis,updated_at').or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(60);if(r.error)throw r.error;return r.data},
+    async listGames(id){const f=['id,name,owner_id,owner_name,vis,updated_at,thumb,official,plays','id,name,owner_id,owner_name,vis,updated_at,thumb,official','id,name,owner_id,owner_name,vis,updated_at,thumb','id,name,owner_id,owner_name,vis,updated_at'];let r;
+      for(let i=0;i<f.length;i++){r=await sb.from('games').select(f[i]).or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(120);if(!r.error)break}
+      if(r.error)throw r.error;return r.data},
+    async bumpPlay(gid){const r=await sb.rpc('bump_play',{p_game:String(gid)});if(r.error)throw r.error},
+    async setOfficial(gid,on){let r=await sb.rpc('set_official',{p_game:String(gid),p_on:!!on});if(r.error){r=await sb.from('games').update({official:!!on}).eq('id',gid);if(r.error)throw r.error}},
     async gameData(id){const r=await sb.from('games').select('data').eq('id',id).single();if(r.error)throw r.error;return r.data.data},
     async listAcc(){const r=await sb.from('games').select('id,name,data').like('id','acc_%');if(r.error)throw r.error;return r.data.map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,slot:d.slot,price:d.price,scale:d.scale,fbx:d.fbx||'',tex:d.tex||'',tf:!!d.tf,sh:d.sh==null?null:d.sh,px:d.px||0,py:d.py||0,pz:d.pz||0,rx:d.rx||0,ry:d.ry||0,rz:d.rz||0,sale:d.sale!==false,removed:!!d.removed,c:'#4a4c4e'}})},
     async saveAcc(it){const r=await sb.from('games').upsert({id:it.id,owner_id:me.id,owner_name:me.username,name:it.name,vis:'public',data:JSON.stringify({slot:it.slot,price:it.price,scale:it.scale,fbx:it.fbx||'',tex:it.tex||'',tf:!!it.tf,sh:it.sh==null?null:it.sh,px:it.px||0,py:it.py||0,pz:it.pz||0,rx:it.rx||0,ry:it.ry||0,rz:it.rz||0,sale:it.sale!==false,removed:!!it.removed}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
@@ -794,9 +809,9 @@ function lobby(){
   {const v=me.av;if(tooAlike(v.skin,v.pants)){const ok=PANTS.find(function(c){return !tooAlike(v.skin,c)});if(ok)v.pants=ok}}/* older saves that are too alike get safe pants */
   setPart('shirt');
   paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');loadFriends();loadGames();loadBank();loadItems()}
-const PAGES=['home','friends','avatar','bank','settings'];
+const PAGES=['home','discover','friends','avatar','bank','settings'];
 function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p)})}
-const IC={home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',bank:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 9l9-6 9 6M8 13v3M12 13v3M16 13v3"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
+const IC={discover:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',bank:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 9l9-6 9 6M8 13v3M12 13v3M16 13v3"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
 document.querySelectorAll('.snav button').forEach(function(b){b.insertAdjacentHTML('afterbegin','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+IC[b.dataset.i]+'</svg>')});
 function theme(t){document.documentElement.dataset.theme=t;store.set('brixblox-theme',t);$('th-light').setAttribute('aria-pressed',String(t==='light'));$('th-dark').setAttribute('aria-pressed',String(t==='dark'))}
 $('th-light').onclick=function(){theme('light')};$('th-dark').onclick=function(){theme('dark')};theme(store.get('brixblox-theme')==='dark'?'dark':'light');
@@ -809,7 +824,7 @@ $('f-acct').addEventListener('submit',async function(e){e.preventDefault();
   try{const r=await api.setAccount(me.id,{email:email,age:age},me.email);me.age=age;if(r.pending){me.pending=email;sMsg('Saved. We sent a confirmation link to '+email+'. Open it to finish adding your email.',true)}else{if(api.demo)me.email=email;sMsg('Saved.',true)}}catch(er){sMsg(errText(er))}
   $('b-acct').disabled=false});
 $('n-avatar').onclick=function(){nav('avatar');openAvatarPage()};$('n-bank').onclick=function(){nav('bank');loadBank()};$('n-settings').onclick=function(){nav('settings')};
-$('n-home').onclick=function(){nav('home');loadGames()};$('n-friends').onclick=function(){nav('friends');loadFriends()};
+$('n-home').onclick=function(){nav('home');loadGames()};$('n-discover').onclick=function(){nav('discover');loadGames()};$('n-friends').onclick=function(){nav('friends');loadFriends()};
 function frow(r,btns,tag){const d=document.createElement('div');d.className='frow';const dot=document.createElement('span');dot.className='dot';dot.style.background=r.color;const n=document.createElement('span');n.className='nm';n.textContent=r.name+(tag||'');d.append(dot,n);
   btns.forEach(function(b){const x=document.createElement('button');x.type='button';x.className='btn small'+(b[2]?' ghost':'');x.textContent=b[0];x.onclick=async function(){try{await api.answerFriend(me.id,r.fid,b[1])}catch(e){toast(errText(e))}loadFriends()};d.append(x)});return d}
 function fill(el,rows,empty){el.innerHTML='';if(!rows.length){const p=document.createElement('p');p.className='empty';p.textContent=empty;el.append(p);return}rows.forEach(function(x){el.append(x)})}
@@ -841,18 +856,26 @@ async function loadGames(){
   const map={},L=localGames();
   Object.keys(L).forEach(function(id){const g=L[id];map[id]={id:id,name:g.name||'Untitled',vis:g.vis||'private',at:g.at||0,ownerId:g.owner?g.owner.id:me.id,ownerName:g.owner?g.owner.name:me.username,data:g.data,thumb:g.thumb||null}});
   try{const rows=await api.listGames(me.id);rows.forEach(function(r){if(String(r.id).indexOf('acc_')===0||String(r.id).indexOf('sys_')===0)return;const t=Date.parse(r.updated_at)||0,o=map[r.id];
-    if(!o||t>o.at)map[r.id]={id:r.id,name:r.name||'Untitled',vis:r.vis,at:t,ownerId:r.owner_id,ownerName:r.owner_name||'?',data:o&&o.data||null,thumb:r.thumb||(o&&o.thumb)||null}})}catch(e){}
+    if(!o||t>o.at)map[r.id]={id:r.id,name:r.name||'Untitled',vis:r.vis,at:t,ownerId:r.owner_id,ownerName:r.owner_name||'?',data:o&&o.data||null,thumb:r.thumb||(o&&o.thumb)||null,official:!!r.official,plays:+r.plays||0}})}catch(e){}
   if(!me)return;
   const all=Object.keys(map).map(function(k){return map[k]}).filter(function(g){return g.vis==='public'||g.ownerId===me.id}).sort(function(a,b){return b.at-a.at});
   const pub=all.filter(function(g){return g.vis==='public'}),mine=all.filter(function(g){return g.ownerId===me.id});
   gfill($('h-games'),pub,'No games have been published yet. Make one in BrixBlox Studio and press Publish.');
+  dfill(pub);
   gfill($('h-mine'),mine,'You have not published any games yet.')}
-function gfill(box,list,empty){box.replaceChildren();if(!list.length){box.className='';box.append(mkx('p','empty',empty));return}box.className='gcards';
+function dfill(pub){
+  gfill($('d-off'),pub.filter(function(g){return g.official}),'Nothing here yet. Check back soon.',true);
+  gfill($('d-pop'),pub.filter(function(g){return g.plays>0}).sort(function(a,b){return b.plays-a.plays||b.at-a.at}).slice(0,12),'No games have been played yet.',true);
+  gfill($('d-new'),pub.slice().sort(function(a,b){return b.at-a.at}).slice(0,12),'No games have been published yet.',true)}
+function gfill(box,list,empty,disc){box.replaceChildren();if(!list.length){box.className='';box.append(mkx('p','empty',empty));return}box.className='gcards';
   list.forEach(function(g){const mine=g.ownerId===me.id,c=mkx('div','gc'),th=mkx('div','th',(g.name||'?').trim().charAt(0).toUpperCase()||'?'),bd=mkx('div','bd');
     th.style.background='hsl('+hue(g.id)+',55%,42%)';if(g.thumb){th.textContent='';th.style.background='center/cover url("'+g.thumb+'")'}
-    bd.append(mkx('b','',g.name),mkx('small','','by '+(mine?'you':g.ownerName)+(mine?'  -  '+(g.vis==='public'?'Public':'Private'):'')));
+    if(g.official)bd.append(mkx('span','tg','Made by BrixBlox'));
+    bd.append(mkx('b','',g.name),mkx('small','','by '+(mine?'you':g.ownerName)+(mine&&!disc?'  -  '+(g.vis==='public'?'Public':'Private'):'')+(disc&&g.plays>0?'  -  '+g.plays+' play'+(g.plays===1?'':'s'):'')));
     const row=mkx('div','row'),pl=mkx('button','btn small joinb','Join');pl.type='button';pl.onclick=function(){playGame(g)};row.append(pl);
-    if(mine){const ed=mkx('button','btn ghost small','Edit');ed.type='button';ed.onclick=function(){editGame(g)};row.append(ed)}
+    if(mine&&!disc){const ed=mkx('button','btn ghost small','Edit');ed.type='button';ed.onclick=function(){editGame(g)};row.append(ed)}
+    if(isBB()&&g.vis==='public'&&String(g.id).indexOf('acc_')!==0&&String(g.id).indexOf('sys_')!==0){const of=mkx('button','btn ghost small',g.official?'Remove from BrixBlox':'Add to BrixBlox');of.type='button';
+      of.onclick=async function(){of.disabled=true;try{await api.setOfficial(g.id,!g.official);toast(g.official?'Removed from Made by BrixBlox.':'Added to Made by BrixBlox.');loadGames()}catch(e){of.disabled=false;toast('Could not change that. Run the Discover SQL in Supabase first.')}};row.append(of)}
     bd.append(row);c.append(th,bd);box.append(c)});lockPaint()}
 async function gameData(g){if(g.data)return g.data;try{return await api.gameData(g.id)}catch(e){return null}}
 async function playGame(g){
@@ -863,6 +886,7 @@ async function playGame(g){
   joining=false;if(!$('pl-frame'))lockEnd()}
 async function playGame2(g){const d=await gameData(g);if(!d){toast('Could not load that game.');return}
   await Promise.race([Promise.resolve(api.recordPlay(me.id,g.id,g.ownerId)).catch(function(){}),new Promise(function(r){setTimeout(r,1500)})]);
+  try{const k='brixblox-bump:'+g.id,n=Date.now();if(n-(+store.get(k)||0)>3e5){store.set(k,String(n));Promise.resolve(api.bumpPlay(g.id)).catch(function(){})}}catch(e){}/* counts toward Frequently played, once per 5 minutes per game on this device */
   store.set('brixblox-play',JSON.stringify({id:g.id,data:d,owner:g.ownerName}));openPlayer()}
 /* Games run right here on BrixBlox in a full-screen player (no Studio buttons). The Studio only saves the game. */
 function openPlayer(){if($('pl-frame'))return;const f=document.createElement('iframe');f.id='pl-frame';f.src=STUDIO_URL+'?player=1';f.setAttribute('allow','fullscreen; autoplay');f.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:60;background:#111';document.body.append(f)}
