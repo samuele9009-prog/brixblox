@@ -610,6 +610,8 @@ const BD={
  waituntil:{c:'ct',l:'wait until _',a:['x > 100'],tip:'Waits here until the condition becomes true, then the next block runs.'},
  'elseif':{c:'ct',l:'else if _',a:['x > 50'],k:1,tip:'Put this right under an \"if\" or another \"else if\" block. It only runs if none of the blocks above it in the chain ran and its own condition is true.'},
  'else':{c:'ct',l:'else',a:[],k:1,tip:'Put this right under an \"if\" or \"else if\" block. It runs only when none of the blocks above it in the chain ran.'},
+ serverside:{c:'ct',l:'server side',a:[],k:1,tip:'Blocks inside happen for EVERYONE in the game, not just the player who ran the script. For example a "when this block touched" script that fades a wall inside a server side block makes the wall fade on every player\'s screen. The player who ran it and all other players run the blocks inside at the same time. Variables like toucher are passed along, and the word player means the player who triggered it. Blocks that only make sense for one person (move, say, badges, items, kick, ban and so on) are skipped on the other players. Scripts that already run on everyone (like when start) do not need it.'},
+ clientside:{c:'ct',l:'client side',a:[],k:1,tip:'Blocks inside only happen on YOUR screen. Nobody else sees them, even when this block is inside a server side block. Great for animations, tweens, sounds, GUI changes and effects that only the player who triggered them should see.'},
  set:{c:'vr',l:'set _ to _',a:['score','0'],raw:1,dd:{0:'var'}},
  change:{c:'vr',l:'change _ by _',a:['score','1'],raw:1,dd:{0:'var'}},
  print:{c:'vr',l:'print _',a:['score']},
@@ -979,7 +981,7 @@ function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('p
 
 
 /* BricBloc as text */
-const KW={tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else'};
+const KW={tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
 
@@ -1047,7 +1049,8 @@ function twRot(r){const g=J[r.id];if(!g)return;const old=g.userData.sq;if(old)g.
   const v=RR[r.id],D=Math.PI/180;g.userData.sq=hasRot(r)?new THREE.Quaternion().setFromEuler(new THREE.Euler(v[0]*D,v[1]*D,v[2]*D,'XYZ')):null;if(g.userData.sq)g.quaternion.premultiply(g.userData.sq)}
 function twColor(t){t=String(t).trim();if(t.toLowerCase()==='random')return new THREE.Color().setHSL(Math.random(),.7,.55);
   if(/^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(t)||Object.prototype.hasOwnProperty.call(THREE.Color.NAMES,t.toLowerCase().replace(/\s+/g,'')))return new THREE.Color(t.toLowerCase().replace(/\s+/g,''));return null}
-async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0};
+async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='clientside')return;if(!b.k&&S.rname)b=remapP(b,S.rname)}
+  const a=b.a,n=function(i){return Number(val(a[i],S))||0};
   if(S.only&&ONLYB[b.t]){await onlyDo(b,S,o);return}
   switch(b.t){
     case'move':{const r=S.dir*Math.PI/180;S.x=cl(S.x+Math.cos(r)*n(0),250);S.y=cl(S.y+Math.sin(r)*n(0),250);break}
@@ -1060,6 +1063,8 @@ async function st(b,S,o){const a=b.a,n=function(i){return Number(val(a[i],S))||0
     case'wait':await sl(Math.max(0,n(0))*1000);break;
     case'set':S.v[a[0].trim()]=val(a[1],S);break;
     case'change':{const k=a[0].trim();S.v[k]=(Number(S.v[k])||0)+n(1);break}
+    case'serverside':await ssRun(b,S,o);break;
+    case'clientside':await ex(b.k,S,o);break;
     case'broadcast':fireMsg(val(a[0],S),S);break;
     case'broadcastwait':{const ps=fireMsg(val(a[0],S),S);if(ps.length)await Promise.all(ps);break}
     case'print':log(String(val(a[0],S)));break;
@@ -2081,7 +2086,66 @@ const SFX=[
  ['Whoosh','Air swooshing by',function(){const a=sfxNoise(.5,.04,.5,1.2,0),n=a.length;for(let i=0;i<n;i++)a[i]*=Math.sin(Math.PI*i/n);return a}],
  ['Splash','Into the water',function(){return sfxNoise(.6,.25,.06,1.2,1.6)}],
  ['Error','A wrong-answer buzz',function(){return sfxMix([[0,sfxTone(.14,190,190,'square',.3,.6)],[.17,sfxTone(.22,150,150,'square',.3,.8)]])}],
- ['GameOver','A sad falling tune',function(){return sfxNotes([392,330,262,196],.2,.28,'tri',.5)}]
+ ['GameOver','A sad falling tune',function(){return sfxNotes([392,330,262,196],.2,.28,'tri',.5)}],
+ ['Blip','Tiny retro blip',function(){return sfxTone(.07,900,1100,'square',.3,1)}],
+ ['Beep','Plain beep',function(){return sfxTone(.15,1000,1000,'square',.25,.3)}],
+ ['Select','Menu choose',function(){return sfxMix([[0,sfxTone(.06,660,660,'square',.3,.6)],[.06,sfxTone(.12,990,990,'square',.3,1.2)]])}],
+ ['Cancel','Menu back',function(){return sfxMix([[0,sfxTone(.06,660,660,'square',.3,.6)],[.06,sfxTone(.12,440,440,'square',.3,1.2)]])}],
+ ['Notification','Two-tone message ping',function(){return sfxNotes([880,1175],.12,.35,'sine',.45)}],
+ ['Ding','A single bell ding',function(){return sfxMix([[0,sfxTone(.9,1568,1568,'sine',.5,3)],[0,sfxTone(.6,3136,3136,'sine',.15,3)]])}],
+ ['Bell','A deep ringing bell',function(){return sfxMix([[0,sfxTone(1.3,440,440,'sine',.5,2.5)],[0,sfxTone(1.1,880,880,'sine',.25,2.5)],[0,sfxTone(.9,1320,1320,'sine',.2,2.5)]])}],
+ ['Tick','A clock tick',function(){return sfxTone(.03,2000,1500,'square',.3,2)}],
+ ['Tock','A clock tock',function(){return sfxTone(.04,1400,1000,'square',.3,2)}],
+ ['Countdown','Beep, beep, GO',function(){return sfxMix([[0,sfxTone(.14,600,600,'square',.28,.3)],[.35,sfxTone(.14,600,600,'square',.28,.3)],[.7,sfxTone(.4,1200,1200,'square',.28,.8)]])}],
+ ['Warning','Two-tone warning',function(){return sfxNotes([660,520,660,520],.22,.2,'square',.25)}],
+ ['Alarm','A repeating alarm',function(){return sfxNotes([880,660,880,660,880,660],.16,.15,'square',.22)}],
+ ['Siren','Rising and falling siren',function(){return sfxMix([[0,sfxTone(.45,500,900,'saw',.22,.4)],[.45,sfxTone(.45,900,500,'saw',.22,.4)]])}],
+ ['Radar','A sonar ping',function(){return sfxMix([[0,sfxTone(1,1000,1000,'sine',.5,3)],[.4,sfxTone(.8,1000,1000,'sine',.18,3)]])}],
+ ['Heartbeat','Thump thump',function(){return sfxMix([[0,sfxTone(.14,90,50,'sine',.95,2)],[.2,sfxTone(.16,80,45,'sine',.85,2)]])}],
+ ['Victory','A winning jingle',function(){return sfxMix([[0,sfxNotes([523,659,784],.12,.2,'square',.28)],[.36,sfxTone(.7,1047,1047,'square',.28,1.2)],[.36,sfxTone(.7,659,659,'tri',.3,1.2)]])}],
+ ['Fanfare','A short brassy fanfare',function(){return sfxMix([[0,sfxTone(.15,392,392,'saw',.25,.8)],[.18,sfxTone(.15,392,392,'saw',.25,.8)],[.36,sfxTone(.15,392,392,'saw',.25,.8)],[.54,sfxTone(.7,523,523,'saw',.28,1)]])}],
+ ['Lose','Sad wah wah wah',function(){return sfxNotes([392,370,349,330],.24,.3,'saw',.25)}],
+ ['Pickup','A soft item pickup',function(){return sfxMix([[0,sfxTone(.15,500,900,'sine',.5,1.5)],[.08,sfxTone(.2,750,1200,'sine',.4,1.5)]])}],
+ ['Equip','A metal clink',function(){return sfxMix([[0,sfxTone(.15,2400,2400,'sine',.4,3)],[0,sfxTone(.2,3600,3600,'sine',.2,3)],[0,sfxNoise(.03,.8,.8,.4,1)]])}],
+ ['Buy','Cash register ka-ching',function(){return sfxMix([[0,sfxNoise(.05,.6,.6,.6,2)],[.05,sfxTone(.6,2093,2093,'sine',.4,2)],[.1,sfxTone(.6,2637,2637,'sine',.3,2)]])}],
+ ['Unlock','Key click then chime',function(){return sfxMix([[0,sfxTone(.05,800,800,'square',.3,1)],[.08,sfxTone(.05,1200,1200,'square',.3,1)],[.2,sfxTone(.5,880,880,'sine',.4,2)],[.3,sfxTone(.6,1319,1319,'sine',.4,2)]])}],
+ ['Sparkle','A quick twinkle',function(){return sfxNotes([2093,2637,3136],.05,.2,'sine',.3)}],
+ ['Magic','A sparkly spell',function(){return sfxNotes([1568,1976,2349,2637,3136],.06,.3,'sine',.25)}],
+ ['Teleport','Sci-fi warp',function(){return sfxMix([[0,sfxTone(.6,300,2200,'sine',.45,.8,.15)],[0,sfxNoise(.5,.3,.7,.25,1)]])}],
+ ['Portal','A whooshy magic hum',function(){return sfxMix([[0,sfxTone(.8,150,400,'saw',.2,.8,.3)],[0,sfxTone(.8,300,800,'sine',.25,.8,.2)]])}],
+ ['Dash','A quick burst of speed',function(){return sfxMix([[0,sfxNoise(.2,.08,.6,.9,1.5)],[0,sfxTone(.15,200,600,'sine',.2,1)]])}],
+ ['Whistle','Slide whistle up',function(){return sfxTone(.6,600,2000,'sine',.4,.5)}],
+ ['Spring','A boing spring',function(){return sfxTone(.6,200,400,'sine',.7,1.2,.25)}],
+ ['Bubble','A bubbly bloop',function(){return sfxTone(.15,400,1000,'sine',.6,1.2)}],
+ ['Drip','A water drip',function(){return sfxMix([[0,sfxTone(.12,1800,900,'sine',.5,2.5)],[.2,sfxTone(.1,1800,900,'sine',.15,2.5)]])}],
+ ['PowerDown','A falling power-down',function(){return sfxTone(.6,800,80,'square',.25,.8)}],
+ ['Land','A soft landing thud',function(){return sfxMix([[0,sfxTone(.1,150,60,'sine',.8,2)],[0,sfxNoise(.06,.15,.15,.3,2)]])}],
+ ['Stomp','A heavy stomp',function(){return sfxMix([[0,sfxTone(.2,90,35,'sine',1,1.5)],[0,sfxNoise(.08,.2,.1,.5,2)]])}],
+ ['Punch','A heavy punch',function(){return sfxMix([[0,sfxNoise(.08,.6,.2,1.2,1.5)],[0,sfxTone(.12,140,40,'sine',1,1.5)]])}],
+ ['Swing','A sword swing',function(){const a=sfxNoise(.3,.1,.6,1.2,0),n=a.length;for(let i=0;i<n;i++)a[i]*=Math.sin(Math.PI*i/n);return a}],
+ ['Slash','A blade slice',function(){return sfxMix([[0,sfxNoise(.18,.6,.6,.7,1.5)],[0,sfxTone(.18,2400,600,'saw',.15,1.2)]])}],
+ ['Whip','A whip crack',function(){return sfxMix([[0,sfxNoise(.08,.9,.9,1.2,1)],[0,sfxTone(.1,3000,600,'saw',.2,1)]])}],
+ ['Shoot','A gun shot',function(){return sfxMix([[0,sfxNoise(.15,.6,.15,1.4,2)],[0,sfxTone(.12,400,60,'saw',.5,1.5)]])}],
+ ['Reload','Click clack',function(){return sfxMix([[0,sfxNoise(.05,.7,.7,.9,1.5)],[0,sfxTone(.04,1200,800,'square',.25,1)],[.18,sfxNoise(.06,.6,.6,.9,1.5)],[.18,sfxTone(.05,800,500,'square',.25,1)]])}],
+ ['Cannon','A cannon blast',function(){return sfxMix([[0,sfxNoise(.5,.3,.05,1.6,1.3)],[0,sfxTone(.5,80,30,'sine',1,1.4)]])}],
+ ['Crash','A big smash',function(){return sfxMix([[0,sfxNoise(.7,.6,.1,1.3,1.3)],[0,sfxTone(.5,200,60,'saw',.3,1.2)]])}],
+ ['Glass','Glass shattering',function(){return sfxMix([[0,sfxNoise(.5,.9,.5,.7,2)],[0,sfxTone(.12,4200,4200,'sine',.25,3)],[.05,sfxTone(.12,3300,3300,'sine',.25,3)],[.11,sfxTone(.12,5000,5000,'sine',.2,3)],[.18,sfxTone(.12,3800,3800,'sine',.2,3)]])}],
+ ['Thunder','Rolling thunder',function(){return sfxMix([[0,sfxNoise(1.6,.05,.02,2,1)],[0,sfxTone(1.2,55,30,'sine',.8,1)]])}],
+ ['Rain','Rain pattering',function(){return sfxNoise(1.2,.9,.9,.35,.15)}],
+ ['Wind','Wind blowing',function(){const a=sfxNoise(1.4,.03,.12,2.5,0),n=a.length;for(let i=0;i<n;i++)a[i]*=Math.sin(Math.PI*i/n);return a}],
+ ['Fire','Crackling fire',function(){const a=sfxNoise(1,.04,.04,.45,0),n=a.length;for(let k=0;k<26;k++){const s=Math.floor(Math.random()*(n-400)),l=60+Math.floor(Math.random()*200);for(let i=0;i<l;i++)a[s+i]+=(Math.random()*2-1)*(1-i/l)*.9}return a}],
+ ['Freeze','Icy crackle',function(){return sfxMix([[0,sfxNoise(.4,.9,.7,.5,1.5)],[0,sfxTone(.3,2800,3500,'sine',.2,2)]])}],
+ ['Applause','A clapping crowd',function(){const n=Math.floor(SFXR*1.4),a=new Float32Array(n);for(let k=0;k<90;k++){const s=Math.floor(Math.random()*(n-500)),l=200+Math.floor(Math.random()*250),g=.6+Math.random()*.4;for(let i=0;i<l;i++)a[s+i]+=(Math.random()*2-1)*Math.pow(1-i/l,3)*g}for(let i=0;i<n;i++)a[i]*=Math.min(1,(n-i)/(SFXR*.3));return a}],
+ ['Typewriter','Key clacks',function(){return sfxMix([0,.11,.22,.31].map(function(t){return [t,sfxMix([[0,sfxNoise(.03,.8,.8,.8,2)],[0,sfxTone(.04,1200,600,'square',.2,2)]])]}))}],
+ ['Chomp','Munch munch',function(){return sfxMix([[0,sfxTone(.09,300,150,'square',.4,1.2)],[.13,sfxTone(.09,300,150,'square',.4,1.2)]])}],
+ ['Door','A creaky door',function(){return sfxTone(.7,90,160,'saw',.22,.7,.5)}],
+ ['DoorSlam','A door slamming',function(){return sfxMix([[0,sfxNoise(.15,.5,.1,1,1.5)],[0,sfxTone(.25,100,40,'sine',1,1.4)]])}],
+ ['Robot','Beepy robot talk',function(){return sfxMix([[0,sfxTone(.08,600,600,'square',.25,.5)],[.1,sfxTone(.08,900,900,'square',.25,.5)],[.2,sfxTone(.1,450,450,'square',.25,.5)],[.32,sfxTone(.08,1100,1100,'square',.25,.5)]])}],
+ ['Alien','A wobbly UFO',function(){return sfxTone(.8,600,1200,'sine',.4,.6,.35)}],
+ ['Ghost','A spooky woo',function(){return sfxTone(1,300,500,'sine',.4,.8,.06)}],
+ ['Horn','A honk',function(){return sfxMix([[0,sfxTone(.35,220,220,'saw',.3,.3)],[0,sfxTone(.35,277,277,'saw',.2,.3)]])}],
+ ['Rocket','A rocket engine roar',function(){return sfxMix([[0,sfxNoise(.9,.1,.3,1.2,.8)],[0,sfxTone(.9,80,160,'saw',.25,.8)]])}],
+ ['Splat','A wet splat',function(){return sfxMix([[0,sfxNoise(.15,.3,.1,.9,1.5)],[0,sfxTone(.15,300,80,'sine',.6,1.5)]])}]
 ];
 let sfxCache={};
 function sfxWav(i){if(sfxCache[i])return sfxCache[i];const a=SFX[i][2]();let pk=0;for(let k=0;k<a.length;k++)pk=Math.max(pk,Math.abs(a[k]));const g=pk>0?.85/pk:1,n=a.length,b=new Uint8Array(44+n*2),w=new DataView(b.buffer);
@@ -2095,8 +2159,10 @@ function sfxAdd(i){const src=sfxWav(i);if(assetBytes()+src.length>ASSET_TOTAL){m
   let nm=SFX[i][0],n=1;const base=nm;while(P.assets.images[nm]||P.assets.audio[nm])nm=base+(++n);
   P.assets.audio[nm]=src;save();selSvc='assets';sel=[];selModel=null;renderParts();
   msg('Added sound effect "'+nm+'" to Audio. Use it with the play block.'+(gameId?'':' Publish the game to keep it.'))}
-function sfxPanel(d){d.append(el('p','note','Sound effects: press ▶ to hear one, then Add to put it in your Audio list. Play it with the "play _" or "play _ once until done" blocks.'));
-  SFX.forEach(function(s,i){const w=el('div','arow');w.append(el('span','nm',s[0]+' - '+s[1]));w.append(mb('▶ Play','ghost',function(){sfxPlay(i)}));w.append(mb('Add','',function(){sfxAdd(i)}));d.append(w)})}
+function sfxPanel(d){d.append(el('p','note','Sound effects ('+SFX.length+'): press ▶ to hear one, then Add to put it in your Audio list. Play it with the "play _" or "play _ once until done" blocks.'));
+  const q=el('input');q.type='text';q.placeholder='Search sounds...';q.style.cssText='width:100%;margin:4px 0 6px';d.append(q);const rows=[];
+  SFX.forEach(function(s,i){const w=el('div','arow');w.append(el('span','nm',s[0]+' - '+s[1]));w.append(mb('▶ Play','ghost',function(){sfxPlay(i)}));w.append(mb('Add','',function(){sfxAdd(i)}));w._t=(s[0]+' '+s[1]).toLowerCase();rows.push(w);d.append(w)});
+  q.oninput=function(){const t=q.value.trim().toLowerCase();rows.forEach(function(w){w.hidden=!!t&&w._t.indexOf(t)<0})}}
 function openSfx(){sfxOpen=true;selSvc='assets';sel=[];selModel=null;renderParts()}
 function assetBytes(){let n=0;['images','audio'].forEach(function(c){Object.keys(P.assets[c]).forEach(function(k){n+=P.assets[c][k].length})});return n}
 function pickFile(kind){const i=document.createElement('input');i.type='file';i.accept=kind==='image'?'image/*':'audio/*';
@@ -2841,7 +2907,7 @@ function hpHud(){if(!hpEl){hpEl=document.createElement('div');hpEl.id='hpbar';
     const tr=document.createElement('div');tr.style.cssText='height:12px;border-radius:6px;background:rgba(255,255,255,.22);overflow:hidden';hpFill=document.createElement('div');hpFill.style.cssText='height:100%;width:100%;transition:width .15s,background .15s';tr.append(hpFill);hpEl.append(t,tr);document.body.append(hpEl)}
   if(!(playing||running)){S.hp=MAXHP;for(const k in HPM)delete HPM[k];hpEl.style.display='none';return}
   const h=hpGet('main');if(h>=MAXHP){hpEl.style.display='none';return}
-  hpEl.style.display='block';hpTxt.textContent=Math.ceil(h)+' / '+MAXHP;hpFill.style.width=(h/MAXHP*100)+'%';hpFill.style.background=h>60?'#3ccf5e':h>30?'#f5b400':'#ff4d3d'}
+  hpEl.style.display='block';try{const pb=document.getElementById('bb-pl'),r=pb&&pb.getBoundingClientRect();hpEl.style.top=((r&&r.height>0)?Math.round(r.bottom)+8:52)+'px'}catch(e){}hpTxt.textContent=Math.ceil(h)+' / '+MAXHP;hpFill.style.width=(h/MAXHP*100)+'%';hpFill.style.background=h>60?'#3ccf5e':h>30?'#f5b400':'#ff4d3d'}
 setInterval(hpHud,100);
 function finishDead(key,T){if(key==='main'){S.hp=MAXHP;S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0;S.rag=false;delete RAG.main;T.g.rotation.z=0;limbsRest(T,T.root);log('You were respawned.')}
   else{RAG[key].gone=true;T.g.visible=false;if(T.np)T.np.tag.visible=false}}
@@ -3879,6 +3945,36 @@ function dropOn(d,t){if(!dropOK(d,t))return;const ps=dragParts(d);let msg0='';
   cleanModels();msg(msg0);all()}
 
 
+/* ===== server side / client side blocks =====
+   Every player runs the game on their own computer, so "server side" works by telling every other player's computer to run the very same block
+   (only the position of the block is sent, never code, so nothing can be injected). "client side" blocks only ever run on the computer that reached them,
+   and are skipped on the other players when they replay a server side block. */
+const LOCALH={touched:1,clicked:1,key:1,keydrop:1,keyheld:1,keyrel:1,chat:1,guiclick:1,guithisclick:1,itemhold:1,itemunhold:1,screenclick:1};
+const RSKIP={move:1,turn:1,goto:1,jump:1,animate:1,say:1,color:1,walkanim:1,jumpanim:1,idleanim:1,fallanim:1,holdanim:1,holdwalkanim:1,fov:1,shiftlockon:1,shiftlockoff:1,pspeed:1,playercol:1,tweenset:1,
+  givebadge:1,awardbadge:1,giveitem:1,removeitem:1,accadd:1,accrem:1,accwear:1,accstrip:1,kick:1,ban:1,addplayer:1,randplayer:1,getcount:1,print:1,setvol:1};
+const RSELF={tweensize:1,tweentrans:1,tweencolor:1,transparency:1,kill:1,pushparent:1};
+const SSVARS=['toucher','clicker','speaker','message','joiner','leaver'];
+let ssN=0,ssT=0;
+function bFind(list,b){for(let i=0;i<list.length;i++){const x=list[i];if(x===b)return [i];if(x.k){const r=bFind(x.k,b);if(r)return [i].concat(r)}}return null}
+function bPath(b){for(let si=0;si<P.scripts.length;si++){const r=bFind(P.scripts[si],b);if(r)return [si].concat(r)}return null}
+function bAt(path){let list=P.scripts[path[0]];if(!list)return null;let b=null;
+  for(let i=1;i<path.length;i++){b=list[path[i]];if(!b)return null;if(i<path.length-1){if(!b.k)return null;list=b.k}}return b}
+function inCli(path){let list=P.scripts[path[0]];for(let i=1;i<path.length-1;i++){const b=list&&list[path[i]];if(!b)return false;if(b.t==='clientside')return true;list=b.k}return false}
+function remapP(b,name){if(!b.a.some(function(x){return String(x).trim().toLowerCase()==='player'}))return b;
+  return Object.assign({},b,{a:b.a.map(function(x){return String(x).trim().toLowerCase()==='player'?name:x})})}
+async function ssRun(b,S,o){const path=bPath(b);let send=false;
+  if(path&&!S.remote&&typeof NET!=='undefined'&&NET.on&&NET.ch&&!inCli(path)){const h=P.scripts[path[0]][0].t;send=!!LOCALH[h]||h==='def'}
+  if(send){const v={};SSVARS.forEach(function(k){if(S.v[k]!=null)v[k]=String(S.v[k]).slice(0,60)});
+    try{NET.ch.send({type:'broadcast',event:'ss',payload:{id:NET.id,n:String(P.player.name).slice(0,24),p:path,v:v}})}catch(e){}}
+  await ex(b.k,S,o)}
+function ssRecv(p){if(!p||p.id===NET.id||!(running||playing)||!Array.isArray(p.p)||p.p.length<2||p.p.length>14)return;
+  const path=p.p.map(Number);if(path.some(function(x){return !(x>=0)||x%1}))return;
+  const nw=performance.now();if(nw-ssT>1000){ssT=nw;ssN=0}if(++ssN>40)return;/* a flood of messages is ignored */
+  const b=bAt(path);if(!b||b.t!=='serverside'||!b.k)return;const h=P.scripts[path[0]][0];if(!(LOCALH[h.t]||h.t==='def'))return;
+  const v=p.v&&typeof p.v==='object'?p.v:{};SSVARS.forEach(function(k){if(typeof v[k]==='string')S.v[k]=v[k].slice(0,60)});
+  const RS=Object.create(S);RS.remote=true;RS.rname=String(p.n||'').slice(0,24);RS.d=0;
+  ex(b.k,RS,h.o).catch(function(e){log('Error: '+e)})}
+
 /* ===== "only for player": GUI blocks inside it run on the chosen player's own screen ===== */
 const ONLYB={guishow:1,guihide:1,guitext:1,guivis:1,guitoggle:1,guicolor:1};
 async function onlyDo(b,S,o){const ts=S.only;S.only=null;
@@ -4438,6 +4534,7 @@ async function netJoin(){
       const add=!!p.m,nm=String(p.nm||'an accessory').slice(0,24);
       invChange(id,add).then(function(r){if(r&&r.ok&&!r.same)chatSys('Admin '+by+(add?' added the accessory "'+nm+'" to your inventory. Wear it from your avatar page.':' removed the accessory "'+nm+'" from your inventory.'))}).catch(function(){})});
     ch.on('broadcast',{event:'cmd'},function(m){netCmd(m.payload)});
+    ch.on('broadcast',{event:'ss'},function(m){try{ssRecv(m.payload)}catch(e){}});
     ch.on('broadcast',{event:'ar'},function(){if(Date.now()-ADMT>3000)admLoad()});
     ch.on('broadcast',{event:'gw'},function(m){const p=m.payload;if(!p||p.t!==NET.id||p.id===NET.id||!(running||playing))return;const sl=String(p.s||''),ac=String(p.a||'');
       if(!ACCS[sl]||!/^acc_[a-z0-9]{1,16}$/.test(ac))return;S.xeq=S.xeq||{};
