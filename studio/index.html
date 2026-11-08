@@ -581,6 +581,7 @@ const BD={
  randplayer:{c:'pl',l:'get random player into _',a:['target'],dd:{0:'var'},tip:'Picks one player in the game at random (you included) and stores their name in the variable. Use it with blocks like kick, teleport or ragdoll.'},
  forplayer:{c:'pl',l:'only for player _ do',a:['target'],k:1,tip:'Put blocks inside and they only happen for the player you name (type a name, a variable like target from "get random player", or player). GUI blocks (show, hide, set text, set colour, visible, toggle) are sent to that player\'s screen, so nobody else sees the change. Blocks that already have a player slot (kick, teleport, ragdoll) still use their own slot.'},
  getcount:{c:'pl',l:'get player count into _',a:['count'],dd:{0:'var'},tip:'Stores how many players are in the game right now (you included) in the variable.'},
+ setrig:{c:'pl',l:'set _ to rig _',a:['player','Rig'],tip:'Turns a player into a rig you made. Type the player (a name, a variable like toucher, or player for you, player2 for the second one) and the name of the rig (a rig is named after its model). The player keeps walking and turning like normal but looks like the rig. Type default (or leave the rig empty) to turn them back into a normal player.'},
  accwear:{c:'pl',l:'put accessory _ on player _ slot _',a:['Cool Hat','player','auto'],dd:{2:'accslot'},tip:'Puts an accessory from the BrixBlox shop (including ones you made) on a player. They do NOT need to own it and nothing is added to their inventory. It is only worn during this game and other players see it. Type the accessory name exactly. Slot auto uses the slot the accessory was made for (or hat).'},
  accstrip:{c:'pl',l:'take accessory _ off player _',a:['Cool Hat','player'],tip:'Takes off an accessory that was put on with the put accessory block.'},
  shiftlockon:{c:'pl',l:'enable shiftlock',a:[],tip:'Lets the player use shift lock while playing. It does not turn it on by itself: the player presses Shift to switch it on and off. When it is on, the camera moves over the shoulder, the mouse is locked so moving it turns the camera, and the character faces where the camera looks.'},
@@ -613,7 +614,6 @@ const BD={
  ragdoll:{c:'en',l:'ragdoll _',a:['target'],tip:'Makes a rig or player go limp and fall over for a few seconds. It stays down for as long as the block keeps running (for example inside a forever loop) and gets up a few seconds after. Type a name, a variable, or player (the first player in the server; player2 is the second, and so on) (a comma list from the get nearest blocks works too).'},
  unragdoll:{c:'en',l:'unragdoll _',a:['target'],tip:'Makes a ragdolled rig or player get back up right away. Type a name, a variable, or player (the first player in the server; player2 is the second, and so on). Does nothing if they are not ragdolled (and cannot save someone who was killed).'},
  pushparent:{c:'en',l:'push parent rig _ studs in _ seconds toward _',a:['5','0.5','front'],dd:{2:'dir'},tip:'Pushes the rig this script belongs to forward by exactly this many studs, taking this many seconds. To push your own character, put the script inside the character. A script that belongs to nothing does nothing. It eases in and out. A negative number pushes backward. Works even while ragdolled and even if Movable is off. If it is already being pushed, a new push waits until the first one is done, so a forever loop gives one push after another.'},
- setrig:{c:'pl',l:'set _ to rig _',a:['player','Rig'],tip:'Turns a player into a rig you made. Type the player (a name, a variable like toucher, or player for you, player2 for the second one) and the name of the rig (a rig is named after its model). The player keeps walking and turning like normal but looks like the rig. Type default (or leave the rig empty) to turn them back into a normal player.'},
  rigsize:{c:'en',l:'set rig size _ to _',a:['target','2'],tip:'Scales a rig or player. 1 is normal, 2 is double. Type a name, a variable, or player (the first player in the server; player2 is the second, and so on).'},
  teleport:{c:'en',l:'teleport _ to x _ y _ z _',a:['target','0','5','0'],tip:'Moves a rig or player to this spot in the world. y is the height of the feet (the floor is usually 0). Type a name, a variable, or player (the first player in the server; player2 is the second, and so on).'},
  say:{c:'lk',l:'say _',a:['Hello!'],tip:'Shows a chat bubble above your head for a few seconds.'},
@@ -1174,7 +1174,7 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
       if(!tg.length){log('Error: no player named \"'+String(val(a[0],S)).trim()+'\" for the \"set player to rig\" block.');break}
       if(!rn||/^(default|player|none|normal)$/i.test(rn)){tg.forEach(function(t){skinClear(t.key)});break}
       const rr=skinFind(rn);if(!rr){log('Error: there is no rig named \"'+rn+'\". A rig is named after its model (parts welded together).');break}
-      tg.forEach(function(t){skinSet(t.key,rr.id)});break}
+      tg.forEach(function(t){skinSet(t.key,rr.id,rn)});break}
     case'rigsize':{const sz=Math.max(.1,Math.min(20,n(1)));resolve(String(val(a[0],S))).forEach(function(t){RSZ[t.key]=sz});break}
     case'transparency':{let rs=roots(o,true);if(!rs.length){const T=byId(P.avId);if(T)rs=[rootOf(T)]}
       const v=Math.max(0,Math.min(1,n(0)));rs.forEach(function(r){rigParts(r).forEach(function(q){if(!q.stab)setTr(q,v)})});break}
@@ -1763,13 +1763,14 @@ function moveSel(d){const ids=sel.slice();ids.forEach(function(id){const p=byId(
 /* Resize tool (press E): drag a face handle to stretch that side while the opposite side stays put. Ctrl = resize from both sides. Alt = no snapping. */
 function updTool(){}
 /* Everything the resize tool will stretch: the selection plus, for rigs, every welded part of the rig */
-function scaleSet(){const set={},out=[];sel.forEach(function(id){const p=byId(id);if(!p)return;const r=rootOf(p);(kids(r).length?treeOf(r):[p]).forEach(function(q){if(!set[q.id]){set[q.id]=1;out.push(q)}})});return out}
+let selIndiv=null;function indivOn(){return !!selIndiv&&selIndiv.length===sel.length&&sel.every(function(x){return selIndiv.indexOf(x)>=0})}
+function scaleSet(){const set={},out=[];if(indivOn()){sel.forEach(function(id){const p=byId(id);if(p&&!set[p.id]){set[p.id]=1;out.push(p)}});return out}sel.forEach(function(id){const p=byId(id);if(!p)return;const r=rootOf(p);(kids(r).length?treeOf(r):[p]).forEach(function(q){if(!set[q.id]){set[q.id]=1;out.push(q)}})});return out}
 function scaleBox(){const a=scaleSet().filter(function(p){return !p.stab});if(!a.length)return null;const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];
   a.forEach(function(p){for(let i=0;i<3;i++){lo[i]=Math.min(lo[i],p.pos[i]-p.size[i]/2);hi[i]=Math.max(hi[i],p.pos[i]+p.size[i]/2)}});
   return {c:[0,1,2].map(function(i){return (lo[i]+hi[i])/2}),h:[0,1,2].map(function(i){return (hi[i]-lo[i])/2})}}
 function rotOne(){const a=scaleSet();return a.length===1&&hasRot(a[0])&&!a[0].parent?a[0]:null}
 function rotQ(p){const D=Math.PI/180;return new THREE.Quaternion().setFromEuler(new THREE.Euler(p.rot[0]*D,p.rot[1]*D,p.rot[2]*D,'XYZ'))}
-function canScale(){return sel.length>0&&scaleSet().length>0&&(!rotRoots().some(hasRot)||!!rotOne())}
+function canScale(){if(indivOn())return sel.length>0&&scaleSet().length>0&&!scaleSet().some(function(p){return hasRot(rootOf(p))});return sel.length>0&&scaleSet().length>0&&(!rotRoots().some(hasRot)||!!rotOne())}
 function setTool(t){tool=t;if(t==='scale'&&(rigOn||!canScale()))lockWarn(rigOn?'Close the rig editor to resize.':rotRoots().some(hasRot)?'Rotated groups and rigs cannot be resized. Double-click a rotate ring to reset the rotation, then resize.':'Select a part first, then press R to switch tools.');
   if(t==='rotate'&&(rigOn||!sel.length))lockWarn(rigOn?'Close the rig editor to rotate.':'Select a part first, then drag a ring to rotate it.');buildEdit()}
 const TOOLS=[['move','Move'],['scale','Resize'],['rotate','Rotate']];
@@ -1844,6 +1845,7 @@ function pick(id,add,indiv){selFold=null;{const q=id&&byId(id);if(q)snapRig(root
     if(add){const have=ids.every(function(x){return sel.indexOf(x)>=0});sel=have?sel.filter(function(x){return ids.indexOf(x)<0}):sel.concat(ids.filter(function(x){return sel.indexOf(x)<0}))}else sel=ids;selModel=null}
   else if(add){sel=sel.indexOf(id)>=0?sel.filter(function(x){return x!==id}):sel.concat(id);selModel=null}
   else{sel=[id];selModel=null}
+  selIndiv=(indiv&&p&&!p.av)?sel.slice():null;
   hl();buildEdit();renderParts()}
 function pickModel(mid){selFold=null;if(animOn()){const r=partsOf(mid).find(function(p){return !p.parent&&kids(p).length});animSelect(r||null);return}sel=partsOf(mid).map(function(q){return q.id});selModel=sel.length?mid:null;hl();buildEdit();renderParts()}
 function group(){let ids=sel.filter(function(id){const p=byId(id);return p&&!p.av});{const set={};ids.forEach(function(id){set[id]=1;const r=rootOf(byId(id));if(kids(r).length)treeOf(r).forEach(function(q){set[q.id]=1})});ids=Object.keys(set)}
@@ -1991,18 +1993,21 @@ function newPart(shape){shape=typeof shape==='string'?shape:'box';if(animOn())re
   const p=mkPart(SHN[shape]||'Part',pos,[2,2,2]);if(shape!=='box')p.shape=shape;sel=[p.id];selModel=null;msg('Added a '+(SHN[shape]||'part').toLowerCase()+' in front of you.');all();return p}
 function hum(p){const n=rigParts(p).map(function(c){return c.name});return n.indexOf('Rarm')>=0&&n.indexOf('Larm')>=0}
 /* Accessories: a normal part that is welded to the player's Head or Torso, so it moves with the player and other players see it too */
-function setAcc(p,slot){
+function setAcc(p,slot,rigId){
   if(!slot){if(!p.acc)return;delete p.acc;p.av=false;p.parent=null;p.pivot=null;delete p.model;cleanModels();msg('Removed from your character.');all();props();return}
-  const H=P.parts.find(function(q){return q.av&&q.name==='Head'&&!q.acc}),T=avTorso();
+  const RR0=rigId&&byId(rigId),RP=RR0?rigParts(RR0):null;
+  const H=RP?RP.find(function(q){return q.name==='Head'&&!q.acc}):P.parts.find(function(q){return q.av&&q.name==='Head'&&!q.acc}),T=RP?RP.find(function(q){return q.name==='Torso'&&!q.acc}):avTorso();
   const to=(slot==='hat'||slot==='face')?H:T;
-  if(!to){msg('There is no player character to wear this on.');props();return}
+  if(!to){msg(RP?'That rig has no '+((slot==='hat'||slot==='face')?'Head':'Torso')+' part to wear this on.':'There is no player character to wear this on.');props();return}
   const r=function(v){return Math.round(v*100)/100};let x;
   if(slot==='hat')x=[H.pos[0],H.pos[1]+H.size[1]/2+p.size[1]/2,H.pos[2]];
   else if(slot==='face')x=[H.pos[0],H.pos[1],H.pos[2]-(H.size[2]/2+p.size[2]/2)];
   else if(slot==='neck')x=[T.pos[0],T.pos[1]+T.size[1]/2,T.pos[2]];
   else x=[T.pos[0],T.pos[1],T.pos[2]+T.size[2]/2+p.size[2]/2];
-  p.pos=x.map(r);p.acc=slot;p.av=true;p.parent=to.id;p.pivot=defPivot(p);ensureRigModel(rootOf(to));
-  msg('Now a '+slot+' accessory. Use Position and Size to fit it, and press Play to see it on your character.');all();props()}
+  p.pos=x.map(r);p.acc=slot;p.av=!RP;p.parent=to.id;p.pivot=defPivot(p);ensureRigModel(rootOf(to));
+  msg(RP?'Now a '+slot+' accessory on the rig '+rigLabel(RR0)+'. Use Position and Size to fit it.':'Now a '+slot+' accessory. Use Position and Size to fit it, and press Play to see it on your character.');all();props()}
+function rigLabel(r){const m=r.model&&byModel(r.model);return m?m.name:r.name}
+function rigRoots(){return P.parts.filter(function(p){return !p.parent&&!p.av&&kids(p).length&&inW(p)})}
 function avTorso(){return P.parts.find(function(p){return p.av&&p.name==='Torso'})}
 function lab(t,x){const l=el('label','',t);l.append(x);return l}
 function vec(t,a,mv){const w=el('div','v3');a.forEach(function(v,i){const n=el('input');n.type='number';n.step='.5';n.value=v;
@@ -2029,7 +2034,11 @@ function props0(){const d=$('p-props');d.replaceChildren();if(selFold&&!sel.leng
   else d.append(el('p','note','Welded: moves with the part it is welded to.'));if((!p.av||p.acc)&&!p.sm&&!p.stab&&p.shape!=='mesh'&&p.shape!=='union'){const ss=el('select');[['box','Block'],['cyl','Cylinder'],['sphere','Sphere'],['wedge','Triangle']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ss.append(op)});ss.value=p.shape||'box';ss.onchange=function(){if(ss.value==='box')delete p.shape;else p.shape=ss.value;all()};d.append(lab('Shape',ss))}
   if(p.shape==='mesh')meshProps(d,p);
   if(!p.stab&&(p.acc||(!p.av&&!p.parent&&!p.model))){const as=el('select');[['','Not an accessory'],['hat','Hat (top of the head)'],['face','Face accessory (front of the head)'],['neck','Neck (where the head meets the body)'],['back','Back (on the back)']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];as.append(op)});
-    as.value=p.acc||'';as.onchange=function(){setAcc(p,as.value)};d.append(lab('Accessory (wear it on your character)',as));
+    as.value=p.acc||'';
+    const wt=el('select');{const o0=el('option','','Your character');o0.value='';wt.append(o0);rigRoots().forEach(function(r){const o=el('option','','Rig: '+rigLabel(r));o.value=r.id;wt.append(o)});
+      const cur=p.acc&&!p.av&&p.parent&&byId(p.parent)?rootOf(byId(p.parent)).id:'';wt.value=cur;if(wt.value!==cur)wt.value=''}
+    as.onchange=function(){setAcc(p,as.value,wt.value)};wt.onchange=function(){if(as.value)setAcc(p,as.value,wt.value)};
+    d.append(lab('Accessory (wear it on a character or rig)',as));d.append(lab('Wear it on',wt));
     if(p.acc)d.append(el('p','note','It is welded to your character, shows on you and on other players, and has no collision. Change Position and Size above to fit it.'))}
   if(p.stab)d.append(el('p','note','Stabilizer: holds the rig up so the Torso can move and rotate freely. It is hidden and is never animated.'));lightBox(d,p);lightBox(d,p);spawnBox(d,p);tagBox(d,p);contSel(d)}
 $('p-add').onclick=function(){newPart()};$('p-shape').onchange=function(){if(this.value)newPart(this.value);this.value=''};$('p-group').onclick=group;$('p-ungroup').onclick=ungroupKey;$('p-union').onclick=unionMake;$('p-split').onclick=unionSplit;$('p-copy').onclick=copySel;$('p-paste').onclick=pasteClip;$('p-dup').onclick=dupSel;
@@ -2738,6 +2747,8 @@ cv.onpointerdown=function(e){if(VIEWONLY&&!playing)return;try{cv.setPointerCaptu
   if(rigOn){h=ray.intersectObjects(balls,false)[0];if(h){selJ=h.object.userData.joint;buildEdit();return}}
   if(e.shiftKey&&!rigOn){marqueeSel(e);return}
   h=ray.intersectObjects(pickSel(),false)[0];const was=!!h&&sel.indexOf(h.object.userData.id)>=0;pick(h?h.object.userData.id:null,e.ctrlKey||e.shiftKey||e.metaKey,e.altKey);
+  /* Alt+click picks just that one part (not its whole rig or model) and shows the resize handles for it */
+  if(h&&e.altKey&&indivOn()&&!rigOn){try{setTool('scale')}catch(x){}return}
   /* only something that was already selected before this click can be dragged, so a first click just selects */
   if(h&&was&&!rigOn&&!(e.ctrlKey||e.shiftKey||e.metaKey))dragStart2(h,e)};
 /* Shift + drag in the 3D view draws a box and selects every part whose middle is inside it (hold Ctrl as well to add to the current selection).
@@ -3198,9 +3209,10 @@ function simFinish(key,T,e,arm){const sm=e.sim,st=simStand(sm,arm),r=T.root,g=T.
 /* ===== Skins: "set player to rig" turns a player into a copy of a rig you made ===== */
 let SKIN={};
 function skinFind(nm){nm=String(nm).trim().toLowerCase();let f=null;
-  P.parts.forEach(function(p){if(f||p.parent||p.av||p.stab||!kids(p).length)return;const m=p.model&&byModel(p.model);if((m?m.name:p.name).toLowerCase()===nm||p.name.toLowerCase()===nm)f=p});return f}
-function skinSet(key,rid){skinDrop(key);SKIN[key]={rid:rid,grp:null,host:null}}
-function skinDrop(key){const s=SKIN[key];if(s&&s.grp&&s.grp.parent)s.grp.parent.remove(s.grp);if(s)s.grp=null,s.host=null}
+  P.parts.forEach(function(p){if(f||p.parent||p.av||!kids(p).length)return;const m=p.model&&byModel(p.model);if((m?m.name:p.name).toLowerCase()===nm||p.name.toLowerCase()===nm)f=p});
+  if(!f)P.models.forEach(function(m){if(f||m.name.toLowerCase()!==nm)return;const r=partsOf(m.id).find(function(p){return !p.parent&&!p.av&&kids(p).length});if(r)f=r});return f}
+function skinSet(key,rid,nm){skinDrop(key);SKIN[key]={rid:rid,name:nm||'',grp:null,host:null,map:[]}}
+function skinDrop(key){const s=SKIN[key];if(s&&s.grp&&s.grp.parent)s.grp.parent.remove(s.grp);if(s)s.grp=null,s.host=null,s.map=[]}
 function skinClear(key){skinDrop(key);delete SKIN[key];skinShow(key,true)}
 function skinAvMeshes(key){const T=entTargets(key);if(!T)return [];const a=[];
   T.parts.forEach(function(p){const g=T.gs[p.id];if(!g)return;g.children.forEach(function(c){if(c.isMesh)a.push(c)})});return a}
@@ -3215,10 +3227,19 @@ function skinBuild(key,s){const T=entTargets(key),R=byId(s.rid);if(!T||!R||!J[R.
   c.rotation.set(0,0,0);c.visible=true;
   /* put the rig's feet-centre where the player's feet-centre is, in the player's own space */
   c.position.set((A.pos[0]-Ap[0])-((x0+x1)/2-Rp[0]),(ay-Ap[1])-(y0-Rp[1]),(A.pos[2]-Ap[2])-((z0+z1)/2-Rp[2]));
-  c.userData.skin=1;host.add(c);s.grp=c;s.host=host;return true}
+  c.userData.skin=1;host.add(c);s.grp=c;s.host=host;
+  /* pair every cloned part with the rig part it came from, so it can copy the player's pose by part name */
+  const inv=new Map();rp.forEach(function(q){if(J[q.id])inv.set(J[q.id],q.id)});s.map=[];
+  (function pair(og,cg){const pid=inv.get(og);if(pid){const q=byId(pid);if(q&&q!==R)s.map.push({cg:cg,p:q,base:cg.position.clone()})}
+    for(let i=0;i<og.children.length&&i<cg.children.length;i++)if(og.children[i].isGroup&&cg.children[i].isGroup)pair(og.children[i],cg.children[i])})(J[R.id],c);
+  return true}
+/* Every frame the skin copies the pose of the player's own body (walk, idle, jump, any animation, ragdoll) onto the rig part with the same name (Head, Torso, Rarm, Larm, Rleg, Lleg) */
+function skinPose(key,s){const T=entTargets(key);if(!T||!s.map)return;const by={};T.parts.forEach(function(p){if(!p.acc&&p!==T.root&&!by[p.name])by[p.name]=p});
+  s.map.forEach(function(m){const ap=by[m.p.name],ag=ap&&T.gs[ap.id];if(!ag)return;m.cg.rotation.copy(ag.rotation);
+    const b=ag.userData&&ag.userData.base;if(b)m.cg.position.set(m.base.x+ag.position.x-b.x,m.base.y+ag.position.y-b.y,m.base.z+ag.position.z-b.z)})}
 function skinTick(){for(const key in SKIN){const s=SKIN[key];
   if(!byId(s.rid)){skinClear(key);continue}
-  if(skinBuild(key,s))skinShow(key,false)}}
+  if(skinBuild(key,s)){skinShow(key,false);skinPose(key,s)}}}
 function entTick(dt){skinTick();Object.keys(Object.assign({},RAG,RSZ)).forEach(function(key){
   const T=entTargets(key),e=RAG[key];if(!T||(e&&e.gone))return;
   const g=T.g,r=T.root,s=RSZ[key]||1;let lo=1e9;T.parts.forEach(function(p){lo=Math.min(lo,p.pos[1]-p.size[1]/2)});const arm=r.pos[1]-lo;
@@ -4819,6 +4840,7 @@ function netRecv(q){if(!q||!q.id||q.id===NET.id||!NET.on||!(running||playing))re
   e.tx=q.x;e.ty=q.y;e.th=q.h;e.td=(q.d!=null&&isFinite(+q.d))?+q.d:(e.td||0);e.mv=q.m;e.seen=performance.now();
   const nm=function(v){return typeof v==='string'?v.slice(0,40):''};
   e.un=String(q.n||e.name).slice(0,24);{const hi=typeof q.hi==='string'?q.hi.slice(0,40):'';if(hi!==(e.hi||'')){e.hi=hi;netItem(e)}}e.air=!!q.g;e.wa=nm(q.wa);e.ia=nm(q.ia);e.ja=nm(q.ja);e.fa=nm(q.fa);e.ha=nm(q.ha);e.hw=nm(q.hw);
+  {const sr=nm(q.sr);if(sr!==(e.srN||'')){e.srN=sr;const k='np:'+e.name;if(!sr)skinClear(k);else{const rr=skinFind(sr);if(rr)skinSet(k,rr.id,sr);else e.srN=''}}}
   {const es=typeof q.e==='string'?q.e.slice(0,320):'';if(es!==e.eqs){e.eqs=es;try{netEq(e,es)}catch(x){}}}
   e.rc=q.rc;if(typeof q.hp==='number'&&isFinite(q.hp))HPM['np:'+e.name]=Math.max(0,Math.min(MAXHP,q.hp));if(q.rg&&typeof q.rg==='object'){const t={};Object.keys(q.rg).forEach(function(id){const a=q.rg[id];if(e.JJ[id]&&Array.isArray(a)&&a.length===4&&a.every(Number.isFinite))t[id]=a});e.rgT=t;e.rgAt=performance.now()}/* they were ragdolled: show it on this screen too (never as a kill, they respawn on their own screen) */
   if(e.ac===undefined)e.ac=q.ac;/* first packet: do not replay an old animation */
@@ -4846,7 +4868,7 @@ function netDrop(id){const i=NP.findIndex(function(n){return n.net===id});if(i<0
   NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);/* remove them first, so nothing below can stop it */
   chatSys(n.name+' left the game');npFree(n);delete RAG['np:'+n.name];delete RSZ['np:'+n.name];delete SKIN['np:'+n.name];try{renderParts()}catch(e){}gmPlRefresh();firePJ('pleave',n.name)}
 setInterval(function(){if(!NET.on||!(running||playing))return;
-  const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',fa:S.fallA||'',ha:S.holdA||'',hw:S.holdWA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,hp:Math.round(hpGet('main')),hi:S.heldItem||'',e:accStr(Object.assign({},(ME&&ME.av&&ME.av.eq)||{},S.xeq||{}))},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.fa,q.ha,q.hw,q.an,q.ac,q.rc,q.e,q.hi].join()+(rgo?JSON.stringify(rgo):'');
+  const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',fa:S.fallA||'',ha:S.holdA||'',hw:S.holdWA||'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,hp:Math.round(hpGet('main')),hi:S.heldItem||'',sr:(SKIN.main&&SKIN.main.name)||'',e:accStr(Object.assign({},(ME&&ME.av&&ME.av.eq)||{},S.xeq||{}))},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.fa,q.ha,q.hw,q.an,q.ac,q.rc,q.e,q.hi,q.sr].join()+(rgo?JSON.stringify(rgo):'');
   const nowT=performance.now();if(j===NET.last&&nowT-(NET.lt||0)<1500)return;NET.last=j;NET.idle=0;NET.lt=nowT;NET.ch.send({type:'broadcast',event:'p',payload:q})},100);
 /* Ghost sweep, runs on every player's own game (so it works even if the player who left has an old version):
    the server's list of who is online is the truth. Someone who is not on it and has gone quiet is removed. */
