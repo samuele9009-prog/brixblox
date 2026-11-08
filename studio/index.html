@@ -461,7 +461,7 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 <body>
 <main id="studio" class="screen">
   <header class="bar">
-    <div class="logo sm"><span class="blk b1"></span><span class="blk b2"></span><span class="blk b3"></span><h1>BrixBlox Studio</h1><small id="bb-who" style="opacity:.6;margin-left:6px">build 2026-11-07 v4</small></div>
+    <div class="logo sm"><span class="blk b1"></span><span class="blk b2"></span><span class="blk b3"></span><h1>BrixBlox Studio</h1><small id="bb-who" style="opacity:.6;margin-left:6px">build 2026-11-07 v5</small></div>
     <input id="s-name" class="sname" maxlength="30" aria-label="Project name">
     <div class="who"><button id="s-play" class="btn small" type="button">&#9654; Play</button><button id="s-run" class="btn ghost small" type="button">{ } Run code</button><button id="s-stop" class="btn ghost small" type="button" disabled>&#9632; Stop</button><select id="s-view" class="sview fsonly" aria-label="Panel"><option value="out">Output</option><option value="code">Code</option><option value="anim">Animator</option><option value="parts">No panel</option></select><button id="s-fs" class="btn ghost small" type="button">&#9974; Fullscreen</button><button id="s-theme" class="btn ghost small" type="button">Light / Dark</button><button id="s-back" class="btn ghost small" type="button">&larr; BrixBlox</button></div>
   </header>
@@ -720,15 +720,15 @@ const mineG=function(g){return ADMIN||!g.owner||!ME||g.owner.id===ME.id};
 if(P.name==='My first BricBloc game')P.name='My first BrixBlox game';
 PEND=calcPend();
 /* Real play: always use the copy that is live online, so you see exactly what other players see (not an older/local copy). */
-if(VIEWONLY&&PLAYINFO){const tg=document.createElement('div');tg.style.cssText='position:fixed;left:8px;bottom:6px;z-index:9998;font:700 11px sans-serif;color:#fff;opacity:.6;pointer-events:none;text-shadow:0 1px 2px #000';tg.textContent='build v4 \u00b7 '+(PLAYINFO.fresh?'live online copy loaded':(sb?'checking online copy...':'NOT connected online'));document.body.append(tg);window.BBTAG=tg}
+if(VIEWONLY&&PLAYINFO){const tg=document.createElement('div');tg.style.cssText='position:fixed;left:8px;bottom:6px;z-index:9998;font:700 11px sans-serif;color:#fff;opacity:.6;pointer-events:none;text-shadow:0 1px 2px #000';tg.textContent='build v5 \u00b7 '+(PLAYINFO.fresh?'live online copy loaded':(sb?'checking online copy...':'NOT connected online'));document.body.append(tg);window.BBTAG=tg}
 if(VIEWONLY&&sb&&PLAYINFO&&PLAYINFO.id&&!PLAYINFO.fresh){(function(){
   const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:9999;background:#7ccaff;display:flex;align-items:center;justify-content:center;font:800 1.2rem sans-serif;color:#1d2147';ov.textContent='Loading the latest version of the game...';document.body.append(ov);
   withTimeout(sb.from('games').select('data').eq('id',String(PLAYINFO.id)).maybeSingle(),8000,'slow').then(function(r){
     let cd=r&&r.data&&r.data.data;if(!r||r.error||cd==null)throw 0;if(typeof cd!=='string')cd=JSON.stringify(cd);
     const q=JSON.parse(cd);if(!q||!Array.isArray(q.scripts))throw 0;
-    if(hsh(cd)===hsh(String(PLAYINFO.data))){ov.remove();if(window.BBTAG)BBTAG.textContent='build v4 \u00b7 live online copy loaded';return}
+    if(hsh(cd)===hsh(String(PLAYINFO.data))){ov.remove();if(window.BBTAG)BBTAG.textContent='build v5 \u00b7 live online copy loaded';return}
     store.set('brixblox-play',JSON.stringify(Object.assign({},PLAYINFO,{data:cd,fresh:1})));skipUnload=true;location.reload()
-  }).catch(function(){ov.remove();if(window.BBTAG)BBTAG.textContent='build v4 \u00b7 could not reach the online copy (using the saved one)'})})()}
+  }).catch(function(){ov.remove();if(window.BBTAG)BBTAG.textContent='build v5 \u00b7 could not reach the online copy (using the saved one)'})})()}
 function persistGame(){const L=glib(),pv=L[gameId],js=JSON.stringify(P),lh=pv?(pv.lh!==undefined?pv.lh:hsh(pv.data)):undefined;
   L[gameId]={id:gameId,name:P.name,vis:gameVis||'private',at:Date.now(),owner:(pv&&pv.owner&&pv.owner.id)?pv.owner:(ME?{id:ME.id,name:ME.username}:undefined),data:js,lh:lh,ch:pv&&pv.ch,ct:pv&&pv.ct,thumb:(pv&&pv.thumb)||undefined};store.set(GKEY,JSON.stringify(L));PEND=calcPend();try{updateStat()}catch(e){}
   if(PEND&&!VIEWONLY&&sb&&ME&&gameId)cloudPush(gameId);
@@ -1569,7 +1569,7 @@ function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
       else{const A=(q.mv&&(npAnim(q.wa)||npAnim('walk')))||npAnim(q.ia)||npAnim('idle');if(A)po=evalPose(A,q.t%A.len)}}
     else{const A=P.anims[S.idleA||'idle'];if(A)po=evalPose(A,q.t%A.len)}
     /* an animation this player started with a block overrides the parts it has keyframes for, on this player only */
-    if(q.net&&q.hi){const HA=P.anims['hold item'];if(HA)po=Object.assign({},po,evalPose(HA,q.t%(HA.len||1)))}
+    if(q.net&&q.hi){const HA=P.anims['hold item'],HW=P.anims['hold item walk'];if(HW&&q.mv&&!q.air)po=evalPose(HW,q.t%(HW.len||1));else if(HA)po=Object.assign({},po,evalPose(HA,q.t%(HA.len||1)))}
     if(q.net&&q.hi&&!q.itemObj&&!q.hiBusy&&performance.now()>(q.hiRetry||0)){q.hiRetry=performance.now()+1500;try{netItem(q,1)}catch(x){}}
     let fp=po;
     if(q.net&&q.an){const AN=npAnim(q.an);if(!AN)q.an='';else{q.at=(q.at||0)+dt;
@@ -1922,7 +1922,9 @@ function makeAvatar(){const ST=mkPart('Stabilizer',[0,3,0],[.6,.6,.6],'#9aa4ae')
   RA=mkPart('Rarm',[1.5,3,0],[1,2,1],'#f5cd30'),LA=mkPart('Larm',[-1.5,3,0],[1,2,1],'#f5cd30'),RL=mkPart('Rleg',[.5,1,0],[1,2,1],'#a4bd47'),LL=mkPart('Lleg',[-.5,1,0],[1,2,1],'#a4bd47');
   H.face=true;ST.stab=true;[ST,T,H,RA,LA,RL,LL].forEach(function(q){q.av=true});T.parent=ST.id;T.pivot=defPivot(T);[H,RA,LA,RL,LL].forEach(function(c){c.parent=T.id;c.pivot=defPivot(c)});P.avId=ST.id;
   function ks(m){return [[0,0],[.25,35],[.5,0],[.75,-35],[1,0]].map(function(q){return {t:q[0],r:[q[1]*m,0,0]}})}
-  const w={len:1,keys:{}};w.keys[RA.id]=ks(1);w.keys[LA.id]=ks(-1);w.keys[RL.id]=ks(-1);w.keys[LL.id]=ks(1);P.anims.walk=w;curA='walk';jumpAnim();idleAnim();holdAnim()}
+  const w={len:1,keys:{}};w.keys[RA.id]=ks(1);w.keys[LA.id]=ks(-1);w.keys[RL.id]=ks(-1);w.keys[LL.id]=ks(1);P.anims.walk=w;curA='walk';jumpAnim();idleAnim();holdAnim();holdWalkAnim()}
+function holdWalkAnim(){const R=P.parts.find(function(p){return p.av&&p.name==='Rarm'&&!p.acc}),W=P.anims.walk;if(!R||!W)return;
+  const c=JSON.parse(JSON.stringify(W)),L=c.len||1;c.keys=c.keys||{};c.keys[R.id]=[{t:0,r:[80,0,0]},{t:L,r:[80,0,0]}];c.type='walk';P.anims['hold item walk']=c}
 function holdAnim(){const R=P.parts.find(function(p){return p.av&&p.name==='Rarm'&&!p.acc});if(!R)return;const k={};k[R.id]=[{t:0,r:[80,0,0]},{t:1,r:[80,0,0]}];P.anims['hold item']={len:1,keys:k,type:'other'}}
 
 function jumpAnim(){const by=function(n){const q=P.parts.find(function(p){return p.av&&p.name===n});return q&&q.id},A={len:.5,keys:{}};
@@ -2565,7 +2567,7 @@ function play(dt,f){const SP=(S.fly&&amAdmin()?2.2:1)*(S.speed!=null?S.speed:P.r
   const W=P.anims[S.walkA||'walk'],JA=P.anims[S.jumpA||'jump'],IA=P.anims[S.idleA||'idle'],air=!S.gr;let tp={};
   if(air&&JA){S.jt+=dt;S.air=true;tp=evalPose(JA,Math.min(S.jt,JA.len))}
   else{if(S.air){S.air=false;S.jt=0}if(W&&(mv||Math.hypot(S.pvx,S.pvz)>1.5)){S.wt+=dt*Math.min(1,Math.hypot(S.pvx,S.pvz)/12+.2);const sn=Math.floor(S.wt/(W.len/2));if(S.sn===undefined)S.sn=sn;else if(sn!==S.sn){S.sn=sn;stepSound()}tp=evalPose(W,S.wt%W.len)}else if(IA){S.it=(S.it||0)+dt;tp=evalPose(IA,S.it%IA.len)}}
-  if(S.heldItem){const HA=P.anims['hold item'];if(HA)tp=Object.assign({},tp,evalPose(HA,((S.ht=(S.ht||0)+dt))%(HA.len||1)))}
+  if(S.heldItem){const HW=P.anims['hold item walk'],HA=P.anims['hold item'];if(HW&&!air&&(mv||Math.hypot(S.pvx,S.pvz)>1.5))tp=evalPose(HW,S.wt%(HW.len||1));else if(HA)tp=Object.assign({},tp,evalPose(HA,((S.ht=(S.ht||0)+dt))%(HA.len||1)))}
   const ak=(air&&JA)?'j':(W&&(mv||Math.hypot(S.pvx,S.pvz)>1.5))?'w':'i';if(S.ak!==ak){S.ak=ak;S.bl=.15}S.bl=Math.max(0,(S.bl||0)-dt);const kb=S.bl>0?1-Math.exp(-dt*(air?18:14)):1;P.parts.forEach(function(p){if(p.id===P.avId||!p.av||(S.hold&&S.hold[p.id]>0))return;const t=tp[p.id]||[0,0,0],c=S.bp[p.id]||(S.bp[p.id]=[0,0,0]);for(let i=0;i<3;i++)c[i]+=(t[i]-c[i])*kb;const pk='p:'+p.id,t2=tp[pk]||[0,0,0],c2=S.bp[pk]||(S.bp[pk]=[0,0,0]);for(let i=0;i<3;i++)c2[i]+=(t2[i]-c2[i])*kb});
   applyPose(S.bp,true,S.hold);S.mv=mv}
 function solid(r){return CO[r.id]!==undefined?CO[r.id]:!r.nocol}
@@ -3650,6 +3652,7 @@ if(!P.v11){P.v11=1;const av=function(n){return P.parts.find(function(p){return p
     const ST=P.parts.find(function(p){return p.av&&p.stab});if(ST)delete rig0[ST.id]}
   save()}
 if(!P.v12){P.v12=1;if(P.avId&&!P.anims['hold item'])holdAnim();save()}
+if(!P.v13){P.v13=1;if(P.avId&&P.anims.walk&&!P.anims['hold item walk']){holdWalkAnim();save()}}
 applyEnv();rebuildParts();renderParts();anims();requestAnimationFrame(frame);loadBig();setTimeout(gcBig,4000);
 if(gameId&&!VIEWONLY&&sb&&!PEND&&(Object.keys(P.assets.audio).some(function(n){return bigRef(P.assets.audio[n])})||Object.keys(P.assets.meshes||{}).some(function(n){return bigRef(P.assets.meshes[n])})))setTimeout(function(){cloudPush(gameId)},3000);
 if(gameId&&!VIEWONLY&&sb&&PEND)setTimeout(function(){cloudPush(gameId)},2500);
@@ -4096,8 +4099,8 @@ function itemsL(){return P.items=Array.isArray(P.items)?P.items:[]}
 function itemBy(n){const k=String(n).trim().toLowerCase();return itemsL().find(function(i){return String(i.name).toLowerCase()===k})||null}
 function itemApply(g,E,it){const nz=E.obj.userData.nz||[1,1,1],k=(+it.size||2)/(Math.max(nz[0],nz[1],nz[2])||1),D=Math.PI/180;
   g.children[0].scale.setScalar(k);g.position.set(+it.px||0,+it.py||0,+it.pz||0);g.rotation.set((+it.rx||0)*D,(+it.ry||0)*D,(+it.rz||0)*D)}
-function itemMake(E,it){const w=E.obj.clone(true);
-  w.traverse(function(m){if(!m.isMesh)return;m.castShadow=true;m.frustumCulled=false;const f=function(mt){const n=mt.clone();n.side=THREE.DoubleSide;return n};m.material=Array.isArray(m.material)?m.material.map(f):f(m.material)});
+function itemMake(E,it){const w=E.obj.clone(true),src=it.tex&&P.assets.images[it.tex];
+  w.traverse(function(m){if(!m.isMesh)return;m.castShadow=true;m.frustumCulled=false;const f=function(mt){const n=mt.clone();n.side=THREE.DoubleSide;if(src){n.map=accTex(src,E.fmt==='glb');if(n.color)n.color.set(0xffffff)}n.needsUpdate=true;return n};m.material=Array.isArray(m.material)?m.material.map(f):f(m.material)});
   const g=new THREE.Group();g.add(w);itemApply(g,E,it);return g}
 function itemGive(it){if(S.items.indexOf(it.id)<0){S.items.push(it.id);chatSys('You got "'+it.name+'". Click it at the bottom or press its number.')}hotRender()}
 function itemTake(it){S.items=S.items.filter(function(x){return x!==it.id});if(S.heldItem===it.id)itemEquip(null);hotRender()}
@@ -4120,6 +4123,16 @@ addEventListener('keydown',function(e){const m=/^(?:Digit|Numpad)([1-9])$/.exec(
 function itemRows(d){const l=itemsL();if(!l.length){d.append(el('p','empty','No items yet. Right-click a mesh above and press Create item.'));return}
   l.forEach(function(it){const w=el('div','arow');w.append(el('span','nm',it.name+'  ('+it.mesh+')'));
     w.append(mb('Edit','',function(){itemRoom(it.mesh,it)}),mb('Delete','ghost',function(){P.items=itemsL().filter(function(x){return x!==it});S.items=S.items.filter(function(x){return x!==it.id});save();renderParts()}));d.append(w)})}
+function itemTexFile(it,f,done){
+  if(!f)return;if(f.type&&f.type.indexOf('image/')!==0){msg('That is not a picture. Pick a png, jpg, webp or gif.');return}
+  if(f.size>ASSET_FILE){msg('That picture is over 2 MB. Try a smaller one.');return}
+  const rd=new FileReader();rd.onerror=function(){msg('Could not read that file.')};
+  rd.onload=function(){if(assetBytes()+rd.result.length>ASSET_TOTAL){msg('Your game is full. Delete an asset first (about 4 MB total).');return}
+    let base=f.name.replace(/\.[^.]+$/,'').replace(/[^A-Za-z0-9_]/g,'').slice(0,20)||'Texture';
+    if(/^(clouds?|sun|moon|thumbnail)$/i.test(base))base='Tex'+base;
+    let nm=base,n=1;while(P.assets.images[nm]||P.assets.audio[nm])nm=base+(++n);
+    P.assets.images[nm]=rd.result;it.tex=nm;save();try{renderParts()}catch(e){}msg('Texture "'+nm+'" added. Press Save item to keep it on the item.');if(done)done()};
+  rd.readAsDataURL(f)}
 function itemRoom(mn,ed){if(VIEWONLY)return;if(!(P.assets.meshes||{})[mn]){msg('That mesh is gone.');return}
   msg('Opening the item room...');meshLoad(mn).then(function(E){if(!E||!E.obj){msg('Could not load that mesh.');return}itemRoom2(mn,E,ed)})}
 function itemRoom2(mn,E,ed){
@@ -4142,7 +4155,7 @@ function itemRoom2(mn,E,ed){
   const LA=bx(.7,2,.7,hx(AX.skin,'#f0c49a'));LA.position.set(-1.15,3,0);
   const ag=new THREE.Group();ag.position.set(1.15,4,0);ag.rotation.x=80*Math.PI/180;const arm=bx(.7,2,.7,hx(AX.skin,'#f0c49a'));arm.position.set(0,-1,0);ag.add(arm);
   sc.add(T,Hd,RL,LL,LA,ag);
-  const io=itemMake(E,it);arm.add(io);const upd=function(){itemApply(io,E,it)};
+  let io=itemMake(E,it);arm.add(io);const upd=function(){itemApply(io,E,it)},retex=function(){arm.remove(io);io=itemMake(E,it);arm.add(io)};
   let th=.9,ph=.25,rad=13,drag=false,lx2=0,ly2=0,alive=true;
   cvs.onpointerdown=function(e){cvs.setPointerCapture(e.pointerId);lx2=e.clientX;ly2=e.clientY;drag=true};
   cvs.onpointermove=function(e){if(!drag)return;th-=(e.clientX-lx2)*.008;ph=Math.max(-.3,Math.min(1.4,ph+(e.clientY-ly2)*.006));lx2=e.clientX;ly2=e.clientY};
@@ -4158,13 +4171,19 @@ function itemRoom2(mn,E,ed){
   const h3=el('h3','','Item room');h3.style.margin='0';
   const nm=el('input');nm.value=it.name;nm.maxLength=24;nm.style.cssText='min-height:34px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink)';nm.oninput=function(){it.name=nm.value};
   side.append(h3,el('p','note','This is the hold animation pose. Move and turn the item until the handle sits in the hand. Drag the room to look around, scroll to zoom.'),lab('Item name',nm));
+  {const tsel=el('select'),fillTs=function(){tsel.replaceChildren();[['','Original texture']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})).forEach(function(o){const op=el('option','',o[1]);op.value=o[0];tsel.append(op)});tsel.value=it.tex&&P.assets.images[it.tex]?it.tex:''};fillTs();
+    tsel.style.cssText='min-height:34px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);width:100%';
+    tsel.onchange=function(){if(tsel.value)it.tex=tsel.value;else delete it.tex;retex()};
+    side.append(lab('Texture (the mesh\'s own, or any image from Assets)',tsel));
+    const upb=el('button','btn ghost small','Upload a texture picture for this item');upb.type='button';
+    upb.onclick=function(){const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=function(){itemTexFile(it,i.files&&i.files[0],function(){fillTs();retex()})};i.click()};side.append(upb)}
   const fmt=function(v){return (+v).toFixed(2)},sl=function(t,k,a,b,s){slider(side,t,it,k,a,b,s,fmt,upd)};
   sl('Handle left/right','px',-4,4,.05);sl('Handle up/down','py',-4,4,.05);sl('Handle forward/back','pz',-4,4,.05);
   sl('Turn X','rx',-180,180,5);sl('Turn Y','ry',-180,180,5);sl('Turn Z','rz',-180,180,5);sl('Size','size',.2,8,.1);
   const r=el('div','tb');
   r.append(mb('Save item','',function(){const n=String(it.name).trim().slice(0,24);if(!n){msg('Give the item a name.');return}
       const dup=itemsL().find(function(x){return x!==ed&&String(x.name).toLowerCase()===n.toLowerCase()});if(dup){msg('There is already an item called "'+n+'".');return}
-      it.name=n;if(ed)Object.assign(ed,it);else{it.id='it'+P.nid++;itemsL().push(it)}
+      it.name=n;if(ed){Object.assign(ed,it);if(!it.tex)delete ed.tex}else{it.id='it'+P.nid++;itemsL().push(it)}
       save();close();renderParts();msg('Item "'+n+'" saved. Give it with the "give item '+n+' to player player" block.')}),
     mb('Reset','ghost',function(){Object.assign(it,{px:0,py:-1,pz:0,rx:-90,ry:0,rz:0,size:2});upd();Array.from(side.querySelectorAll('input[type=range]')).forEach(function(i,n){i.value=[0,-1,0,-90,0,0,2][n];i.dispatchEvent(new Event('input'))})}),
     mb('Cancel','ghost',close));side.append(r)}
