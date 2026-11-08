@@ -886,7 +886,10 @@ setInterval(lockPaint,2000);
 addEventListener('pagehide',function(){if(lockBeat)lockEnd()});
 /* Ctrl+W: browsers only let a page take that key while it is fullscreen (Keyboard Lock, Chrome/Edge/Chromebook), so Join goes fullscreen and locks it. */
 function goFull(){try{const r=document.documentElement.requestFullscreen;if(r&&!document.fullscreenElement)r.call(document.documentElement).then(kbLockTop,function(){})}catch(e){}}
-function kbLockTop(){try{const k=navigator.keyboard;if(!k)return;if(document.fullscreenElement&&(joining||$('pl-frame'))){if(k.lock)k.lock(['KeyW','Escape']).catch(function(){})}else if(k.unlock)k.unlock()}catch(e){}}
+function fsGiveUp(){/* no key lock here: fullscreen would swallow Esc and the game menu would never open, so go back to the normal window */try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}}
+function kbLockTop(){try{const k=navigator.keyboard,inGame=!!(joining||$('pl-frame'));
+  if(document.fullscreenElement&&inGame){if(!k||!k.lock){fsGiveUp();return}k.lock(['KeyW','Escape']).catch(function(){fsGiveUp()})}
+  else if(k&&k.unlock)k.unlock()}catch(e){}}
 document.addEventListener('fullscreenchange',kbLockTop);
 addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.code==='KeyW'&&(joining||$('pl-frame'))){e.preventDefault();e.stopPropagation()}},true);
 addEventListener('message',function(e){if(e.origin===location.origin&&e.data&&e.data.bb==='leave')closePlayer()});
