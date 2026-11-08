@@ -555,6 +555,9 @@ const BD={
  holdwalkanim:{c:'pl',l:'set player hold item walk to _',a:['hold item walk'],raw:1,tip:'Uses an animation from the rig as the walk animation the player has while holding an item. The default is the animation called hold item walk.'},
  voidh:{c:'pl',l:'set void reset height to _',a:['-150'],tip:'Sets how low the player can fall before they are put back at the start. The default is -150. Negative numbers are fine: -50 resets sooner (right below the baseplate), -500 lets them fall much further. It goes back to -150 when the game restarts.'},
  fov:{c:'pl',l:'set camera fov to _',a:['80'],tip:'Sets how wide the camera sees, from 30 (zoomed in) to 120 (very wide). The default is 70. It goes back to the game setting when the game restarts.'},
+ spawnon:{c:'pl',l:'turn on spawnpoint _',a:['SpawnPoint'],dd:{0:'spawn'},tip:'Turns a spawnpoint on, so players can appear on it when the game starts or resets. Make spawnpoints with the + next to World in the Explorer. If several are on, one is picked at random.'},
+ spawnrep:{c:'pl',l:'replace current spawnpoint with _',a:['SpawnPoint'],dd:{0:'spawn'},tip:'Turns this spawnpoint on and turns every other spawnpoint off, so it becomes the only place players appear. The change goes back to the part settings when the game restarts.'},
+ spawnoff:{c:'pl',l:'turn off spawnpoint _',a:['SpawnPoint'],dd:{0:'spawn'},tip:'Turns a spawnpoint off, so players no longer appear on it. If every spawnpoint is off, players appear where the character was placed.'},
  pspeed:{c:'pl',l:'set player speed to _',a:['24'],tip:'How fast the player walks (default 16).'},
  playercol:{c:'pl',l:'set player collisions to _',a:['true'],dd:{0:'bool'},tip:'true: players can not walk through each other, so you bump into the other players in the server. false: players walk straight through each other (the default). It goes back to false when the game restarts.'},
  damageplayer:{c:'pl',l:'damage player _ by _',a:['toucher','10'],tip:'Takes health off a player (max health is 100). Type the player name, or a variable like toucher inside "when this block touched". At 0 health the player dies and respawns with full health. The health bar only shows when health is below 100.'},
@@ -801,7 +804,7 @@ function newVarDlg(done){mdl('New variable',function(c,close){const n=el('input'
 function ddSel(b,i,kind,ro){
   if(ro){const n=el('input');n.value=b.a[i];n.readOnly=true;fit(n);return n}
   const s=el('select','ddsel');s.title=kind==='var'?'Pick a variable, or make a new one':'';
-  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='img'?[['none','none']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})):kind==='guipart'?[['background','background'],['text','text'],['border','border']]:kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='ease'?EASEOPT.slice():kind==='tset'?TSETOPT.slice():kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='bool'?[['true','true'],['false','false']]:kind==='item'?itemsL().map(function(i){return [i.name,i.name]}):varList().map(function(v){return [v,v]});
+  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='img'?[['none','none']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})):kind==='guipart'?[['background','background'],['text','text'],['border','border']]:kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='ease'?EASEOPT.slice():kind==='tset'?TSETOPT.slice():kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='bool'?[['true','true'],['false','false']]:kind==='spawn'?P.parts.filter(function(q){return q.spawn&&!q.parent}).map(function(q){return [q.name,q.name]}):kind==='item'?itemsL().map(function(i){return [i.name,i.name]}):varList().map(function(v){return [v,v]});
     if(kind==='item'&&o.length&&!o.some(function(q){return q[0]===String(b.a[i])})){b.a[i]=o[0][0];save()}
     if(kind==='item'&&!o.length)o=[[String(b.a[i]),'(make an item first)']];
     const cur=String(b.a[i]);if(cur&&!o.some(function(q){return q[0]===cur}))o.unshift([cur,cur]);
@@ -809,7 +812,7 @@ function ddSel(b,i,kind,ro){
     if(kind==='var'){const nw=el('option','','\uFF0B New variable\u2026');nw.value='\u0001new';s.append(nw)}
     s.value=cur};
   fill();
-  s.onpointerdown=function(e){e.stopPropagation();if(kind==='var'||kind==='gui'||kind==='guit'||kind==='img'||kind==='item')fill()};
+  s.onpointerdown=function(e){e.stopPropagation();if(kind==='var'||kind==='gui'||kind==='guit'||kind==='img'||kind==='item'||kind==='spawn')fill()};
   s.onchange=function(){
     if(s.value==='\u0001new'){newVarDlg(function(v){if(v){b.a[i]=v;save();rend();renderParts()}else fill()});return}
     b.a[i]=s.value;reser();save();view()};
@@ -990,7 +993,7 @@ function dEnd(e){removeEventListener('pointermove',dMove);removeEventListener('p
 
 
 /* BricBloc as text */
-const KW={giveattr:'give attribute',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
+const KW={spawnon:'turn on spawnpoint',spawnrep:'replace current spawnpoint with',spawnoff:'turn off spawnpoint',giveattr:'give attribute',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',fov:'set camera fov',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
 
@@ -1231,6 +1234,10 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
       AVR[key]=Math.max(0,Math.min(100,n(1)))/100;liveVol();break}
     case'guishow':case'guihide':case'guitext':case'guivis':case'guitoggle':{const gg=(String(a[0]).trim().toLowerCase()==='this'&&guiById(o))?[guiById(o)]:guiByName(a[0]);if(!gg.length){log('Error: no GUI named "'+String(a[0]).trim()+'". Add one under GUI in the Explorer.');break}
       gg.forEach(function(g){const r=GR[g.id]=GR[g.id]||{};if(b.t==='guitext')r.text=String(val(a[1]===undefined?'':a[1],S));else if(b.t==='guivis'){const tv=val(a[1],S);r.vis=!(tv===false||tv===0||tv===''||String(tv).toLowerCase()==='false')}else if(b.t==='guitoggle')r.vis=!guiState(g).vis;else r.vis=b.t==='guishow'});renderGui();break}
+    case'spawnon':case'spawnoff':case'spawnrep':{const nm=String(val(a[0],S)).trim().toLowerCase(),ms=P.parts.filter(function(q){return q.spawn&&!q.parent&&String(q.name).trim().toLowerCase()===nm});
+      if(!ms.length){log('Error: no spawnpoint named "'+String(val(a[0],S)).trim()+'". Add one with the + next to World in the Explorer.');break}
+      if(b.t==='spawnrep')P.parts.forEach(function(q){if(q.spawn)SPW[q.id]=false});
+      ms.forEach(function(q){SPW[q.id]=b.t!=='spawnoff'});spawnVis();break}
     case'stopaud':{const nm=a[0].trim()==='all'?'all':audKey(a[0]);if(!nm||nm==='all')stopAudio();else if(!P.assets.audio[nm])log(audNone(nm));else stopAudio(nm);break}}
   draw()}
 
@@ -1275,7 +1282,7 @@ function addFace(m,p){if(!FACE){const c=document.createElement('canvas');c.width
 // S is the avatar's offset from where it was placed. x right, y forward (toward -z), h height, dir 90 faces forward.
 function initVars(){const o={};((P&&P.vars)||[]).forEach(function(n){o[n]=0});return o}
 function fresh(){return {items:[],heldItem:null,oth:[],x:0,y:0,h:0,vy:0,gr:true,wt:0,jt:0,pvx:0,pvz:0,bp:{},air:false,mv:false,dir:90,col:null,say:'',v:initVars(),fn:{},stop:false,d:0,sl:false,sla:false,slo:0,pcol:false,xeq:{}}}
-let S=fresh(),running=false;let RV={},RD={},RVY={},NP=[],RY={},CO={},TM=new Map();
+let SPW={};let S=fresh(),running=false;let RV={},RD={},RVY={},NP=[],RY={},CO={},TM=new Map();
 function draw(){const T=byId(P.avId),g=T&&J[T.id];
   for(const id in RO){const r=byId(id);if(r&&J[id]&&id!==P.avId)J[id].position.set(r.pos[0]+RO[id][0],r.pos[1]+(RY[id]||0),r.pos[2]+RO[id][1])}
   if(!g)return;const of=g.userData.off||[0,0,0];g.position.set(T.pos[0]+S.x+of[0],T.pos[1]+S.h+of[1],T.pos[2]-S.y+of[2]);const ro=g.userData.rot||[0,0,0],D=Math.PI/180;g.rotation.set(ro[0]*D,(S.dir-90)*D+ro[1]*D,ro[2]*D);
@@ -1467,7 +1474,7 @@ function rebuildParts(){
   if(hline.parent)hline.parent.remove(hline);hov=null;if(PG){scene.remove(PG);freeTree(PG)}
   PG=new THREE.Group();scene.add(PG);J={};M={};
   P.parts.forEach(function(p){const g=new THREE.Group(),v=piv(p),geo=((p.av&&!p.acc)||p.sm||(p.parent&&/^(Head|Torso|[RL](arm|leg))$/.test(p.name)))?avGeo(p):(p.shape==='union'&&p.un?unionGeo(p):hasTex(p)?shapeGeo(p):cachedGeo(p,false,shapeGeo)),md=MATS[p.mat]||MATS.plastic;if(TX[p.mat]&&!hasTex(p))boxUV(geo,md.ts||6);const m=new THREE.Mesh(geo,mkMat(p));m.receiveShadow=true;m.castShadow=!md.op&&!p.stab&&!(p.tr>.3);m.layers.enable(1);
-    m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);m.userData.id=p.id;if(p.face)addFace(m,p);if(p.stab)m.visible=false;if(p.light&&!p.stab){const L=new THREE.PointLight(p.light.c,p.light.i,p.light.r,1);L.userData.isL=1;m.add(L)}if(p.shape==='mesh'){m.material.visible=false;m.castShadow=false;try{meshHook(m,p)}catch(e){}}g.add(m);J[p.id]=g;M[p.id]=m});
+    m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);m.userData.id=p.id;if(p.face)addFace(m,p);if(p.spawn&&!p.stab)try{spawnImg(m,p)}catch(e){}if(p.stab)m.visible=false;if(p.light&&!p.stab){const L=new THREE.PointLight(p.light.c,p.light.i,p.light.r,1);L.userData.isL=1;m.add(L)}if(p.shape==='mesh'){m.material.visible=false;m.castShadow=false;try{meshHook(m,p)}catch(e){}}g.add(m);J[p.id]=g;M[p.id]=m});
   const hk={};P.parts.forEach(function(p){if(p.parent)hk[p.parent]=1});
   P.parts.forEach(function(p){const g=J[p.id],v=piv(p),pa=p.parent&&byId(p.parent);
     if(pa){const q=piv(pa);g.position.set(v[0]-q[0],v[1]-q[1],v[2]-q[2]);J[pa.id].add(g)}else{g.position.set(v[0],v[1],v[2]);g.visible=inW(p);PG.add(g)}g.userData.base=g.position.clone();g.userData.gry=!p.parent&&hk[p.id]&&p.ry?p.ry*Math.PI/180:0});
@@ -2008,7 +2015,7 @@ function props0(){const d=$('p-props');d.replaceChildren();if(selFold&&!sel.leng
   if(!p.stab&&(p.acc||(!p.av&&!p.parent&&!p.model))){const as=el('select');[['','Not an accessory'],['hat','Hat (top of the head)'],['face','Face accessory (front of the head)'],['neck','Neck (where the head meets the body)'],['back','Back (on the back)']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];as.append(op)});
     as.value=p.acc||'';as.onchange=function(){setAcc(p,as.value)};d.append(lab('Accessory (wear it on your character)',as));
     if(p.acc)d.append(el('p','note','It is welded to your character, shows on you and on other players, and has no collision. Change Position and Size above to fit it.'))}
-  if(p.stab)d.append(el('p','note','Stabilizer: holds the rig up so the Torso can move and rotate freely. It is hidden and is never animated.'));lightBox(d,p);lightBox(d,p);tagBox(d,p);contSel(d)}
+  if(p.stab)d.append(el('p','note','Stabilizer: holds the rig up so the Torso can move and rotate freely. It is hidden and is never animated.'));lightBox(d,p);lightBox(d,p);spawnBox(d,p);tagBox(d,p);contSel(d)}
 $('p-add').onclick=function(){newPart()};$('p-shape').onchange=function(){if(this.value)newPart(this.value);this.value=''};$('p-group').onclick=group;$('p-ungroup').onclick=ungroupKey;$('p-union').onclick=unionMake;$('p-split').onclick=unionSplit;$('p-copy').onclick=copySel;$('p-paste').onclick=pasteClip;$('p-dup').onclick=dupSel;
 $('p-weld').onclick=function(){if(sel.length<2){msg('Select the Torso first, then ctrl-click the parts to weld to it.');return}
   const t=byId(sel[0]);let n=0;
@@ -2955,10 +2962,38 @@ function physics(dt){const T=byId(P.avId);if(!T)return;const f0=feet0(),g=ground
   if(S.vy<=0&&g>-1e8&&f0+nh<=g){S.h=g-f0;S.vy=0;S.gr=true}else{S.h=nh;S.gr=false}}
   {const cur=f0+S.h;/* S.fp = highest point since leaving the ground; landing from higher than a script's height fires 'when player hits ground' */
    if(S.fly||S.rag)S.fp=null;else if(S.gr){if(!wasGr&&S.fp!=null){const d=S.fp-cur;S.fp=null;landEvt(d)}S.fp=null}else if(S.fp==null||wasGr||cur>S.fp)S.fp=cur}
-  if(f0+S.h<(S.voidY!=null?S.voidY:-150)){S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0;S.fp=null}}
+  if(f0+S.h<(S.voidY!=null?S.voidY:-150)){if(!spawnHere()){S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0;S.fp=null}}}
 function landEvt(d){if(!(running||playing)||!(d>0))return;
   P.scripts.filter(function(sc){return sc[0].t==='landed'}).forEach(function(sc){let H=Number(val(sc[0].a[0],S));if(!Number.isFinite(H))H=20;if(d>H){S.v.fallheight=Math.round(d*10)/10;fireScript(sc)}})}
 
+/* ===== Spawnpoints: parts with p.spawn. Players appear on a random turned-on one when the game starts, resets or they respawn. ===== */
+let SPTEX=null;
+function spawnTex(){if(!SPTEX){const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');x.lineCap='round';x.lineJoin='round';
+    x.strokeStyle='#00e08a';x.lineWidth=14;x.beginPath();x.arc(128,128,92,0,7);x.stroke();
+    x.strokeStyle='rgba(255,255,255,.92)';x.lineWidth=6;x.beginPath();x.arc(128,128,70,0,7);x.stroke();
+    x.lineWidth=12;for(let i=0;i<4;i++){const a=Math.PI/4+i*Math.PI/2,ca=Math.cos(a),sa=Math.sin(a);x.beginPath();x.moveTo(128+ca*104,128+sa*104);x.lineTo(128+ca*122,128+sa*122);x.stroke()}
+    x.strokeStyle='#ffffff';x.lineWidth=16;[96,130].forEach(function(y){x.beginPath();x.moveTo(96,y);x.lineTo(128,y+30);x.lineTo(160,y);x.stroke()});
+    SPTEX=new THREE.CanvasTexture(c);SPTEX.anisotropy=4}return SPTEX}
+function spawnOn(p){return SPW[p.id]!==undefined?SPW[p.id]:p.spawnOn!==false}
+function spawnImg(m,p){const k=Math.max(.5,Math.min(p.size[0],p.size[2])*.9),
+    pl=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:spawnTex(),transparent:true,opacity:spawnOn(p)?1:.25,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
+  pl.rotation.x=-Math.PI/2;pl.position.y=p.size[1]/2+.02;pl.scale.set(k,k,1);pl.renderOrder=1;pl.userData.spawnImg=1;m.add(pl)}
+function spawnVis(){P.parts.forEach(function(p){if(!p.spawn)return;const m=M[p.id];if(!m)return;m.children.forEach(function(c){if(c.userData.spawnImg)c.material.opacity=spawnOn(p)?1:.25})})}
+function spawnList(){return P.parts.filter(function(p){return p.spawn&&!p.parent&&!p.stab&&inW(p)&&!gone(p)&&spawnOn(p)})}
+/* Puts the player on a random turned-on spawnpoint. Returns false when there is none (the caller then uses the old default). */
+function spawnHere(){const T=byId(P.avId);if(!T)return false;const l=spawnList();if(!l.length)return false;
+  const p=l[Math.floor(Math.random()*l.length)],o=RO[p.id]||[0,0],jx=(Math.random()-.5)*p.size[0]*.4,jz=(Math.random()-.5)*p.size[2]*.4;
+  S.x=p.pos[0]+o[0]+jx-T.pos[0];S.y=T.pos[2]-(p.pos[2]+o[1]+jz);S.h=p.pos[1]+(RY[p.id]||0)+p.size[1]/2+.3-feet0();
+  S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0;S.gr=false;S.fp=null;S.ch=S.h;return true}
+function addSpawn(){if(animOn())return;const p=newPart();if(!p)return;let n=1,nm='SpawnPoint';while(P.parts.some(function(q){return q!==p&&q.name===nm}))nm='SpawnPoint'+(++n);
+  p.name=nm;p.spawn=true;p.size=[6,1,6];p.color='#4a4f56';p.pos[1]=Math.max(.5,p.pos[1]-.5);sel=[p.id];selModel=null;
+  msg('Added spawnpoint '+nm+'. Players appear on a random turned-on spawnpoint when the game starts or resets. The blocks "turn on / turn off / replace spawnpoint" choose which ones count.');all();return p}
+function spawnBox(d,p){if(p.av||p.stab||p.parent||p.shape==='mesh')return;const c=el('input');c.type='checkbox';c.checked=!!p.spawn;
+  c.onchange=function(){if(c.checked)p.spawn=true;else{delete p.spawn;delete p.spawnOn}save();rebuildParts();props()};
+  const l=el('label','','Spawnpoint (players appear on top of it)');l.append(c);d.append(l);
+  if(p.spawn){const c2=el('input');c2.type='checkbox';c2.checked=p.spawnOn!==false;c2.onchange=function(){if(c2.checked)delete p.spawnOn;else p.spawnOn=false;save();rebuildParts()};
+    const l2=el('label','','Turned on at the start');l2.append(c2);d.append(l2);
+    d.append(el('p','note','When the game starts or you respawn, you appear on a random spawnpoint that is turned on. If none is on, you appear where your character was placed.'))}}
 /* ===== Atmosphere: sky colour, time of day, brightness, fog ===== */
 /* ===== Entities: nearest players and rigs, ragdoll, kill, push, size ===== */
 let RAG={},RSZ={},RYAW={},RB={};
@@ -3017,7 +3052,7 @@ function hpHud(){if(!hpEl){hpEl=document.createElement('div');hpEl.id='hpbar';
   const h=hpGet('main');if(h>=MAXHP){hpEl.style.display='none';return}
   hpEl.style.display='block';try{const pb=document.getElementById('bb-pl'),r=pb&&pb.getBoundingClientRect();hpEl.style.top=((r&&r.height>0)?Math.round(r.bottom)+8:52)+'px'}catch(e){}hpTxt.textContent=Math.ceil(h)+' / '+MAXHP;hpFill.style.width=(h/MAXHP*100)+'%';hpFill.style.background=h>60?'#3ccf5e':h>30?'#f5b400':'#ff4d3d'}
 setInterval(hpHud,100);
-function finishDead(key,T){if(key==='main'){S.hp=MAXHP;S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0;S.rag=false;delete RAG.main;T.g.rotation.z=0;limbsRest(T,T.root);log('You were respawned.')}
+function finishDead(key,T){if(key==='main'){S.hp=MAXHP;S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0;S.rag=false;delete RAG.main;spawnHere();T.g.rotation.z=0;limbsRest(T,T.root);log('You were respawned.')}
   else{RAG[key].gone=true;T.g.visible=false;if(T.np)T.np.tag.visible=false}}
 /* ===== Physics ragdoll: every part becomes a rigid body, joined at its pivot, with joint limits. They fall, land and tumble for real. ===== */
 const qm=function(a,b){return [a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],a[3]*b[3]-a[0]*b[0]-a[1]*b[1]-a[2]*b[2]]},
@@ -3337,7 +3372,7 @@ $('chat-tg').onclick=function(){$('chat').classList.toggle('min')};
 /* ===== Game menu: press Esc while playing or running ===== */
 let menuEl=null,gmPlFill=null;
 function gmPlRefresh(){if(gmPlFill)try{gmPlFill()}catch(e){}}/* redraws the Players list in the game menu when someone joins or leaves */
-function respawnMe(){S.hp=MAXHP;delete RAG.main;S.rag=false;S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0;S.gr=false;S.fp=null;S.ch=undefined;S.pd=null;const T=entTargets('main');if(T)limbsRest(T,T.root);chatSys('You respawned.')}
+function respawnMe(){S.hp=MAXHP;delete RAG.main;S.rag=false;S.x=0;S.y=0;S.h=12;S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0;S.gr=false;S.fp=null;S.ch=undefined;S.pd=null;spawnHere();const T=entTargets('main');if(T)limbsRest(T,T.root);chatSys('You respawned.')}
 function closeGM(){gmPlFill=null;if(menuEl){menuEl.remove();menuEl=null}}
 function openGM(){if(menuEl||!(running||playing))return;for(const k in keys)keys[k]=false;look=false;if(document.pointerLockElement)document.exitPointerLock();
   const ov=el('div','gm'),pn=el('div','gmp');ov.append(pn);
@@ -3755,6 +3790,7 @@ function addGroups(c){if(c.t==='gui'){const O2=[];[['text','Text','A text label 
       O.push(mi('\u266B','#d9622b','Sound effects','Built-in sounds: coin, jump, laser, explosion and more',openSfx))}
     if(k==='gui')[['text','Text','A text label on the screen'],['button','Button','Click it to run "when gui clicked" scripts'],['frame','Frame','A coloured box, good as a panel'],['image','Image','Shows a picture from Assets']].forEach(function(q){const T=GTYPE[q[0]];O.push(mi(T.i,T.c,q[1],q[2],function(){addGui(q[0])}))});
     if(k==='world')O.push(mi('\u263A','#2fa95a','Humanoid rig','Torso, head, arms and legs, ready to animate',function(){newRig()}));
+    if(k==='world')O.push(mi('\u25CE','#00b06f','Spawnpoint','A pad with a picture on top. Players appear on a random turned-on one when the game starts or resets',function(){addSpawn()}));
     if(k==='squads')O.push(mi('\u2691','#e5484d','Squad','A team players can join',function(){P.squads.push({id:'q'+P.nid++,name:'Squad '+(P.squads.length+1),color:'#'+Math.floor(Math.random()*0xffffff).toString(16).padStart(6,'0')});save();renderParts()}))}
   else{
     O.push(mi('\u25A2','#3b82f6','Part',c.t==='model'?'Add a part to this model':'A new part next to this one',function(){addPartNear(c)}));
@@ -3900,8 +3936,8 @@ function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing);try{hotRender()}catch(e){}try{renderGui()}catch(e){}}
 function setRun(v){running=v;sync()}
-function resetWorld(){Object.keys(ATTR).forEach(function(k){delete ATTR[k]});KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();RO={};RV={};RD={};RVY={};RY={};CO={};TM=new Map();RAG={};RSZ={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
-function boot(my){reser();const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
+function resetWorld(){Object.keys(ATTR).forEach(function(k){delete ATTR[k]});KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();SPW={};RO={};RV={};RD={};RVY={};RY={};CO={};TM=new Map();RAG={};RSZ={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
+function boot(my){reser();try{spawnHere()}catch(e){}const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
   hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
   setTimeout(function(){if(my===S&&(running||playing))firePJ('pjoin',P.player.name)},120);
   return {hs:hs,done:Promise.all(hs.filter(function(s){return s[0].t==='start'}).map(function(s){return ex(s.slice(1),my,s[0].o).catch(function(e){log('Error: '+e)})}))}}
@@ -4629,8 +4665,14 @@ async function netJoin(){
     const lob=NET.lob=sb.channel('bbl:'+gid,{config:{presence:{key:NET.id}}});
     await new Promise(function(ok){let d=0;const fin=function(){if(!d){d=1;ok()}};lob.on('presence',{event:'sync'},function(){});
       lob.subscribe(function(st){if(st==='SUBSCRIBED')setTimeout(fin,1200);else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')fin()});setTimeout(fin,4000)});
+    /* Same account already in this game (any server)? Then this newcomer is kicked at once: no join message, nobody sees them. */
+    const myN=String(ME&&ME.username||'').trim().toLowerCase(),dupOf=function(older){let hit=false;try{const q=lob.presenceState();Object.keys(q).forEach(function(k){if(k===NET.id)return;(q[k]||[]).forEach(function(m){
+        if(!m||!m.n||String(m.n).trim().toLowerCase()!==myN)return;if(!older)hit=true;else if((+m.at||0)<NET.at||((+m.at||0)===NET.at&&k<NET.id))hit=true})})}catch(e){}return hit},
+      nice=function(){NET.on=false;netLeave().then(function(){endGameFor('kicked','Nice try')})};NET.at=Date.now();
+    if(myN&&dupOf(false)){nice();return}
     const cn={},ps=lob.presenceState();Object.keys(ps).forEach(function(k){ps[k].forEach(function(m){if(m.sid)cn[m.sid]=(cn[m.sid]||0)+1})});
-    let n=1;const mxs=Math.max(1,Math.min(30,Math.round(+P.maxp)||NETMAX));while((cn['s'+n]||0)>=mxs)n++;NET.sid='s'+n;await lob.track({sid:NET.sid});
+    let n=1;const mxs=Math.max(1,Math.min(30,Math.round(+P.maxp)||NETMAX));while((cn['s'+n]||0)>=mxs)n++;NET.sid='s'+n;await lob.track({sid:NET.sid,n:ME.username,at:NET.at});
+    if(myN){await new Promise(function(r){setTimeout(r,900)});if(!NET.lob)return;if(dupOf(true)){nice();return}}/* two joined at the same moment: the later one goes */
     const ch=NET.ch=sb.channel('bbs:'+gid+':'+NET.sid,{config:{presence:{key:NET.id},broadcast:{self:false}}});
     ch.on('broadcast',{event:'p'},function(m){netRecv(m.payload)});
     ch.on('broadcast',{event:'bye'},function(m){const p=m.payload;if(p&&p.id&&p.id!==NET.id)netDrop(p.id)});/* a player pressed Leave: drop them right away */
