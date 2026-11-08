@@ -249,6 +249,8 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .hb{width:92px;height:92px;border-radius:8px;background:#3a3c3f;display:grid;place-items:center;transition:background .15s}
 .ht:hover .hb{background:#46484b}
 .hb b{font-size:2.6rem;font-weight:500;line-height:1}
+.hb img.fav{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
+.frow img.fav{width:34px;height:42px;object-fit:contain;flex:none;display:block}
 .hn{display:block;margin-top:6px;font-size:.8rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mf{position:relative;width:36px;height:56px;display:block}
 .mf i,.mf::before,.mf::after{position:absolute;display:block;border:1px solid rgba(0,0,0,.4);border-radius:2px}
@@ -630,7 +632,7 @@ function makeDemo(){
       if(d.users.some(function(u){return u.email===f.email.toLowerCase()}))throw new Error('That email already has an account.');
       const u={id:'u'+Date.now(),username:f.username,email:f.email.toLowerCase(),pw:await sha(f.password),color:'#ff6b57',contact:'',age:null};d.users.push(u);d.session=u.id;save(d);return {profile:prof(u)}},
     async logIn(f){const d=load();const h=await sha(f.password);const u=d.users.find(function(x){return x.email===f.email.toLowerCase()&&x.pw===h});if(!u)throw new Error('Wrong email or password.');d.session=u.id;save(d);return {profile:prof(u)}},
-    async friends(id){const d=load();return (d.fr||[]).filter(f=>f.a===id||f.b===id).map(f=>{const o=d.users.find(u=>u.id===(f.a===id?f.b:f.a))||{};return {fid:f.id,name:o.username||'?',color:o.color||'#999',status:f.status,incoming:f.b===id}})},
+    async friends(id){const d=load();return (d.fr||[]).filter(f=>f.a===id||f.b===id).map(f=>{const o=d.users.find(u=>u.id===(f.a===id?f.b:f.a))||{};return {fid:f.id,name:o.username||'?',color:o.color||'#999',av:normAv(o.av),status:f.status,incoming:f.b===id}})},
     async addFriend(id,n){const d=load();d.fr=d.fr||[];const t=d.users.find(u=>u.username.toLowerCase()===n.toLowerCase());if(!t)return {ok:false,reason:'No player with that name.'};if(t.id===id)return {ok:false,reason:'You cannot add yourself.'};
       const ex=d.fr.find(f=>(f.a===id&&f.b===t.id)||(f.a===t.id&&f.b===id));
       if(ex){if(ex.status==='accepted')return {ok:false,reason:'Already friends.'};if(ex.a===t.id){ex.status='accepted';save(d);return {ok:true,msg:'You are now friends with '+t.username+'!'}}return {ok:false,reason:'Request already sent.'}}
@@ -677,7 +679,7 @@ function makeSupa(){
     async checkUsername(n){const p=nameProblem(n);if(p)return p;const r=await sb.rpc('check_username',{p_name:n});if(r.error)throw r.error;return r.data.ok?null:r.data.reason},
     async signUp(f){const p=nameProblem(f.username);if(p)throw new Error(p);return viaFn({action:'signup',username:f.username,password:f.password})},
     async logIn(f){if(f.username.indexOf('@')>=0){const r=await sb.auth.signInWithPassword({email:f.username,password:f.password});if(r.error)throw r.error;return {profile:await profile(r.data.user.id,r.data.user)}}return viaFn({action:'login',username:f.username,password:f.password})},
-    async friends(id){const r=await sb.rpc('list_friends');if(r.error)throw r.error;return r.data.map(x=>({fid:x.fid,name:x.username,color:x.avatar_color,status:x.status,incoming:x.incoming}))},
+    async friends(id){const r=await sb.rpc('list_friends');if(r.error)throw r.error;return r.data.map(x=>{let a=x.avatar;if(typeof a==='string'){try{a=JSON.parse(a)}catch(e){a=null}}return {fid:x.fid,name:x.username,color:x.avatar_color,av:normAv(a),status:x.status,incoming:x.incoming}})},
     async addFriend(id,n){const r=await sb.rpc('send_friend_request',{p_username:n});if(r.error)throw r.error;return r.data},
     async answerFriend(id,fid,yes){const r=await sb.rpc('answer_friend',{p_id:fid,p_accept:yes});if(r.error)throw r.error},
     async listGames(id){const f=['id,name,owner_id,owner_name,vis,updated_at,thumb,official,plays','id,name,owner_id,owner_name,vis,updated_at,thumb,official','id,name,owner_id,owner_name,vis,updated_at,thumb','id,name,owner_id,owner_name,vis,updated_at'];let r;
@@ -698,7 +700,7 @@ function makeSupa(){
     async bankRedeem(id,code){const gift=/^GFT-/i.test(String(code).trim()),r=await sb.rpc(gift?'bank_redeem_gift':'bank_redeem',{p_code:code});if(r.error)throw r.error;return r.data},
     async bankGift(id,n){const r=await sb.rpc('bank_admin_gift',{p_amount:n});if(r.error)throw r.error;return r.data},
     async bankTake(id,n){const r=await sb.rpc('bank_admin_take',{p_amount:n});if(r.error)throw r.error;return r.data},
-    async setAvatar(id,a){const r=await sb.auth.updateUser({data:{avatar:a}});if(r.error)throw r.error},
+    async setAvatar(id,a){const r=await sb.auth.updateUser({data:{avatar:a}});if(r.error)throw r.error;try{await sb.from('profiles').update({avatar:a}).eq('id',id)}catch(e){}},
     async setAccount(id,a,cur){const change=!!a.email&&a.email.toLowerCase()!==(cur||'').toLowerCase();const upd={data:{age:a.age}};if(change)upd.email=a.email;const r=await sb.auth.updateUser(upd,change?{emailRedirectTo:location.origin+location.pathname}:undefined);if(r.error)throw r.error;return {pending:change}},
     async setColor(id,c){const r=await sb.from('profiles').update({avatar_color:c}).eq('id',id);if(r.error)throw r.error},
     async submitRun(id,level,ms,coins){const r=await sb.rpc('submit_run',{p_level:level,p_time_ms:ms,p_coins:coins});if(r.error)throw r.error;return r.data},
@@ -828,7 +830,23 @@ $('f-acct').addEventListener('submit',async function(e){e.preventDefault();
   $('b-acct').disabled=false});
 $('n-avatar').onclick=function(){nav('avatar');openAvatarPage()};$('n-bank').onclick=function(){nav('bank');loadBank()};$('n-settings').onclick=function(){nav('settings')};
 $('n-home').onclick=function(){nav('home');loadGames()};$('n-discover').onclick=function(){nav('discover');loadGames()};$('n-friends').onclick=function(){nav('friends');loadFriends()};
-function frow(r,btns,tag){const d=document.createElement('div');d.className='frow';const dot=document.createElement('span');dot.className='dot';dot.style.background=r.color;const n=document.createElement('span');n.className='nm';n.textContent=r.name+(tag||'');d.append(dot,n);
+/* Friend avatars: draw the real 3D avatar (same makeAvatar as the Avatar page) into a small picture */
+const FAV={r:null,sc:null,cam:null,fail:false,cache:{}};
+function friendAvatar(color,av){
+  if(FAV.fail)return null;
+  av=normAv(av);const key=JSON.stringify([color,av.skin,av.pants,av.eq,Object.keys(FBXC).length]);
+  if(FAV.cache[key])return FAV.cache[key];
+  try{
+    if(!FAV.r){
+      FAV.r=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});FAV.r.setPixelRatio(1);FAV.r.setSize(180,230,false);FAV.r.setClearColor(0x000000,0);
+      FAV.sc=new THREE.Scene();FAV.sc.add(new THREE.HemisphereLight(0xffffff,0x8899aa,.95));const dl=new THREE.DirectionalLight(0xfff3df,.8);dl.position.set(3,6,5);FAV.sc.add(dl);
+      FAV.cam=new THREE.PerspectiveCamera(30,180/230,.1,50);FAV.cam.position.set(0,1.15,6.4);FAV.cam.lookAt(0,1.1,0)}
+    const a=makeAvatar(color,av.eq,av);a.g.rotation.y=.35;FAV.sc.add(a.g);
+    FAV.r.render(FAV.sc,FAV.cam);const u=FAV.r.domElement.toDataURL('image/png');FAV.sc.remove(a.g);
+    FAV.cache[key]=u;return u}
+  catch(e){FAV.fail=true;return null}}
+function favImg(r){const u=friendAvatar(r.color,r.av);if(!u)return null;const i=document.createElement('img');i.className='fav';i.alt='';i.src=u;return i}
+function frow(r,btns,tag){const d=document.createElement('div');d.className='frow';const dot=favImg(r)||document.createElement('span');if(!dot.src){dot.className='dot';dot.style.background=r.color}const n=document.createElement('span');n.className='nm';n.textContent=r.name+(tag||'');d.append(dot,n);
   btns.forEach(function(b){const x=document.createElement('button');x.type='button';x.className='btn small'+(b[2]?' ghost':'');x.textContent=b[0];x.onclick=async function(){try{await api.answerFriend(me.id,r.fid,b[1])}catch(e){toast(errText(e))}loadFriends()};d.append(x)});return d}
 function fill(el,rows,empty){el.innerHTML='';if(!rows.length){const p=document.createElement('p');p.className='empty';p.textContent=empty;el.append(p);return}rows.forEach(function(x){el.append(x)})}
 async function loadFriends(){
@@ -838,16 +856,17 @@ async function loadFriends(){
     fill($('f-list'),rows.filter(function(r){return r.status==='accepted'}).map(function(r){return frow(r,[['Remove',false,1]])}),'No friends yet. Add someone by username above.');
     $('n-badge').hidden=!inc.length;$('n-badge').textContent=inc.length;
     const acc=rows.filter(function(r){return r.status==='accepted'});$('h-fh').textContent='Friends ('+acc.length+')';
-    $('h-fr').replaceChildren.apply($('h-fr'),[tile('Add Friends',0,1)].concat(acc.map(function(r){return tile(r.name,r.color)})))}
+    $('h-fr').replaceChildren.apply($('h-fr'),[tile('Add Friends',0,1)].concat(acc.map(function(r){return tile(r.name,r.color,0,r)})))}
   catch(e){$('n-badge').hidden=true;const p=document.createElement('p');p.className='empty';p.textContent=errText(e);$('f-req').replaceChildren(p);$('f-list').replaceChildren()}}
 $('f-add').addEventListener('submit',async function(e){e.preventDefault();const n=$('f-name').value.trim(),m=$('f-msg');if(!n)return;
   try{const r=await api.addFriend(me.id,n);m.className='hint '+(r.ok?'ok':'bad');m.textContent=r.ok?r.msg:r.reason;if(r.ok)$('f-name').value='';loadFriends()}catch(er){m.className='hint bad';m.textContent=errText(er)}});
 $('b-out').onclick=async function(){try{await api.logOut()}catch(e){}store.del('brixblox-me');me=null;recs={};show('auth');tab(false)};
 
 /* ===== 5b. Home friend tiles ===== */
-function tile(name,color,plus){const d=document.createElement('button');d.type='button';d.className='ht';
+function tile(name,color,plus,r){const d=document.createElement('button');d.type='button';d.className='ht';
   d.innerHTML='<span class="hb">'+(plus?'<b>+</b>':'<span class="mf"><i class="mh"></i><i class="mt"></i><i class="ml"></i></span>')+'</span><span class="hn"></span>';
   d.lastChild.textContent=name;if(color)d.style.setProperty('--c',color);
+  if(r){const im=favImg(r);if(im)d.firstChild.replaceChildren(im)}
   d.onclick=function(){nav('friends');loadFriends();if(plus)$('f-name').focus()};return d}
 
 /* ===== 5c. Games: published games from BrixBlox Studio show on the front page ===== */
@@ -1057,7 +1076,7 @@ async function loadItems(){
         Object.keys(av.eq).forEach(function(k){const l=eqArr(av.eq[k]);if(l.indexOf(r.id)>=0){av.eq[k]=l.filter(function(x){return x!==r.id});ch=true}})});
       if(ch){if(pv.tryEq)pv.tryEq=null;await saveAv()}}
   }catch(e){ITEMS=[]}
-  if(me){pvRebuild();if(!$('p-avatar').hidden)paintShop()}}
+  if(me){pvRebuild();if(!$('p-avatar').hidden)paintShop();loadFriends()}}
 function makeAvatar(color,eq,look){
   look=look||{};const g=new THREE.Group(),skin=look.skin||DEF_SKIN,leg=look.pants||DEF_PANTS,S=.34,fx={};
   /* Same body as the Studio character: sizes are in studs, then scaled by S */
