@@ -683,7 +683,7 @@ function makeSupa(){
     async friends(id){const r=await sb.rpc('list_friends');if(r.error)throw r.error;
       const names=r.data.filter(function(x){return x.status==='accepted'||x.status==='pending'}).map(function(x){return x.username}),avs={};
       if(names.length){try{const f=await sb.rpc('friend_avatars',{p_names:names});if(f.error)console.warn('friend_avatars',f.error);else(f.data||[]).forEach(function(row){let d=row.avatar;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d=null}if(d)avs[row.username]=d})}catch(e){console.warn(e)}
-        try{const q=await sb.from('games').select('owner_name,data').like('id','sys_av_%').in('owner_name',names);
+        try{const q=await sb.from('games').select('owner_name,data').like('id','avatar_%').in('owner_name',names);
         if(q.error)console.warn('Friend avatars',q.error);else q.data.forEach(function(row){if(avs[row.owner_name])return;let d=row.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d=null}if(d)avs[row.owner_name]=d})}catch(e){}}
       return r.data.map(function(x){let a=avs[x.username]||x.avatar;if(typeof a==='string'){try{a=JSON.parse(a)}catch(e){a=null}}return {fid:x.fid,name:x.username,color:x.avatar_color,av:normAv(a),status:x.status,incoming:x.incoming}})},
     async addFriend(id,n){const r=await sb.rpc('send_friend_request',{p_username:n});if(r.error)throw r.error;return r.data},
@@ -707,7 +707,7 @@ function makeSupa(){
     async bankGift(id,n){const r=await sb.rpc('bank_admin_gift',{p_amount:n});if(r.error)throw r.error;return r.data},
     async bankTake(id,n){const r=await sb.rpc('bank_admin_take',{p_amount:n});if(r.error)throw r.error;return r.data},
     async setAvatar(id,a){const r=await sb.auth.updateUser({data:{avatar:a}});if(r.error)throw r.error;try{await this.pubAvatar(id,a)}catch(e){console.warn('Avatar share failed',e);if(!window.__avWarn){window.__avWarn=1;toast('Friends cannot see your avatar yet: '+((e&&e.message)||e))}}},
-    async pubAvatar(id,a){if(!me||!a)return;const r=await sb.from('games').upsert({id:'sys_av_'+id,owner_id:id,owner_name:me.username,name:'avatar',vis:'public',data:JSON.stringify({skin:a.skin,pants:a.pants,eq:a.eq}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
+    async pubAvatar(id,a){if(!me||!a)return;const r=await sb.from('games').upsert({id:'avatar_'+id,owner_id:id,owner_name:me.username,name:'avatar',vis:'public',data:JSON.stringify({skin:a.skin,pants:a.pants,eq:a.eq}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
     async setAccount(id,a,cur){const change=!!a.email&&a.email.toLowerCase()!==(cur||'').toLowerCase();const upd={data:{age:a.age}};if(change)upd.email=a.email;const r=await sb.auth.updateUser(upd,change?{emailRedirectTo:location.origin+location.pathname}:undefined);if(r.error)throw r.error;return {pending:change}},
     async setColor(id,c){const r=await sb.from('profiles').update({avatar_color:c}).eq('id',id);if(r.error)throw r.error},
     async submitRun(id,level,ms,coins){const r=await sb.rpc('submit_run',{p_level:level,p_time_ms:ms,p_coins:coins});if(r.error)throw r.error;return r.data},
@@ -884,7 +884,7 @@ function mkx(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=n
 async function loadGames(){
   const map={},L=localGames();
   Object.keys(L).forEach(function(id){const g=L[id];map[id]={id:id,name:g.name||'Untitled',vis:g.vis||'private',at:g.at||0,ownerId:g.owner?g.owner.id:me.id,ownerName:g.owner?g.owner.name:me.username,data:g.data,thumb:g.thumb||null}});
-  try{const rows=await api.listGames(me.id);rows.forEach(function(r){if(String(r.id).indexOf('acc_')===0||String(r.id).indexOf('sys_')===0)return;const t=Date.parse(r.updated_at)||0,o=map[r.id];
+  try{const rows=await api.listGames(me.id);rows.forEach(function(r){if(String(r.id).indexOf('acc_')===0||String(r.id).indexOf('avatar_')===0||String(r.id).indexOf('sys_')===0)return;const t=Date.parse(r.updated_at)||0,o=map[r.id];
     if(!o||t>o.at)map[r.id]={id:r.id,name:r.name||'Untitled',vis:r.vis,at:t,ownerId:r.owner_id,ownerName:r.owner_name||'?',data:o&&o.data||null,thumb:r.thumb||(o&&o.thumb)||null,official:!!r.official,plays:+r.plays||0}})}catch(e){}
   if(!me)return;
   const all=Object.keys(map).map(function(k){return map[k]}).filter(function(g){return g.vis==='public'||g.ownerId===me.id}).sort(function(a,b){return b.at-a.at});
@@ -903,7 +903,7 @@ function gfill(box,list,empty,disc){box.replaceChildren();if(!list.length){box.c
     bd.append(mkx('b','',g.name),mkx('small','','by '+(mine?'you':g.ownerName)+(mine&&!disc?'  -  '+(g.vis==='public'?'Public':'Private'):'')+(disc&&g.plays>0?'  -  '+g.plays+' play'+(g.plays===1?'':'s'):'')));
     const row=mkx('div','row'),pl=mkx('button','btn small joinb','Join');pl.type='button';pl.onclick=function(){playGame(g)};row.append(pl);
     if(mine&&!disc){const ed=mkx('button','btn ghost small','Edit');ed.type='button';ed.onclick=function(){editGame(g)};row.append(ed)}
-    if(isBB()&&g.vis==='public'&&String(g.id).indexOf('acc_')!==0&&String(g.id).indexOf('sys_')!==0){const of=mkx('button','btn ghost small',g.official?'Remove from BrixBlox':'Add to BrixBlox');of.type='button';
+    if(isBB()&&g.vis==='public'&&String(g.id).indexOf('acc_')!==0&&String(g.id).indexOf('avatar_')!==0&&String(g.id).indexOf('sys_')!==0){const of=mkx('button','btn ghost small',g.official?'Remove from BrixBlox':'Add to BrixBlox');of.type='button';
       of.onclick=async function(){of.disabled=true;try{await api.setOfficial(g.id,!g.official);toast(g.official?'Removed from Made by BrixBlox.':'Added to Made by BrixBlox.');loadGames()}catch(e){of.disabled=false;toast('Could not change that. Run the Discover SQL in Supabase first.')}};row.append(of)}
     bd.append(row);c.append(th,bd);box.append(c)});lockPaint()}
 async function gameData(g){if(g.data)return g.data;try{return await api.gameData(g.id)}catch(e){return null}}
