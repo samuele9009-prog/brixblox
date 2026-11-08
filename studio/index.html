@@ -589,6 +589,7 @@ const BD={
  guitoggle:{c:'gu',l:'toggle gui _',a:['Frame1'],dd:{0:'guit'},tip:'If the GUI is showing it hides it, and if it is hidden it shows it. Great for a menu button that opens and closes a frame.'},
  guithisclick:{c:'gu',hat:1,l:'when this gui clicked',a:[],tip:'Put this script inside a GUI (use the + on the GUI row in the Explorer, or the Scripts part of its properties). It runs when a player clicks that GUI while playing. The variable clicker holds the player name.'},
  nearplayer:{c:'en',l:'get nearest player range _ into _',a:['20','target'],dd:{1:'var'},tip:'Finds the closest player within range of this script\'s object (or of you) and stores their name in the variable. The variable is empty if nobody is close.'},
+ nearplayerof:{c:'en',l:'get nearest player to player _ range _ into _',a:['player','8','target'],dd:{2:'var'},tip:'Finds the closest OTHER player within range of the player you name and stores their name in the variable. The player you name is never picked, so a sword swing will not hit its own owner. Type a name or a variable like clicker (player means you). The variable is empty if nobody is close. Then use damage player with that variable.'},
  nearrig:{c:'en',l:'get nearest rig range _ into _',a:['20','target'],dd:{1:'var'},tip:'Finds the closest rig within range and stores its name in the variable. A rig is named after its model.'},
  nearplayers:{c:'en',l:'get nearest players _ range _ into _',a:['3','20','targets'],dd:{2:'var'},tip:'Stores up to this many player names (nearest first, separated by commas) in the variable. The variable name plus _count holds how many were found.'},
  nearrigs:{c:'en',l:'get nearest rigs _ range _ into _',a:['3','20','targets'],dd:{2:'var'},tip:'Stores up to this many rig names (nearest first, separated by commas) in the variable. The variable name plus _count holds how many were found.'},
@@ -767,6 +768,7 @@ function varList(){const v=new Set((P&&Array.isArray(P.vars))?P.vars:[]);
   const w=function(arr){arr.forEach(function(b){if(!BD[b.t])return;
     if(b.t==='set'||b.t==='change'){const n=String(b.a[0]).trim();if(n)v.add(n)}
     else if(b.t==='getcount'){const n=String(b.a[0]).trim();if(n)v.add(n)}
+    else if(b.t==='nearplayerof'){const n=String(b.a[2]).trim();if(n)v.add(n)}
     else if(/^near(player|rig)s?$/.test(b.t)){const many=b.t.slice(-1)==='s',n=String(b.a[many?2:1]).trim();if(n){v.add(n);if(many)v.add(n+'_count')}}
     if(b.k)w(b.k)})};
   P.scripts.forEach(function(sc){w(sc)});
@@ -1130,6 +1132,9 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
     case'playonce':{const au=audioFor(a[0].trim());if(!au)break;let ended=false;au.loop=false;au.currentTime=0;au.onended=function(){ended=true};
       try{await au.play()}catch(e){log('Error: the browser blocked the sound. Click the stage once, then run again.');break}
       while(!ended&&!S.stop&&!au.paused)await sl(40);au.onended=null;if(S.stop)au.pause();break}
+    case'nearplayerof':{const vn=String(a[2]).trim();if(!vn){log('Error: type a variable name to store the result in.');break}
+      const src=playersOf(String(val(a[0],S)));S.v[vn]='';if(!src.length){log('Error: no player matches "'+String(val(a[0],S))+'".');break}
+      const og={x:src[0].x,y:src[0].y,z:src[0].z,self:src[0].key},r=nearest(plist(),og,n(1),1);S.v[vn]=r.length?r[0].name:'';break}
     case'nearplayer':case'nearrig':case'nearplayers':case'nearrigs':{
       const pl=b.t==='nearplayer'||b.t==='nearplayers',many=b.t.slice(-1)==='s',og=origin(o),cnt=many?Math.max(1,Math.floor(n(0))):1,rg=n(many?1:0),vn=String(a[many?2:1]).trim();
       if(!vn){log('Error: type a variable name to store the result in.');break}
