@@ -150,5 +150,6 @@ export async function onRequestPost({ request, env }) {
 }
 
 export async function onRequest() {
-  return json({ error: 'Use POST.' }, 405);
+  // Open /api/blocks in a browser to check which version of this file is live.
+  return json({ error: 'Use POST.', version: 'premium-retry-v3' }, 405);
 }
