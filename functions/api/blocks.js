@@ -106,8 +106,8 @@ export async function onRequestPost({ request, env }) {
   if (!prompt) return json({ error: 'Type what you want first.' }, 400);
   if (!catalog) return json({ error: 'Missing the block list.' }, 400);
 
-  const model = env.GEMINI_MODEL || 'gemini-flash-latest';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const primary = env.GEMINI_MODEL || 'gemini-flash-latest';
+  const fallback = env.GEMINI_FALLBACK_MODEL || 'gemini-flash-lite-latest';
   const payload = {
     systemInstruction: { parts: [{ text: SYSTEM }] },
     contents: [{
@@ -117,17 +117,30 @@ export async function onRequestPost({ request, env }) {
     generationConfig: { responseMimeType: 'application/json', temperature: 0.3, maxOutputTokens: 8192 },
   };
 
-  let r;
-  try {
-    r = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
-      body: JSON.stringify(payload),
-    });
-  } catch {
-    return json({ error: 'Could not reach Gemini. Try again.' }, 502);
+  // Gemini sometimes answers 500/503/504 ("overloaded") for a moment. Retry the main model twice,
+  // then try a lighter backup model once, before giving up.
+  const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+  const attempts = [primary, primary, primary, fallback];
+  let r = null;
+  for (let i = 0; i < attempts.length; i++) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(attempts[i])}:generateContent`;
+    try {
+      r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      r = null;
+    }
+    if (r && r.ok) break;
+    const busy = !r || r.status === 500 || r.status === 503 || r.status === 504;
+    if (!busy) break;
+    if (i < attempts.length - 1) await sleep(i === 0 ? 800 : 1500);
   }
+  if (!r) return json({ error: 'Could not reach Gemini. Try again.' }, 502);
   if (r.status === 429) return json({ error: 'The free AI limit was hit for now. Try again in a bit.' }, 429);
+  if (r.status === 500 || r.status === 503 || r.status === 504) return json({ error: "Google's AI is very busy right now. Wait a few seconds and press Make blocks again." }, 503);
   if (!r.ok) return json({ error: `Gemini returned an error (${r.status}). Check the key and model name.` }, 502);
 
   const data = await r.json();
