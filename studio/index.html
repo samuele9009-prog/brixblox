@@ -687,7 +687,7 @@ const BD={
  say:{c:'lk',l:'say _',a:['Hello!'],tip:'Shows a chat bubble above your head for a few seconds.'},
  color:{c:'lk',l:'color _',a:['red'],raw:1},
  setimage:{c:'lk',l:'set image of this object to _',a:['none'],dd:{0:'img'},tip:'Puts a picture from Assets on the object this script belongs to (pick the picture, or none to take it off). It goes back to the part setting when the game restarts. Put the script on an object with the + next to it in the Explorer.'},
- lighting:{c:'lk',l:'set lighting to _',a:['realistic'],dd:{0:'light'},tip:'Changes the lighting of the whole game. Pick one from the list: Realistic (soft blue haze, soft shadows, film-like colours), Cinematic, Sunny, Sunset, Night, Foggy, Spooky or Vivid colours. Default puts the normal lighting back. It changes the time of day, sky colour, fog, light colour, shadows and colour tint together. It also changes the sky: every lighting has its own built-in skybox (stars at night, a glowing horizon at sunset ...). If you upload images ending in the lighting name (SkyboxLsunset, SkyboxRsunset ...), those are used instead. It goes back to default when the game restarts.'},
+ lighting:{c:'lk',l:'set lighting to _',a:['realistic'],dd:{0:'light'},tip:'Changes the lighting of the whole game. Pick one from the list: Realistic (soft blue haze, soft shadows, film-like colours), Cinematic, Sunny, Sunset, Night, Foggy, Spooky or Vivid colours. Default puts the normal lighting back. It changes the time of day, sky colour, fog, light colour, shadows and colour tint together. It also changes the sky: every lighting has its own built-in skybox (stars at night, a glowing horizon at sunset ...) and its own sun, moon and clouds (a big orange sun and pink clouds at sunset, a huge purple moon and fast clouds when spooky ...). If you upload images ending in the lighting name (SkyboxLsunset, SkyboxRsunset ...), those are used instead. It goes back to default when the game restarts.'},
  skybox:{c:'lk',l:'set skybox to _',a:['default'],dd:{0:'skybox'},tip:'Changes the sky. Upload images under Assets named SkyboxL (left), SkyboxR (right), SkyboxF (front), SkyboxBa (back), SkyboxT (top) and SkyboxBo (bottom): images with exactly these names are the default sky. Images with something after the letters (SkyboxL1, SkyboxR1 ...) are NOT used until a block picks them: pick 1 to switch every side ending in 1 at once, or pick one image to change just that side. default goes back to the plain names and none removes the skybox. It goes back to the default when the game restarts. Using this block turns off the built-in sky of the lighting until the next set lighting block.'},
  transparency:{c:'lk',l:'set transparency to _',a:['0.5'],tip:'Makes the object this script belongs to see-through: 0 is solid, 0.5 is half see-through, 1 is invisible. With no object it changes your own character. It goes back to the part setting when the game restarts.'},
  wait:{c:'ct',l:'wait _ secs',a:['1']},
@@ -3711,7 +3711,7 @@ function skyDisc(kind){const c=document.createElement('canvas');c.width=256;c.he
 const SKYD={sun:skyDisc('sun'),moon:skyDisc('moon'),cloud:skyDisc('cloud')};
 function skySprite(t,w,h){const q=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false,fog:false}));q.scale.set(w,h,1);q.renderOrder=-5;skyG.add(q);return q}
 const sunS=skySprite(SKYD.sun,170,170),moonS=skySprite(SKYD.moon,120,120),cloudS=[];
-(function(){const r=RNG(21);for(let i=0;i<10;i++){const w=260+r()*160,q=skySprite(SKYD.cloud,w,w/2);q.userData={az:i/10*6.283+r()*.5,el:.3+r()*.55,sp:.004+r()*.004};cloudS.push(q)}})();
+(function(){const r=RNG(21);for(let i=0;i<10;i++){const w=260+r()*160,q=skySprite(SKYD.cloud,w,w/2);q.userData={az:i/10*6.283+r()*.5,el:.3+r()*.55,sp:.004+r()*.004,w:w,o:1,i:i};cloudS.push(q)}})();
 function skyImg(nm){const k=Object.keys(P.assets.images).find(function(x){return x.toLowerCase()===nm});if(!k)return null;const src=P.assets.images[k];let c=SKYC[nm];
   if(!c||c.src!==src){c={src:src,t:new THREE.TextureLoader().load(src)};SKYC[nm]=c}return c.t}
 function updSkyTex(){const a=skyImg('sun')||SKYD.sun,b=skyImg('moon')||SKYD.moon;
@@ -3787,11 +3787,32 @@ function skyApply(){const gen=(!SKYO&&SKYGEN&&SKYPAL[SKYGEN])?SKYGEN:null;
     const k=f+'|'+src.length+'|'+src.slice(-24);let t=SKYTX[k];
     if(!t){t=new THREE.TextureLoader().load(src);t.center.set(.5,.5);t.repeat.set(-1,1);t.rotation=f==='bo'?Math.PI:0;t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;SKYTX[k]=t}
     if(m.map!==t){m.map=t;m.needsUpdate=true}m.visible=true})}
+/* Sun, moon and clouds change with the lighting too. sun/moon: c = colour, z = size, o = opacity.
+   clouds: c = colour, o = opacity, n = how many of the 10 show, z = size, s = drift speed. They fade smoothly between lightings. */
+const SKYV={
+  realistic:{sun:{c:'#fff1cc',z:1,o:1},moon:{c:'#ffffff',z:1,o:1},cl:{c:'#ffffff',o:.85,n:8,z:1,s:1}},
+  cinematic:{sun:{c:'#ffd9a0',z:.9,o:1},moon:{c:'#e8eeff',z:1,o:1},cl:{c:'#d5deef',o:.9,n:10,z:1.3,s:.6}},
+  sunny:{sun:{c:'#ffffff',z:1.15,o:1},moon:{c:'#ffffff',z:1,o:1},cl:{c:'#ffffff',o:.9,n:6,z:.9,s:1}},
+  sunset:{sun:{c:'#ff7a3a',z:1.6,o:1},moon:{c:'#ffd9c9',z:.9,o:.7},cl:{c:'#ff9f80',o:.85,n:9,z:1.2,s:.7}},
+  night:{sun:{c:'#ffffff',z:1,o:1},moon:{c:'#e6ecff',z:1.1,o:1},cl:{c:'#4a5a94',o:.5,n:5,z:1,s:.8}},
+  foggy:{sun:{c:'#fff4dd',z:.85,o:.5},moon:{c:'#ffffff',z:1,o:.5},cl:{c:'#cfd5da',o:1,n:10,z:1.8,s:.5}},
+  spooky:{sun:{c:'#ffffff',z:1,o:1},moon:{c:'#c9a0ff',z:1.7,o:1},cl:{c:'#7d5fb0',o:.75,n:10,z:1.4,s:1.8}},
+  vivid:{sun:{c:'#ffffff',z:1.2,o:1},moon:{c:'#ffffff',z:1,o:1},cl:{c:'#ffffff',o:1,n:7,z:.8,s:1.3}}};
+const SKYS={sc:new THREE.Color(1,1,1),sz:1,so:1,mc:new THREE.Color(1,1,1),mz:1,mo:1,cc:new THREE.Color(1,1,1),cz:1,cs:1,t:new THREE.Color()};
+function skyLook(dt,k){const v=LIGHTO&&SKYV[LIGHTO]||null,f=1-Math.exp(-4*Math.min(Math.max(dt||0,0),.1)),sun=v&&v.sun,moon=v&&v.moon,cl=v&&v.cl;
+  const customSun=sunS.material.map!==SKYD.sun,customMoon=moonS.material.map!==SKYD.moon;
+  SKYS.sc.lerp(SKYS.t.set(sun&&!customSun?sun.c:'#ffffff'),f);SKYS.sz+=((sun?sun.z:1)-SKYS.sz)*f;SKYS.so+=((sun?sun.o:1)-SKYS.so)*f;
+  SKYS.mc.lerp(SKYS.t.set(moon&&!customMoon?moon.c:'#ffffff'),f);SKYS.mz+=((moon?moon.z:1)-SKYS.mz)*f;SKYS.mo+=((moon?moon.o:1)-SKYS.mo)*f;
+  if(cl)SKYS.t.set(cl.c);else SKYS.t.setScalar(.3+.7*k);SKYS.cc.lerp(SKYS.t,f);SKYS.cz+=((cl?cl.z:1)-SKYS.cz)*f;SKYS.cs+=((cl?cl.s:1)-SKYS.cs)*f;
+  sunS.material.color.copy(SKYS.sc);sunS.material.opacity=SKYS.so;sunS.scale.set(170*SKYS.sz,170*SKYS.sz,1);
+  moonS.material.color.copy(SKYS.mc);moonS.material.opacity=SKYS.mo;moonS.scale.set(120*SKYS.mz,120*SKYS.mz,1);
+  const cn=cl?cl.n:10,co=cl?cl.o:1;
+  cloudS.forEach(function(q){const u=q.userData;u.o+=((u.i<cn?co:0)-u.o)*f;q.visible=u.o>.01;q.material.opacity=u.o;q.material.color.copy(SKYS.cc);q.scale.set(u.w*SKYS.cz,u.w*SKYS.cz/2,1)})}
 function skyTick(dt){const e=lightEnv(),a=(e.tod-6)/12*Math.PI,d=new THREE.Vector3(Math.cos(a)*14,Math.sin(a)*14,6).normalize(),day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),R=700,cp=camera.position;
   skyApply();skyG.visible=!stage.visible&&!skyAny;skyBox.visible=!stage.visible&&(skyAny||skyGenOn);skyBox.position.copy(cp);
   sunS.visible=d.y>-.1;sunS.position.set(cp.x+d.x*R,cp.y+d.y*R,cp.z+d.z*R);
   moonS.visible=d.y<.1;moonS.position.set(cp.x-d.x*R,cp.y-d.y*R,cp.z-d.z*R);
-  cloudS.forEach(function(q){const u=q.userData;u.az+=u.sp*dt;const ce=Math.cos(u.el);q.position.set(cp.x+Math.sin(u.az)*ce*800,cp.y+Math.sin(u.el)*800,cp.z-Math.cos(u.az)*ce*800);q.material.color.setScalar(.3+.7*k)})}
+  skyLook(dt,k);cloudS.forEach(function(q){const u=q.userData;u.az+=u.sp*dt*SKYS.cs;const ce=Math.cos(u.el);q.position.set(cp.x+Math.sin(u.az)*ce*800,cp.y+Math.sin(u.el)*800,cp.z-Math.cos(u.az)*ce*800)})}
 /* F: fly the camera to a spot in front of whatever is selected */
 function focusSel(){let ps=sel.map(function(id){return byId(id)}).filter(function(p){return p&&!p.stab});
   if(!ps.length&&animT){const r=byId(animT);if(r)ps=rigParts(r).filter(function(p){return !p.stab})}
