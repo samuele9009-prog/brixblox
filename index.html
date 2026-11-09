@@ -406,6 +406,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       <button id="n-premium" type="button" data-i="premium">Premium</button>
       <button id="n-studio" type="button" data-i="studio">Studio</button>
       <button id="n-settings" type="button" data-i="settings">Settings</button>
+      <button id="n-admin" type="button" data-i="settings" hidden>Admin</button>
     </nav>
     <button id="b-out" class="btn ghost small sbfoot" type="button">Log out</button>
   </aside>
@@ -712,7 +713,7 @@ function makeDemo(){
     async listGames(){return []},
     async bumpPlay(){},
     async setOfficial(){},
-    async events(){return []},async saveEvent(){throw new Error('Billboards need the online BrixBlox (Supabase).')},async delEvent(){},
+    async events(){return []},async saveEvent(){throw new Error('Billboards need the online BrixBlox (Supabase).')},async delEvent(){},async adminSearch(){return []},async adminWarn(){},async adminBan(){},async adminGames(){},async adminDelete(){},async notices(){return null},async ackNotices(){},
     async gameData(){return null},
     async listAcc(){try{return (JSON.parse(store.get('brixblox-acc'))||[]).map(function(x){return Object.assign({c:'#4a4c4e'},x)})}catch(e){return []}},
     async saveAcc(it){let a=[];try{a=JSON.parse(store.get('brixblox-acc'))||[]}catch(e){}a=a.filter(function(x){return x.id!==it.id});a.push(it);store.set('brixblox-acc',JSON.stringify(a))},
@@ -784,6 +785,13 @@ function makeSupa(){
     async events(){const r=await sb.from('events').select('id,title,descr,thumb,game_ids,active,ends_at,sort,updated_at').order('sort',{ascending:true}).order('updated_at',{ascending:false}).limit(12);if(r.error)throw r.error;return r.data||[]},
     async saveEvent(e){const r=await sb.rpc('bb_save_event',{p_id:e.id||null,p_title:e.title,p_descr:e.descr,p_thumb:e.thumb||'',p_games:e.game_ids||[],p_active:!!e.active,p_ends:e.ends_at||null,p_sort:e.sort|0});if(r.error)throw r.error;return r.data},
     async delEvent(id){const r=await sb.rpc('bb_delete_event',{p_id:id});if(r.error)throw r.error},
+    async adminSearch(q){const r=await sb.rpc('admin_search_players',{p_q:q||''});if(r.error)throw r.error;return r.data||[]},
+    async adminWarn(id,m){const r=await sb.rpc('admin_warn',{p_user:id,p_msg:m});if(r.error)throw r.error},
+    async adminBan(id,on,why){const r=await sb.rpc('admin_ban',{p_user:id,p_on:on,p_reason:why||''});if(r.error)throw r.error},
+    async adminGames(id){const r=await sb.rpc('admin_remove_games',{p_user:id});if(r.error)throw r.error},
+    async adminDelete(id){const r=await sb.rpc('admin_delete_account',{p_user:id});if(r.error)throw r.error},
+    async notices(){const r=await sb.rpc('my_notices');if(r.error)throw r.error;return r.data},
+    async ackNotices(){const r=await sb.rpc('ack_warnings');if(r.error)throw r.error},
     async gameData(id){const r=await sb.from('games').select('data').eq('id',id).single();if(r.error)throw r.error;return r.data.data},
     async listAcc(){const r=await sb.from('games').select('id,name,data').like('id','acc_%');if(r.error)throw r.error;return r.data.map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,slot:d.slot,price:d.price,scale:d.scale,fbx:d.fbx||'',tex:d.tex||'',tf:!!d.tf,sh:d.sh==null?null:d.sh,px:d.px||0,py:d.py||0,pz:d.pz||0,rx:d.rx||0,ry:d.ry||0,rz:d.rz||0,sale:d.sale!==false,prem:!!d.prem,removed:!!d.removed,c:'#4a4c4e'}})},
     async saveAcc(it){const r=await sb.from('games').upsert({id:it.id,owner_id:me.id,owner_name:me.username,name:it.name,vis:'public',data:JSON.stringify({slot:it.slot,price:it.price,scale:it.scale,fbx:it.fbx||'',tex:it.tex||'',tf:!!it.tf,sh:it.sh==null?null:it.sh,px:it.px||0,py:it.py||0,pz:it.pz||0,rx:it.rx||0,ry:it.ry||0,rz:it.rz||0,sale:it.sale!==false,prem:!!it.prem,removed:!!it.removed}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
@@ -942,7 +950,7 @@ function lobby(){
   show('lobby');{const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}}nameEl($('l-name'),me.username);nameEl($('l-name2'),me.username);
   {const v=me.av;if(tooAlike(v.skin,v.pants)){const ok=PANTS.find(function(c){return !tooAlike(v.skin,c)});if(ok)v.pants=ok}}/* older saves that are too alike get safe pants */
   setPart('shirt');
-  paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');if(store.get('brixblox-gopremium')){store.del('brixblox-gopremium');nav('premium');paintPrem()}loadFriends();loadGames();loadEvents();loadBank();loadItems();api.pubAvatar(me.id,me.av).catch(function(e){console.warn('Avatar share failed',e);if(!window.__avWarn){window.__avWarn=1;toast('Friends cannot see your avatar yet: '+((e&&e.message)||e))}})}
+  paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');if(store.get('brixblox-gopremium')){store.del('brixblox-gopremium');nav('premium');paintPrem()}loadFriends();loadGames();loadEvents();$('n-admin').hidden=!isBB();checkNotices();loadBank();loadItems();api.pubAvatar(me.id,me.av).catch(function(e){console.warn('Avatar share failed',e);if(!window.__avWarn){window.__avWarn=1;toast('Friends cannot see your avatar yet: '+((e&&e.message)||e))}})}
 const PAGES=['home','discover','friends','avatar','bank','premium','settings'];
 function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p||(p==='profile'&&x==='friends'))});$('p-profile').hidden=p!=='profile'}
 const IC={premium:'<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',discover:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',bank:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 9l9-6 9 6M8 13v3M12 13v3M16 13v3"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
@@ -957,7 +965,7 @@ $('f-acct').addEventListener('submit',async function(e){e.preventDefault();
   $('b-acct').disabled=true;sMsg('Saving...',true);
   try{const r=await api.setAccount(me.id,{email:email,age:age},me.email);me.age=age;if(r.pending){me.pending=email;sMsg('Saved. We sent a confirmation link to '+email+'. Open it to finish adding your email.',true)}else{if(api.demo)me.email=email;sMsg('Saved.',true)}}catch(er){sMsg(errText(er))}
   $('b-acct').disabled=false});
-$('n-avatar').onclick=function(){nav('avatar');openAvatarPage()};$('n-bank').onclick=function(){nav('bank');loadBank()};$('n-premium').onclick=function(){nav('premium');loadPrem().then(paintPrem)};$('n-settings').onclick=function(){nav('settings')};
+$('n-avatar').onclick=function(){nav('avatar');openAvatarPage()};$('n-bank').onclick=function(){nav('bank');loadBank()};$('n-premium').onclick=function(){nav('premium');loadPrem().then(paintPrem)};$('n-settings').onclick=function(){nav('settings')};$('n-admin').onclick=function(){openAdmin()};
 $('n-home').onclick=function(){nav('home');loadGames()};$('n-discover').onclick=function(){nav('discover');loadGames()};$('n-friends').onclick=function(){nav('friends');loadFriends()};
 /* Friend avatars: draw the real 3D avatar (same makeAvatar as the Avatar page) into a small picture */
 const FAV={r:null,sc:null,cam:null,fail:false,cache:{}};
@@ -1054,7 +1062,7 @@ function gfill(box,list,empty,disc){box.replaceChildren();if(!list.length){box.c
       of.onclick=async function(){of.disabled=true;try{await api.setOfficial(g.id,!g.official);toast(g.official?'Removed from Made by BrixBlox.':'Added to Made by BrixBlox.');loadGames()}catch(e){of.disabled=false;toast('Could not change that. Run the Discover SQL in Supabase first.')}};row.append(of)}
     bd.append(row);c.append(th,bd);box.append(c)});lockPaint()}
 async function gameData(g){if(g.data)return g.data;try{return await api.gameData(g.id)}catch(e){return null}}
-async function playGame(g){
+async function playGame(g){if(/^(acc_|avatar_|sys_)/.test(String(g&&g.id))){toast('That cannot be opened.');return}
   if(joining||$('pl-frame'))return;
   if(lockHeld()){lockPaint();toast(LOCK_MSG);return}
   goFull();joining=true;lockStart(g.id);/* claim the account right away so a second tab can't start a game while this one loads */
@@ -1077,8 +1085,10 @@ function evPaint(el,e){const k=String(e.id||e.title||'x');
 function evGames(e){const ids=Array.isArray(e.game_ids)?e.game_ids:[];return ids.map(function(id){return PUBG.find(function(g){return String(g.id)===String(id)})}).filter(Boolean)}
 async function loadEvents(){if(!me)return;try{EVS=await api.events()}catch(e){EVS=[]}paintBB()}
 setInterval(function(){if(me&&!document.hidden&&!$('evo')&&!$('pl-frame'))loadEvents()},120000);
-function paintBB(){const box=$('bb');if(!box)return;clearInterval(bbTimer);box.replaceChildren();
-  const list=EVS.filter(evLive),adm=isAdm();
+function paintBB(){const box=$('bb');if(!box)return;try{paintBB0()}catch(e){console.warn('Billboard',e)}
+  if(isBB()&&!box.querySelector('.bb-adm')){box.hidden=false;const row=mkx('div','bb-adm'),b=mkx('button','btn small','Create billboard');b.type='button';b.onclick=openBBMgr;row.append(b);box.append(row)}}
+function paintBB0(){const box=$('bb');clearInterval(bbTimer);box.replaceChildren();
+  const list=EVS.filter(evLive),adm=isBB();
   if(!list.length&&!adm){box.hidden=true;return}
   box.hidden=false;
   if(list.length){
@@ -1098,7 +1108,43 @@ function paintBB(){const box=$('bb');if(!box)return;clearInterval(bbTimer);box.r
       view.onmouseenter=function(){bbHover=true};view.onmouseleave=function(){bbHover=false};
       if(!matchMedia('(prefers-reduced-motion:reduce)').matches)bbTimer=setInterval(function(){if(bbHover||document.hidden||$('evo')||$('pl-frame'))return;go(bbIdx+1)},6500)}
     box.append(view);if(list.length>1)box.append(dots);draw()}
-  if(adm){const row=mkx('div','bb-adm'),b=mkx('button','btn small','Manage billboards');b.type='button';b.onclick=openBBMgr;row.append(b);if(!list.length)row.append(mkx('span','empty','No live billboards yet. Make one for everyone to see.'));box.append(row)}}
+  if(adm){const row=mkx('div','bb-adm'),b=mkx('button','btn small','Create billboard');b.type='button';b.onclick=openBBMgr;row.append(b);if(!list.length)row.append(mkx('span','empty','No live billboards yet. Make one for everyone to see.'));box.append(row)}}
+
+/* ===== Admin (BrixBlox account only): find players, warn, ban, remove games, delete accounts ===== */
+function closeAdmin(){const o=$('ado');if(o)o.remove()}
+function openAdmin(){if(!isBB())return;closeAdmin();
+  const ov=mkx('div','evo');ov.id='ado';ov.onclick=function(x){if(x.target===ov)closeAdmin()};
+  const card=mkx('div','evc'),body=mkx('div','evb'),xb=mkx('button','evx','\u00D7');xb.type='button';xb.setAttribute('aria-label','Close');xb.onclick=closeAdmin;
+  card.append(body);ov.append(card,xb);xb.style.position='fixed';xb.style.top='14px';xb.style.right='14px';document.body.append(ov);
+  body.append(mkx('h2','','Admin'));
+  const top=mkx('div','bb-adm'),nb=mkx('button','btn small','Create billboard');nb.type='button';nb.onclick=function(){closeAdmin();openBBMgr()};top.append(nb);
+  const q=document.createElement('input');q.type='text';q.placeholder='Search players by username';q.maxLength=16;q.autocapitalize='off';q.spellcheck=false;q.style.cssText='width:100%;margin:12px 0;box-sizing:border-box';
+  const list=mkx('div','adl');body.append(top,q,list);
+  let t=0,seq=0;
+  async function run(){const my=++seq;list.replaceChildren(mkx('p','empty','Searching...'));
+    let rows;try{rows=await api.adminSearch(q.value.trim())}catch(e){if(my===seq)list.replaceChildren(mkx('p','empty',errText(e)));return}
+    if(my!==seq)return;list.replaceChildren();if(!rows.length){list.append(mkx('p','empty','No players found.'));return}
+    rows.forEach(function(p){
+      const row=mkx('div','adr');row.style.cssText='border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;display:flex;flex-direction:column;gap:6px';
+      const nm=mkx('strong','',p.username);row.append(nm);
+      const inf=mkx('small','','Joined '+(p.created_at?new Date(p.created_at).toLocaleDateString():'?')+' \u00B7 '+(p.warns|0)+' warning(s) \u00B7 '+(p.games|0)+' game(s)'+(p.banned?' \u00B7 BANNED'+(p.ban_reason?': '+p.ban_reason:''):''));row.append(inf);
+      const bt=mkx('div','bb-adm');
+      const mk=function(label,fn){const b=mkx('button','btn ghost small',label);b.type='button';b.onclick=async function(){b.disabled=true;try{const m=await fn();if(m){toast(m);run()}else b.disabled=false}catch(e){b.disabled=false;toast(errText(e))}};bt.append(b);return b};
+      mk('Warn',async function(){const m=prompt('Warning for '+p.username+' (they see it next time they open BrixBlox):');if(!m||!m.trim())return;await api.adminWarn(p.id,m.trim().slice(0,300));return 'Warning sent.'});
+      if(p.banned)mk('Unban',async function(){await api.adminBan(p.id,false,'');return p.username+' is unbanned.'});
+      else mk('Ban',async function(){const m=prompt('Ban '+p.username+' from all of BrixBlox. Reason:');if(m===null)return;await api.adminBan(p.id,true,(m||'').trim().slice(0,200));return p.username+' is banned.'});
+      mk('Remove games',async function(){if(!confirm('Delete ALL games made by '+p.username+'?'))return;await api.adminGames(p.id);return 'Games removed.'});
+      const d=mk('Delete account',async function(){if(prompt('This permanently deletes '+p.username+' and their games. Type their name to confirm:')!==p.username)return;await api.adminDelete(p.id);return 'Account deleted.'});d.style.color='#d33';
+      row.append(bt);list.append(row)})}
+  q.oninput=function(){clearTimeout(t);t=setTimeout(run,250)};run();q.focus()}
+async function checkNotices(){if(!me||api.demo||$('ntc'))return;let n;try{n=await api.notices()}catch(e){return}if(!n)return;
+  if(n.banned){alert('Your BrixBlox account has been banned.'+(n.ban_reason?'\nReason: '+n.ban_reason:''));try{await api.logOut()}catch(e){}location.reload();return}
+  const w=n.warnings||[];if(!w.length)return;
+  const ov=mkx('div','evo');ov.id='ntc';const card=mkx('div','evc'),body=mkx('div','evb');card.style.maxWidth='460px';
+  body.append(mkx('h2','','Warning from BrixBlox'));w.forEach(function(x){const p=mkx('p','',x.message);p.style.whiteSpace='pre-wrap';body.append(p)});
+  body.append(mkx('p','sub','Keep breaking the rules and your account can be banned.'));
+  const ok=mkx('button','btn','I understand');ok.type='button';ok.onclick=async function(){try{await api.ackNotices()}catch(e){}ov.remove()};body.append(ok);card.append(body);ov.append(card);document.body.append(ov)}
+setInterval(function(){if(me&&!document.hidden)checkNotices()},60000);
 function closeEvent(){const o=$('evo');if(o)o.remove()}
 addEventListener('keydown',function(e){if(e.key==='Escape')closeEvent()});
 function openEvent(e){closeEvent();const ov=mkx('div','evo');ov.id='evo';ov.onclick=function(x){if(x.target===ov)closeEvent()};
