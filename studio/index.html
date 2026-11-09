@@ -1689,12 +1689,13 @@ async function playAnim(name,S,only){let A=P.anims[name];if(!A){log('Error: no a
   if(only){const fk={};for(const id in A.keys)if(only[id])fk[id]=A.keys[id];A=Object.assign({},A,{keys:fk})}
   /* Your own character is also posed by the walk / idle / jump animations every frame. Hold its parts while this one plays so they do not fight. */
   const hid=Object.keys(A.keys).filter(function(id){const q=byId(id);return q&&q.av&&id!==P.avId});S.hold=S.hold||{};hid.forEach(function(id){S.hold[id]=(S.hold[id]||0)+1});
-  if(hid.length){NANIM.c++;NANIM.n=name}
+  const pa=Object.keys(A.keys).some(function(id){const q=byId(id);return q&&q.av});if(pa)S.pa=(S.pa||0)+1;
+  if(hid.length||pa){NANIM.c++;NANIM.n=name}
   const gk=Object.keys(A.keys).filter(function(id){return !!byId(id)});gk.forEach(function(id){RBUSY[id]=(RBUSY[id]||0)+1});
   /* Each body part obeys one animation at a time: the newest one to start owns it, so two animations can no longer fight over (mix on) the same part. */
   const tok=++ATOK,mine=Object.keys(A.keys);mine.forEach(function(id){RTOK[id]=tok});
   try{const t0=performance.now();let t=0;while(t<A.len&&!S.stop){t=(performance.now()-t0)/1000;const po=evalPose(A,Math.min(t,A.len)),fo={};for(const k in po){if(RTOK[k.replace(/^p:/,'')]===tok)fo[k]=po[k]}applyKeyed(fo);await sl(16)}}
-  finally{mine.forEach(function(id){if(RTOK[id]===tok)delete RTOK[id]});gk.forEach(function(id){RBUSY[id]=Math.max(0,(RBUSY[id]||1)-1)});hid.forEach(function(id){S.hold[id]=Math.max(0,(S.hold[id]||1)-1);if(!S.hold[id]){const g=J[id],bs=g&&g.userData.base,D=180/Math.PI;
+  finally{mine.forEach(function(id){if(RTOK[id]===tok)delete RTOK[id]});gk.forEach(function(id){RBUSY[id]=Math.max(0,(RBUSY[id]||1)-1)});if(pa)S.pa=Math.max(0,(S.pa||1)-1);hid.forEach(function(id){S.hold[id]=Math.max(0,(S.hold[id]||1)-1);if(!S.hold[id]){const g=J[id],bs=g&&g.userData.base,D=180/Math.PI;
       if(g){S.bp[id]=[g.rotation.x*D,(g.rotation.y-(g.userData.gry||0))*D,g.rotation.z*D];if(bs)S.bp['p:'+id]=[g.position.x-bs.x,g.position.y-bs.y,g.position.z-bs.z]}}});
     if(hid.length){S.ak='';S.bl=.2}}}
 
@@ -3073,7 +3074,7 @@ function play(dt,f){const SP=(S.fly&&amAdmin()?2.2:1)*(S.speed!=null?S.speed:P.r
   const W=P.anims[S.walkA||'walk'],JA=P.anims[S.jumpA||'jump'],FA=P.anims[S.fallA||'fall'],IA=P.anims[S.idleA||'idle'],air=!S.gr,fall=air&&!!FA&&S.vy<-6,inAir=air&&(!!JA||fall),walking=!air&&!!W&&(mv||Math.hypot(S.pvx,S.pvz)>1.5);let tp={};
   if(inAir){S.jt+=dt;S.air=true;if(fall){S.ft=(S.ft||0)+dt;tp=evalPose(FA,S.ft%(FA.len||1))}else{S.ft=0;tp=evalPose(JA,Math.min(S.jt,JA.len))}}
   else{S.ft=0;if(S.air){S.air=false;S.jt=0}if(W&&(mv||Math.hypot(S.pvx,S.pvz)>1.5)){S.wt+=dt*Math.min(1,Math.hypot(S.pvx,S.pvz)/12+.2);const sn=Math.floor(S.wt/(W.len/2));if(S.sn===undefined)S.sn=sn;else if(sn!==S.sn){S.sn=sn;stepSound()}tp=evalPose(W,S.wt%W.len)}else if(IA){S.it=(S.it||0)+dt;tp=evalPose(IA,S.it%IA.len)}}
-  if(S.heldItem&&!(S.hold&&Object.keys(S.hold).some(function(k){return S.hold[k]>0}))){const HW=P.anims[S.holdWA||'hold item walk'],HA=P.anims[S.holdA||'hold item'],HJ=P.anims['hold item jump'];if(inAir&&HJ)tp=evalPose(HJ,Math.min(S.jt,HJ.len||1));else if(HW&&!air&&(mv||Math.hypot(S.pvx,S.pvz)>1.5))tp=evalPose(HW,S.wt%(HW.len||1));else if(HA)tp=Object.assign({},tp,evalPose(HA,((S.ht=(S.ht||0)+dt))%(HA.len||1)))}
+  if(S.heldItem&&!S.pa&&!(S.hold&&Object.keys(S.hold).some(function(k){return S.hold[k]>0}))){const HW=P.anims[S.holdWA||'hold item walk'],HA=P.anims[S.holdA||'hold item'],HJ=P.anims['hold item jump'];if(inAir&&HJ)tp=evalPose(HJ,Math.min(S.jt,HJ.len||1));else if(HW&&!air&&(mv||Math.hypot(S.pvx,S.pvz)>1.5))tp=evalPose(HW,S.wt%(HW.len||1));else if(HA)tp=Object.assign({},tp,evalPose(HA,((S.ht=(S.ht||0)+dt))%(HA.len||1)))}
   const ak=(inAir?(fall?'f':'j'):walking?'w':'i')+(S.heldItem?'h':'');if(S.ak!==ak){S.ak=ak;S.bl=.15}S.bl=Math.max(0,(S.bl||0)-dt);const kb=S.bl>0?1-Math.exp(-dt*(air?18:14)):1;P.parts.forEach(function(p){if(p.id===P.avId||!p.av||(S.hold&&S.hold[p.id]>0))return;const t=tp[p.id]||[0,0,0],c=S.bp[p.id]||(S.bp[p.id]=[0,0,0]);for(let i=0;i<3;i++)c[i]+=(t[i]-c[i])*kb;const pk='p:'+p.id,t2=tp[pk]||[0,0,0],c2=S.bp[pk]||(S.bp[pk]=[0,0,0]);for(let i=0;i<3;i++)c2[i]+=(t2[i]-c2[i])*kb});
   applyPose(S.bp,true,S.hold);S.mv=mv}
 function solid(r){return CO[r.id]!==undefined?CO[r.id]:!r.nocol}
@@ -5176,7 +5177,7 @@ function gearSync(){const want={};
 function gearTick(){if(!(playing||running))return;const t=performance.now()/1000;
   for(const id in RGEAR){const e=RGEAR[id];if(!e.obj)continue;const r=byId(id);if(!r)continue;const rg=RAG['rig:'+id];if(rg&&rg.sim&&!rg.gone)continue;
     const g=r.gear||{},h=gearHand(r);if(!h)continue;
-    if(g.anim==='none'||rigParts(r).some(function(q){return RBUSY[q.id]}))continue;
+    if(g.anim==='none'||RBUSY[r.id]||rigParts(r).some(function(q){return RBUSY[q.id]}))continue;
     const A=g.anim&&g.anim!=='default'?P.anims[g.anim]:null;
     if(A&&A.len){const po=evalPose(A,t%A.len),o={};for(const k in po){if(!RBUSY[k.replace(/^p:/,'')])o[k]=po[k]}applyKeyed(o)}
     else if(!RBUSY[h.id])applyKeyed((function(){const o={};o[h.id]=[80+Math.sin(t*2.2)*3,0,0];return o})())}}
