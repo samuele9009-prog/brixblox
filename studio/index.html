@@ -931,14 +931,22 @@ function rBlock(b,arr,ro){if(BD[b.t])for(let q=b.a.length;q<BD[b.t].a.length;q++
 function sizeCvs(){if(!CV)return;let mx=0,my=0;
   Array.from(CV.children).forEach(function(d){if(d._s){mx=Math.max(mx,d.offsetLeft+d.offsetWidth);my=Math.max(my,d.offsetTop+d.offsetHeight)}});
   CV.style.width=Math.max(WS.clientWidth,mx+260)+'px';CV.style.height=Math.max(WS.clientHeight,my+260)+'px'}
+/* Draws one script (its blocks and snap points). Split out so grabbing a block only has to redraw the script it came from. */
+function mkScr(s,opts){const d=el('div','scr'+(s[0]===selScr?' sel':'')),hat=BD[s[0].t].hat;d._s=s;
+  if(hat)d.append(chip(s,opts));else d.append(el('div','loose','Loose blocks. Snap them under a "when" block.'));
+  const lst=rList(s);d.append(lst);if(!hat)conns.push({k:'before',arr:s,i:0,el:lst.firstChild});
+  if(typeof s[0].x==='number'){d.style.left=s[0].x+'px';d.style.top=s[0].y+'px'}
+  return d}
+function rendFast(top){reser();slHl=null;const opts=ownOpts();conns=[];slots=[];
+  Array.from(CV.children).forEach(function(d){if(!d._s)return;
+    if(d._s===top){if(P.scripts.indexOf(top)<0){d.remove();return}
+      const c0=conns.length,s0=slots.length,nd=mkScr(top,opts);nd._c=conns.slice(c0);nd._sl=slots.slice(s0);CV.replaceChild(nd,d)}
+    else{conns.push.apply(conns,d._c||[]);slots.push.apply(slots,d._sl||[])}});
+  view()}
 function rend(ns){reser();const sx=WS.scrollLeft,sy=WS.scrollTop;WS.replaceChildren();conns=[];slots=[];slHl=null;CV=el('div','cvs');WS.append(CV);
   if(selScr&&!P.scripts.some(function(s){return s[0]===selScr}))selScr=null;
   const opts=ownOpts(),all=[];
-  P.scripts.forEach(function(s){const d=el('div','scr'+(s[0]===selScr?' sel':'')),hat=BD[s[0].t].hat;d._s=s;
-    if(hat)d.append(chip(s,opts));else d.append(el('div','loose','Loose blocks. Snap them under a "when" block.'));
-    const lst=rList(s);d.append(lst);if(!hat)conns.push({k:'before',arr:s,i:0,el:lst.firstChild});
-    if(typeof s[0].x==='number'){d.style.left=s[0].x+'px';d.style.top=s[0].y+'px'}
-    CV.append(d);all.push([s,d])});
+  P.scripts.forEach(function(s){const c0=conns.length,s0=slots.length,d=mkScr(s,opts);d._c=conns.slice(c0);d._sl=slots.slice(s0);CV.append(d);all.push([s,d])});
   let bot=0;all.forEach(function(q){if(typeof q[0][0].x==='number')bot=Math.max(bot,q[1].offsetTop+q[1].offsetHeight)});
   all.forEach(function(q){const s=q[0],d=q[1];if(typeof s[0].x==='number')return;
     s[0].x=24;s[0].y=bot?bot+24:24;d.style.left=s[0].x+'px';d.style.top=s[0].y+'px';bot=s[0].y+d.offsetHeight});
@@ -969,14 +977,17 @@ function dragStart(e,src){const r=src.el.getBoundingClientRect();
   pend={sx:e.clientX,sy:e.clientY,ox:e.clientX-r.left,oy:e.clientY-r.top,src:src,on:false,bl:null,sn:null};
   addEventListener('pointermove',dMoveRaf);addEventListener('pointerup',dEnd);addEventListener('pointercancel',dEnd)}
 let dRaf=0,dEv=null;function dMoveRaf(e){dEv=e;if(dRaf)return;dRaf=requestAnimationFrame(function(){dRaf=0;if(dEv)dMove(dEv)})}
-function dBegin(){const s=pend.src;let bl;
+function dBegin(){const s=pend.src;let bl,tp=null,fast=true;
+  if(s.rb){const pb=s.par&&s.par.b;if(pb){tp=P.scripts.find(function(x){return hasB(x,pb)});if(!tp)fast=false}}
+  else if(!s.rep&&!s.t&&s.b){tp=P.scripts.find(function(x){return hasB(x,s.b)});if(!tp)fast=false}
+  const rf=function(){if(!fast||!CV)rend(true);else if(tp)rendFast(tp)};
   if(s.rep||s.rb){let nd;
     if(s.rb){nd=s.rb;const pa=s.par;if(pa&&pa.b){if(pa.b.r)delete pa.b.r[pa.i];pa.b.a[pa.i]=(BD[pa.b.t]&&BD[pa.b.t].a[pa.i])||''}}
     else nd=s.t==='var'?{t:'var',a:[s.name],k:null}:mk(s.t);
-    pend.rep=nd;pend.on=true;rend(true);
+    pend.rep=nd;pend.on=true;rf();
     gh=el('div','dghost');gh.append(rRep(nd,null,0,true));document.body.append(gh);document.body.classList.add('dragging');return}
   if(s.t)bl=[mk(s.t)];else{const i=s.arr.indexOf(s.b);bl=s.arr.splice(i);clean()}
-  pend.bl=bl;pend.on=true;rend(true);
+  pend.bl=bl;pend.on=true;rf();
   gh=el('div','dghost');gh.append(rList(bl,true));document.body.append(gh);document.body.classList.add('dragging')}
 /* Snap points: under a block, inside a C-block, or above a loose stack. The nearest one within reach wins. */
 function findSnap(){if(!pend||!pend.bl||BD[pend.bl[0].t].hat)return null;const g=gh.getBoundingClientRect();let best=null,bd=46;
