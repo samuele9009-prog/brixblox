@@ -540,7 +540,7 @@ html,body{overscroll-behavior:none;touch-action:manipulation}
       <div id="s-parts" class="pnl" hidden="">
         <div class="tb"><button id="p-add" class="btn small" type="button">+ Part</button><select id="p-shape" class="btn ghost small" aria-label="Add a shape"><option value="">+ Shape</option><option value="cyl">Cylinder</option><option value="sphere">Sphere</option><option value="wedge">Triangle</option></select><select id="p-gui" class="btn ghost small" aria-label="Add a GUI element"><option value="">+ GUI</option><option value="text">Text</option><option value="button">Button</option><option value="frame">Frame</option><option value="image">Image</option></select><button id="p-weld" class="btn small" type="button">Weld</button><button id="p-unweld" class="btn ghost small" type="button">Unweld</button><button id="p-group" class="btn small" type="button">Group</button><button id="p-ungroup" class="btn ghost small" type="button">Ungroup</button><button id="p-union" class="btn small" type="button" title="Ctrl+Shift+G">Union</button><button id="p-split" class="btn ghost small" type="button" title="Ctrl+Alt+U">Split</button><button id="p-copy" class="btn ghost small" type="button">Copy</button><button id="p-paste" class="btn ghost small" type="button">Paste</button><button id="p-dup" class="btn ghost small" type="button">Duplicate</button><button id="p-del" class="btn ghost small" type="button">Delete</button><button id="p-rig" class="btn ghost small" type="button" aria-pressed="false">Rig editor</button></div>
         <p id="p-msg" class="hint">Weld: select the Torso first, then ctrl-click the parts to weld to it.</p>
-        <p class="note" style="margin:4px 0 8px"><b>P</b> adds a part in front of you &middot; <b>Ctrl+G</b> groups into a model &middot; <b>Ctrl+Shift+G</b> unions the selection into one single part (<b>Ctrl+Alt+U</b> splits it back) &middot; <b>Ctrl+Alt+G</b> ungroups &middot; <b>Backspace</b> deletes &middot; <b>Alt+click</b> (or double-click) a piece of a model to select just that piece. &middot; <b>L</b> locks or unlocks the selection.</p><div id="p-list"></div><div id="p-props"></div>
+        <p class="note" style="margin:4px 0 8px"><b>P</b> adds a part in front of you &middot; <b>Ctrl+G</b> groups into a model &middot; <b>Ctrl+Shift+G</b> unions the selection into one single part (<b>Ctrl+Alt+U</b> splits it back) &middot; <b>Ctrl+Alt+G</b> ungroups &middot; <b>Backspace</b> deletes &middot; <b>Alt+click</b> (or double-click) a piece of a model to select just that piece. &middot; <b>L</b> locks or unlocks the selection. &middot; <b>Arrow keys</b> nudge the selection by the snap size, <b>PageUp/PageDown</b> move it up and down, <b>End</b> drops it onto whatever is under it, <b>Ctrl+A</b> selects everything. The bar on the top left of the 3D view sets the snap size and aligns parts.</p><div id="p-list"></div><div id="p-props"></div>
       </div>
       <div id="s-anim" class="pnl anim" hidden="">
         <div class="an-top">
@@ -1909,7 +1909,7 @@ function buildEdit(){try{updTool()}catch(e){}while(editG.children.length)editG.r
   if(!c)return;
   if(tool==='rotate'&&!rigOn){const rr=rotRoots();if(!rr.length)return;const rc=rotCenter(rr),oq=rotObjQ(rr);/* one object: the rings sit on its own axes and turn with it */
     [[0,'#ff4444',[1,0,0]],[1,'#44dd44',[0,1,0]],[2,'#4488ff',[0,0,1]]].forEach(function(a){
-      const g=new THREE.Group(),m=new THREE.Mesh(new THREE.TorusGeometry(1.7,.1,10,64),new THREE.MeshBasicMaterial({color:a[1],depthTest:false}));
+      const g=new THREE.Group(),m=new THREE.Mesh(new THREE.TorusGeometry(3.2,.16,12,96),new THREE.MeshBasicMaterial({color:a[1],depthTest:false}));
       m.renderOrder=10;m.userData.rotAx=a[0];g.add(m);g.userData.ri=-1;
       g.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(a[2][0],a[2][1],a[2][2])).premultiply(oq);
       g.position.set(rc[0],rc[1],rc[2]);editG.add(g);gizmo.push(m)});return}
@@ -1926,7 +1926,7 @@ function buildEdit(){try{updTool()}catch(e){}while(editG.children.length)editG.r
   [[1,0,0,'#ff4444'],[-1,0,0,'#ff4444'],[0,1,0,'#44dd44'],[0,-1,0,'#44dd44'],[0,0,1,'#4488ff'],[0,0,-1,'#4488ff']].forEach(function(a){
     const d=new THREE.Vector3(a[0],a[1],a[2]),mt=new THREE.MeshBasicMaterial({color:a[3],depthTest:false}),g=new THREE.Group(),
       sh=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,1.3,8),mt),co=new THREE.Mesh(new THREE.ConeGeometry(.22,.55,12),mt),
-      off=Math.min(Math.abs(a[0])*half[0]+Math.abs(a[1])*half[1]+Math.abs(a[2])*half[2],8)+.3;
+      off=Math.abs(a[0])*half[0]+Math.abs(a[1])*half[1]+Math.abs(a[2])*half[2]+.3;
     sh.position.y=.65;co.position.y=1.6;const hb=arrowHit();[sh,co,hb].forEach(function(m){m.renderOrder=10;m.userData.axis=d;g.add(m);gizmo.push(m)});
     g.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d);g.position.set(c[0]+a[0]*off,c[1]+a[1]*off,c[2]+a[2]*off);g.userData.fx={b:new THREE.Vector3(c[0]+a[0]*(off-.3),c[1]+a[1]*(off-.3),c[2]+a[2]*(off-.3)),d:d,off:.3};editG.add(g);gz.push(g)})}
 $('p-rig').onclick=function(){rigOn=!rigOn;this.setAttribute('aria-pressed',String(rigOn));if(!rigOn)selJ=null;
@@ -3011,7 +3011,7 @@ function rmoveDrag(e){const g=gd,b=dragBox();if(!b)return;
   if(hit&&hit.distance<800){pt=hit.point;const nn=hit.face.normal.clone().transformDirection(hit.object.matrixWorld),a=[Math.abs(nn.x),Math.abs(nn.y),Math.abs(nn.z)];
     ax=a[0]>=a[1]&&a[0]>=a[2]?0:a[1]>=a[2]?1:2;sg=nn.getComponent(ax)>=0?1:-1}
   else{const v=ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),-g.y),new THREE.Vector3());if(!v)return;pt=v}
-  const free=e.altKey,sn=function(v){return free?v:Math.round(v*2)/2},w=[pt.x,pt.y,pt.z],c=[0,0,0];
+  const free=e.altKey,sn=function(v){return snapV(v,free)},w=[pt.x,pt.y,pt.z],c=[0,0,0];
   for(let i=0;i<3;i++){if(i!==ax)c[i]=sn(w[i]);else{const face=sn(w[i]);c[i]=face+sg*b.h[i]}}
   const d=[c[0]-b.c[0],c[1]-b.c[1],c[2]-b.c[2]].map(function(v){return Math.round(v*1000)/1000});
   if(Math.abs(d[0])+Math.abs(d[1])+Math.abs(d[2])<1e-4)return;moveSel(d);quickSync()}
@@ -3029,7 +3029,8 @@ cv.onpointermove=function(e){if(gd&&gd.mv){gd.le={clientX:e.clientX,clientY:e.cl
   else if(gd&&gd.p){const p=gd.p,c=gd.rig?p.pivot:(selBox()||{c:p.pos}).c,v=new THREE.Vector3(c[0],c[1],c[2]),w=cv.getBoundingClientRect();
     const sc=function(q){const u=q.clone().project(camera);return new THREE.Vector2(u.x*w.width/2,-u.y*w.height/2)};
     const d=sc(v.clone().add(gd.a)).sub(sc(v)),L=d.lengthSq();if(L<1)return;
-    const k=(dx*d.x+dy*d.y)/L;
+    let k=(dx*d.x+dy*d.y)/L;
+    if(!gd.rig){gd.acc=(gd.acc||0)+k;gd.done=gd.done||0;const tg=snapV(gd.acc,e.altKey);k=tg-gd.done;gd.done=tg;if(!k)return}
     if(gd.rig){p.pivot[0]+=gd.a.x*k;p.pivot[1]+=gd.a.y*k;p.pivot[2]+=gd.a.z*k}else moveSel([gd.a.x*k,gd.a.y*k,gd.a.z*k]);quickSync()}
   else if(!playing){hovE=e;if(!hovP){hovP=true;requestAnimationFrame(function(){hovP=false;if(playing||gd||look||!hovE)return;ray.setFromCamera(ndc(hovE),camera);const h=ray.intersectObjects(pickSel(),false)[0];if(animOn()){setHover(null);animHover(h?h.object.userData.id:null)}else{animHover(null);setHover(h?h.object.userData.id:null)}})}}};
 cv.onpointerleave=function(){setHover(null);animHover(null);cv.style.cursor=''};
@@ -3046,6 +3047,44 @@ addEventListener('blur',function(){for(const k in keys)keys[k]=false});
 /* Editor shortcuts: P new part, Backspace/Delete remove, Ctrl+G group, Ctrl+Shift+G union into one part, Ctrl+Alt+U split union, Ctrl+Alt+G ungroup (ignored while typing or in the script area) */
 let edArea=true;
 addEventListener('pointerdown',function(e){edArea=!(e.target&&e.target.closest&&e.target.closest('#s-ws,#s-pal'))},true);
+
+/* ===== Studio-style building tools: snap size, arrow-key nudging, select all, drop to ground (End), align ===== */
+let SNP=.5;try{const sv=parseFloat(localStorage.getItem('bbSnap'));if(isFinite(sv)&&sv>=0)SNP=sv}catch(x){}
+function snapV(v,free){return free||!SNP?v:Math.round(v/SNP)*SNP}
+function stOk(){return !playing&&!running&&!animOn()&&!rigOn&&!VIEWONLY&&edArea&&$('studio').getClientRects().length>0&&curTab!=='code'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&!(document.activeElement&&document.activeElement.isContentEditable)}
+function stSel(){return sel.map(function(id){return byId(id)}).filter(function(p){return p&&!p.stab&&!p.locked&&!p.av})}
+function topSel(){const ids=sel.slice();return stSel().filter(function(p){let a=p.parent&&byId(p.parent);while(a){if(ids.indexOf(a.id)>=0)return false;a=a.parent&&byId(a.parent)}return true})}
+function nudgeSel(dx,dy,dz){if(!stSel().length)return false;moveSel([dx,dy,dz]);all();return true}
+function dropSel(){const b=dragBox();if(!b){msg('Select something first, then press End.');return}
+  const skip={};sel.forEach(function(id){const p=byId(id);if(!p)return;const r=rootOf(p);(p.model?partsOf(p.model):kids(r).length?treeOf(r):[p]).forEach(function(q){skip[q.id]=1})});
+  ray.set(new THREE.Vector3(b.c[0],b.lo[1]+.05,b.c[2]),new THREE.Vector3(0,-1,0));
+  const hit=ray.intersectObjects(pickable().filter(function(m){return !skip[m.userData.id]}),false)[0],gy=hit?hit.point.y:0,dy=Math.round((gy-b.lo[1])*1000)/1000;
+  if(!dy){msg('Already sitting on the ground.');return}moveSel([0,dy,0]);all();msg('Dropped onto '+(hit?'the part below':'the ground')+'.')}
+function alignSel(ax){const t=topSel();if(t.length<2){msg('Select two or more parts. They line up with the first one you selected.');return}
+  const ref=byId(sel[0]);if(!ref)return;const rt=rootOf(ref),base=t.indexOf(rt)>=0?rt:ref;
+  t.forEach(function(p){if(p===base)return;const d=[0,0,0];d[ax]=Math.round((base.pos[ax]-p.pos[ax])*1000)/1000;if(d[ax])moveBy(p,d)});all();msg('Aligned '+'XYZ'[ax]+'.')}
+function selAll(){const a=P.parts.filter(function(p){return !p.av&&!p.stab&&!p.locked&&inW(p)}).map(function(p){return p.id});
+  sel=a;selSvc=null;selModel=null;hl();buildEdit();renderParts();msg(a.length?'Selected '+a.length+' part'+(a.length>1?'s':'')+'.':'Nothing to select.')}
+addEventListener('keydown',function(e){if(!stOk()||e.repeat&&e.code==='End')return;
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.altKey&&e.code==='KeyA'){e.preventDefault();selAll();return}
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.code==='End'&&sel.length){e.preventDefault();dropSel();return}
+  const st=(SNP||.1)*(e.shiftKey?4:1);
+  if(e.code==='PageUp'||e.code==='PageDown'){if(!sel.length)return;e.preventDefault();nudgeSel(0,e.code==='PageUp'?st:-st,0);return}
+  const ak={ArrowUp:1,ArrowDown:1,ArrowLeft:1,ArrowRight:1}[e.key];if(!ak||!sel.length)return;
+  const f=camera.getWorldDirection(new THREE.Vector3()),fw=Math.abs(f.x)>Math.abs(f.z)?[Math.sign(f.x),0]:[0,Math.sign(f.z)],rt=[-fw[1],fw[0]];
+  let v=[0,0];if(e.key==='ArrowUp')v=fw;else if(e.key==='ArrowDown')v=[-fw[0],-fw[1]];else if(e.key==='ArrowRight')v=rt;else v=[-rt[0],-rt[1]];
+  e.preventDefault();nudgeSel(v[0]*st,0,v[1]*st)});
+(function(){const w=cv.parentElement;if(!w||getComputedStyle(w).position==='static')w.style.position='relative';
+  const bar=el('div');bar.id='st-bar';bar.style.cssText='position:absolute;left:8px;top:8px;z-index:6;display:none;gap:4px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 16px)';
+  const sl=el('select','btn ghost small');sl.title='Snap size for moving parts (hold Alt while dragging to move freely)';
+  [['0','Snap: Off'],['.1','Snap: 0.1'],['.25','Snap: 0.25'],['.5','Snap: 0.5'],['1','Snap: 1'],['2','Snap: 2'],['4','Snap: 4']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];sl.append(op)});
+  sl.value=String(SNP);if(sl.value!==String(SNP)){const op=el('option','','Snap: '+SNP);op.value=String(SNP);sl.append(op);sl.value=String(SNP)}
+  sl.onchange=function(){SNP=parseFloat(this.value)||0;try{localStorage.setItem('bbSnap',String(SNP))}catch(x){}this.blur()};bar.append(sl);
+  [['Drop','Drop the selection onto whatever is under it (End)',dropSel],['Align X','Line selected parts up on X with the first one you selected',function(){alignSel(0)}],['Align Y','Line selected parts up on Y with the first one you selected',function(){alignSel(1)}],['Align Z','Line selected parts up on Z with the first one you selected',function(){alignSel(2)}]].forEach(function(b){
+    const bt=el('button','btn ghost small',b[0]);bt.type='button';bt.title=b[1];bt.onclick=function(){if(stOk()||!playing&&!running&&!animOn()&&!rigOn)b[2]();this.blur()};bar.append(bt)});
+  ['pointerdown','mousedown'].forEach(function(n){bar.addEventListener(n,function(e){e.stopPropagation()})});
+  w.append(bar);setInterval(function(){bar.style.display=!playing&&!running&&!animOn()&&!rigOn&&!VIEWONLY&&$('studio').getClientRects().length>0?'flex':'none'},300)})();
 addEventListener('keydown',function(e){const a=document.activeElement;if(VIEWONLY||document.getElementById('shome')||!edArea||playing||running||animOn()||(a&&(/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a.isContentEditable)))return;
   const ctl=e.ctrlKey||e.metaKey;
   if(ctl&&e.code==='KeyG'){e.preventDefault();if(e.repeat)return;if(e.altKey)ungroup();else if(e.shiftKey)unionMake();else group();return}
