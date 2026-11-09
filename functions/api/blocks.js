@@ -107,7 +107,7 @@ export async function onRequestPost({ request, env }) {
   if (!catalog) return json({ error: 'Missing the block list.' }, 400);
 
   const primary = env.GEMINI_MODEL || 'gemini-flash-latest';
-  const fallback = env.GEMINI_FALLBACK_MODEL || 'gemini-flash-lite-latest';
+  const fallback = env.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite';
   const payload = {
     systemInstruction: { parts: [{ text: SYSTEM }] },
     contents: [{
