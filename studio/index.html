@@ -1409,7 +1409,7 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
 const SITE_URL='/';
 const cv=$('s-cv'),renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true}),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(70,4/3,.5,1500);
 scene.background=new THREE.Color('#8fd3ff');
-const hemi=new THREE.HemisphereLight(0xffffff,0x88aa88,.72);scene.add(hemi);const sun=new THREE.DirectionalLight(0xffffff,.85);sun.position.set(8,14,6);scene.add(sun);scene.add(sun.target);
+const hemi=new THREE.HemisphereLight(0xffffff,0x88aa88,.72);scene.add(hemi);const shAmb=new THREE.AmbientLight(0x000000,0);scene.add(shAmb);const sun=new THREE.DirectionalLight(0xffffff,.85);sun.position.set(8,14,6);scene.add(sun);scene.add(sun.target);
 /* Realistic soft shadows: the sun's shadow box follows the camera (or the player) so shadows stay sharp up close */
 const sunDir=new THREE.Vector3(8,14,6);
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
@@ -2570,7 +2570,7 @@ function stageApply(){const on=animOn();
   if(on){let lo=1e9,cx=0,cz=0,n=0;
     P.parts.filter(function(p){return !p.parent&&inW(p)&&stageVis(p)}).forEach(function(q){rigParts(q).forEach(function(z){lo=Math.min(lo,z.pos[1]-z.size[1]/2);cx+=z.pos[0];cz+=z.pos[2];n++})});
     stage.position.set(n?cx/n:0,(n?lo:0)-.02,n?cz/n:0);
-    scene.background=new THREE.Color('#6b7178');scene.fog=new THREE.Fog(0x6b7178,70,280);hemi.intensity=.8;sun.intensity=.8;
+    scene.background=new THREE.Color('#6b7178');scene.fog=new THREE.Fog(0x6b7178,70,280);hemi.intensity=.8;sun.intensity=.8;shAmb.intensity=0;
     if(!stageOn){stageOn=true;if(PG)PG.traverse(function(o){if(o.material)o.material.needsUpdate=true})}}
   else if(stageOn){stageOn=false;fogOn=false;applyEnv();if(PG)PG.traverse(function(o){if(o.material)o.material.needsUpdate=true})}}
 function stageFocus(r){if(!r)return;const ps=rigParts(r),lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];
@@ -3841,6 +3841,22 @@ function startLightUI(d){const s=el('select'),o0=el('option','','None (use the s
   s.onchange=function(){if(s.value)P.env.light=s.value;else delete P.env.light;LSP=P.env;SKYO=null;SKYAUTO=false;lightSet(s.value);save();props()};
   d.append(lab('Starting lighting (shows here and when the game starts)',s));
   if(LPRE[P.env.light])d.append(el('p','note','A lighting preset controls the time of day, sky colour, fog and sky picture, so the sliders above and the Sky Builder are paused until you pick None. A "set lighting to" block can still change it while playing.'))}
+function lightColorsUI(d){
+  const E=P.env,L=LIGHTO&&LPRE[LIGHTO]||null,pct=function(v){return v.toFixed(2)};
+  const h=el('h4','','Haze, shadows & ambient');h.style.margin='14px 0 4px';d.append(h);
+  d.append(el('p','note','Your own colours for the screen haze, the shadows and the ambient light. They work on top of any lighting preset. Tick one to turn it on.'));
+  const go=function(){save();applyEnv()};
+  const grp=function(name,cn,ck,def,sk,sdef,smin,smax,sname){
+    const on=el('input');on.type='checkbox';on.checked=!!E[ck];
+    const l=el('label','',name);l.append(on);d.append(l);
+    on.onchange=function(){if(on.checked){E[ck]=def;if(E[sk]==null)E[sk]=sdef}else delete E[ck];go();props()};
+    if(!E[ck])return;
+    const c=el('input');c.type='color';c.value=E[ck];c.oninput=function(){E[ck]=c.value;go()};d.append(lab(cn,c));
+    slider(d,sname,E,sk,smin,smax,.01,pct,applyEnv)};
+  grp('Custom haze','Haze colour','haze',L&&L.g&&L.g.ta>0?L.g.tint:'#4f8fd8','hazek',.22,0,.8,'Haze amount');
+  grp('Custom shadow colour','Shadow colour','shd',L?L.hg:'#3a2f66','shdk',.5,0,1,'Shadow colour strength');
+  grp('Custom ambient colour','Ambient colour','amb',L?L.hs:'#ffffff','ambk',1,.2,2,'Ambient strength');
+  const rb=mb('Reset haze / shadow / ambient','ghost',function(){['haze','hazek','shd','shdk','amb','ambk'].forEach(function(k){delete E[k]});go();props()});rb.style.marginTop='8px';d.append(rb)}
 function skyBuilderUI(d){const b=skybGet(),h=el('h4','','Sky Builder');h.style.margin='14px 0 4px';d.append(h);
   const redo=function(){save();applyEnv()},again=function(){redo();props()};
   const on=el('input');on.type='checkbox';on.checked=!!b.on;on.onchange=function(){b.on=on.checked;again()};
@@ -3953,6 +3969,12 @@ function lxEls(){if(lxT)return;const c=document.querySelector('.cvw');if(!c)retu
 function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
   if(L){hemi.color.set(L.hs);hemi.groundColor.set(L.hg);hemi.intensity*=L.hk;sun.color.set(L.sc)}
   else{hemi.color.set(0xffffff);hemi.groundColor.set(0x88aa88);sun.color.set(0xffffff)}
+  /* your own ambient / shadow colours (Atmosphere panel) sit on top of whatever lighting is active */
+  const E=P.env||{};
+  if(E.amb){hemi.color.set(E.amb);if(E.ambk!=null)hemi.intensity*=E.ambk}
+  if(E.shd){const m=Math.max(0,Math.min(1,E.shdk==null?.5:E.shdk)),h0=hemi.intensity;
+    hemi.groundColor.set(E.shd);shAmb.color.set(E.shd);shAmb.intensity=h0*m;hemi.intensity=h0*(1-m)}
+  else shAmb.intensity=0;
   const sig=L?LIGHTO:'';
   if(sig!==lxSig){lxSig=sig;
     renderer.toneMapping=L&&L.tm?THREE.ACESFilmicToneMapping:THREE.NoToneMapping;renderer.toneMappingExposure=L?L.ex:1;
@@ -3962,7 +3984,8 @@ function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
     scene.traverse(function(o){if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(function(m){m.needsUpdate=true})}})}
   lxEls();const g=L&&L.g;cv.style.filter=g?g.f:'';
   if(lxT){
-    if(g&&g.ta>0){lxT.style.display='block';lxT.style.background=g.tint;lxT.style.opacity=g.ta*3.2>1?1:g.ta*3.2;lxT.style.mixBlendMode=g.tb}else lxT.style.display='none';
+    if(E.haze){lxT.style.display='block';lxT.style.background=E.haze;lxT.style.opacity=E.hazek==null?.22:E.hazek;lxT.style.mixBlendMode='normal'}
+    else if(g&&g.ta>0){lxT.style.display='block';lxT.style.background=g.tint;lxT.style.opacity=g.ta*3.2>1?1:g.ta*3.2;lxT.style.mixBlendMode=g.tb}else lxT.style.display='none';
     if(g&&g.vig>0){lxV.style.display='block';lxV.style.background='radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(0,0,0,'+g.vig+') 100%)'}else lxV.style.display='none'}}
 let fogOn=false;
 function applyEnv(){updSkyTex();const e=lightEnv(),a=(e.tod-6)/12*Math.PI,day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),c=new THREE.Color(e.sky).multiplyScalar(k);
@@ -4246,7 +4269,7 @@ function svcProps(d){const s=SV.find(function(x){return x.k===selSvc});if(!s)ret
   const pct=function(v){return v.toFixed(2)};
   if(s.k==='atmos'){const col=el('input');col.type='color';col.value=P.env.sky;col.oninput=function(){P.env.sky=col.value;save();applyEnv()};d.append(lab('Sky colour',col));
     slider(d,'Time of day',P.env,'tod',0,24,.25,clock,applyEnv);slider(d,'Brightness',P.env,'bright',.2,2,.05,pct,applyEnv);
-    slider(d,'Sun strength',P.env,'sun',0,1.5,.05,pct,applyEnv);slider(d,'Fog',P.env,'fog',0,100,1,null,applyEnv);startLightUI(d);skyBuilderUI(d)}
+    slider(d,'Sun strength',P.env,'sun',0,1.5,.05,pct,applyEnv);slider(d,'Fog',P.env,'fog',0,100,1,null,applyEnv);startLightUI(d);lightColorsUI(d);skyBuilderUI(d)}
   else if(s.k==='rules'){slider(d,'Gravity',P.rules,'grav',20,400,5);slider(d,'Jump power',P.rules,'jump',10,120,1);slider(d,'Walk speed',P.rules,'speed',4,40,1);
     slider(d,'Camera distance',P.rules,'cam',4,60,1,null,function(){cdT=P.rules.cam});slider(d,'Field of view',P.rules,'fov',30,120,1);
     const b=el('button','btn ghost small','Reset to defaults');b.type='button';b.style.marginTop='10px';b.onclick=function(){Object.assign(P.rules,{grav:190,jump:48,speed:16,cam:14});save();props()};d.append(b);
