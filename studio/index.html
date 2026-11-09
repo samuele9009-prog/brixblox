@@ -197,7 +197,7 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
 .zn{height:6px;border-radius:3px;transition:height .1s}.zn.on{height:24px;background:rgba(255,255,255,.22)}
 
 /* Operators and variable reporters (round blocks that drop into the slots of other blocks) */
-.c-op{--bc:#3fa34d}.c-rv{--bc:#ee7d16}
+.c-op{--bc:#3fa34d}.c-dt{--bc:#16a39a}.c-rv{--bc:#ee7d16}
 .rp{display:inline-flex;align-items:center;gap:4px;max-width:100%;padding:2px 8px;margin:0 1px;border-radius:13px;background:var(--bc);color:#fff;font-weight:700;font-size:.8rem;border:1px solid rgba(0,0,0,.28);cursor:grab;user-select:none;vertical-align:middle;white-space:nowrap}
 .rp.bool{padding:2px 14px;border:0;border-radius:0;clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,10px 100%,0 50%)}
 .rp input{height:20px;min-width:2ch;border:0;border-radius:10px;padding:0 6px;background:#fff;color:#222;font:inherit;font-weight:600}
@@ -518,7 +518,7 @@ const store=(function(){
 const $=function(id){return document.getElementById(id)};
 /* Runtime rotation (set by the tween blocks, never saved) and the list of running tweens */
 const RR={};let TW=[];function prot(p){return RR[p.id]||p.rot}
-const CAT={tw:'Tween',gu:'GUI',op:'Operators',rv:'Variables',ev:'Events',mo:'Motion',ph:'Physics',pl:'Player',ad:'Admin',au:'Audio',en:'Entities',lk:'Looks',ct:'Control',vr:'Variables',fn:'Functions'};
+const CAT={tw:'Tween',gu:'GUI',op:'Operators',rv:'Variables',ev:'Events',mo:'Motion',ph:'Physics',pl:'Player',ad:'Admin',dt:'Data',au:'Audio',en:'Entities',lk:'Looks',ct:'Control',vr:'Variables',fn:'Functions'};
 // l: label, _ marks an input. hat: starts a script. k: holds blocks inside. raw: first input is a plain word, not an expression.
 const BD={
  start:{c:'ev',hat:1,l:'when start',a:[]},
@@ -579,12 +579,6 @@ const BD={
  awardbadge:{c:'pl',l:'award badge _ to player _ icon _',a:['Winner','player','\uD83C\uDFC5'],tip:'Gives a player a badge and counts it in their profile. You do not need to make the badge first: it is created for you if it does not exist yet. Each badge is only given once per player per game, and every new badge adds 1 to their badge counter. Type the badge name, then the player (a name, a variable, or player for the first player in the server) and an icon. Anyone can earn a badge themselves; only the game owner or an admin can give one to another player.'},
  giveattr:{c:'pl',l:'give attribute _ to player _',a:['Hurt','player'],tip:'Gives a player an attribute (a label you make up, like Hurt, Red team or HasKey). A player can have many attributes. Type the player name, a variable like toucher, or player (you). Attributes last until the game stops or restarts. Check them with the "player _ has attribute _ ?" operator.'},
  removeattr:{c:'pl',l:'remove attribute _ from player _',a:['Hurt','player'],tip:'Takes an attribute away from a player. Does nothing if they do not have it. Type the player name, a variable like toucher, or player (you).'},
- pdset:{c:'pl',l:'set player _ saved data _ to _',a:['player','coins','0'],tip:'Saves a number or text on a player under a name you make up (like coins, level or class). Using a new name creates a new saved variable for that player, so you can add as many as you like (up to 50). It is kept in their BrixBlox account for this game, but only after you use the \"save player data\" block. To change another player\'s data put this inside a server side block.'},
- pdchange:{c:'pl',l:'change player _ saved data _ by _',a:['player','coins','1'],tip:'Adds a number to a player\'s saved variable (use a negative number to take away). A variable that does not exist yet starts at 0. Use \"save player data\" to keep it for next time.'},
- pdget:{c:'pl',l:'get player _ saved data _ into _',a:['player','coins','coins'],dd:{2:'var'},tip:'Stores a player\'s saved variable in a normal variable. It is 0 if it was never set. Your saved data from last time is loaded automatically when the game starts.'},
- pdadditem:{c:'pl',l:'put _ x _ in player _ saved inventory',a:['Sword','1','player'],tip:'Adds items to a player\'s saved inventory (a list of item names with how many they have, up to 100 kinds). The name can be anything, it does not need to be an item you made. Use \"save player data\" to keep it for next time.'},
- pdremitem:{c:'pl',l:'take _ x _ out of player _ saved inventory',a:['Sword','1','player'],tip:'Takes items out of a player\'s saved inventory. When none are left the item disappears from the list.'},
- pdsave:{c:'pl',l:'save player _ data',a:['player'],tip:'Saves all of a player\'s saved variables and saved inventory to their BrixBlox account for this game. Next time they play, it is loaded back automatically. A player\'s data is saved from their own computer, so for another player put this inside a server side block. Save after something important (like winning coins) and when they leave.'},
  randplayer:{c:'pl',l:'get random player into _',a:['target'],dd:{0:'var'},tip:'Picks one player in the game at random (you included) and stores their name in the variable. Use it with blocks like kick, teleport or ragdoll.'},
  forplayer:{c:'pl',l:'only for player _ do',a:['target'],k:1,tip:'Put blocks inside and they only happen for the player you name (type a name, a variable like target from "get random player", or player). GUI blocks (show, hide, set text, set colour, visible, toggle) are sent to that player\'s screen, so nobody else sees the change. Blocks that already have a player slot (kick, teleport, ragdoll) still use their own slot.'},
  getcount:{c:'pl',l:'get player count into _',a:['count'],dd:{0:'var'},tip:'Stores how many players are in the game right now (you included) in the variable.'},
@@ -599,6 +593,14 @@ const BD={
  ban:{c:'pl',l:'ban player _ from game, reason _ for _ minutes',a:['target','Cheating','60'],tip:'Kicks a player and stops them from joining again for this many minutes (0 = forever). A banned player cannot use add player. If you ban yourself you can lift it under Roster in the Explorer.'},
  accadd:{c:'pl',l:'add accessory _ to player _ inventory',a:['Cool Hat','player'],tip:'Admin block. Puts an accessory from the BrixBlox shop into a player\'s inventory for free. Type the accessory name exactly as it is in the shop. The player is a name, a variable, or player (the first player in the server) (like toucher). They can then wear it in their avatar page. Admin blocks only work in games made by an admin. You can give an accessory to yourself in any admin game, but only an admin can give one to another player.'},
  accrem:{c:'pl',l:'remove accessory _ from player _ inventory',a:['Cool Hat','player'],tip:'Admin block. Takes an accessory out of a player\'s inventory (and takes it off if they are wearing it). Admin blocks only work in games made by an admin. You can remove one from yourself in any admin game, but only an admin can remove one from another player.'},
+ pdset:{c:'dt',l:'set player _ saved data _ to _',a:['player','coins','0'],tip:'Saves a number or text on a player under a name you make up (like coins, level or class). Using a new name creates a new saved variable for that player, so you can add as many as you like (up to 50). It is kept in their BrixBlox account for this game, but only after you use the \"save player data\" block. To change another player\'s data put this inside a server side block.'},
+ pdchange:{c:'dt',l:'change player _ saved data _ by _',a:['player','coins','1'],tip:'Adds a number to a player\'s saved variable (use a negative number to take away). A variable that does not exist yet starts at 0. Use \"save player data\" to keep it for next time.'},
+ pdget:{c:'dt',l:'get player _ saved data _ into _',a:['player','coins','coins'],dd:{2:'var'},tip:'Stores a player\'s saved variable in a normal variable. It is 0 if it was never set. Your saved data from last time is loaded automatically when the game starts.'},
+ pdadditem:{c:'dt',l:'put _ x _ in player _ saved inventory',a:['Sword','1','player'],tip:'Adds items to a player\'s saved inventory (a list of item names with how many they have, up to 100 kinds). The name can be anything, it does not need to be an item you made. Use \"save player data\" to keep it for next time.'},
+ pdremitem:{c:'dt',l:'take _ x _ out of player _ saved inventory',a:['Sword','1','player'],tip:'Takes items out of a player\'s saved inventory. When none are left the item disappears from the list.'},
+ pdsave:{c:'dt',l:'save player _ data',a:['player'],tip:'Saves all of a player\'s saved variables and saved inventory to their BrixBlox account for this game. Next time they play, it is loaded back automatically. A player\'s data is saved from their own computer, so for another player put this inside a server side block. Save after something important (like winning coins) and when they leave.'},
+ oppdata:{c:'dt',rep:1,l:'player _ saved data _',a:['player','coins'],sk:'tt',f:function(x){return 'pdata('+x[0]+', '+x[1]+')'}},
+ oppdinv:{c:'dt',rep:1,l:'how many _ in player _ saved inventory',a:['Sword','player'],sk:'tt',f:function(x){return 'pdinv('+x[0]+', '+x[1]+')'}},
  playaud:{c:'au',l:'play _',a:['music'],raw:1,tip:'Plays an uploaded sound and keeps looping it until you stop it. The script moves on straight away. Upload sounds under Assets in the Explorer.'},
  playonce:{c:'au',l:'play _ once until done',a:['music'],raw:1,tip:'Plays an uploaded sound one time and waits here until it has finished before the next block runs.'},
  stopaud:{c:'au',l:'stop audio _',a:['all'],raw:1,tip:'Stops one sound by name, or every sound if you type all.'},
@@ -664,8 +666,6 @@ const BD={
  opmath:{c:'op',rep:1,l:'_ of _',a:['abs',''],dd:{0:'mathf'},sk:'dn',f:function(x){return 'mathf('+x[0]+', '+x[1]+')'}},
  opinair:{c:'op',rep:1,bool:1,l:'player _ is in the air ?',a:['player'],sk:'t',f:function(x){return 'inair('+x[0]+')'}},
  ophasattr:{c:'op',rep:1,bool:1,l:'player _ has attribute _ ?',a:['player','Hurt'],sk:'tt',f:function(x){return 'hasattr('+x[0]+', '+x[1]+')'}},
- oppdata:{c:'op',rep:1,l:'player _ saved data _',a:['player','coins'],sk:'tt',f:function(x){return 'pdata('+x[0]+', '+x[1]+')'}},
- oppdinv:{c:'op',rep:1,l:'how many _ in player _ saved inventory',a:['Sword','player'],sk:'tt',f:function(x){return 'pdinv('+x[0]+', '+x[1]+')'}},
  opplayers:{c:'op',rep:1,l:'number of players',a:[],sk:'',f:function(x){return 'playercount()'}},
  var:{c:'rv',rep:1,l:'_',a:[''],sk:'',f:function(x){return x[0]}},
  def:{c:'fn',hat:1,l:'define _',a:['spin'],raw:1},
