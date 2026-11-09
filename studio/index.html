@@ -478,12 +478,15 @@ html,body{overscroll-behavior:none;touch-action:manipulation}
 #mt-up{right:max(26px,env(safe-area-inset-right,0px));bottom:max(140px,calc(env(safe-area-inset-bottom,0px) + 106px));width:62px;height:62px;font-size:1.2rem}
 #mt-dn{right:max(26px,env(safe-area-inset-right,0px));bottom:max(34px,env(safe-area-inset-bottom,0px));width:62px;height:62px;font-size:1.2rem}
 #mt-menu{right:max(12px,env(safe-area-inset-right,0px));top:max(64px,calc(env(safe-area-inset-top,0px) + 56px));width:46px;height:46px;border-radius:12px;background:rgba(20,22,24,.62);font-size:1.25rem}
-#mt:not(.play) #mt-jump,#mt:not(.play) #mt-menu{display:none}
+#mt-sl{right:max(40px,calc(env(safe-area-inset-right,0px) + 14px));bottom:max(140px,calc(env(safe-area-inset-bottom,0px) + 106px));width:62px;height:62px;font-size:1.5rem;line-height:1;background:rgba(20,22,24,.62)}
+#mt-sl.sl-on{background:rgba(0,176,111,.92)}
+#mt:not(.play) #mt-jump,#mt:not(.play) #mt-menu,#mt:not(.play) #mt-sl,#mt-sl[hidden]{display:none}
 #mt.play #mt-up,#mt.play #mt-dn{display:none}
 @media (max-height:480px){
   #mt-stick{width:112px;height:112px;bottom:max(14px,env(safe-area-inset-bottom,0px))}
   #mt-knob{width:48px;height:48px;margin:-24px 0 0 -24px}
   #mt-jump{width:76px;height:76px;bottom:max(18px,env(safe-area-inset-bottom,0px))}
+  #mt-sl{width:52px;height:52px;bottom:max(104px,calc(env(safe-area-inset-bottom,0px) + 90px))}
 }
 @media (pointer:coarse),(max-width:760px){
   input,select,textarea{font-size:16px!important}
@@ -5250,6 +5253,7 @@ setInterval(function(){const w=document.getElementById('bb-who');if(w)w.textCont
   const root=document.createElement('div');root.id='mt';
   root.innerHTML='<div id="mt-stick"><div id="mt-knob"></div></div>'
     +'<button id="mt-jump" class="mt-b" type="button" aria-label="Jump">Jump</button>'
+    +'<button id="mt-sl" class="mt-b" type="button" aria-label="Shift lock" hidden>&#8679;</button>'
     +'<button id="mt-up" class="mt-b" type="button" aria-label="Fly up">&#9650;</button>'
     +'<button id="mt-dn" class="mt-b" type="button" aria-label="Fly down">&#9660;</button>'
     +'<button id="mt-menu" class="mt-b" type="button" aria-label="Menu">&#9776;</button>';
@@ -5286,6 +5290,12 @@ setInterval(function(){const w=document.getElementById('bb-who');if(w)w.textCont
     b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);
   }
   holdBtn('#mt-jump','Space',' ');holdBtn('#mt-up','KeyE','e');holdBtn('#mt-dn','KeyQ','q');
+  const slBtn=root.querySelector('#mt-sl');
+  slBtn.addEventListener('click',function(){
+    try{if(playing&&S.sla)S.sl=!S.sl}catch(e){}   /* no mouse lock on a touch screen, so just flip the mode */
+  });
+  /* the "click the game if the mouse did not lock" warning makes no sense on touch */
+  try{const lw=lockWarn;lockWarn=function(){};void lw}catch(e){}
   root.querySelector('#mt-menu').addEventListener('click',function(){
     releaseAll();try{if(menuEl)closeGM();else openGM()}catch(e){}
   });
@@ -5293,7 +5303,8 @@ setInterval(function(){const w=document.getElementById('bb-who');if(w)w.textCont
   /* show the right controls for the current mode */
   let lastP=null,lastF=null,lastOn=null;
   setInterval(function(){
-    let p=false,f=false;try{p=!!playing;f=!!fsOn}catch(e){}
+    let p=false,f=false,sa=false,sn=false;try{p=!!playing;f=!!fsOn;sa=p&&!!S.sla;sn=sa&&!!S.sl}catch(e){}
+    slBtn.hidden=!sa;slBtn.classList.toggle('sl-on',sn);
     const on=p||f;
     if(on!==lastOn||p!==lastP||f!==lastF){
       root.classList.toggle('on',on);root.classList.toggle('play',p);
