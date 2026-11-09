@@ -1078,7 +1078,7 @@ function evGames(e){const ids=Array.isArray(e.game_ids)?e.game_ids:[];return ids
 async function loadEvents(){if(!me)return;try{EVS=await api.events()}catch(e){EVS=[]}paintBB()}
 setInterval(function(){if(me&&!document.hidden&&!$('evo')&&!$('pl-frame'))loadEvents()},120000);
 function paintBB(){const box=$('bb');if(!box)return;clearInterval(bbTimer);box.replaceChildren();
-  const list=EVS.filter(evLive),adm=isBB();
+  const list=EVS.filter(evLive),adm=isAdm();
   if(!list.length&&!adm){box.hidden=true;return}
   box.hidden=false;
   if(list.length){
@@ -1113,7 +1113,7 @@ async function evReadThumb(f){const url=URL.createObjectURL(f);try{
   const img=await new Promise(function(ok,no){const i=new Image();i.onload=function(){ok(i)};i.onerror=function(){no(new Error('That file is not a picture.'))};i.src=url});
   const W=1200,H=400,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d'),k=Math.max(W/img.width,H/img.height),w=img.width*k,h=img.height*k;
   x.drawImage(img,(W-w)/2,(H-h)/2,w,h);let q=.82,d=c.toDataURL('image/jpeg',q);while(d.length>380000&&q>.4){q-=.12;d=c.toDataURL('image/jpeg',q)}return d}finally{URL.revokeObjectURL(url)}}
-function openBBMgr(){if(!isBB())return;closeEvent();
+function openBBMgr(){if(!isAdm())return;closeEvent();
   const ov=mkx('div','evo');ov.id='evo';ov.onclick=function(x){if(x.target===ov)closeEvent()};
   const card=mkx('div','evc evm'),body=mkx('div','evb'),x=mkx('button','evx','\u00D7');x.type='button';x.setAttribute('aria-label','Close');x.onclick=closeEvent;
   card.append(body);ov.append(card,x);x.style.position='fixed';x.style.top='14px';x.style.right='14px';document.body.append(ov);
@@ -1258,7 +1258,7 @@ function isBB(){return !!me&&me.username.toLowerCase()==='brixblox'}
 /* Admins (given by brixblox in the game's admin panel) can upload and manage accessories too */
 let ADMS=[];
 function isAdm(){return isBB()||(!!me&&ADMS.indexOf(me.username.toLowerCase())>=0)}
-async function loadAdmins(){try{ADMS=(await api.admins()||[]).map(function(x){return String(x).toLowerCase()})}catch(e){}}
+async function loadAdmins(){try{ADMS=(await api.admins()||[]).map(function(x){return String(x).toLowerCase()})}catch(e){}try{paintBB()}catch(e){}}
 function shineMat(mt,k){const n=mt.isMeshPhongMaterial?mt:new THREE.MeshPhongMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0});
   n.shininess=1+k*149;n.specular=new THREE.Color().setScalar(k);n.needsUpdate=true;return n}
 function addItem(g,id,fx){const it=itemById(id),o=it&&FBXC[id];if(!o)return;
