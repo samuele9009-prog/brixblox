@@ -1690,7 +1690,7 @@ async function playAnim(name,S,only){let A=P.anims[name];if(!A){log('Error: no a
   /* Your own character is also posed by the walk / idle / jump animations every frame. Hold its parts while this one plays so they do not fight. */
   const hid=Object.keys(A.keys).filter(function(id){const q=byId(id);return q&&q.av&&id!==P.avId});S.hold=S.hold||{};hid.forEach(function(id){S.hold[id]=(S.hold[id]||0)+1});
   if(hid.length){NANIM.c++;NANIM.n=name}
-  const gk=Object.keys(A.keys).filter(function(id){const q=byId(id);return q&&!q.av});gk.forEach(function(id){RBUSY[id]=(RBUSY[id]||0)+1});
+  const gk=Object.keys(A.keys).filter(function(id){return !!byId(id)});gk.forEach(function(id){RBUSY[id]=(RBUSY[id]||0)+1});
   /* Each body part obeys one animation at a time: the newest one to start owns it, so two animations can no longer fight over (mix on) the same part. */
   const tok=++ATOK,mine=Object.keys(A.keys);mine.forEach(function(id){RTOK[id]=tok});
   try{const t0=performance.now();let t=0;while(t<A.len&&!S.stop){t=(performance.now()-t0)/1000;const po=evalPose(A,Math.min(t,A.len)),fo={};for(const k in po){if(RTOK[k.replace(/^p:/,'')]===tok)fo[k]=po[k]}applyKeyed(fo);await sl(16)}}
@@ -1874,7 +1874,7 @@ function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
       else{const A=(q.mv&&(npAnim(q.wa)||npAnim('walk')))||npAnim(q.ia)||npAnim('idle');if(A)po=evalPose(A,q.t%A.len)}}
     else{const A=P.anims[S.idleA||'idle'];if(A)po=evalPose(A,q.t%A.len)}
     /* an animation this player started with a block overrides the parts it has keyframes for, on this player only */
-    if(q.net&&q.hi){const HA=npAnim(q.ha)||npAnim('hold item'),HW=npAnim(q.hw)||npAnim('hold item walk'),HJ=npAnim('hold item jump');if(nAir&&HJ)po=evalPose(HJ,Math.min(q.jt,HJ.len||1));else if(HW&&q.mv&&!q.air)po=evalPose(HW,q.t%(HW.len||1));else if(HA)po=Object.assign({},po,evalPose(HA,q.t%(HA.len||1)))}
+    if(q.net&&q.hi&&!(q.an&&npAnim(q.an))){const HA=npAnim(q.ha)||npAnim('hold item'),HW=npAnim(q.hw)||npAnim('hold item walk'),HJ=npAnim('hold item jump');if(nAir&&HJ)po=evalPose(HJ,Math.min(q.jt,HJ.len||1));else if(HW&&q.mv&&!q.air)po=evalPose(HW,q.t%(HW.len||1));else if(HA)po=Object.assign({},po,evalPose(HA,q.t%(HA.len||1)))}
     if(q.net&&q.hi&&!q.itemObj&&!q.hiBusy&&performance.now()>(q.hiRetry||0)){q.hiRetry=performance.now()+1500;try{netItem(q,1)}catch(x){}}
     let fp=po;
     if(q.net&&q.an){const AN=npAnim(q.an);if(!AN)q.an='';else{q.at=(q.at||0)+dt;
