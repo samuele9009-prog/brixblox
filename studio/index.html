@@ -738,7 +738,7 @@ function starter(){return [[mk('start'),mk('say',['Hello!']),mk('repeat',['4'],[
 /* Games only exist on disk once they are published. An unpublished game is a draft that is lost when the page closes. */
 const GKEY='brixblox-games';
 function glib(){try{return JSON.parse(store.get(GKEY))||{}}catch(e){return {}}}
-let P=null,gameId=null,gameVis=null,skipUnload=false,VIEWONLY=false,PLAYINFO=null,HOME=false;
+let P=null,gameId=null,gameVis=null,gameDraft=false,skipUnload=false,VIEWONLY=false,PLAYINFO=null,HOME=false;
 /* Who is signed in comes from the BrixBlox front page. Not signed in: go back there. */
 const ME=(function(){try{return JSON.parse(store.get('brixblox-me'))}catch(e){return null}})();
 if(!ME)location.replace('/');
@@ -781,7 +781,7 @@ function withTimeout(p,ms,why){return new Promise(function(res,rej){const t=setT
 function hsh(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return h+':'+s.length}
 function calcPend(){if(!sb||!ME||!gameId||VIEWONLY)return false;const g=glib()[gameId];return !!(g&&g.lh!==undefined&&g.lh!==hsh(g.data))}
 let cloudWhy='',liveAt='';
-function cloudPush(id,now){if(!sb||!ME)return;clearTimeout(cpT[id]);cpT[id]=setTimeout(async function(){
+function cloudPush(id,now){if(!sb||!ME)return;if(id===gameId&&gameDraft)return;clearTimeout(cpT[id]);cpT[id]=setTimeout(async function(){
   const done=function(){if(id===gameId)upBusy=false;updateStat()};
   try{
     const g=glib()[id];if(!g)return;const hs=hsh(g.data);let ch=null,ct=0;const data=await withTimeout(cloudData(id),90000,'sending the sounds/meshes took too long - check your internet and press Update again');
@@ -826,7 +826,7 @@ const mineG=function(g){return ADMIN||!g.owner||!ME||g.owner.id===ME.id};
   try{const old=store.get('brixblox-studio');if(old&&!Object.keys(L).length){const o=JSON.parse(old);if(o&&Array.isArray(o.scripts)){const id='g'+Date.now().toString(36);L[id]={id:id,name:o.name||'My game',vis:'private',at:Date.now(),data:old};store.set(GKEY,JSON.stringify(L));store.set('brixblox-cur',id)}}}catch(e){}
   const pend=store.get('brixblox-pending');if(pend)store.del('brixblox-pending');HOME=!pend;
   const want=pend==='__new__'?'':(pend||store.get('brixblox-cur')||'');
-  if(want&&L[want]&&mineG(L[want])){try{P=JSON.parse(L[want].data);if(!P||!Array.isArray(P.scripts))throw 0;gameId=want;gameVis=L[want].vis||'private';store.set('brixblox-cur',want)}catch(e){P=null;gameId=null}}
+  if(want&&L[want]&&mineG(L[want])){try{P=JSON.parse(L[want].data);if(!P||!Array.isArray(P.scripts))throw 0;gameId=want;gameVis=L[want].vis||'private';gameDraft=!!L[want].dr;store.set('brixblox-cur',want)}catch(e){P=null;gameId=null}}
   if(!P)P={name:pend==='__new__'?'My new game':'My first BrixBlox game',scripts:starter()}})();
 if(P.name==='My first BricBloc game')P.name='My first BrixBlox game';
 PEND=calcPend();
@@ -841,9 +841,19 @@ if(VIEWONLY&&sb&&PLAYINFO&&PLAYINFO.id&&!PLAYINFO.fresh){(function(){
     store.set('brixblox-play',JSON.stringify(Object.assign({},PLAYINFO,{data:cd,fresh:1})));skipUnload=true;location.reload()
   }).catch(function(){ov.remove();if(window.BBTAG)BBTAG.textContent='build v5 \u00b7 could not reach the online copy (using the saved one)'})})()}
 function persistGame(){const L=glib(),pv=L[gameId],js=JSON.stringify(P),lh=pv?(pv.lh!==undefined?pv.lh:hsh(pv.data)):undefined;
-  L[gameId]={id:gameId,name:P.name,vis:gameVis||'private',at:Date.now(),owner:(pv&&pv.owner&&pv.owner.id)?pv.owner:(ME?{id:ME.id,name:ME.username}:undefined),data:js,lh:lh,ch:pv&&pv.ch,ct:pv&&pv.ct,thumb:(pv&&pv.thumb)||undefined};store.set(GKEY,JSON.stringify(L));PEND=calcPend();try{updateStat()}catch(e){}
+  L[gameId]={id:gameId,name:P.name,vis:gameVis||'private',at:Date.now(),owner:(pv&&pv.owner&&pv.owner.id)?pv.owner:(ME?{id:ME.id,name:ME.username}:undefined),data:js,lh:lh,ch:pv&&pv.ch,ct:pv&&pv.ct,dr:(gameDraft?1:undefined),thumb:(pv&&pv.thumb)||undefined};store.set(GKEY,JSON.stringify(L));PEND=calcPend();try{updateStat()}catch(e){}
   const gid=gameId;thumbFor(P).then(function(th){const L2=glib();if(!L2[gid]||(L2[gid].thumb||null)===(th||null))return;if(th)L2[gid].thumb=th;else delete L2[gid].thumb;store.set(GKEY,JSON.stringify(L2))})}
-function save(){if(gameId)persistGame()}
+/* Every game is saved in this Studio as you edit it. A game that was never published is a "draft": it stays here, is never sent online
+   and is hidden on the BrixBlox site until you press Publish. Update (or Publish) is what puts changes on the website. */
+function draftOk(){if(VIEWONLY||gameId||!ME)return false;try{if(COP&&(COP.joining||COP.detached||(COP.on&&!COP.host)))return false}catch(e){}return true}
+function draftNow(){if(!draftOk())return false;
+  try{gameId='g'+Date.now().toString(36)+Math.floor(Math.random()*1e3).toString(36);gameVis='private';gameDraft=true;
+    const L=glib();L[gameId]={id:gameId,name:P.name,vis:'private',at:Date.now(),owner:{id:ME.id,name:ME.username},data:JSON.stringify(P),dr:1};store.set(GKEY,JSON.stringify(L));store.set('brixblox-cur',gameId);
+    persistGame();try{persistGame.flush()}catch(e){}try{updateStat()}catch(e){}return true}
+  catch(e){gameId=null;gameVis=null;gameDraft=false;return false}}
+let draftT=0;
+function draftSoon(){if(draftT||!draftOk())return;draftT=setTimeout(function(){draftT=0;try{if(!gameId&&JSON.stringify(P)!==baseStr)draftNow()}catch(e){}},700)}
+function save(){if(gameId)persistGame();else draftSoon()}
 function clean(){P.scripts=P.scripts.filter(function(s){return s.length})}
 function inside(b,arr){return !!b.k&&(b.k===arr||b.k.some(function(x){return inside(x,arr)}))}
 /* ===== Scratch-style block board: drag blocks anywhere, snap them together, drop them on the palette to delete ===== */
@@ -3773,9 +3783,10 @@ function genSky(n,pp,eo,S0,only){if(!pp&&SKYGENC[n])return SKYGENC[n];
       if(e>=0){const t=e<.22?0:1,u=e<.22?Math.pow(e/.22,.8):Math.pow((e-.22)/.78,.7);
         const A=t?mid:hor,B=t?zen:mid;r=A[0]+(B[0]-A[0])*u;g=A[1]+(B[1]-A[1])*u;b=A[2]+(B[2]-A[2])*u}
       else{const u=skySmooth(0,.4,-e);r=hor[0]+(gnd[0]-hor[0])*u;g=hor[1]+(gnd[1]-hor[1])*u;b=hor[2]+(gnd[2]-hor[2])*u}
-      if(sg){const dt=Math.max(0,d[0]*sd[0]+d[1]*sd[1]+d[2]*sd[2]),w=sg[3]*(Math.pow(dt,28)*.7+Math.pow(dt,6)*.2)+sg[3]*Math.pow(dt,3)*.1*(1-Math.min(1,Math.abs(e)*3));
+      const below=skySmooth(-.1,.03,e);/* nothing is painted under the horizon, so the bottom of the sky is one plain colour */
+      if(sg){const dt=Math.max(0,d[0]*sd[0]+d[1]*sd[1]+d[2]*sd[2]),w=below*(sg[3]*(Math.pow(dt,28)*.7+Math.pow(dt,6)*.2)+sg[3]*Math.pow(dt,3)*.1*(1-Math.min(1,Math.abs(e)*3)));
         r+=sg[0]*w;g+=sg[1]*w;b+=sg[2]*w}
-      if(mg){const dt=Math.max(0,d[0]*md[0]+d[1]*md[1]+d[2]*md[2]),w=mg[3]*(Math.pow(dt,40)*.5+Math.pow(dt,8)*.14);r+=mg[0]*w;g+=mg[1]*w;b+=mg[2]*w}
+      if(mg){const dt=Math.max(0,d[0]*md[0]+d[1]*md[1]+d[2]*md[2]),w=below*mg[3]*(Math.pow(dt,40)*.5+Math.pow(dt,8)*.14);r+=mg[0]*w;g+=mg[1]*w;b+=mg[2]*w}
       if(e>.005){const q=1/(e+.2),oc=Math.min(MO,e<.08?5:e<.2?6:8),bx=d[0]*q*cl.sc+ox,bz=d[2]*q*cl.sc+oy,wg=cl.wig||0,qx=wg?bx+(skyNoise(bx*.7+3.1,bz*.7)-.5)*wg:bx,qz=wg?bz+(skyNoise(bx*.7,bz*.7+7.7)-.5)*wg:bz,nn=skyFbm(qx,qz,oc),t0=1-cl.cov;
         let dn=skySmooth(t0,t0+cl.soft*.5,nn)*cl.op*skySmooth(.005,.16,e);
         if(dn>.003){const n2=skyFbm(qx+sd[0]*.3,qz+sd[2]*.3,oc),n3=skyFbm(qx+sd[0]*.9,qz+sd[2]*.9,Math.min(oc,4)),
@@ -3933,8 +3944,8 @@ let LSP=null;/* when a different game's settings load in the studio, switch to i
 function skyTick(dt){if(!playing&&!running&&LSP!==P.env){LSP=P.env;if(P.env.light&&LPRE[P.env.light]){lightStart();try{applyEnv()}catch(e){}}}
   const e=lightEnv(),a=(e.tod-6)/12*Math.PI,d=new THREE.Vector3(Math.cos(a)*14,Math.sin(a)*14,6).normalize(),day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),R=700,cp=camera.position;
   skyApply();skyG.visible=!stage.visible&&!skyAny;skyBox.visible=!stage.visible&&(skyAny||skyGenOn);skyBox.position.copy(cp);
-  sunS.visible=d.y>-.1;sunS.position.set(cp.x+d.x*R,cp.y+d.y*R,cp.z+d.z*R);
-  moonS.visible=d.y<.1;moonS.position.set(cp.x-d.x*R,cp.y-d.y*R,cp.z-d.z*R);
+  sunS.visible=d.y>-.03;sunS.position.set(cp.x+d.x*R,cp.y+d.y*R,cp.z+d.z*R);
+  moonS.visible=d.y<.03;moonS.position.set(cp.x-d.x*R,cp.y-d.y*R,cp.z-d.z*R);
   try{skyLook(dt,k)}catch(err){if(!skyLook.bad){skyLook.bad=1;log('Error: sun/moon/clouds - '+(err&&err.message))}}cloudS.forEach(function(q){const u=q.userData;u.az+=u.sp*dt*SKYS.cs;const ce=Math.cos(u.el);q.position.set(cp.x+Math.sin(u.az)*ce*800,cp.y+Math.sin(u.el)*800,cp.z-Math.cos(u.az)*ce*800)})}
 /* F: fly the camera to a spot in front of whatever is selected */
 function focusSel(){let ps=sel.map(function(id){return byId(id)}).filter(function(p){return p&&!p.stab});
@@ -4748,7 +4759,7 @@ addEventListener('keydown',function(e){if(!(e.ctrlKey||e.metaKey)||e.altKey)retu
 
 /* ===== Games: nothing is saved until you publish (Private or Public). Shift+N then G starts a new game. ===== */
 let baseStr=JSON.stringify(P);
-function dirty(){return !VIEWONLY&&!gameId&&JSON.stringify(P)!==baseStr}
+function dirty(){if(VIEWONLY||gameId)return false;if(JSON.stringify(P)===baseStr)return false;return !draftNow()}
 function mdl(title,build){const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:12px';
   const c=document.createElement('div');c.style.cssText='background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:18px;width:min(94vw,440px);max-height:86vh;overflow:auto;display:flex;flex-direction:column;gap:10px';
   const h=el('h3','',title);h.style.margin='0';c.append(h);
@@ -4757,26 +4768,26 @@ function mdl(title,build){const ov=document.createElement('div');ov.style.cssTex
 function mb(t,cls,fn){const b=el('button','btn small '+cls,t);b.type='button';b.onclick=fn;return b}
 function ask(text,yes,fn){mdl('Are you sure?',function(c,close){c.append(el('p','',text));const r=el('div','tb');r.append(mb(yes,'',function(){close();fn()}),mb('Cancel','ghost',close));c.append(r)})}
 const statEl=el('span','','');statEl.style.cssText='font-size:.8rem;font-weight:700;white-space:nowrap';
-function updateStat(){statEl.textContent=gameId?'Published ('+(gameVis==='public'?'Public':'Private')+')'+(!sb?' - NOT live: not connected online (reload this page)':cloudErr?' - NOT live, upload failed'+(cloudWhy?': '+cloudWhy:''):PEND?' - saved here, not live yet':(liveAt?' - live since '+liveAt:'')):'Unpublished - not saved';statEl.style.color=gameId&&sb&&!cloudErr&&!PEND?'#4be3a0':'#ffb347';
-  if(upBtn){upBtn.hidden=!(gameId&&ME);upBtn.disabled=upBusy;upBtn.textContent=upBusy?'Updating...':'Update'}}
-function publish(v){if(!gameId)gameId='g'+Date.now().toString(36)+Math.floor(Math.random()*1e3).toString(36);gameVis=v;persistGame();cloudPush(gameId,true);store.set('brixblox-cur',gameId);baseStr=JSON.stringify(P);updateStat()}
+function updateStat(){statEl.textContent=gameId&&gameDraft?'Draft - saved in Studio, not on the website yet (press Publish)':gameId?'Published ('+(gameVis==='public'?'Public':'Private')+')'+(!sb?' - NOT live: not connected online (reload this page)':cloudErr?' - NOT live, upload failed'+(cloudWhy?': '+cloudWhy:''):PEND?' - saved here, not live yet':(liveAt?' - live since '+liveAt:'')):'Unpublished - not saved';statEl.style.color=gameId&&(gameDraft||(sb&&!cloudErr&&!PEND))?'#4be3a0':'#ffb347';
+  if(upBtn){upBtn.hidden=!(gameId&&ME&&!gameDraft);upBtn.disabled=upBusy;upBtn.textContent=upBusy?'Updating...':'Update'}}
+function publish(v){if(!gameId)gameId='g'+Date.now().toString(36)+Math.floor(Math.random()*1e3).toString(36);gameVis=v;gameDraft=false;persistGame();cloudPush(gameId,true);store.set('brixblox-cur',gameId);baseStr=JSON.stringify(P);updateStat()}
 function updateLive(){if(gameId&&ME&&!sb){mdl('Cannot update',function(c,close){c.append(el('p','','This page is not connected online (the online library did not load, or you are in demo mode). Reload the page while connected to the internet, then press Update.'));c.append(mb('OK','',close))});return}
   if(!gameId||!sb||!ME||upBusy)return;upBusy=true;cloudErr=false;updateStat();cloudPush(gameId,true)}
-function publishDlg(){mdl(gameId?'Publish settings':'Publish game',function(c,close){
+function publishDlg(){mdl(gameId&&!gameDraft?'Publish settings':'Publish game',function(c,close){
   const mxp=el('input');mxp.type='number';mxp.min=1;mxp.max=30;mxp.value=P.maxp||10;mxp.style.cssText='min-height:32px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);width:100%';
   const nm=el('input');nm.value=P.name;nm.maxLength=30;nm.style.cssText='min-height:32px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink)';
-  c.append(el('p','note',gameId?'This game is published. Your changes save here in BrixBlox Studio automatically, but they only go live on BrixBlox when you press Update (or Publish again).':'This game is not saved yet. Publish it to keep it.'),lab('Game name',nm),lab('Max players per server (1-30)',mxp),el('p','note','How many players fit in one server of this game. When a server is full, new players are put in a new server. Default 10, max 30.'));
+  c.append(el('p','note',gameId&&!gameDraft?'This game is published. Your changes save here in BrixBlox Studio automatically, but they only go live on BrixBlox when you press Update (or Publish again).':'This game saves here in BrixBlox Studio automatically. It only shows up on the BrixBlox website once you Publish it.'),lab('Game name',nm),lab('Max players per server (1-30)',mxp),el('p','note','How many players fit in one server of this game. When a server is full, new players are put in a new server. Default 10, max 30.'));
   const go=function(v){P.maxp=Math.max(1,Math.min(30,Math.round(+mxp.value)||10));P.name=nm.value.trim()||P.name;$('s-name').value=P.name;publish(v);close()};
   const r=el('div','tb');r.append(mb('Publish as Private','',function(){go('private')}),mb('Publish as Public','',function(){go('public')}),mb('Cancel','ghost',close));c.append(r);setTimeout(function(){nm.focus()},0)})}
 function reloadInto(v){skipUnload=true;store.set('brixblox-pending',v);location.reload()}
 function openGame(id){if(dirty())ask('This game is not published, so it will be lost. Open another game anyway?','Open anyway',function(){reloadInto(id)});else reloadInto(id)}
 function newGame(){if(dirty())ask('This game is not published, so it will be lost. Start a new game anyway?','Start new game',function(){reloadInto('__new__')});else reloadInto('__new__')}
 function gamesDlg(){mdl('My games',function(c,close){const L=glib(),ids=Object.keys(L).filter(function(k){return mineG(L[k])}).sort(function(a,b){return L[b].at-L[a].at});
-  if(!ids.length)c.append(el('p','note','No published games yet.'));
-  ids.forEach(function(id){const g=L[id],row=el('div','tb'),t=el('span','',g.name+(id===gameId?' (open)':'')+' - '+(g.vis==='public'?'Public':'Private'));row.style.alignItems='center';t.style.flex='1';row.append(t);
+  if(!ids.length)c.append(el('p','note','No games yet.'));
+  ids.forEach(function(id){const g=L[id],row=el('div','tb'),t=el('span','',g.name+(id===gameId?' (open)':'')+' - '+(g.dr?'Draft (not on the website)':g.vis==='public'?'Public':'Private'));row.style.alignItems='center';t.style.flex='1';row.append(t);
     if(id!==gameId)row.append(mb('Open','',function(){close();openGame(id)}));
-    row.append(mb(g.vis==='public'?'Make private':'Make public','ghost',function(){const L2=glib();if(!L2[id])return;L2[id].vis=g.vis==='public'?'private':'public';store.set(GKEY,JSON.stringify(L2));cloudVis(id,L2[id].vis);if(id===gameId){gameVis=L2[id].vis;updateStat()}close();gamesDlg()}));
-    row.append(mb('Delete','ghost',function(){ask('Delete "'+g.name+'"? This cannot be undone.','Delete',function(){const L2=glib();if(id!==gameId&&L2[id])dropGameBig(L2[id]);delete L2[id];store.set(GKEY,JSON.stringify(L2));cloudDel(id);if(store.get('brixblox-cur')===id)store.del('brixblox-cur');if(id===gameId){gameId=null;gameVis=null;baseStr='';updateStat()}gamesDlg()})}));
+    if(!g.dr)row.append(mb(g.vis==='public'?'Make private':'Make public','ghost',function(){const L2=glib();if(!L2[id])return;L2[id].vis=g.vis==='public'?'private':'public';store.set(GKEY,JSON.stringify(L2));cloudVis(id,L2[id].vis);if(id===gameId){gameVis=L2[id].vis;updateStat()}close();gamesDlg()}));
+    row.append(mb('Delete','ghost',function(){ask('Delete "'+g.name+'"? This cannot be undone.','Delete',function(){const L2=glib();if(id!==gameId&&L2[id])dropGameBig(L2[id]);delete L2[id];store.set(GKEY,JSON.stringify(L2));cloudDel(id);if(store.get('brixblox-cur')===id)store.del('brixblox-cur');if(id===gameId){gameId=null;gameVis=null;gameDraft=false;baseStr=JSON.stringify(P);updateStat()}gamesDlg()})}));
     c.append(row)});
   c.append(mb('New game (Shift+N, G)','',function(){close();newGame()}),mb('Close','ghost',close))})}
 {const bk=$('s-back'),pb=mb('Publish','',publishDlg),gb=mb('My games','ghost',gamesDlg);upBtn=mb('Update','',updateLive);upBtn.title='Send your latest changes to normal BrixBlox. Until you press this, changes only save here in BrixBlox Studio.';upBtn.hidden=true;$('s-name').insertAdjacentElement('afterend',statEl);bk.parentNode.insertBefore(pb,bk);bk.parentNode.insertBefore(upBtn,bk);bk.parentNode.insertBefore(gb,bk)}
@@ -5162,14 +5173,14 @@ async function studioHome(){
   const who=el('div','who');who.append(mb('Create a new game','',function(){reloadInto('__new__')}),mb('← BrixBlox','ghost',function(){location.href=SITE_URL}));bar.append(lg,who);
   const pg=el('div','page');pg.style.maxWidth='1280px';pg.append(el('h2','big','Your games'));const box=el('div');pg.append(box);ov.append(bar,pg);document.body.append(ov);
   const map={},L=glib();
-  Object.keys(L).forEach(function(id){const g=L[id];if(mineG(g)&&id.indexOf('acc_')!==0&&id.indexOf('sys_')!==0)map[id]={id:id,name:g.name||'Untitled',vis:g.vis||'private',at:g.at||0}});
+  Object.keys(L).forEach(function(id){const g=L[id];if(mineG(g)&&id.indexOf('acc_')!==0&&id.indexOf('sys_')!==0)map[id]={id:id,name:g.name||'Untitled',vis:g.vis||'private',at:g.at||0,dr:!!g.dr}});
   if(sb){try{const r=await sb.from('games').select('id,name,vis,updated_at').eq('owner_id',ME.id);
     if(!r.error)r.data.forEach(function(x){if(String(x.id).indexOf('acc_')===0||String(x.id).indexOf('sys_')===0)return;const t=Date.parse(x.updated_at)||0,o=map[x.id];if(!o||t>o.at)map[x.id]={id:x.id,name:x.name||'Untitled',vis:x.vis,at:t,cloud:!o}})}catch(e){}}
   const list=Object.keys(map).map(function(k){return map[k]}).sort(function(a,b){return b.at-a.at});
   const cards=function(host,items,adm){host.className='gcards';
     items.forEach(function(g){let h=0;for(let i=0;i<g.id.length;i++)h=(h*31+g.id.charCodeAt(i))>>>0;
       const c=el('div','gc'),th=el('div','th',(g.name.trim().charAt(0)||'?').toUpperCase()),bd=el('div','bd');th.style.background='hsl('+(h%360)+',55%,42%)';
-      bd.append(el('b','',g.name),el('small','',(g.vis==='public'?'Public':'Private')+(adm&&g.oname?' \u00b7 by '+g.oname:'')));
+      bd.append(el('b','',g.name),el('small','',(g.dr?'Draft (not on the website)':g.vis==='public'?'Public':'Private')+(adm&&g.oname?' \u00b7 by '+g.oname:'')));
       const row=el('div','row');
       row.append(mb('Edit','',async function(){
         if(g.cloud){try{const r=await sb.from('games').select('data').eq('id',g.id).single();if(r.error)throw r.error;
@@ -5186,7 +5197,7 @@ async function studioHome(){
           try{let r=await sb.rpc('set_official',{p_game:String(g.id),p_on:!g.official});if(r.error){r=await sb.from('games').update({official:!g.official}).eq('id',g.id);if(r.error)throw r.error}g.official=!g.official;tb.textContent=g.official?'Remove from BrixBlox section':'Add to BrixBlox section';officialBox()}
           catch(e){try{msg('Could not change that game. The database needs the BrixBlox setup SQL first.')}catch(x){}}});row.append(tb)}
       bd.append(row);c.append(th,bd);host.append(c)})};
-  if(!list.length)box.append(el('p','empty','You have not published any games yet. Press Create a new game, build it, then press Publish.'));
+  if(!list.length)box.append(el('p','empty','You have no games yet. Press Create a new game and start building - it saves here by itself. Press Publish when you want it on the website.'));
   else cards(box,list,false);
   if(!ADMIN||!sb)return;
   /* Admin only: the Made by BrixBlox section and every game on the site */
