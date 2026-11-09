@@ -937,6 +937,22 @@ function mkScr(s,opts){const d=el('div','scr'+(s[0]===selScr?' sel':'')),hat=BD[
   const lst=rList(s);d.append(lst);if(!hat)conns.push({k:'before',arr:s,i:0,el:lst.firstChild});
   if(typeof s[0].x==='number'){d.style.left=s[0].x+'px';d.style.top=s[0].y+'px'}
   return d}
+/* Grabbing a stack: just hide its blocks (and the ones below it) instead of redrawing anything */
+function hideTail(arr,i,top){const c=conns.find(function(q){return q.k==='after'&&q.arr===arr&&q.i===i+1});if(!c||!c.el)return false;
+  const hide=function(n){n.classList.add('dh');n.style.display='none'};
+  if(arr===top&&i===0){const d=c.el.closest('.scr');if(!d)return false;hide(d)}
+  else{let n=c.el;while(n){const nx=n.nextElementSibling;hide(n);n=nx}}
+  conns=conns.filter(function(q){return !(q.el&&q.el.closest('.dh'))});slots=slots.filter(function(q){return !(q.el&&q.el.closest('.dh'))});return true}
+/* After a drop: redraw only the scripts that changed, not the whole board */
+function rendSome(tops){if(!CV||!P.scripts.length||P.scripts.some(function(s){return typeof s[0].x!=='number'})){rend();return}
+  reser();if(selScr&&!P.scripts.some(function(s){return s[0]===selScr}))selScr=null;
+  const opts=ownOpts(),have=new Map();
+  Array.from(CV.children).forEach(function(d){if(!d._s)return;if(P.scripts.indexOf(d._s)<0||tops.indexOf(d._s)>=0)d.remove();else have.set(d._s,d)});
+  conns=[];slots=[];slHl=null;
+  P.scripts.forEach(function(sc){const d=have.get(sc);
+    if(d){conns.push.apply(conns,d._c||[]);slots.push.apply(slots,d._sl||[])}
+    else{const c0=conns.length,s0=slots.length,nd=mkScr(sc,opts);nd._c=conns.slice(c0);nd._sl=slots.slice(s0);CV.append(nd)}});
+  sizeCvs();markSel();save();view();buildVarPal()}
 function rendFast(top){reser();slHl=null;const opts=ownOpts();conns=[];slots=[];
   Array.from(CV.children).forEach(function(d){if(!d._s)return;
     if(d._s===top){if(P.scripts.indexOf(top)<0){d.remove();return}
@@ -984,10 +1000,11 @@ function dBegin(){const s=pend.src;let bl,tp=null,fast=true;
   if(s.rep||s.rb){let nd;
     if(s.rb){nd=s.rb;const pa=s.par;if(pa&&pa.b){if(pa.b.r)delete pa.b.r[pa.i];pa.b.a[pa.i]=(BD[pa.b.t]&&BD[pa.b.t].a[pa.i])||''}}
     else nd=s.t==='var'?{t:'var',a:[s.name],k:null}:mk(s.t);
-    pend.rep=nd;pend.on=true;rf();
+    pend.rep=nd;pend.on=true;pend.tp=tp;pend.fast=fast;rf();
     gh=el('div','dghost');gh.append(rRep(nd,null,0,true));document.body.append(gh);document.body.classList.add('dragging');return}
-  if(s.t)bl=[mk(s.t)];else{const i=s.arr.indexOf(s.b);bl=s.arr.splice(i);clean()}
-  pend.bl=bl;pend.on=true;rf();
+  let hid=false;
+  if(s.t)bl=[mk(s.t)];else{const i=s.arr.indexOf(s.b);if(fast&&tp)hid=hideTail(s.arr,i,tp);bl=s.arr.splice(i);clean()}
+  pend.bl=bl;pend.on=true;pend.tp=tp;pend.fast=fast;if(!hid)rf();
   gh=el('div','dghost');gh.append(rList(bl,true));document.body.append(gh);document.body.classList.add('dragging')}
 /* Snap points: under a block, inside a C-block, or above a loose stack. The nearest one within reach wins. */
 function findSnap(){if(!pend||!pend.bl||BD[pend.bl[0].t].hat)return null;const g=gh.getBoundingClientRect();let best=null,bd=46;
@@ -1014,7 +1031,8 @@ function dEnd(e){removeEventListener('pointermove',dMoveRaf);dEv=null;if(dRaf){c
   if(p.rep){const over=document.elementFromPoint(e.clientX,e.clientY),inWs=!!(over&&over.closest('#s-ws')),tg=inWs?slotAt(e.clientX,e.clientY):null;
     gh.remove();gh=null;showSlot(null);document.body.classList.remove('dragging');pend=null;
     if(tg&&tg.b){tg.b.r=tg.b.r||{};tg.b.r[tg.i]=p.rep}
-    rend();renderParts();return}
+    if(p.fast&&(!tg||!tg.b||P.scripts.some(function(x){return hasB(x,tg.b)}))){rendSome([p.tp,tg&&tg.b?P.scripts.find(function(x){return hasB(x,tg.b)}):null])}else rend();
+    requestAnimationFrame(renderParts);return}
   const g=gh.getBoundingClientRect(),over=document.elementFromPoint(e.clientX,e.clientY),inWs=!!(over&&over.closest('#s-ws')),sn=inWs?findSnap():null,bl=p.bl,cr=CV.getBoundingClientRect();
   gh.remove();gh=null;if(dI){dI.remove();dI=null}document.body.classList.remove('dragging');pend=null;
   if(over&&over.closest('#s-pal')){/* dropped on the palette: deleted */}
@@ -1025,7 +1043,9 @@ function dEnd(e){removeEventListener('pointermove',dMoveRaf);dEv=null;if(dRaf){c
   else if(inWs||!p.src.t){
     let x=g.left-cr.left,y=g.top-cr.top;x=Math.max(8,Math.min(x,CV.offsetWidth-140));y=Math.max(8,Math.min(y,CV.offsetHeight-60));
     bl[0].x=Math.round(x);bl[0].y=Math.round(y);P.scripts.push(bl);selScr=bl[0]}
-  clean();rend();renderParts()}
+  clean();
+  if(p.fast)rendSome([p.tp,P.scripts.find(function(x){return hasB(x,bl[0])})]);else rend();
+  requestAnimationFrame(renderParts)}
 
 
 /* BricBloc as text */
