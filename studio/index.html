@@ -3310,7 +3310,7 @@ function simInit(key,T,e){
   const rl=Math.max(0,Math.min(1,((S.rex||1)-1)/99)),/* 0 = cartoony default, 1 = fully realistic */
     kick=[(Math.random()-.5)*4*(1-rl),(Math.random()-.5)*2*(1-rl),(Math.random()-.5)*4*(1-rl)];
   B.forEach(function(b){b.v=v0.slice();b.w=b===B[0]?kick:[0,0,0]});
-  return {rl:rl,bodies:B,q0:q0,off:[off.x,off.y,off.z],y0:org0[1],rt:[rt.x,rt.y,rt.z],g:Math.max(20,P.rules.grav)}}
+  return {rl:rl,up0:Math.max(0,v0[1]),bodies:B,q0:q0,off:[off.x,off.y,off.z],y0:org0[1],rt:[rt.x,rt.y,rt.z],g:Math.max(20,P.rules.grav)}}
 /* Ragdoll ground sampling: floor height under a body, the slope of that floor (from nearby heights, so ramps, round shapes and unions all work) and how grippy the surface is. */
 function ragGround(b){const x=b.x[0],z=b.x[2],fy=b.x[1]-1.5,c=groundAt(x,z,fy),gq=GAQ;b.fl=c;b.gn=[0,1,0];b.fr=1;
   if(c<-1e8){GAQ=gq;return}
@@ -3330,7 +3330,7 @@ function simStep1(sm,dt){dt=Math.min(dt,1/30);sm.t=(sm.t||0)+dt;
   B.forEach(ragGround);
   const W=ragWalls(B);
   for(let st=0;st<N;st++){
-    B.forEach(function(b){b.v[1]-=gr*h;b.xp=b.x.slice();b.qp=b.q.slice();b.x=[b.x[0]+b.v[0]*h,b.x[1]+b.v[1]*h,b.x[2]+b.v[2]*h];b.q=addRot(b.q,[b.w[0]*h,b.w[1]*h,b.w[2]*h]);b.hit=false});
+    B.forEach(function(b){b.v[1]-=gr*h;b.pv=b.v[1];b.xp=b.x.slice();b.qp=b.q.slice();b.x=[b.x[0]+b.v[0]*h,b.x[1]+b.v[1]*h,b.x[2]+b.v[2]*h];b.q=addRot(b.q,[b.w[0]*h,b.w[1]*h,b.w[2]*h]);b.hit=false});
     for(let it=0;it<3;it++){
       B.forEach(function(b){if(b.par<0)return;const pa=B[b.par];
         const r1=qR(pa.q,b.a1),r2=qR(b.q,b.a2),d=[pa.x[0]+r1[0]-b.x[0]-r2[0],pa.x[1]+r1[1]-b.x[1]-r2[1],pa.x[2]+r1[2]-b.x[2]-r2[2]],c=Math.hypot(d[0],d[1],d[2]);
@@ -3355,13 +3355,17 @@ function simStep1(sm,dt){dt=Math.min(dt,1/30);sm.t=(sm.t||0)+dt;
       if(W.length)B.forEach(function(b){if(b.p.stab)return;const rs=Math.max(b.hs[0],b.hs[1],b.hs[2])*.8;
         W.forEach(function(w){const q=w.q,r=boxSph(w.bx,w.cy,w.bz,w.rot?[q.size[0]/2,q.size[1]/2,q.size[2]/2]:w.h,w.rot?rotM(q):null,b.x[0],b.x[1],b.x[2],rs);
           if(!r||r.n[1]>.6)return;/* a floor-like contact: the floor code handles it */
-          const sp=Math.hypot(b.v[0],b.v[1],b.v[2]),pen=Math.min(r.pen,Math.max(.04,sp*h*1.5+.04));b.x=[b.x[0]+r.n[0]*pen,b.x[1]+r.n[1]*pen,b.x[2]+r.n[2]*pen]})})}
+          let nn=r.n;/* only the top edge or corner of a block is touching (the body's middle is above the block's top): lift the body up onto it instead of shoving it sideways, which used to flip you off the block you were standing on */
+          if(!w.rot&&b.x[1]>w.cy+w.h[1]-rs*.5)nn=[0,1,0];
+          const sp=Math.hypot(b.v[0],b.v[1],b.v[2]),pen=Math.min(r.pen,Math.max(.04,sp*h*1.5+.04));b.x=[b.x[0]+nn[0]*pen,b.x[1]+nn[1]*pen,b.x[2]+nn[2]*pen]})})}
     if(dvx||dvy||dvz)B.forEach(function(b){b.x[0]+=dvx*h;b.x[1]+=dvy*h;b.x[2]+=dvz*h});
     B.forEach(function(b){b.v=[(b.x[0]-b.xp[0])/h-dvx,(b.x[1]-b.xp[1])/h-dvy,(b.x[2]-b.xp[2])/h-dvz];
       const dq=qm(b.q,qc(b.qp)),sg=dq[3]<0?-1:1;b.w=[2*dq[0]*sg/h,2*dq[1]*sg/h,2*dq[2]*sg/h];
       const gf=b.fr==null?1:Math.min(1,b.fr),rl=sm.rl||0,kl=1-(b.hit?.8*gf:.3*(1-rl))*h,ka=1-(b.hit?(1+3*gf)*(1-.5*rl):(b.sp&&sm.t<1.5?5-3.8*rl:1.2*(1-.75*rl)))*h;b.v=[b.v[0]*kl,b.hit?b.v[1]*kl:b.v[1],b.v[2]*kl];/* no air drag while falling: gravity stays full strength */b.w=b.w.map(function(z){return z*ka});
       /* safety limits: a collision can never throw a body at crazy speed */
-      const hs2=Math.hypot(b.v[0],b.v[2]);if(hs2>70){b.v[0]*=70/hs2;b.v[2]*=70/hs2}if(b.v[1]>60)b.v[1]=60;if(b.v[1]<-220)b.v[1]=-220;const ws=Math.hypot(b.w[0],b.w[1],b.w[2]);if(ws>30)b.w=b.w.map(function(z){return z*30/ws})})}}
+      const hs2=Math.hypot(b.v[0],b.v[2]);if(hs2>70){b.v[0]*=70/hs2;b.v[2]*=70/hs2}if(b.v[1]>60)b.v[1]=60;if(b.v[1]<-220)b.v[1]=-220;
+      /* no random hops: floor contact and joint corrections can never add more than a little upward speed (this was turning small overlaps into sudden launches) */
+      if(!pushing){const mu2=Math.min(Math.max(b.pv||0,0)+(b.hit?3:5),Math.max(8,sm.up0||0));if(b.v[1]>mu2)b.v[1]=mu2}const ws=Math.hypot(b.w[0],b.w[1],b.w[2]);if(ws>30)b.w=b.w.map(function(z){return z*30/ws})})}}
 /* Solid parts near the ragdoll, so its bodies bump into the sides of things instead of only landing on top of them */
 function ragWalls(B){let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;B.forEach(function(b){x0=Math.min(x0,b.x[0]);x1=Math.max(x1,b.x[0]);z0=Math.min(z0,b.x[2]);z1=Math.max(z1,b.x[2])});x0-=8;x1+=8;z0-=8;z1+=8;
   const W=[];P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;const rq=rootOf(q);if(!solid(rq))return;const o=RO[rq.id]||[0,0],eq=eh(q),bx=q.pos[0]+o[0],bz=q.pos[2]+o[1];
