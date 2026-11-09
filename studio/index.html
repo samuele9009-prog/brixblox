@@ -3003,10 +3003,10 @@ function sizer(h,sg){h.oncontextmenu=function(e){e.preventDefault()};
 sizer($('rz-l'),-1);sizer($('rz-r'),1);
 
 /* Play: your character walks with WASD, Space jumps. Solid parts block you; Movable parts get pushed. */
-function play(dt,f){const SP=(S.fly&&amAdmin()?2.2:1)*(S.speed!=null?S.speed:P.rules.speed),l=Math.hypot(f[0],f[2])||1,ux=f[0]/l,uz=f[2]/l,ix=S.rag?0:(keys.KeyD?1:0)-(keys.KeyA?1:0),iz=S.rag?0:(keys.KeyW?1:0)-(keys.KeyS?1:0);
-  let wx=ux*iz-uz*ix,wz=uz*iz+ux*ix;const m=Math.hypot(wx,wz),mv=m>0;
+function play(dt,f){const SP=(S.fly&&amAdmin()?2.2:1)*(S.speed!=null?S.speed:P.rules.speed),l=Math.hypot(f[0],f[2])||1,ux=f[0]/l,uz=f[2]/l,jy=window.__joy,an=!!jy&&(Math.abs(jy.x)>.001||Math.abs(jy.y)>.001)&&!keys.KeyW&&!keys.KeyA&&!keys.KeyS&&!keys.KeyD,ix=S.rag?0:an?jy.x:(keys.KeyD?1:0)-(keys.KeyA?1:0),iz=S.rag?0:an?jy.y:(keys.KeyW?1:0)-(keys.KeyS?1:0);
+  let wx=ux*iz-uz*ix,wz=uz*iz+ux*ix;const m=Math.hypot(wx,wz),mv=m>(an?.06:0),amt=an?Math.min(1,m):1;/* touch joystick is analog: push further = walk faster */
   if(mv){wx/=m;wz/=m}
-  const ka=1-Math.exp(-dt*(S.gr?13*Math.max(.01,S.fric==null?1:S.fric):6));S.pvx+=((mv?wx*SP:0)-S.pvx)*ka;S.pvz+=((mv?wz*SP:0)-S.pvz)*ka;S.x+=S.pvx*dt;S.y-=S.pvz*dt;
+  const ka=1-Math.exp(-dt*(S.gr?13*Math.max(.01,S.fric==null?1:S.fric):6));S.pvx+=((mv?wx*SP*amt:0)-S.pvx)*ka;S.pvz+=((mv?wz*SP*amt:0)-S.pvz)*ka;S.x+=S.pvx*dt;S.y-=S.pvz*dt;
   if(cdT<=.01||S.sl){const td=Math.atan2(-uz,ux)*180/Math.PI,df=((td-S.dir+540)%360+360)%360-180;S.dir+=df*(1-Math.exp(-dt*20))}
   else if(mv){const td=Math.atan2(-wz,wx)*180/Math.PI,df=((td-S.dir+540)%360+360)%360-180;S.dir+=df*(1-Math.exp(-dt*14))}
   if(keys.Space&&S.gr&&!S.rag){S.vy=(S.jumpP!=null?S.jumpP:P.rules.jump);S.gr=false;S.jt=0;jumpSound()}
@@ -5269,19 +5269,34 @@ setInterval(function(){const w=document.getElementById('bb-who');if(w)w.textCont
     if(!!held[code]===on)return;held[code]=on;
     try{window.dispatchEvent(new KeyboardEvent(on?'keydown':'keyup',{code:code,key:k,bubbles:true,cancelable:true}))}catch(e){}
   }
-  function releaseAll(){Object.keys(held).forEach(function(c){if(held[c])key(c,c.replace('Key','').toLowerCase(),false)});knob.style.transform=''}
+  function releaseAll(){tx=0;ty=0;jx=0;jy=0;Object.keys(held).forEach(function(c){if(held[c])key(c,c.replace('Key','').toLowerCase(),false)});knob.style.transform=''}
 
-  /* joystick */
-  let sid=null;
+  /* joystick: the stick value is eased every frame so direction changes and stops feel smooth, not snappy */
+  let sid=null,tx=0,ty=0,jx=0,jy=0,jlast=performance.now();
+  const joy=window.__joy={x:0,y:0};
+  (function jt(now){
+    const dt=Math.min(.05,(now-jlast)/1000);jlast=now;
+    const k=1-Math.exp(-dt*((tx||ty)?12:20));
+    jx+=(tx-jx)*k;jy+=(ty-jy)*k;
+    if(!tx&&Math.abs(jx)<.01)jx=0;if(!ty&&Math.abs(jy)<.01)jy=0;
+    joy.x=jx;joy.y=jy;requestAnimationFrame(jt)})(jlast);
   function stickMove(e){
     const r=stick.getBoundingClientRect(),R=r.width/2,cx=r.left+R,cy=r.top+R;
     let dx=e.clientX-cx,dy=e.clientY-cy;const d=Math.hypot(dx,dy),m=R-6;
     if(d>m){dx*=m/d;dy*=m/d}
     knob.style.transform='translate('+dx+'px,'+dy+'px)';
-    const nx=dx/m,ny=dy/m,T=.32;
-    key('KeyW','w',ny<-T);key('KeyS','s',ny>T);key('KeyA','a',nx<-T);key('KeyD','d',nx>T);
+    const nx=dx/m,ny=dy/m;
+    let playingNow=false;try{playingNow=!!playing}catch(x){}
+    if(playingNow){
+      /* analog: small push = slow walk, full push = full speed, with a small dead zone and a gentle curve */
+      const r=Math.min(1,Math.hypot(nx,ny)),DZ=.1,a=r<DZ?0:Math.pow((r-DZ)/(1-DZ),1.4);
+      if(r>0){tx=nx/r*a;ty=-ny/r*a}else{tx=0;ty=0}
+    }else{
+      const T=.32;
+      key('KeyW','w',ny<-T);key('KeyS','s',ny>T);key('KeyA','a',nx<-T);key('KeyD','d',nx>T);
+    }
   }
-  function stickEnd(e){if(e.pointerId!==sid)return;sid=null;['KeyW','KeyA','KeyS','KeyD'].forEach(function(c){key(c,c.slice(3).toLowerCase(),false)});knob.style.transform=''}
+  function stickEnd(e){if(e.pointerId!==sid)return;sid=null;tx=0;ty=0;['KeyW','KeyA','KeyS','KeyD'].forEach(function(c){key(c,c.slice(3).toLowerCase(),false)});knob.style.transform=''}
   stick.addEventListener('pointerdown',function(e){e.preventDefault();sid=e.pointerId;try{stick.setPointerCapture(e.pointerId)}catch(x){}stickMove(e)});
   stick.addEventListener('pointermove',function(e){if(e.pointerId===sid)stickMove(e)});
   stick.addEventListener('pointerup',stickEnd);stick.addEventListener('pointercancel',stickEnd);
