@@ -568,7 +568,7 @@ const store=(function(){
     get:function(k){try{const v=localStorage.getItem(k);if(v!==null)return v}catch(e){}
       if(mem[k]!=null)return mem[k];const o=wn();return o['bb:'+k]!=null?o['bb:'+k]:null},
     set:function(k,v){mem[k]=v;let ok=false;try{localStorage.setItem(k,v);ok=true}catch(e){}
-      if(!ok){const o=wn();o['bb:'+k]=v;wset(o)}},
+      if(!ok){const o=wn();o['bb:'+k]=v;wset(o)}return ok},
     del:function(k){delete mem[k];try{localStorage.removeItem(k)}catch(e){}const o=wn();delete o['bb:'+k];wset(o)}};
 })();
 const $=function(id){return document.getElementById(id)};
@@ -738,7 +738,7 @@ function starter(){return [[mk('start'),mk('say',['Hello!']),mk('repeat',['4'],[
 /* Games only exist on disk once they are published. An unpublished game is a draft that is lost when the page closes. */
 const GKEY='brixblox-games';
 function glib(){try{return JSON.parse(store.get(GKEY))||{}}catch(e){return {}}}
-let P=null,gameId=null,gameVis=null,gameDraft=false,skipUnload=false,VIEWONLY=false,PLAYINFO=null,HOME=false;
+let P=null,gameId=null,gameVis=null,gameDraft=false,saveFail=false,skipUnload=false,VIEWONLY=false,PLAYINFO=null,HOME=false;
 /* Who is signed in comes from the BrixBlox front page. Not signed in: go back there. */
 const ME=(function(){try{return JSON.parse(store.get('brixblox-me'))}catch(e){return null}})();
 if(!ME)location.replace('/');
@@ -769,7 +769,7 @@ async function cloudAudio(v,room){const id=bigId(v),c=audCache();if(c[id])return
       if(!up.error||/exist|duplicate/i.test(String(up.error.message||''))||up.error.statusCode==409||up.error.status==409){const u=sb.storage.from(AUDB).getPublicUrl(path).data.publicUrl;if(u){audCacheSet(id,u);return {u:u,inl:0}}}else audErr=String(up.error.message||up.error.error||'upload refused')+' ('+(b.size/1048576).toFixed(1)+' MB)'}catch(e){audErr=String((e&&e.message)||e)}}
   if(b.size<=1.5*1048576&&room>=b.size*1.4){const u=await blobUrl(b);if(u)return {u:u,inl:u.length}}
   return null}
-async function cloudData(id){const g=glib()[id];if(!g)return null;let d;try{d=JSON.parse(g.data)}catch(e){return null}
+async function cloudData(id){const g=glib()[id];if(!g)return null;let d;try{d=JSON.parse(id===gameId&&!VIEWONLY&&P?JSON.stringify(P):g.data)}catch(e){return null}
   try{const au=d.assets.audio;let room=4.2e6,bad=[];
     for(const k of Object.keys(au)){const v=au[k];if(!bigRef(v))continue;const r=await cloudAudio(v,room);if(r){au[k]=r.u;room-=r.inl}else{au[k]='missing:'+k;bad.push(k)}}
     audWarn=bad.length?('The sound'+(bad.length>1?'s ':' ')+bad.join(', ')+' could not be sent online, so other computers will not hear '+(bad.length>1?'them':'it')+(audErr?'. Server said: '+audErr:'')+'. Open this game on the computer you uploaded it on and run the one-time storage setup (see the note in the Assets list).'):''}catch(e){}
@@ -841,7 +841,13 @@ if(VIEWONLY&&sb&&PLAYINFO&&PLAYINFO.id&&!PLAYINFO.fresh){(function(){
     store.set('brixblox-play',JSON.stringify(Object.assign({},PLAYINFO,{data:cd,fresh:1})));skipUnload=true;location.reload()
   }).catch(function(){ov.remove();if(window.BBTAG)BBTAG.textContent='build v5 \u00b7 could not reach the online copy (using the saved one)'})})()}
 function persistGame(){const L=glib(),pv=L[gameId],js=JSON.stringify(P),lh=pv?(pv.lh!==undefined?pv.lh:hsh(pv.data)):undefined;
-  L[gameId]={id:gameId,name:P.name,vis:gameVis||'private',at:Date.now(),owner:(pv&&pv.owner&&pv.owner.id)?pv.owner:(ME?{id:ME.id,name:ME.username}:undefined),data:js,lh:lh,ch:pv&&pv.ch,ct:pv&&pv.ct,dr:(gameDraft?1:undefined),thumb:(pv&&pv.thumb)||undefined};store.set(GKEY,JSON.stringify(L));PEND=calcPend();try{updateStat()}catch(e){}
+  L[gameId]={id:gameId,name:P.name,vis:gameVis||'private',at:Date.now(),owner:(pv&&pv.owner&&pv.owner.id)?pv.owner:(ME?{id:ME.id,name:ME.username}:undefined),data:js,lh:lh,ch:pv&&pv.ch,ct:pv&&pv.ct,dr:(gameDraft?1:undefined),thumb:(pv&&pv.thumb)||undefined};
+  let okS=store.set(GKEY,JSON.stringify(L));
+  if(!okS){/* this browser is out of storage: drop this computer's copy of other games that are already safe online (they download again when opened), then try again */
+    Object.keys(L).forEach(function(k){if(k===gameId)return;const g=L[k];if(!g||g.dr)return;if(g.lh!==undefined&&g.lh===hsh(g.data)&&g.ch)delete L[k];else if(g.thumb)delete g.thumb});
+    okS=store.set(GKEY,JSON.stringify(L))}
+  const wasFail=saveFail;saveFail=!okS;if(saveFail||wasFail){try{updateStat()}catch(e){}}
+  PEND=calcPend();try{updateStat()}catch(e){}
   const gid=gameId;thumbFor(P).then(function(th){const L2=glib();if(!L2[gid]||(L2[gid].thumb||null)===(th||null))return;if(th)L2[gid].thumb=th;else delete L2[gid].thumb;store.set(GKEY,JSON.stringify(L2))})}
 /* Every game is saved in this Studio as you edit it. A game that was never published is a "draft": it stays here, is never sent online
    and is hidden on the BrixBlox site until you press Publish. Update (or Publish) is what puts changes on the website. */
@@ -3761,6 +3767,14 @@ const SKYPAL={
   spooky:{zen:'#0a0516',mid:'#1c1030',hor:'#4a2a6a',gnd:'#150a24',mg:[.75,.55,1,.45],cl:{cov:.7,soft:.35,sc:1.4,lit:'#5a3d86',sh:'#150a24',op:.85},stars:110},
   vivid:{zen:'#2a9bff',mid:'#6ec6ff',hor:'#d8f2ff',gnd:'#a8d890',sg:[1,1,.8,.4],cl:{cov:.45,soft:.3,sc:1.7,lit:'#ffffff',sh:'#b4cde8',op:1},stars:0}};
 const SKYGENC={};
+const SKYQ=[128,256,512],SKYPG={};
+function skyPreset(n){let s=SKYPG[n];
+  if(!s){s=SKYPG[n]={imgs:genSky(n,SKYPAL[n],undefined,SKYQ[0]),gen:null,si:0,n:0,done:false,at:performance.now()};return s.imgs}
+  if(s.done)return s.imgs;
+  if(!s.gen){if(performance.now()-s.at<250)return s.imgs;s.si++;s.gen=genSkyG(n,SKYPAL[n],undefined,SKYQ[s.si])}
+  const t0=performance.now();let r;do{r=s.gen.next()}while(!r.done&&performance.now()-t0<7);
+  if(r.done){s.imgs=r.value;s.n++;s.gen=null;if(s.si>=SKYQ.length-1){s.done=true;SKYGENC[n]=s.imgs}}
+  return s.imgs}
 /* Painted sky: every pixel of the six sides is worked out from the direction it looks in, so the sides join with no seams.
    Gradient (horizon -> overhead), sun or moon glow, a layer of lit and shaded clouds, and stars. */
 function skyHash(x,y){let n=Math.imul(x|0,374761393)+Math.imul(y|0,668265263);n=Math.imul(n^(n>>>13),1274126177);return((n^(n>>>16))>>>0)/4294967296}
@@ -3770,15 +3784,17 @@ function skyFbm(x,y,oc){let s=0,a=.5,n=oc||6;for(let i=0;i<n;i++){s+=a*skyNoise(
 function skySmooth(a,b,x){const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t)}
 function skyDir(f,tu,tv){const U=1-tu,V=tv,a=(U-.5)*2,b=(.5-V)*2,c=(V-.5)*2;/* where each pixel sits on the box, same as three.js BoxGeometry */
   const v=f==='r'?[1,c,-a]:f==='l'?[-1,c,a]:f==='t'?[a,1,b]:f==='bo'?[a,-1,c]:f==='ba'?[a,c,1]:[-a,c,-1],m=Math.hypot(v[0],v[1],v[2]);return[v[0]/m,v[1]/m,v[2]/m]}
-function genSky(n,pp,eo,S0,only){if(!pp&&SKYGENC[n])return SKYGENC[n];
+function genSky(n,pp,eo,S0,only){const g=genSkyG(n,pp,eo,S0,only);let r;do{r=g.next()}while(!r.done);return r.value}
+/* the same painter, but it pauses every few rows so the game can keep drawing frames while a sky is being made */
+function* genSkyG(n,pp,eo,S0,only){if(!pp&&SKYGENC[n])return SKYGENC[n];
   const p=pp||SKYPAL[n],S=S0||512,MO=S<=256?5:S<=512?6:8,out={},rgb=function(h){const k=parseInt(h.slice(1),16);return[(k>>16&255)/255,(k>>8&255)/255,k&255?(k&255)/255:0]},
     zen=rgb(p.zen),mid=rgb(p.mid),hor=rgb(p.hor),gnd=rgb(p.gnd),cl=p.cl,lit=rgb(cl.lit),sh=rgb(cl.sh),
     env=eo||(LPRE[n]&&LPRE[n].env)||P.env,ang=(env.tod-6)/12*Math.PI,sl=Math.hypot(Math.cos(ang)*14,Math.sin(ang)*14,6),
     sd=[Math.cos(ang)*14/sl,Math.sin(ang)*14/sl,6/sl],md=[-sd[0],-sd[1],-sd[2]],sg=p.sg,mg=p.mg,
     ox=n.length*7.31+(p.seed||0)*13.7,oy=n.length*3.77+(p.seed||0)*9.3;
-  Object.keys(SKYFACE).forEach(function(f,fi){if(only&&f!==only)return;
+  const FK=Object.keys(SKYFACE);for(let fi=0;fi<FK.length;fi++){const f=FK[fi];if(only&&f!==only)continue;
     const c=document.createElement('canvas');c.width=c.height=S;const x=c.getContext('2d'),im=x.createImageData(S,S),D=im.data;
-    for(let py=0;py<S;py++)for(let px=0;px<S;px++){
+    for(let py=0;py<S;py++){if((py&15)===15)yield;for(let px=0;px<S;px++){
       const d=skyDir(f,(px+.5)/S,1-(py+.5)/S),e=d[1];let r,g,b;
       if(e>=0){const t=e<.22?0:1,u=e<.22?Math.pow(e/.22,.8):Math.pow((e-.22)/.78,.7);
         const A=t?mid:hor,B=t?zen:mid;r=A[0]+(B[0]-A[0])*u;g=A[1]+(B[1]-A[1])*u;b=A[2]+(B[2]-A[2])*u}
@@ -3797,12 +3813,12 @@ function genSky(n,pp,eo,S0,only){if(!pp&&SKYGENC[n])return SKYGENC[n];
           cr+=(lit[0]-cr)*rim;cg+=(lit[1]-cg)*rim;cb+=(lit[2]-cb)*rim;
           cr+=(hor[0]-cr)*hz*.7;cg+=(hor[1]-cg)*hz*.7;cb+=(hor[2]-cb)*hz*.7;
           r+=(cr-r)*dn;g+=(cg-g)*dn;b+=(cb-b)*dn}}
-      const k=(py*S+px)*4;D[k]=Math.min(255,Math.max(0,r*255));D[k+1]=Math.min(255,Math.max(0,g*255));D[k+2]=Math.min(255,Math.max(0,b*255));D[k+3]=255}
+      const k=(py*S+px)*4;D[k]=Math.min(255,Math.max(0,r*255));D[k+1]=Math.min(255,Math.max(0,g*255));D[k+2]=Math.min(255,Math.max(0,b*255));D[k+3]=255}}
     x.putImageData(im,0,0);
     if(p.stars&&f!=='bo'){const rr=RNG(fi*977+n.length*31+7+(p.seed||0)*101),top=f==='t',cnt=top?p.stars:Math.round(p.stars*.5),tint=n==='spooky'?'215,200,255':'255,255,255';
       for(let i=0;i<cnt;i++){const px=rr()*S,py=rr()*S,e=skyDir(f,px/S,1-py/S)[1];if(e<.04)continue;const a=(.35+.65*rr())*skySmooth(.04,.4,e),big=rr()<.07,z=big?2.4:1.2;
         x.fillStyle='rgba('+tint+','+a.toFixed(2)+')';x.fillRect(px,py,z,z);if(big){x.fillStyle='rgba(200,220,255,'+(a*.25).toFixed(2)+')';x.fillRect(px-1.5,py-1.5,z+3,z+3)}}}
-    out[f]=p.stars?c.toDataURL('image/png'):c.toDataURL('image/jpeg',.92)});
+    out[f]=p.stars?c.toDataURL('image/png'):c.toDataURL('image/jpeg',.92)}
   if(!pp)SKYGENC[n]=out;return out}
 /* ===== Sky Builder: make your own skybox from sky, cloud and sun presets, then tweak every colour. Lives in Explorer > Atmosphere. Saved in P.env.skyb. ===== */
 const SKYB_SKY={
@@ -3839,13 +3855,14 @@ function skybGet(){if(!P.env.skyb)P.env.skyb=Object.assign({},SKYB_DEF);else for
 function skybPal(b){const h=function(x){const k=parseInt(x.slice(1),16);return[(k>>16&255)/255,(k>>8&255)/255,(k&255)/255]},s=h(b.sc);
   return{zen:b.zen,mid:b.mid,hor:b.hor,gnd:b.gnd,sg:b.ss>0&&b.glow>0?[s[0],s[1],s[2],b.glow]:undefined,mg:b.moon===false?undefined:[.8,.85,1,.35],
     cl:{cov:b.cov,soft:b.soft,sc:b.csc,lit:b.lit,sh:b.sh,op:b.cop,wig:b.wig||0},stars:b.stars,seed:b.seed}}
-const SKYBC={sig:'',q:0,at:0,imgs:null,hi:null,n:0};
+const SKYBC={sig:'',q:0,at:0,imgs:null,gen:null,si:0,done:false,n:0};
 /* draws small while sliders move, then sharp after a second of no changes */
-function skybImgs(){const b=P.env.skyb,sig=JSON.stringify(b)+'|'+P.env.tod;
-  if(SKYBC.sig!==sig||!SKYBC.imgs){SKYBC.sig=sig;SKYBC.q=256;SKYBC.hi=null;SKYBC.n=0;SKYBC.imgs=genSky('custom',skybPal(b),P.env,256);SKYBC.at=performance.now()}
-  else if(SKYBC.q===256&&performance.now()-SKYBC.at>900){SKYBC.q=512;SKYBC.imgs=genSky('custom',skybPal(b),P.env,512);SKYBC.hi=Object.keys(SKYFACE)}
-  else if(SKYBC.q===512&&SKYBC.hi&&performance.now()-SKYBC.at>1800){/* sharp 1024px pass, one side per frame so the editor never freezes */
-    const f=SKYBC.hi.shift();if(f){const o=Object.assign({},SKYBC.imgs);o[f]=genSky('custom',skybPal(b),P.env,1536,f)[f];SKYBC.imgs=o;SKYBC.n=(SKYBC.n||0)+1}if(!SKYBC.hi.length)SKYBC.q=1536}
+function skybImgs(){const b=P.env.skyb,sig=JSON.stringify(b)+'|'+P.env.tod,pal=skybPal(b);
+  if(SKYBC.sig!==sig||!SKYBC.imgs){SKYBC.sig=sig;SKYBC.si=0;SKYBC.gen=null;SKYBC.n=0;SKYBC.done=false;SKYBC.q=SKYQ[0];SKYBC.imgs=genSky('custom',pal,P.env,SKYQ[0]);SKYBC.at=performance.now()}
+  else if(!SKYBC.done){/* sharper pictures are painted a few rows per frame, so sliders and opening a game never freeze */
+    if(!SKYBC.gen){if(performance.now()-SKYBC.at<400)return SKYBC.imgs;SKYBC.si++;SKYBC.q=SKYQ[SKYBC.si];SKYBC.gen=genSkyG('custom',pal,P.env,SKYQ[SKYBC.si])}
+    const t0=performance.now();let r;do{r=SKYBC.gen.next()}while(!r.done&&performance.now()-t0<7);
+    if(r.done){SKYBC.imgs=r.value;SKYBC.n++;SKYBC.gen=null;if(SKYBC.si>=SKYQ.length-1)SKYBC.done=true}}
   return SKYBC.imgs}
 function startLightUI(d){const s=el('select'),o0=el('option','','None (use the sky below)');o0.value='';s.append(o0);
   Object.keys(LPRE).forEach(function(n){const o=el('option','',n.charAt(0).toUpperCase()+n.slice(1));o.value=n;s.append(o)});s.value=LPRE[P.env.light]?P.env.light:'';
@@ -3906,17 +3923,17 @@ function skyFogHex(){if(!SKYO&&!SKYGEN&&skybOn())return new THREE.Color(P.env.sk
 /* Rebuilds the six sides only when something changed (cheap check every frame) */
 function skyApply(){let gen=(!SKYO&&SKYGEN&&SKYPAL[SKYGEN])?SKYGEN:null,eff,imgs;
   /* the built-in sky goes down exactly the same road as uploaded Skybox images: six picture sources -> six textures */
-  if(gen){try{imgs=genSky(gen);eff={r:'r',l:'l',t:'t',bo:'bo',ba:'ba',f:'f'}}catch(err){log('Error: could not draw the '+gen+' sky - '+(err&&err.message));SKYGEN=null;gen=null;skySig=''}}
+  if(gen){try{imgs=skyPreset(gen);eff={r:'r',l:'l',t:'t',bo:'bo',ba:'ba',f:'f'}}catch(err){log('Error: could not draw the '+gen+' sky - '+(err&&err.message));SKYGEN=null;gen=null;skySig=''}}
   if(!gen&&!SKYO&&skybOn()){try{skybGet();imgs=skybImgs();gen='custom';eff={r:'r',l:'l',t:'t',bo:'bo',ba:'ba',f:'f'}}catch(err){log('Error: could not draw your custom sky - '+(err&&err.message));P.env.skyb.on=false;gen=null;skySig=''}}
   if(!gen){eff=skyEff();imgs=P.assets.images}
-  skyGenOn=!!gen;let sig=gen?'gen '+gen+(gen==='custom'?SKYBC.sig+SKYBC.q+'.'+SKYBC.n:'')+';':'',any=false;
+  skyGenOn=!!gen;let sig=gen?'gen '+gen+(gen==='custom'?SKYBC.sig+SKYBC.q+'.'+SKYBC.n:SKYPG[gen]?SKYPG[gen].si+'.'+SKYPG[gen].n:'')+';':'',any=false;
   Object.keys(SKYFACE).forEach(function(f){const n=eff[f],src=n&&imgs[n];sig+=f+':'+(src?n+'|'+src.length+'|'+src.slice(-24):'')+';';if(src)any=true});
   if(sig===skySig)return;skySig=sig;skyAny=gen?false:any;
   Object.keys(SKYFACE).forEach(function(f){const n=eff[f],src=n&&imgs[n],m=skyBox.material[SKYFACE[f]];
     if(!src){m.visible=false;return}
-    const k=(gen?gen+(gen==='custom'?SKYBC.q+'.'+SKYBC.n:'')+'|':'')+f+'|'+src.length+'|'+src.slice(-24);let t=SKYTX[k];
-    if(!t){t=new THREE.TextureLoader().load(src,gen==='custom'?function(){skySig=''}:undefined);t.center.set(.5,.5);t.repeat.set(-1,1);t.rotation=f==='bo'?Math.PI:0;t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;if(gen==='custom')t.userData={cust:k};SKYTX[k]=t}
-    if(gen==='custom'&&!t.image&&m.map){m.visible=true;return}
+    const k=(gen?gen+(gen==='custom'?SKYBC.q+'.'+SKYBC.n:SKYPG[gen]?SKYPG[gen].si+'.'+SKYPG[gen].n:'')+'|':'')+f+'|'+src.length+'|'+src.slice(-24);let t=SKYTX[k];
+    if(!t){t=new THREE.TextureLoader().load(src,gen?function(){skySig=''}:undefined);t.center.set(.5,.5);t.repeat.set(-1,1);t.rotation=f==='bo'?Math.PI:0;t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;if(gen)t.userData={cust:k};SKYTX[k]=t}
+    if(gen&&!t.image&&m.map){m.visible=true;return}
     if(m.map!==t){const o=m.map;m.map=t;m.needsUpdate=true;if(o&&o.userData&&o.userData.cust){delete SKYTX[o.userData.cust];o.dispose()}}m.visible=true})}
 /* Sun, moon and clouds change with the lighting too. sun/moon: c = colour, z = size, o = opacity.
    The painted sky already has real clouds, so the flat drifting cloud sprites are off (n = 0) while a lighting is on; n = how many of the 10 show, c/o/z/s = colour, opacity, size, drift speed. They fade smoothly between lightings. */
@@ -4759,6 +4776,7 @@ addEventListener('keydown',function(e){if(!(e.ctrlKey||e.metaKey)||e.altKey)retu
 
 /* ===== Games: nothing is saved until you publish (Private or Public). Shift+N then G starts a new game. ===== */
 let baseStr=JSON.stringify(P);
+setTimeout(function(){if(!gameId&&!draftT&&!VIEWONLY)baseStr=JSON.stringify(P)},1200);/* the Studio tidies the game while it opens; that alone must not count as an edit and start a draft */
 function dirty(){if(VIEWONLY||gameId)return false;if(JSON.stringify(P)===baseStr)return false;return !draftNow()}
 function mdl(title,build){const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:12px';
   const c=document.createElement('div');c.style.cssText='background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:18px;width:min(94vw,440px);max-height:86vh;overflow:auto;display:flex;flex-direction:column;gap:10px';
@@ -4769,6 +4787,7 @@ function mb(t,cls,fn){const b=el('button','btn small '+cls,t);b.type='button';b.
 function ask(text,yes,fn){mdl('Are you sure?',function(c,close){c.append(el('p','',text));const r=el('div','tb');r.append(mb(yes,'',function(){close();fn()}),mb('Cancel','ghost',close));c.append(r)})}
 const statEl=el('span','','');statEl.style.cssText='font-size:.8rem;font-weight:700;white-space:nowrap';
 function updateStat(){statEl.textContent=gameId&&gameDraft?'Draft - saved in Studio, not on the website yet (press Publish)':gameId?'Published ('+(gameVis==='public'?'Public':'Private')+')'+(!sb?' - NOT live: not connected online (reload this page)':cloudErr?' - NOT live, upload failed'+(cloudWhy?': '+cloudWhy:''):PEND?' - saved here, not live yet':(liveAt?' - live since '+liveAt:'')):'Unpublished - not saved';statEl.style.color=gameId&&(gameDraft||(sb&&!cloudErr&&!PEND))?'#4be3a0':'#ffb347';
+  if(saveFail){statEl.textContent='NOT SAVED in this browser (storage is full) - press Update/Publish now to keep your work online';statEl.style.color='#ff6b6b'}
   if(upBtn){upBtn.hidden=!(gameId&&ME&&!gameDraft);upBtn.disabled=upBusy;upBtn.textContent=upBusy?'Updating...':'Update'}}
 function publish(v){if(!gameId)gameId='g'+Date.now().toString(36)+Math.floor(Math.random()*1e3).toString(36);gameVis=v;gameDraft=false;persistGame();cloudPush(gameId,true);store.set('brixblox-cur',gameId);baseStr=JSON.stringify(P);updateStat()}
 function updateLive(){if(gameId&&ME&&!sb){mdl('Cannot update',function(c,close){c.append(el('p','','This page is not connected online (the online library did not load, or you are in demo mode). Reload the page while connected to the internet, then press Update.'));c.append(mb('OK','',close))});return}
@@ -5188,8 +5207,10 @@ async function studioHome(){
         else if(sb){try{const r=await withTimeout(sb.from('games').select('data,updated_at,name,vis').eq('id',g.id).maybeSingle(),8000,'slow');
           if(!r.error&&r.data){let cd=r.data.data;if(typeof cd!=='string')cd=JSON.stringify(cd);const L2=glib(),lo=L2[g.id],cur=hsh(cd);
             if(lo&&lo.ch!==cur){const pending=lo.lh!==undefined&&lo.lh!==hsh(lo.data);let useOnline=!pending&&lo.ch!==undefined;
-              if(!useOnline)useOnline=confirm('The online copy of "'+(g.name||'this game')+'" is different from the copy saved on this computer (it was probably changed on another computer).\n\nOK = open the ONLINE copy'+(pending?' (your unsent changes on this computer will be lost)':'')+'\nCancel = keep THIS computer\'s copy and make it the live one');
-              if(useOnline)L2[g.id]=Object.assign({},lo,{data:cd,name:r.data.name||lo.name,vis:r.data.vis||lo.vis,at:Date.now(),lh:hsh(cd),ch:cur,ct:Date.parse(r.data.updated_at)||0});
+              if(pending)useOnline=false;/* changes saved in this Studio but not sent online are never replaced by the online copy */
+              else if(!useOnline)useOnline=confirm('The online copy of "'+(g.name||'this game')+'" is different from the copy saved on this computer (it was probably changed on another computer).\n\nOK = open the ONLINE copy'+(pending?' (your unsent changes on this computer will be lost)':'')+'\nCancel = keep THIS computer\'s copy and make it the live one');
+              if(pending){L2[g.id]=Object.assign({},lo,{ch:cur,lh:'keep-local'})}
+              else if(useOnline)L2[g.id]=Object.assign({},lo,{data:cd,name:r.data.name||lo.name,vis:r.data.vis||lo.vis,at:Date.now(),lh:hsh(cd),ch:cur,ct:Date.parse(r.data.updated_at)||0});
               else L2[g.id]=Object.assign({},lo,{ch:cur,lh:'keep-local'});
               store.set(GKEY,JSON.stringify(L2))}}}catch(e){}}
         reloadInto(g.id)}));
@@ -5494,7 +5515,7 @@ setInterval(function(){const w=document.getElementById('bb-who');if(w)w.textCont
 /* Debounced saving: stops the full-project stringify on every keystroke */
 (function(){
   const real=persistGame;let t=0,pend=false;
-  persistGame=function(){pend=true;if(t)return;t=setTimeout(function(){t=0;if(pend){pend=false;real()}},600)};
+  persistGame=function(){pend=true;if(t)return;t=setTimeout(function(){t=0;if(pend){pend=false;real()}},250)};
   persistGame.flush=function(){clearTimeout(t);t=0;if(pend){pend=false;real()}};
   const cp=cloudPush;cloudPush=function(id,now){persistGame.flush();cp(id,now)};
   addEventListener('pagehide',function(){persistGame.flush()});
