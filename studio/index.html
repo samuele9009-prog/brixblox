@@ -550,6 +550,7 @@ html,body{overscroll-behavior:none;touch-action:manipulation}
           <span id="a-clock" class="an-clock">0.00s</span><span class="an-of">/</span><input id="a-len" type="number" min=".2" step=".1" value="1" title="Length in seconds"><span class="an-of">s</span>
           <select id="a-type" title="Animation type"><option value="other">Type: Other</option><option value="walk">Type: Walking</option></select><label id="a-gl" class="an-of" title="How fast the floor grid scrolls while the animation plays. 10 is a normal walk, 20 is fast." hidden="">Grid speed <input id="a-gs" type="number" min="0" step="1" value="10"></label>
         </div>
+        <div id="a-rigs" class="an-top"></div>
         <p id="a-hint" class="hint"></p>
         <div id="a-grid" class="an-body"></div>
       </div>
@@ -1493,7 +1494,7 @@ const byId=function(id){const A=P.parts;if(_bA!==A){_bA=A;_bM=new Map()}const i=
 const piv=function(p){return p.parent?p.pivot:p.pos};
 const kids=function(p){return P.parts.filter(function(c){return c.parent===p.id})};
 let selFold=null,openF={},lastPS=[];
-let selSvc=null,openS={},curTab='out',fsOn=false,animT=null,PG=null,J={},M={},sel=[],selModel=null,openM={},rigOn=false,rig0={},aGM='move',agT=null,selJ=null,balls=[],gizmo=[],curA='',aT=0,aPlay=false,live={},RO={},playing=false,hov=null,gz=[],cd=14,cdT=14,zq=0,camD=null,avHid=false,fpPrev=false,CAMM=[],CAMN=0;
+let selSvc=null,openS={},curTab='out',fsOn=false,animT=null,animTs=[],PG=null,J={},M={},sel=[],selModel=null,openM={},rigOn=false,rig0={},aGM='move',agT=null,selJ=null,balls=[],gizmo=[],curA='',aT=0,aPlay=false,live={},RO={},playing=false,hov=null,gz=[],cd=14,cdT=14,zq=0,camD=null,avHid=false,fpPrev=false,CAMM=[],CAMN=0;
 let tool='move';const editG=new THREE.Group();scene.add(editG);const ray=new THREE.Raycaster(),CRAY=new THREE.Raycaster();
 function msg(t){$('p-msg').textContent=t}
 /* Cylinder with smoothly rounded top and bottom edges (b = edge rounding) */
@@ -2586,7 +2587,7 @@ const stage=new THREE.Group();let stageTex=null,stageOn=false,stagePrev=null,cam
 function isWalk(A){return A.type?A.type==='walk':/walk/i.test(curA)}
 function gridSpeed(A){return A.gs!=null?A.gs:10}
 /* In the studio only rigs exist (just the selected one once you pick it), so nothing gets in the way */
-function stageVis(p){if(!animOn())return true;const r=rootOf(p);return kids(r).length>0&&(!animT||r.id===animT)}
+function stageVis(p){if(!animOn())return true;const r=rootOf(p);return kids(r).length>0&&(!animTs.length||animTs.indexOf(r.id)>=0)}
 function stageApply(){const on=animOn();
   P.parts.forEach(function(p){if(p.parent)return;const g=J[p.id];if(g)g.visible=inW(p)&&stageVis(p)});
   stage.visible=on;
@@ -2596,7 +2597,7 @@ function stageApply(){const on=animOn();
     scene.background=new THREE.Color('#6b7178');scene.fog=new THREE.Fog(0x6b7178,70,280);hemi.intensity=.8;sun.intensity=.8;shAmb.intensity=0;
     if(!stageOn){stageOn=true;if(PG)PG.traverse(function(o){if(o.material)o.material.needsUpdate=true})}}
   else if(stageOn){stageOn=false;fogOn=false;applyEnv();if(PG)PG.traverse(function(o){if(o.material)o.material.needsUpdate=true})}}
-function stageFocus(r){if(!r)return;const ps=rigParts(r),lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];
+function stageFocus(r){if(!r)return;const ps=(Array.isArray(r)?r:[r]).reduce(function(a,z){return z?a.concat(rigParts(z)):a},[]),lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];
   ps.forEach(function(q){for(let i=0;i<3;i++){lo[i]=Math.min(lo[i],q.pos[i]-q.size[i]/2);hi[i]=Math.max(hi[i],q.pos[i]+q.size[i]/2)}});
   const c=[0,1,2].map(function(i){return (lo[i]+hi[i])/2}),d=Math.max(12,Math.max(hi[0]-lo[0],hi[1]-lo[1],hi[2]-lo[2])*2.4+6);
   cam.x=c[0]+.55*d;cam.y=c[1]+.12*d;cam.z=c[2]-.83*d;
@@ -2615,10 +2616,31 @@ function ensureRigModel(r){let mid=r.model;
   treeOf(r).forEach(function(p){p.model=mid});return mid}
 function fixA(){if(!P.anims[curA])curA=Object.keys(P.anims)[0]||''}
 /* The Stabilizer holds a rig up and is never listed or animated: only the parts welded under it are joints */
-function rigJoints(){const r=animT&&byId(animT),out=[];if(!r)return out;if(!r.stab)out.push({p:r,d:0});(function walk(p,d){kids(p).forEach(function(c){out.push({p:c,d:d});walk(c,d+1)})})(r,r.stab?0:1);return out}
+function rigJoints(){const out=[];animTs.forEach(function(id){const r=byId(id);if(!r)return;if(!r.stab)out.push({p:r,d:0,r:r});(function walk(p,d){kids(p).forEach(function(c){out.push({p:c,d:d,r:r});walk(c,d+1)})})(r,r.stab?0:1)});return out}
 /* Only rigs can be picked while the Animator is open; picking one highlights its whole model */
-function animSelect(r){snapRig(r);if(!r){animT=null;sel=[];selModel=null}else{const mid=ensureRigModel(r);animT=r.id;sel=partsOf(mid).map(function(q){return q.id});selModel=mid}
-  aSelKeys=[];aJFix();{const was=stagePrev;stagePrev=animT;stageApply();if(r&&r.id!==was)stageFocus(r)}hl();buildEdit();renderParts()}
+/* Up to 6 rigs can be animated together: they all stay on the stage and their joints share one timeline. add=true adds a rig to the group (or makes it the main one). */
+const MAXRIGS=6;
+function animNames(){return animTs.map(function(id){const r=byId(id);return r?rigLabel(r):''}).filter(Boolean).join(', ')}
+function animSelect(r,add){const was=animT;snapRig(r);
+  animTs=animTs.filter(function(id){const q=byId(id);return q&&kids(q).length});
+  let grew=false;
+  if(!r){animT=null;animTs=[];sel=[];selModel=null}
+  else{ensureRigModel(r);
+    if(animTs.indexOf(r.id)<0){if(add){if(animTs.length>=MAXRIGS){const h=$('a-hint');if(h)h.textContent='You can animate up to '+MAXRIGS+' rigs at once. Remove one first.';return}animTs.push(r.id)}else animTs=[r.id];grew=true}
+    else if(!add&&animTs.length===1)animTs=[r.id];
+    animT=r.id;sel=[];animTs.forEach(function(id){const q=byId(id);if(q)partsOf(ensureRigModel(q)).forEach(function(z){sel.push(z.id)})});selModel=r.model}
+  aSelKeys=[];aJFix();{stagePrev=animTs.join(',');stageApply();if(r&&(grew||r.id!==was))stageFocus(grew&&animTs.length>1?animTs.map(function(id){return byId(id)}):r)}hl();buildEdit();renderParts();try{animRigsUI()}catch(e){}}
+function animRigsUI(){const c=$('a-rigs');if(!c)return;c.replaceChildren();
+  c.append(el('span','an-of','Rigs '+animTs.length+'/'+MAXRIGS+':'));
+  animTs.forEach(function(id){const r=byId(id);if(!r)return;const w=el('span');w.style.cssText='display:inline-flex;gap:2px';
+    const b=el('button','btn small'+(id===animT?'':' ghost'),rigLabel(r));b.type='button';b.title='Make this the main rig';b.onclick=function(){animSelect(r,true);animUI()};
+    const x=el('button','btn ghost small','\u2715');x.type='button';x.title='Take this rig out of the animator';
+    x.onclick=function(){animTs=animTs.filter(function(q){return q!==id});const nx=animTs.length?byId(animTs[animTs.length-1]):null;if(animT===id)animT=nx?nx.id:null;aJs=[];aJ=null;animSelect(nx||null,true);animUI();preview()};
+    w.append(b,x);c.append(w)});
+  const ad=el('select');ad.title='Add another rig to animate at the same time';const o0=el('option','','+ Add rig...');o0.value='';ad.append(o0);
+  P.parts.filter(function(p){return !p.parent&&kids(p).length&&inW(p)&&animTs.indexOf(p.id)<0}).forEach(function(r){const o=el('option','',rigLabel(r));o.value=r.id;ad.append(o)});
+  ad.disabled=animTs.length>=MAXRIGS||ad.options.length<2;
+  ad.onchange=function(){const r=byId(ad.value);if(r){animSelect(r,true);animUI();preview()}};c.append(ad)}
 function animPickId(id){const p=id&&byId(id),r=p&&rootOf(p);animSelect(r&&kids(r).length?r:null)}
 function animClick(e){ray.setFromCamera(ndc(e),camera);const h=ray.intersectObjects(pickSel(),false)[0],add=e.ctrlKey||e.shiftKey||e.metaKey;
   if(!h){if(!add&&animT&&aJs.length)selJoint(null);return}
@@ -2638,7 +2660,7 @@ function animHover(id){const p=id&&byId(id),r=p&&rootOf(p);ahov=r&&kids(r).lengt
 /* Animator handles: move arrows (R) rotation rings. Arrows move the part in the model; rings set rotation keyframes at the playhead. */
 const AX=new THREE.Vector3(1,0,0),AY=new THREE.Vector3(0,1,0),AZ=new THREE.Vector3(0,0,1);
 function animTarget(){const a=aJ&&byId(aJ);return a&&!a.stab&&aJs.indexOf(aJ)>=0?a:null}
-function animHint(){const h=$('a-hint');if(h&&animT&&byId(animT))h.textContent='Animating '+byId(animT).name+'. '+(aGM==='rot'?'Rotate handle: drag a ring to set a keyframe. Press R for move arrows.':'Move handle: drag an arrow to move the part (sets a keyframe). Press R for rotate rings. Click a part to select it, Ctrl+click adds or removes parts, click empty space to deselect.')}
+function animHint(){const h=$('a-hint');if(h&&animT&&byId(animT))h.textContent='Animating '+animNames()+'. '+(aGM==='rot'?'Rotate handle: drag a ring to set a keyframe. Press R for move arrows.':'Move handle: drag an arrow to move the part (sets a keyframe). Press R for rotate rings. Click a part to select it, Ctrl+click adds or removes parts, click empty space to deselect.')}
 function buildAnimGizmo(){const t=animTarget();if(!t||!J[t.id])return;
   if(aGM==='rot'){agT=t.id;const R=Math.max(1.2,Math.min(4,Math.max(t.size[0],t.size[1],t.size[2])/2+.6));
     [[0xff4444,0],[0x44dd44,1],[0x4488ff,2]].forEach(function(a){const m=new THREE.Mesh(new THREE.TorusGeometry(R,.09,8,48),new THREE.MeshBasicMaterial({color:a[0],depthTest:false})),g=new THREE.Group();
@@ -2737,13 +2759,13 @@ addEventListener('keydown',function(e){nHit=false;if(/INPUT|TEXTAREA|SELECT/.tes
   else if(e.code==='KeyG'&&(performance.now()-nAt<3000||(e.shiftKey&&keys.KeyN))){e.preventDefault();nAt=0;newGame()}});
 /* Shift+R: mirror the selected rig's animation, so left and right limbs swap and swing the other way */
 function mirrorName(n){const m=/^(Right|Left|R|L)(.+)$/.exec(n);if(!m)return null;const o={Right:'Left',Left:'Right',R:'L',L:'R'}[m[1]];return o+m[2]}
-function mirrorRig(){const say=function(t){const h=$('a-hint');if(h)h.textContent=t},r=animT&&byId(animT),A=P.anims[curA];
-  if(!r){say('Select a rig first, then press Shift+R to mirror it.');return}if(!A){say('Press + New to make an animation first.');return}
-  const ps=rigParts(r),out={};
-  ps.forEach(function(q){const mn=mirrorName(q.name),pt=(mn&&ps.find(function(z){return z!==q&&z.name===mn}))||q,src=A.keys[pt.id]||[];
-    out[q.id]=src.map(function(k){const n={t:k.t,r:[k.r[0],-k.r[1],-k.r[2]]};if(k.p)n.p=[-k.p[0],k.p[1],k.p[2]];return n})});
-  ps.forEach(function(q){if(out[q.id].length)A.keys[q.id]=out[q.id];else delete A.keys[q.id]});
-  aSelKeys=[];live={};save();animUI();preview();say('Mirrored '+r.name+': left and right limbs swapped.')}
+function mirrorRig(){const say=function(t){const h=$('a-hint');if(h)h.textContent=t},rs=animTs.map(function(id){return byId(id)}).filter(Boolean),A=P.anims[curA];
+  if(!rs.length){say('Select a rig first, then press Shift+R to mirror it.');return}if(!A){say('Press + New to make an animation first.');return}
+  rs.forEach(function(r){const ps=rigParts(r),out={};
+    ps.forEach(function(q){const mn=mirrorName(q.name),pt=(mn&&ps.find(function(z){return z!==q&&z.name===mn}))||q,src=A.keys[pt.id]||[];
+      out[q.id]=src.map(function(k){const n={t:k.t,r:[k.r[0],-k.r[1],-k.r[2]]};if(k.p)n.p=[-k.p[0],k.p[1],k.p[2]];return n})});
+    ps.forEach(function(q){if(out[q.id].length)A.keys[q.id]=out[q.id];else delete A.keys[q.id]})});
+  aSelKeys=[];live={};save();animUI();preview();say('Mirrored '+rs.map(function(r){return r.name}).join(', ')+': left and right limbs swapped.')}
 addEventListener('keydown',function(e){if(nHit||e.code!=='KeyR'||!e.shiftKey||e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||(document.activeElement&&document.activeElement.isContentEditable)||playing||running)return;
   e.preventDefault();if(animOn())mirrorRig();else if(edArea)cycleTool(-1)});
 addEventListener('keydown',function(e){if(nHit){nHit=false;return}if(e.code!=='KeyR'||e.shiftKey||e.ctrlKey||e.metaKey||e.altKey||e.repeat||playing||running||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||(document.activeElement&&document.activeElement.isContentEditable))return;
@@ -2766,7 +2788,7 @@ addEventListener('keydown',function(e){if(e.code!=='KeyY'||!(e.ctrlKey||e.metaKe
   e.preventDefault();revertRig()});
 /* Ctrl+Shift+B: make the selected rig(s) blocky instead of smooth. Parts keep their size, colour, face and animations. */
 function blockyRig(){const an=animOn(),say=function(t){if(an)$('a-hint').textContent=t;else msg(t)};
-  const ids=an?[animT]:sel.slice(),rs=[];ids.forEach(function(id){const p=id&&byId(id),r=p&&rootOf(p);if(r&&!r.av&&kids(r).length&&rs.indexOf(r)<0)rs.push(r)});
+  const ids=an?animTs.slice():sel.slice(),rs=[];ids.forEach(function(id){const p=id&&byId(id),r=p&&rootOf(p);if(r&&!r.av&&kids(r).length&&rs.indexOf(r)<0)rs.push(r)});
   if(!rs.length){say('Select a rig first, then press Ctrl+Shift+B.');return}
   let n=0;rs.forEach(function(r){rigParts(r).forEach(function(q){if(q.sm||!q.bk)n++;delete q.sm;q.bk=true})});
   save();rebuildParts();renderParts();if(an)animUI();say(rs.length>1?'Made '+rs.length+' rigs blocky.':'Made '+rs[0].name+' blocky.')}
@@ -2850,22 +2872,22 @@ addEventListener('keydown',function(e){if(e.code==='Escape')closeMenu();
   else if((e.ctrlKey||e.metaKey)&&e.code==='KeyC')copyKeys();
   else if((e.ctrlKey||e.metaKey)&&e.code==='KeyV')pasteKeys(aT)});
 
-function animUI(){if($('s-anim').hidden)return;fixA();
+function animUI(){if($('s-anim').hidden)return;fixA();try{animRigsUI()}catch(e){}
   const g=$('a-grid'),sx=g.scrollLeft,sy=g.scrollTop,A=P.anims[curA],s=$('a-sel'),hint=$('a-hint');
   s.replaceChildren();Object.keys(P.anims).forEach(function(n){const o=el('option','',n);o.value=n;s.append(o)});s.value=curA;
   {const wk=!!A&&isWalk(A);$('a-type').value=wk?'walk':'other';$('a-type').disabled=!A;$('a-gl').hidden=!wk;$('a-gs').value=A&&A.gs!=null?A.gs:10}$('a-len').value=A?A.len:1;$('a-loop').setAttribute('aria-pressed',String(aLoop));animPlayBtn();
   g.replaceChildren();kelm.clear();valIns={};rowEls={};phEl=null;
   if(!A){hint.textContent='Press + New to make an animation.';return}
   $('a-clock').textContent=aT.toFixed(2)+'s';
-  if(!animT||!byId(animT)){hint.textContent='Click a rig in the stage to animate it. Clicking off it keeps it selected; press X to deselect.';g.append(el('p','empty','No rig selected.'));return}
+  if(!animTs.length||!animT||!byId(animT)){hint.textContent='Click a rig in the stage to animate it, then use + Add rig to animate up to 6 together. Clicking off it keeps it selected; press X to deselect.';g.append(el('p','empty','No rig selected.'));return}
   const js=rigJoints();aJFix();
-  hint.textContent='Animating '+byId(animT).name+'. '+(aGM==='rot'?'Rotate handle: drag a ring to set a keyframe. Press R for move arrows.':'Move handle: drag an arrow to move the part (sets a keyframe). Press R for rotate rings. Click a part to select it, Ctrl+click adds or removes parts, click empty space to deselect.');
+  hint.textContent='Animating '+animNames()+'. '+(aGM==='rot'?'Rotate handle: drag a ring to set a keyframe. Press R for move arrows.':'Move handle: drag an arrow to move the part (sets a keyframe). Press R for rotate rings. Click a part to select it, Ctrl+click adds or removes parts, click empty space to deselect.');
   const W=Math.max(A.len*pps+60,160),nm=el('div','an-names'),tm=el('div','an-time'),ru=el('div','an-ruler'),po=evalPose(A,aT);
   tm.style.width=W+'px';nm.append(el('div','an-rh','Joints'));
   for(let i=0;i*.1<=A.len+1e-6;i++){const t=i*.1,mj=i%5===0,tk=el('i','tk'+(mj?' mj':''));tk.style.left=(t*pps)+'px';ru.append(tk);
     if(mj&&(pps>=110||i%10===0)){const lb=el('span','tl',t.toFixed(1));lb.style.left=(t*pps+3)+'px';ru.append(lb)}}
   ru.onpointerdown=function(e){if(e.button!==0)return;aSelKeys=[];updKeySel();scrub(e,ru,tm)};tm.append(ru);
-  js.forEach(function(j){const id=j.p.id,r=po[id]||[0,0,0],on=aJs.indexOf(id)>=0?' on':'',nr=el('div','an-row'+on),tr=el('div','an-row'+on),lb=el('span','an-nm',j.p.name);
+  let lastR=null;js.forEach(function(j){if(animTs.length>1&&j.r!==lastR){lastR=j.r;const hn=el('div','an-row'),ht=el('div','an-row'),hl2=el('span','an-nm','\u25B8 '+rigLabel(j.r));hl2.style.cssText='padding-left:6px;font-weight:800';hn.style.background=ht.style.background='rgba(127,127,127,.22)';hn.append(hl2);nm.append(hn);tm.append(ht)}const id=j.p.id,r=po[id]||[0,0,0],on=aJs.indexOf(id)>=0?' on':'',nr=el('div','an-row'+on),tr=el('div','an-row'+on),lb=el('span','an-nm',j.p.name);
     lb.style.paddingLeft=(8+j.d*10)+'px';nr.onclick=function(e){selJoint(id,(e.ctrlKey||e.shiftKey||e.metaKey)?'toggle':undefined)};tr.dataset.j=id;nr.append(lb);
     const ins=[0,1,2].map(function(i){const n=el('input');n.type='number';n.step='1';n.value=Math.round(r[i]*10)/10;n.title='XYZ'.charAt(i)+' rotation (degrees)';
       n.onfocus=function(){selJoint(id,'keep')};
@@ -3973,7 +3995,7 @@ function skyTick(dt){if(!playing&&!running&&LSP!==P.env){LSP=P.env;if(P.env.ligh
   try{skyLook(dt,k)}catch(err){if(!skyLook.bad){skyLook.bad=1;log('Error: sun/moon/clouds - '+(err&&err.message))}}cloudS.forEach(function(q){const u=q.userData;u.az+=u.sp*dt*SKYS.cs;const ce=Math.cos(u.el);q.position.set(cp.x+Math.sin(u.az)*ce*800,cp.y+Math.sin(u.el)*800,cp.z-Math.cos(u.az)*ce*800)})}
 /* F: fly the camera to a spot in front of whatever is selected */
 function focusSel(){let ps=sel.map(function(id){return byId(id)}).filter(function(p){return p&&!p.stab});
-  if(!ps.length&&animT){const r=byId(animT);if(r)ps=rigParts(r).filter(function(p){return !p.stab})}
+  if(!ps.length&&animTs.length){animTs.forEach(function(id){const r=byId(id);if(r)ps=ps.concat(rigParts(r).filter(function(p){return !p.stab}))})}
   if(!ps.length){msg('Select something first, then press F.');return}
   const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];ps.forEach(function(p){for(let i=0;i<3;i++){lo[i]=Math.min(lo[i],p.pos[i]-p.size[i]/2);hi[i]=Math.max(hi[i],p.pos[i]+p.size[i]/2)}});
   const c=[0,1,2].map(function(i){return (lo[i]+hi[i])/2}),d=Math.max(8,Math.max(hi[0]-lo[0],hi[1]-lo[1],hi[2]-lo[2])*1.6+6),f=fwd();
@@ -4587,7 +4609,7 @@ function setTab0(k){const was=animOn();curTab=k;
   ['out','code','parts','anim'].forEach(function(j){$('t-'+j).classList.toggle('on',j===k);$('s-'+j).hidden=fsOn?(j==='parts'?false:j!==k):j!==k});
   $('s-view').value=k;$('s-parts').querySelector('.tb').style.display=k==='anim'?'none':'';$('p-props').style.display=k==='anim'?'none':'';
   if(k==='anim'){if(rigOn)$('p-rig').click();if(!was)camSave={x:cam.x,y:cam.y,z:cam.z,yaw:cam.yaw,pit:cam.pit};const p=sel.length?byId(sel[0]):null;let r=p&&rootOf(p);if(!(r&&kids(r).length)){const av=byId(P.avId);r=av?rootOf(av):null}animSelect(r&&kids(r).length?r:null);preview()}
-  else if(was){animHover(null);animT=null;aPlay=false;animPlayBtn();live={};stagePrev=null;stageApply();if(camSave){Object.assign(cam,camSave);camSave=null}preview();buildEdit()}}
+  else if(was){animHover(null);animT=null;animTs=[];aPlay=false;animPlayBtn();live={};stagePrev=null;stageApply();if(camSave){Object.assign(cam,camSave);camSave=null}preview();buildEdit()}}
 ['out','code','parts','anim'].forEach(function(k){$('t-'+k).onclick=function(){setTab(k)}});
 $('s-view').onchange=function(){setTab(this.value)};
 function setFs(on,fromApi){fsOn=on;$('studio').classList.toggle('fs',on);$('s-fs').textContent=on?'Exit fullscreen':'⛶ Fullscreen';
@@ -4773,7 +4795,7 @@ function histApply(str){histBusy=true;try{const st=coUndoMerge(JSON.parse(str));
   sel=sel.filter(function(id){return byId(id)});if(selModel&&!byModel(selModel))selModel=null;if(selJ&&!byId(selJ))selJ=null;
   aSelKeys=[];live={};fixA();aJFix();
   rebuildParts();renderParts();
-  if(animOn()){const r=animT&&byId(animT);animSelect(r&&kids(r).length?r:null);animUI()}else props();
+  if(animOn()){const r=animT&&byId(animT);animSelect(r&&kids(r).length?r:null,animTs.length>1);animUI()}else props();
   histLast=snapState();saveRaw()}finally{histBusy=false}}
 function undoRedo(redo){const say=function(t){if(animOn()){const h=$('a-hint');if(h)h.textContent=t}else msg(t)};
   if(redo){if(!redoS.length){say('Nothing to redo.');return}hist.push(histLast);histApply(redoS.pop());say('Redid.')}
