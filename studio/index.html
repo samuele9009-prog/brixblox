@@ -3756,12 +3756,12 @@ const SKYGENC={};
 function skyHash(x,y){let n=Math.imul(x|0,374761393)+Math.imul(y|0,668265263);n=Math.imul(n^(n>>>13),1274126177);return((n^(n>>>16))>>>0)/4294967296}
 function skyNoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*xf*(xf*(xf*6-15)+10),v=yf*yf*yf*(yf*(yf*6-15)+10);
   return(skyHash(xi,yi)*(1-u)+skyHash(xi+1,yi)*u)*(1-v)+(skyHash(xi,yi+1)*(1-u)+skyHash(xi+1,yi+1)*u)*v}
-function skyFbm(x,y,oc){let s=0,a=.5,n=oc||6;for(let i=0;i<n;i++){s+=a*skyNoise(x,y);const t=x*1.96-y*.6+17.3;y=x*.6+y*1.96+9.1;x=t;a*=.5}return Math.min(1,Math.max(0,(s-.22)/.54))}
+function skyFbm(x,y,oc){let s=0,a=.5,n=oc||6;for(let i=0;i<n;i++){s+=a*skyNoise(x,y);const t=x*2.01-y*.25+17.3;y=x*.25+y*2.01+9.1;x=t;a*=.5}return Math.min(1,Math.max(0,(s-.22)/.54))}
 function skySmooth(a,b,x){const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t)}
 function skyDir(f,tu,tv){const U=1-tu,V=tv,a=(U-.5)*2,b=(.5-V)*2,c=(V-.5)*2;/* where each pixel sits on the box, same as three.js BoxGeometry */
   const v=f==='r'?[1,c,-a]:f==='l'?[-1,c,a]:f==='t'?[a,1,b]:f==='bo'?[a,-1,c]:f==='ba'?[a,c,1]:[-a,c,-1],m=Math.hypot(v[0],v[1],v[2]);return[v[0]/m,v[1]/m,v[2]/m]}
 function genSky(n,pp,eo,S0,only){if(!pp&&SKYGENC[n])return SKYGENC[n];
-  const p=pp||SKYPAL[n],S=S0||512,out={},rgb=function(h){const k=parseInt(h.slice(1),16);return[(k>>16&255)/255,(k>>8&255)/255,k&255?(k&255)/255:0]},
+  const p=pp||SKYPAL[n],S=S0||512,MO=S<=256?5:S<=512?6:8,out={},rgb=function(h){const k=parseInt(h.slice(1),16);return[(k>>16&255)/255,(k>>8&255)/255,k&255?(k&255)/255:0]},
     zen=rgb(p.zen),mid=rgb(p.mid),hor=rgb(p.hor),gnd=rgb(p.gnd),cl=p.cl,lit=rgb(cl.lit),sh=rgb(cl.sh),
     env=eo||(LPRE[n]&&LPRE[n].env)||P.env,ang=(env.tod-6)/12*Math.PI,sl=Math.hypot(Math.cos(ang)*14,Math.sin(ang)*14,6),
     sd=[Math.cos(ang)*14/sl,Math.sin(ang)*14/sl,6/sl],md=[-sd[0],-sd[1],-sd[2]],sg=p.sg,mg=p.mg,
@@ -3776,11 +3776,10 @@ function genSky(n,pp,eo,S0,only){if(!pp&&SKYGENC[n])return SKYGENC[n];
       if(sg){const dt=Math.max(0,d[0]*sd[0]+d[1]*sd[1]+d[2]*sd[2]),w=sg[3]*(Math.pow(dt,28)*.7+Math.pow(dt,6)*.2)+sg[3]*Math.pow(dt,3)*.1*(1-Math.min(1,Math.abs(e)*3));
         r+=sg[0]*w;g+=sg[1]*w;b+=sg[2]*w}
       if(mg){const dt=Math.max(0,d[0]*md[0]+d[1]*md[1]+d[2]*md[2]),w=mg[3]*(Math.pow(dt,40)*.5+Math.pow(dt,8)*.14);r+=mg[0]*w;g+=mg[1]*w;b+=mg[2]*w}
-      if(e>.005){const q=1/(e+.2),oc=e<.08?4:e<.2?5:6,bx=d[0]*q*cl.sc+ox,bz=d[2]*q*cl.sc+oy,
-          qx=bx+(skyNoise(bx*.7+3.1,bz*.7)-.5)*1.1,qz=bz+(skyNoise(bx*.7,bz*.7+7.7)-.5)*1.1,nn=skyFbm(qx,qz,oc),t0=1-cl.cov;
+      if(e>.005){const q=1/(e+.2),oc=Math.min(MO,e<.08?5:e<.2?6:8),bx=d[0]*q*cl.sc+ox,bz=d[2]*q*cl.sc+oy,wg=cl.wig||0,qx=wg?bx+(skyNoise(bx*.7+3.1,bz*.7)-.5)*wg:bx,qz=wg?bz+(skyNoise(bx*.7,bz*.7+7.7)-.5)*wg:bz,nn=skyFbm(qx,qz,oc),t0=1-cl.cov;
         let dn=skySmooth(t0,t0+cl.soft*.5,nn)*cl.op*skySmooth(.005,.16,e);
         if(dn>.003){const n2=skyFbm(qx+sd[0]*.3,qz+sd[2]*.3,oc),n3=skyFbm(qx+sd[0]*.9,qz+sd[2]*.9,Math.min(oc,4)),
-            lf=Math.min(1,Math.max(0,.55+(nn-n2)*3.4-(nn-n3)*.5)),hz=1-skySmooth(0,.4,e),dd=Math.min(1,dn*1.4),
+            lf=Math.min(1,Math.max(0,.55+(nn-n2)*3.6-(nn-n3)*.5)),hz=1-skySmooth(0,.4,e),dd=Math.min(1,dn*1.4),
             sdot=Math.max(0,d[0]*sd[0]+d[1]*sd[1]+d[2]*sd[2]),rim=(1-skySmooth(.15,.8,dd))*(.25+.75*Math.pow(sdot,3))*.55,
             base=.82+.18*skySmooth(.1,.7,nn);
           let cr=(sh[0]+(lit[0]-sh[0])*lf)*base,cg=(sh[1]+(lit[1]-sh[1])*lf)*base,cb=(sh[2]+(lit[2]-sh[2])*lf)*base;
@@ -3808,12 +3807,13 @@ const SKYB_SKY={
   'Alien teal':{zen:'#220a4a',mid:'#1c8a8a',hor:'#9affd0',gnd:'#14403a',stars:120,moon:true},
   'Crimson':{zen:'#2a0510',mid:'#8a1a2a',hor:'#ff7a50',gnd:'#3a1018',stars:60,moon:true}};
 const SKYB_CLOUD={
-  'None':{cov:0,soft:.4,csc:1.5,cop:0},
-  'Wispy':{cov:.3,soft:.7,csc:2.4,cop:.7},
-  'Scattered':{cov:.5,soft:.4,csc:1.6,cop:.95},
-  'Puffy':{cov:.6,soft:.3,csc:1.1,cop:1},
-  'Overcast':{cov:.95,soft:.6,csc:1.1,cop:.9},
-  'Stormy':{cov:.9,soft:.35,csc:1.3,cop:.95,lit:'#8a93a3',sh:'#2a2f3c'}};
+  'None':{cov:0,wig:0,soft:.4,csc:1.5,cop:0},
+  'Wispy':{cov:.3,wig:0,soft:.7,csc:2.4,cop:.7},
+  'Scattered':{cov:.5,wig:0,soft:.4,csc:1.6,cop:.95},
+  'Puffy':{cov:.6,wig:0,soft:.3,csc:1.1,cop:1},
+  'Overcast':{cov:.95,wig:0,soft:.6,csc:1.1,cop:.9},
+  'Wiggleclouds':{cov:.55,soft:.4,csc:1.4,cop:.95,wig:1.4},
+  'Stormy':{cov:.9,wig:0,soft:.35,csc:1.3,cop:.95,lit:'#8a93a3',sh:'#2a2f3c'}};
 const SKYB_SUN={
   'Bright day':{sc:'#fff1cc',ss:.65,glow:.55},
   'Warm':{sc:'#ffd08a',ss:.8,glow:.7},
@@ -3827,15 +3827,20 @@ function skybOn(){return !!(P&&P.env&&P.env.skyb&&P.env.skyb.on)}
 function skybGet(){if(!P.env.skyb)P.env.skyb=Object.assign({},SKYB_DEF);else for(const k in SKYB_DEF)if(P.env.skyb[k]===undefined)P.env.skyb[k]=SKYB_DEF[k];return P.env.skyb}
 function skybPal(b){const h=function(x){const k=parseInt(x.slice(1),16);return[(k>>16&255)/255,(k>>8&255)/255,(k&255)/255]},s=h(b.sc);
   return{zen:b.zen,mid:b.mid,hor:b.hor,gnd:b.gnd,sg:b.ss>0&&b.glow>0?[s[0],s[1],s[2],b.glow]:undefined,mg:b.moon===false?undefined:[.8,.85,1,.35],
-    cl:{cov:b.cov,soft:b.soft,sc:b.csc,lit:b.lit,sh:b.sh,op:b.cop},stars:b.stars,seed:b.seed}}
+    cl:{cov:b.cov,soft:b.soft,sc:b.csc,lit:b.lit,sh:b.sh,op:b.cop,wig:b.wig||0},stars:b.stars,seed:b.seed}}
 const SKYBC={sig:'',q:0,at:0,imgs:null,hi:null,n:0};
 /* draws small while sliders move, then sharp after a second of no changes */
 function skybImgs(){const b=P.env.skyb,sig=JSON.stringify(b)+'|'+P.env.tod;
   if(SKYBC.sig!==sig||!SKYBC.imgs){SKYBC.sig=sig;SKYBC.q=256;SKYBC.hi=null;SKYBC.n=0;SKYBC.imgs=genSky('custom',skybPal(b),P.env,256);SKYBC.at=performance.now()}
   else if(SKYBC.q===256&&performance.now()-SKYBC.at>900){SKYBC.q=512;SKYBC.imgs=genSky('custom',skybPal(b),P.env,512);SKYBC.hi=Object.keys(SKYFACE)}
   else if(SKYBC.q===512&&SKYBC.hi&&performance.now()-SKYBC.at>1800){/* sharp 1024px pass, one side per frame so the editor never freezes */
-    const f=SKYBC.hi.shift();if(f){const o=Object.assign({},SKYBC.imgs);o[f]=genSky('custom',skybPal(b),P.env,1024,f)[f];SKYBC.imgs=o;SKYBC.n=(SKYBC.n||0)+1}if(!SKYBC.hi.length)SKYBC.q=1024}
+    const f=SKYBC.hi.shift();if(f){const o=Object.assign({},SKYBC.imgs);o[f]=genSky('custom',skybPal(b),P.env,1536,f)[f];SKYBC.imgs=o;SKYBC.n=(SKYBC.n||0)+1}if(!SKYBC.hi.length)SKYBC.q=1536}
   return SKYBC.imgs}
+function startLightUI(d){const s=el('select'),o0=el('option','','None (use the sky below)');o0.value='';s.append(o0);
+  Object.keys(LPRE).forEach(function(n){const o=el('option','',n.charAt(0).toUpperCase()+n.slice(1));o.value=n;s.append(o)});s.value=LPRE[P.env.light]?P.env.light:'';
+  s.onchange=function(){if(s.value)P.env.light=s.value;else delete P.env.light;LSP=P.env;SKYO=null;SKYAUTO=false;lightSet(s.value);save();props()};
+  d.append(lab('Starting lighting (shows here and when the game starts)',s));
+  if(LPRE[P.env.light])d.append(el('p','note','A lighting preset controls the time of day, sky colour, fog and sky picture, so the sliders above and the Sky Builder are paused until you pick None. A "set lighting to" block can still change it while playing.'))}
 function skyBuilderUI(d){const b=skybGet(),h=el('h4','','Sky Builder');h.style.margin='14px 0 4px';d.append(h);
   const redo=function(){save();applyEnv()},again=function(){redo();props()};
   const on=el('input');on.type='checkbox';on.checked=!!b.on;on.onchange=function(){b.on=on.checked;again()};
@@ -3852,7 +3857,7 @@ function skyBuilderUI(d){const b=skybGet(),h=el('h4','','Sky Builder');h.style.m
   d.append(el('p','note','Sun'));
   colr('Sun colour','sc');slider(d,'Sun size',b,'ss',0,2.5,.05,pct,redo);slider(d,'Sun glow',b,'glow',0,1.5,.05,pct,redo);
   d.append(el('p','note','Clouds'));
-  slider(d,'Cloud amount',b,'cov',0,1,.01,pct,redo);slider(d,'Cloud softness',b,'soft',.1,.8,.01,pct,redo);slider(d,'Cloud size',b,'csc',.6,3,.05,pct,redo);slider(d,'Cloud opacity',b,'cop',0,1,.01,pct,redo);
+  slider(d,'Cloud amount',b,'cov',0,1,.01,pct,redo);slider(d,'Cloud softness',b,'soft',.1,.8,.01,pct,redo);slider(d,'Cloud size',b,'csc',.6,3,.05,pct,redo);slider(d,'Cloud opacity',b,'cop',0,1,.01,pct,redo);slider(d,'Wiggle',b,'wig',0,2.5,.05,pct,redo);
   colr('Cloud light colour','lit');colr('Cloud shadow colour','sh');
   const rb=mb('Shuffle clouds','ghost',function(){b.seed=Math.floor(Math.random()*1000);redo()});rb.style.marginTop='6px';d.append(rb);
   d.append(el('p','note','Night'));
@@ -3908,7 +3913,9 @@ function skyLook(dt,k){let v=LIGHTO&&SKYV[LIGHTO]||null;if(!v&&!SKYO&&!SKYGEN&&s
   moonS.material.color.copy(SKYS.mc);moonS.material.opacity=SKYS.mo;moonS.scale.set(120*SKYS.mz,120*SKYS.mz,1);
   const cn=cl?cl.n:10,co=cl?cl.o:1;
   cloudS.forEach(function(q){const u=q.userData;u.o+=((u.i<cn?co:0)-u.o)*f;q.visible=u.o>.01;q.material.opacity=u.o;q.material.color.copy(SKYS.cc);q.scale.set(u.w*SKYS.cz,u.w*SKYS.cz/2,1)})}
-function skyTick(dt){const e=lightEnv(),a=(e.tod-6)/12*Math.PI,d=new THREE.Vector3(Math.cos(a)*14,Math.sin(a)*14,6).normalize(),day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),R=700,cp=camera.position;
+let LSP=null;/* when a different game's settings load in the studio, switch to its starting lighting so the sky shows without pressing Play */
+function skyTick(dt){if(!playing&&!running&&LSP!==P.env){LSP=P.env;if(P.env.light&&LPRE[P.env.light]){lightStart();try{applyEnv()}catch(e){}}}
+  const e=lightEnv(),a=(e.tod-6)/12*Math.PI,d=new THREE.Vector3(Math.cos(a)*14,Math.sin(a)*14,6).normalize(),day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),R=700,cp=camera.position;
   skyApply();skyG.visible=!stage.visible&&!skyAny;skyBox.visible=!stage.visible&&(skyAny||skyGenOn);skyBox.position.copy(cp);
   sunS.visible=d.y>-.1;sunS.position.set(cp.x+d.x*R,cp.y+d.y*R,cp.z+d.z*R);
   moonS.visible=d.y<.1;moonS.position.set(cp.x-d.x*R,cp.y-d.y*R,cp.z-d.z*R);
@@ -3937,6 +3944,7 @@ const LPRE={
 const LIGHTOPT=[['default','Default'],['realistic','Realistic (blue haze, soft shadows)'],['cinematic','Cinematic (strong blue, dark edges)'],['sunny','Sunny'],['sunset','Sunset'],['night','Night'],['foggy','Foggy'],['spooky','Spooky'],['vivid','Vivid colours']];
 let LIGHTO=null,lxSig='',lxT=null,lxV=null;
 function lightEnv(){return LIGHTO&&LPRE[LIGHTO]?Object.assign({},P.env,LPRE[LIGHTO].env):P.env}
+function lightStart(){const n=P&&P.env&&P.env.light;if(n&&LPRE[n]){LIGHTO=n;try{skyForLight(n)}catch(e){}}}
 function lightSet(n){n=String(n||'').toLowerCase().replace(/[^a-z]/g,'');LIGHTO=(n&&LPRE[n])?n:null;try{skyForLight(LIGHTO)}catch(e){log('Error: lighting sky - '+(e&&e.message))}try{applyEnv()}catch(e){log('Error: lighting - '+(e&&e.message))}
   log('Lighting: '+(LIGHTO||'default')+' | sky: '+(SKYO?(SKYAUTO?'your uploaded images for it':'the skybox you picked'):SKYGEN?'built-in '+SKYGEN+' sky':'normal sky'))}
 function lxEls(){if(lxT)return;const c=document.querySelector('.cvw');if(!c)return;
@@ -4238,7 +4246,7 @@ function svcProps(d){const s=SV.find(function(x){return x.k===selSvc});if(!s)ret
   const pct=function(v){return v.toFixed(2)};
   if(s.k==='atmos'){const col=el('input');col.type='color';col.value=P.env.sky;col.oninput=function(){P.env.sky=col.value;save();applyEnv()};d.append(lab('Sky colour',col));
     slider(d,'Time of day',P.env,'tod',0,24,.25,clock,applyEnv);slider(d,'Brightness',P.env,'bright',.2,2,.05,pct,applyEnv);
-    slider(d,'Sun strength',P.env,'sun',0,1.5,.05,pct,applyEnv);slider(d,'Fog',P.env,'fog',0,100,1,null,applyEnv);skyBuilderUI(d)}
+    slider(d,'Sun strength',P.env,'sun',0,1.5,.05,pct,applyEnv);slider(d,'Fog',P.env,'fog',0,100,1,null,applyEnv);startLightUI(d);skyBuilderUI(d)}
   else if(s.k==='rules'){slider(d,'Gravity',P.rules,'grav',20,400,5);slider(d,'Jump power',P.rules,'jump',10,120,1);slider(d,'Walk speed',P.rules,'speed',4,40,1);
     slider(d,'Camera distance',P.rules,'cam',4,60,1,null,function(){cdT=P.rules.cam});slider(d,'Field of view',P.rules,'fov',30,120,1);
     const b=el('button','btn ghost small','Reset to defaults');b.type='button';b.style.marginTop='10px';b.onclick=function(){Object.assign(P.rules,{grav:190,jump:48,speed:16,cam:14});save();props()};d.append(b);
@@ -4485,7 +4493,7 @@ function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing);try{hotRender()}catch(e){}try{renderGui()}catch(e){}}
 function setRun(v){running=v;sync()}
-function resetWorld(){RUNC.clear();RUNW.clear();Object.keys(ATTR).forEach(function(k){delete ATTR[k]});Object.keys(PD).forEach(function(k){delete PD[k]});PDL=null;KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();SKYO=null;SKYAUTO=false;SKYGEN=null;LIGHTO=null;SPW={};RO={};RV={};RD={};RVY={};RY={};CO={};FRI={};TM=new Map();RAG={};RSZ={};SKIN={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts();try{applyEnv()}catch(e){}}
+function resetWorld(){RUNC.clear();RUNW.clear();Object.keys(ATTR).forEach(function(k){delete ATTR[k]});Object.keys(PD).forEach(function(k){delete PD[k]});PDL=null;KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();SKYO=null;SKYAUTO=false;SKYGEN=null;LIGHTO=null;SPW={};RO={};RV={};RD={};RVY={};RY={};CO={};FRI={};TM=new Map();RAG={};RSZ={};SKIN={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts();lightStart();try{applyEnv()}catch(e){}}
 function boot(my){reser();try{spawnHere()}catch(e){}const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
   hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
   setTimeout(function(){if(my===S&&(running||playing))firePJ('pjoin',P.player.name)},120);
