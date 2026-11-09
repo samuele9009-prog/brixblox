@@ -1177,6 +1177,8 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
     case'unragdoll':resolve(String(val(a[0],S))).forEach(function(t){const e=RAG[t.key];if(e&&!e.dead&&e.t<=e.end)e.end=Math.max(e.t,RFALL)});break;
     case'kill':startRag(origin(o).self,true);break;
     case'pushparent':{if(!roots(o,true).length){log('Error: "push parent rig" must be in a script that belongs to an object. To push yourself, put it inside your character.');break}
+      {const r0=roots(o,true)[0];/* a rig is parts welded together; a single part on its own is not one, so it must not move */
+        if(r0&&!r0.av&&!kids(r0).length){log('Error: \"push parent rig\" only works on a rig (parts welded together), and '+ownName(o)+' is a single part, so it was not pushed. For a single part tick Movable and use \"push forward\", or use \"push with force _ speed _\".');break}}
       pushKey(origin(o).self,n(0),a[1]===undefined?.5:Math.min(60,n(1)),String(val(a[2]===undefined?'front':a[2],S)));break}
     case'setrig':{const tg=playersOf(String(val(a[0],S))),rn=String(val(a[1]===undefined?'':a[1],S)).trim();
       if(!tg.length){log('Error: no player named \"'+String(val(a[0],S)).trim()+'\" for the \"set player to rig\" block.');break}
@@ -2321,7 +2323,7 @@ function meshLoad(nm){const v=(P.assets.meshes||{})[nm];if(!v)return Promise.res
 function meshAll(){P.parts.forEach(function(q){const m=q.shape==='mesh'&&M[q.id];if(m)meshHook(m,q)})}
 /* A copy of the mesh scaled to the part's size. Own copies of the materials, so a texture picked for one part does not change another. */
 function meshInst(E,p){const w=E.obj.clone(true),nz=E.obj.userData.nz||[1,1,1],sz=p.size,g=new THREE.Group(),src=p.mtex&&P.assets.images[p.mtex];
-  w.traverse(function(m){if(!m.isMesh)return;m.castShadow=!p.stab;m.receiveShadow=true;m.frustumCulled=false;
+  w.traverse(function(m){if(!m.isMesh)return;m.castShadow=!p.stab;m.receiveShadow=true;m.frustumCulled=true;
     const f=function(mt){const n=mt.clone();n.side=THREE.DoubleSide;if(src){n.map=accTex(src,E.fmt==='glb');if(n.color)n.color.set(0xffffff)}n.needsUpdate=true;return n};
     m.material=Array.isArray(m.material)?m.material.map(f):f(m.material)});
   g.add(w);g.scale.set(nz[0]>1e-6?sz[0]/nz[0]:1,nz[1]>1e-6?sz[1]/nz[1]:1,nz[2]>1e-6?sz[2]/nz[2]:1);g.userData.mesh=1;return g}
@@ -2886,8 +2888,11 @@ function play(dt,f){const SP=(S.fly&&amAdmin()?2.2:1)*(S.speed!=null?S.speed:P.r
   applyPose(S.bp,true,S.hold);S.mv=mv}
 function solid(r){return CO[r.id]!==undefined?CO[r.id]:!r.nocol}
 function collide(){const T=byId(P.avId);if(!T)return;const R=1.1,fy=feet0()+S.h;
-  for(let it=0;it<2;it++)P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;
-    const r=rootOf(q);if(!solid(r))return;const eq=eh(q),hx=eq[0],hy=eq[1],hz=eq[2],qy=q.pos[1]+(RY[r.id]||0);if(qy+hy<=fy+STEP||qy-hy>=fy+6)return;
+  for(let it=0;it<2;it++)P.parts.forEach(function(q){if(q.av)return;
+    const r=rootOf(q);if((r.svc||'world')!=='world'||!solid(r)||gone(q))return;
+    /* far-away parts are skipped before any of the expensive work (the part's size box always contains the whole shape) */
+    {const o0=RO[r.id]||[0,0],sz=q.size,rad=Math.abs(sz[0])+Math.abs(sz[1])+Math.abs(sz[2])+R+3;if(Math.abs(T.pos[0]+S.x-(q.pos[0]+o0[0]))>rad||Math.abs(T.pos[2]-S.y-(q.pos[2]+o0[1]))>rad)return}
+    const eq=eh(q),hx=eq[0],hy=eq[1],hz=eq[2],qy=q.pos[1]+(RY[r.id]||0);if(qy+hy<=fy+STEP||qy-hy>=fy+6)return;
     const o=RO[r.id]||[0,0],cx=T.pos[0]+S.x,cz=T.pos[2]-S.y,bx=q.pos[0]+o[0],bz=q.pos[2]+o[1],L=colsOf(q);
     if(L){if(!colNear(q,L,o,cx,cz,R+.5))return;const pp=colPush(q,L,o,cx,fy,cz);if(pp){if(r.movable)RO[r.id]=[o[0]-pp[0],o[1]-pp[1]];else{S.x+=pp[0];S.y-=pp[1]}}return}/* round shapes and unions */
     if(hasRot(q)){const pp=rotPush(q,o,cx,fy,cz);if(pp){if(r.movable)RO[r.id]=[o[0]-pp[0],o[1]-pp[1]];else{S.x+=pp[0];S.y-=pp[1]}}return}
@@ -2905,7 +2910,11 @@ function pcollide(){if(!S.pcol||S.rag)return;const T=byId(P.avId);if(!T)return;c
     const pen=R*2-d;S.x+=dx*pen;S.y-=dz*pen})}
 /* ===== Gravity: the player falls, lands on top of parts, and respawns after dropping into the void ===== */
 const STEP=2.5;
-function rootOf(p){while(p.parent&&byId(p.parent))p=byId(p.parent);return p}
+/* rootOf is asked many times per part every frame (collision, ground, touching). While a game runs the answer is remembered for the rest of that frame. */
+const ROOTC=new Map();
+function rootOf(p0){const run=playing||running;if(run){const c=ROOTC.get(p0);if(c!==undefined)return c}
+  let p=p0;while(p.parent){const n=byId(p.parent);if(!n)break;p=n}
+  if(run)ROOTC.set(p0,p);return p}
 function svcOf(p){return rootOf(p).svc||'world'}
 function inW(p){return svcOf(p)==='world'}
 function pickable(){return Object.keys(M).filter(function(k){const p=byId(k);return p&&!p.stab&&inW(p)&&stageVis(p)}).map(function(k){return M[k]})}
@@ -3074,7 +3083,7 @@ function spawnBox(d,p){if(p.av||p.stab||p.parent||p.shape==='mesh')return;const 
 /* ===== Entities: nearest players and rigs, ragdoll, kill, push, size ===== */
 let RAG={},RSZ={},RYAW={},RB={};
 function goneKey(k){const e=RAG[k];return !!(e&&e.gone)}
-function gone(p){return goneKey('rig:'+rootOf(p).id)}
+function gone(p){for(const k in RAG)return goneKey('rig:'+rootOf(p).id);return false}
 function plist(){const T=byId(P.avId);if(!T)return [];
   const a=[{key:'main',name:P.player.name,x:T.pos[0]+S.x,y:T.pos[1]+S.h,z:T.pos[2]-S.y}];
   NP.forEach(function(n){if(goneKey('np:'+n.name))return;var q=n.g.position,rl=n.net&&n.tx!=null;a.push({key:'np:'+n.name,name:n.name,x:T.pos[0]+(rl?n.tx:q.x),y:T.pos[1]+(rl?n.th:q.y),z:T.pos[2]+(rl?-n.ty:q.z)})});return a}
@@ -3427,7 +3436,10 @@ function bansUI(d){P.bans=P.bans.filter(function(b){return b.until===null||b.unt
   P.bans.forEach(function(b){const w=el('div','arow');w.append(el('span','nm',b.name+' - '+(b.reason||'no reason')+' ('+(b.until===null?'forever':leftText(b)+' left')+')'),mb('Unban','ghost',function(){P.bans=P.bans.filter(function(x){return x!==b});save();props()}));d.append(w)})}
 
 /* ===== Events: touch, click, chat and keys ===== */
-function fireScript(sc){if(!(running||playing))return;ex(sc.slice(1),S,sc[0].o).catch(function(e){log('Error: '+e)})}
+const RUNC=new Map(),RUNW=new Set();/* how many copies of each script are running; a script started over and over (touch, key, loops inside it) used to pile up until the game crawled */
+function fireScript(sc){if(!(running||playing))return;const h=sc[0],c=RUNC.get(h)||0;
+  if(c>=60){if(!RUNW.has(h)){RUNW.add(h);log('Warning: a script has 60 copies running at once, so new ones are ignored until some finish. Add a wait, or stop the script when it is done.')}return}
+  RUNC.set(h,c+1);ex(sc.slice(1),S,h.o).catch(function(e){log('Error: '+e)}).then(function(){RUNC.set(h,Math.max(0,(RUNC.get(h)||1)-1))})}
 function firePJ(kind,name){if(!(running||playing))return;P.scripts.forEach(function(sc){if(sc[0].t!==kind)return;S.v[kind==='pjoin'?'joiner':'leaver']=String(name);fireScript(sc)})}
 /* "when key held": run the script again and again while the key stays down. Only one copy runs at a time; the next round starts once the last one has finished. */
 const HL=new Map();
@@ -4073,7 +4085,19 @@ let QS=1,QE=16.7,QC=0;/* play-mode quality: drops the render resolution a little
 function qTune(ms){if(!playing){QS=1;QC=0;return}QE+=(ms-QE)*.12;if(++QC<40)return;QC=0;
   if(QE>22&&QS>.55)QS=Math.max(.55,Math.round((QS-.1)*100)/100);else if(QE<17.5&&QS<1)QS=Math.min(1,Math.round((QS+.05)*100)/100);
   if(QS<=.65&&sun.shadow.mapSize.x>1024){sun.shadow.mapSize.set(1024,1024);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}}
-function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.1,(now-lt)/1000);qTune(dt*1000);lt=now;const f=fwd();
+/* Automatic: while a game is running, parts that are not on your screen are not drawn. Parts close enough to cast a shadow into view stay on so shadows do not pop in and out. */
+const CULLED=new Set(),CUF=new THREE.Frustum(),CUM=new THREE.Matrix4(),CUS=new THREE.Sphere();let cuN=0;
+function cullTick(){
+  if(!(playing||running)){if(CULLED.size){CULLED.forEach(function(m){m.visible=true});CULLED.clear()}return}
+  if(++cuN%2)return;
+  camera.updateMatrixWorld();CUM.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);CUF.setFromProjectionMatrix(CUM);
+  const cp=camera.position;
+  P.parts.forEach(function(q){if(q.av||q.acc||q.stab||q.light)return;const m=M[q.id];if(!m||!m.geometry)return;
+    const g=m.geometry;if(!g.boundingSphere)g.computeBoundingSphere();if(!g.boundingSphere)return;
+    CUS.copy(g.boundingSphere).applyMatrix4(m.matrixWorld);CUS.radius+=4;/* extra room, because positions are from the last drawn frame */
+    let hide=!CUF.intersectsSphere(CUS);if(hide&&m.castShadow&&CUS.center.distanceTo(cp)-CUS.radius<60)hide=false;
+    if(hide){if(m.visible){m.visible=false;CULLED.add(m)}}else if(CULLED.has(m)){m.visible=true;CULLED.delete(m)}})}
+function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const dt=Math.min(.1,(now-lt)/1000);qTune(dt*1000);lt=now;const f=fwd();
   if(!playing)FC=false;
   if(playing&&!FC)play(dt,f);
   else{const sp=(keys.ShiftLeft?36:12)*dt,r=[Math.cos(cam.yaw),0,Math.sin(cam.yaw)],go=function(v,k){cam.x+=v[0]*k;cam.y+=v[1]*k;cam.z+=v[2]*k};
@@ -4097,12 +4121,12 @@ function frame(now){requestAnimationFrame(frame);now=now||lt;const dt=Math.min(.
   const w=cv.clientWidth,h=fsOn?cv.clientHeight:Math.round(w*.75),pr=Math.min(window.devicePixelRatio||1,2)*QS;
   if(w&&h&&(cv.width!==Math.floor(w*pr)||cv.height!==Math.floor(h*pr))){renderer.setPixelRatio(pr);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
   {const fv=Math.max(30,Math.min(120,+(S.fov!=null?S.fov:P.rules.fov)||70));if(camera.fov!==fv){camera.fov=fv;camera.updateProjectionMatrix()}}
-  camera.position.set(cam.x,cam.y,cam.z);camera.lookAt(cam.x+f[0],cam.y+f[1],cam.z+f[2]);{const T=playing&&byId(P.avId);if(T)sunTick(T.pos[0]+S.x,T.pos[1]+S.h,T.pos[2]-S.y);else sunTick(cam.x+f[0]*22,Math.max(0,cam.y+f[1]*22),cam.z+f[2]*22)}skyTick(dt);renderer.render(scene,camera);outlinePass()}
+  camera.position.set(cam.x,cam.y,cam.z);camera.lookAt(cam.x+f[0],cam.y+f[1],cam.z+f[2]);{const T=playing&&byId(P.avId);if(T)sunTick(T.pos[0]+S.x,T.pos[1]+S.h,T.pos[2]-S.y);else sunTick(cam.x+f[0]*22,Math.max(0,cam.y+f[1]*22),cam.z+f[2]*22)}skyTick(dt);try{cullTick()}catch(e){}renderer.render(scene,camera);outlinePass()}
 
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing);try{hotRender()}catch(e){}try{renderGui()}catch(e){}}
 function setRun(v){running=v;sync()}
-function resetWorld(){Object.keys(ATTR).forEach(function(k){delete ATTR[k]});KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();SKYO=null;SPW={};RO={};RV={};RD={};RVY={};RY={};CO={};FRI={};TM=new Map();RAG={};RSZ={};SKIN={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
+function resetWorld(){RUNC.clear();RUNW.clear();Object.keys(ATTR).forEach(function(k){delete ATTR[k]});KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();SKYO=null;SPW={};RO={};RV={};RD={};RVY={};RY={};CO={};FRI={};TM=new Map();RAG={};RSZ={};SKIN={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
 function boot(my){reser();try{spawnHere()}catch(e){}const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
   hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
   setTimeout(function(){if(my===S&&(running||playing))firePJ('pjoin',P.player.name)},120);
