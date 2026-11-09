@@ -687,7 +687,7 @@ const BD={
  say:{c:'lk',l:'say _',a:['Hello!'],tip:'Shows a chat bubble above your head for a few seconds.'},
  color:{c:'lk',l:'color _',a:['red'],raw:1},
  setimage:{c:'lk',l:'set image of this object to _',a:['none'],dd:{0:'img'},tip:'Puts a picture from Assets on the object this script belongs to (pick the picture, or none to take it off). It goes back to the part setting when the game restarts. Put the script on an object with the + next to it in the Explorer.'},
- lighting:{c:'lk',l:'set lighting to _',a:['realistic'],dd:{0:'light'},tip:'Changes the lighting of the whole game. Pick one from the list: Realistic (soft blue haze, soft shadows, film-like colours), Cinematic, Sunny, Sunset, Night, Foggy, Spooky or Vivid colours. Default puts the normal lighting back. It changes the time of day, sky colour, fog, light colour, shadows and colour tint together. It also changes the sky: every lighting has its own built-in skybox (stars at night, a glowing horizon at sunset ...) and its own sun, moon and clouds (a big orange sun and pink clouds at sunset, a huge purple moon and fast clouds when spooky ...). If you upload images ending in the lighting name (SkyboxLsunset, SkyboxRsunset ...), those are used instead. It goes back to default when the game restarts.'},
+ lighting:{c:'lk',l:'set lighting to _',a:['realistic'],dd:{0:'light'},tip:'Changes the lighting of the whole game. Pick one from the list: Realistic (soft blue haze, soft shadows, film-like colours), Cinematic, Sunny, Sunset, Night, Foggy, Spooky or Vivid colours. Default puts the normal lighting back. It changes the time of day, sky colour, fog, light colour, shadows and colour tint together. It also changes the sky: every lighting has its own built-in skybox (stars at night, a glowing horizon at sunset ...) and its own sun, moon and clouds (a big orange sun and pink clouds at sunset, a huge purple moon and fast clouds when spooky ...). If you upload images ending in the lighting name (SkyboxLsunset, SkyboxRsunset ... plus SunSunset or MoonNight), those are used instead. It goes back to default when the game restarts.'},
  skybox:{c:'lk',l:'set skybox to _',a:['default'],dd:{0:'skybox'},tip:'Changes the sky. Upload images under Assets named SkyboxL (left), SkyboxR (right), SkyboxF (front), SkyboxBa (back), SkyboxT (top) and SkyboxBo (bottom): images with exactly these names are the default sky. Images with something after the letters (SkyboxL1, SkyboxR1 ...) are NOT used until a block picks them: pick 1 to switch every side ending in 1 at once, or pick one image to change just that side. default goes back to the plain names and none removes the skybox. It goes back to the default when the game restarts. Using this block turns off the built-in sky of the lighting until the next set lighting block.'},
  transparency:{c:'lk',l:'set transparency to _',a:['0.5'],tip:'Makes the object this script belongs to see-through: 0 is solid, 0.5 is half see-through, 1 is invisible. With no object it changes your own character. It goes back to the part setting when the game restarts.'},
  wait:{c:'ct',l:'wait _ secs',a:['1']},
@@ -3714,7 +3714,8 @@ const sunS=skySprite(SKYD.sun,170,170),moonS=skySprite(SKYD.moon,120,120),cloudS
 (function(){const r=RNG(21);for(let i=0;i<10;i++){const w=260+r()*160,q=skySprite(SKYD.cloud,w,w/2);q.userData={az:i/10*6.283+r()*.5,el:.3+r()*.55,sp:.004+r()*.004,w:w,o:1,i:i};cloudS.push(q)}})();
 function skyImg(nm){const k=Object.keys(P.assets.images).find(function(x){return x.toLowerCase()===nm});if(!k)return null;const src=P.assets.images[k];let c=SKYC[nm];
   if(!c||c.src!==src){c={src:src,t:new THREE.TextureLoader().load(src)};SKYC[nm]=c}return c.t}
-function updSkyTex(){const a=skyImg('sun')||SKYD.sun,b=skyImg('moon')||SKYD.moon;
+function updSkyTex(){let lo=null;try{lo=LIGHTO}catch(e){}/* an image named SunSunset / MoonNight ... is used while that lighting is on, otherwise Sun / Moon */
+  const a=(lo&&skyImg('sun'+lo))||skyImg('sun')||SKYD.sun,b=(lo&&skyImg('moon'+lo))||skyImg('moon')||SKYD.moon;
   if(sunS.material.map!==a){sunS.material.map=a;sunS.material.needsUpdate=true}if(moonS.material.map!==b){moonS.material.map=b;moonS.material.needsUpdate=true}}
 /* ===== Skybox: images named SkyboxL / SkyboxR / SkyboxF / SkyboxBa / SkyboxT / SkyboxBo in Assets paint the six sides of the sky.
    A name with more after the letters (SkyboxL1) waits until a "set skybox to" block picks it. ===== */
@@ -3762,7 +3763,7 @@ function genSky(n){if(SKYGENC[n])return SKYGENC[n];
       for(let i=0;i<cnt;i++){const px=r()*S,py=top?r()*S:r()*S*.44,fade=top?1:1-py/(S*.46),big=r()<.07,a=(.35+.65*r())*fade;
         x.fillStyle='rgba(255,255,255,'+a.toFixed(2)+')';const z=big?2.4:1.2;x.fillRect(px,py,z,z);
         if(big){x.fillStyle='rgba(200,220,255,'+(a*.25).toFixed(2)+')';x.fillRect(px-1.5,py-1.5,z+3,z+3)}}}
-    const t=new THREE.CanvasTexture(c);t.center.set(.5,.5);t.repeat.set(-1,1);t.rotation=f==='bo'?Math.PI:0;t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;out[f]=t});
+    out[f]=c.toDataURL('image/png')});
   return SKYGENC[n]=out}
 /* Lighting -> skybox: "set lighting to sunset" also switches the sky.
    1) uploaded images ending in the lighting name (SkyboxLsunset, SkyboxRsunset ...) win; 2) otherwise the built-in sky for that preset;
@@ -3775,17 +3776,16 @@ function skyForLight(n){const imgs=P.assets.images,o=Object.assign({},skyDefault
   SKYGEN=n&&SKYPAL[n]?n:null}
 function skyFogHex(){return (!SKYO&&SKYGEN&&SKYPAL[SKYGEN])?new THREE.Color(SKYPAL[SKYGEN].hor).getHex():null}
 /* Rebuilds the six sides only when something changed (cheap check every frame) */
-function skyApply(){const gen=(!SKYO&&SKYGEN&&SKYPAL[SKYGEN])?SKYGEN:null;
-  if(gen){const sg='gen:'+gen;if(sg===skySig)return;skySig=sg;skyAny=false;skyGenOn=true;
-    try{const T=genSky(gen);Object.keys(SKYFACE).forEach(function(f){const m=skyBox.material[SKYFACE[f]];if(m.map!==T[f]){m.map=T[f];m.needsUpdate=true}m.visible=true})}
-    catch(err){log('Error: could not draw the '+gen+' sky - '+(err&&err.message));SKYGEN=null;skyGenOn=false;skySig=''}return}
-  skyGenOn=false;
-  const eff=skyEff(),imgs=P.assets.images;let sig='',any=false;
+function skyApply(){let gen=(!SKYO&&SKYGEN&&SKYPAL[SKYGEN])?SKYGEN:null,eff,imgs;
+  /* the built-in sky goes down exactly the same road as uploaded Skybox images: six picture sources -> six textures */
+  if(gen){try{imgs=genSky(gen);eff={r:'r',l:'l',t:'t',bo:'bo',ba:'ba',f:'f'}}catch(err){log('Error: could not draw the '+gen+' sky - '+(err&&err.message));SKYGEN=null;gen=null;skySig=''}}
+  if(!gen){eff=skyEff();imgs=P.assets.images}
+  skyGenOn=!!gen;let sig=gen?'gen '+gen+';':'',any=false;
   Object.keys(SKYFACE).forEach(function(f){const n=eff[f],src=n&&imgs[n];sig+=f+':'+(src?n+'|'+src.length+'|'+src.slice(-24):'')+';';if(src)any=true});
-  if(sig===skySig)return;skySig=sig;skyAny=any;
+  if(sig===skySig)return;skySig=sig;skyAny=gen?false:any;
   Object.keys(SKYFACE).forEach(function(f){const n=eff[f],src=n&&imgs[n],m=skyBox.material[SKYFACE[f]];
     if(!src){m.visible=false;return}
-    const k=f+'|'+src.length+'|'+src.slice(-24);let t=SKYTX[k];
+    const k=(gen?gen+'|':'')+f+'|'+src.length+'|'+src.slice(-24);let t=SKYTX[k];
     if(!t){t=new THREE.TextureLoader().load(src);t.center.set(.5,.5);t.repeat.set(-1,1);t.rotation=f==='bo'?Math.PI:0;t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;SKYTX[k]=t}
     if(m.map!==t){m.map=t;m.needsUpdate=true}m.visible=true})}
 /* Sun, moon and clouds change with the lighting too. sun/moon: c = colour, z = size, o = opacity.
