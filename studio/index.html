@@ -687,8 +687,8 @@ const BD={
  say:{c:'lk',l:'say _',a:['Hello!'],tip:'Shows a chat bubble above your head for a few seconds.'},
  color:{c:'lk',l:'color _',a:['red'],raw:1},
  setimage:{c:'lk',l:'set image of this object to _',a:['none'],dd:{0:'img'},tip:'Puts a picture from Assets on the object this script belongs to (pick the picture, or none to take it off). It goes back to the part setting when the game restarts. Put the script on an object with the + next to it in the Explorer.'},
- lighting:{c:'lk',l:'set lighting to _',a:['realistic'],dd:{0:'light'},tip:'Changes the lighting of the whole game. Pick one from the list: Realistic (soft blue haze, soft shadows, film-like colours), Cinematic, Sunny, Sunset, Night, Foggy, Spooky or Vivid colours. Default puts the normal lighting back. It changes the time of day, sky colour, fog, light colour, shadows and colour tint together. It also switches the skybox to the images ending in the lighting name (for example SkyboxLsunset, SkyboxRsunset ... for Sunset) if you uploaded them. It goes back to default when the game restarts.'},
- skybox:{c:'lk',l:'set skybox to _',a:['default'],dd:{0:'skybox'},tip:'Changes the sky. Upload images under Assets named SkyboxL (left), SkyboxR (right), SkyboxF (front), SkyboxBa (back), SkyboxT (top) and SkyboxBo (bottom): images with exactly these names are the default sky. Images with something after the letters (SkyboxL1, SkyboxR1 ...) are NOT used until a block picks them: pick 1 to switch every side ending in 1 at once, or pick one image to change just that side. default goes back to the plain names and none removes the skybox. It goes back to the default when the game restarts. Images ending in a lighting name (night, sunset, sunny, foggy, spooky, vivid, cinematic, realistic) are picked automatically by the set lighting block.'},
+ lighting:{c:'lk',l:'set lighting to _',a:['realistic'],dd:{0:'light'},tip:'Changes the lighting of the whole game. Pick one from the list: Realistic (soft blue haze, soft shadows, film-like colours), Cinematic, Sunny, Sunset, Night, Foggy, Spooky or Vivid colours. Default puts the normal lighting back. It changes the time of day, sky colour, fog, light colour, shadows and colour tint together. It also changes the sky: every lighting has its own built-in skybox (stars at night, a glowing horizon at sunset ...). If you upload images ending in the lighting name (SkyboxLsunset, SkyboxRsunset ...), those are used instead. It goes back to default when the game restarts.'},
+ skybox:{c:'lk',l:'set skybox to _',a:['default'],dd:{0:'skybox'},tip:'Changes the sky. Upload images under Assets named SkyboxL (left), SkyboxR (right), SkyboxF (front), SkyboxBa (back), SkyboxT (top) and SkyboxBo (bottom): images with exactly these names are the default sky. Images with something after the letters (SkyboxL1, SkyboxR1 ...) are NOT used until a block picks them: pick 1 to switch every side ending in 1 at once, or pick one image to change just that side. default goes back to the plain names and none removes the skybox. It goes back to the default when the game restarts. Using this block turns off the built-in sky of the lighting until the next set lighting block.'},
  transparency:{c:'lk',l:'set transparency to _',a:['0.5'],tip:'Makes the object this script belongs to see-through: 0 is solid, 0.5 is half see-through, 1 is invisible. With no object it changes your own character. It goes back to the part setting when the game restarts.'},
  wait:{c:'ct',l:'wait _ secs',a:['1']},
  repeat:{c:'ct',l:'repeat _',a:['4'],k:1},
@@ -3719,7 +3719,7 @@ function updSkyTex(){const a=skyImg('sun')||SKYD.sun,b=skyImg('moon')||SKYD.moon
 /* ===== Skybox: images named SkyboxL / SkyboxR / SkyboxF / SkyboxBa / SkyboxT / SkyboxBo in Assets paint the six sides of the sky.
    A name with more after the letters (SkyboxL1) waits until a "set skybox to" block picks it. ===== */
 const SKYFACE={r:0,l:1,t:2,bo:3,ba:4,f:5},SKYNAME={r:'right',l:'left',t:'top',bo:'bottom',ba:'back',f:'front'},SKYTX={};
-let SKYO=null,skySig='',skyAny=false,SKYAUTO=false;/* SKYAUTO: the current skybox was picked by a lighting change, not by a skybox block */
+let SKYO=null,skySig='',skyAny=false,SKYAUTO=false,SKYGEN=null,skyGenOn=false;/* SKYAUTO: the current skybox was picked by a lighting change, not by a skybox block */
 const skyBox=new THREE.Mesh(new THREE.BoxGeometry(800,800,800),[0,1,2,3,4,5].map(function(){const m=new THREE.MeshBasicMaterial({side:THREE.BackSide,depthTest:false,depthWrite:false,fog:false});m.visible=false;return m}));
 skyBox.renderOrder=-10;skyBox.frustumCulled=false;skyBox.visible=false;scene.add(skyBox);
 function skyParse(n){const m=/^skybox(ba|bo|l|r|f|t)(.*)$/i.exec(String(n));return m?{f:m[1].toLowerCase(),s:m[2]}:null}
@@ -3729,7 +3729,7 @@ function skyOpts(){const sets={},one=[];Object.keys(P.assets.images).forEach(fun
   const o=[['default','default (SkyboxL, SkyboxR ...)'],['none','none (remove the skybox)']];
   Object.keys(sets).sort().forEach(function(s){o.push([s,'set "'+s+'" (every Skybox image ending in '+s+')'])});
   one.sort().forEach(function(n){o.push([n,'image: '+n])});return o}
-function skySet(sel){const imgs=P.assets.images,low=String(sel).toLowerCase();SKYAUTO=false;
+function skySet(sel){const imgs=P.assets.images,low=String(sel).toLowerCase();SKYAUTO=false;SKYGEN=null;
   if(!low||low==='default'){SKYO=null;return}
   if(low==='none'){SKYO={};return}
   const o=Object.assign({},skyEff()),nm=Object.keys(imgs).find(function(k){return k.toLowerCase()===low&&skyParse(k)});
@@ -3737,13 +3737,49 @@ function skySet(sel){const imgs=P.assets.images,low=String(sel).toLowerCase();SK
   let hit=0;Object.keys(imgs).forEach(function(k){const q=skyParse(k);if(q&&q.s.toLowerCase()===low){o[q.f]=k;hit++}});
   if(!hit){log('Error: no skybox images match "'+sel+'". Upload images named like SkyboxL'+sel+', SkyboxR'+sel+' ... under Assets.');return}
   SKYO=o}
-/* Lighting -> skybox: "set lighting to sunset" also switches to the skybox set ending in sunset (SkyboxLsunset, SkyboxRsunset ...).
-   No matching set: a skybox that an earlier lighting change picked goes back to the default sky; one a skybox block picked is left alone. */
+/* ===== Built-in skyboxes: every lighting preset has its own painted sky (gradient, horizon glow, stars), drawn on canvases, no upload needed. =====
+   top/mid/hor = sky colours from overhead down to the horizon, gnd = below the horizon, glow = horizon band, stars = star count.
+   The fog takes the horizon colour so far-away objects fade into the sky. */
+const SKYPAL={
+  realistic:{top:'#2d62b8',mid:'#4f8fd8',hor:'#a9cdf2',gnd:'#8fb0d0',glow:null,stars:0},
+  cinematic:{top:'#17409e',mid:'#2f6fe0',hor:'#8fb6ee',gnd:'#5f7fb0',glow:'rgba(255,200,140,.18)',stars:0},
+  sunny:{top:'#3b95e6',mid:'#6cc0ff',hor:'#d4efff',gnd:'#a9c9b0',glow:null,stars:0},
+  sunset:{top:'#2a1f55',mid:'#a8506a',hor:'#ffb46b',gnd:'#6b4a4a',glow:'rgba(255,140,50,.6)',stars:40},
+  night:{top:'#02030c',mid:'#070d26',hor:'#16224a',gnd:'#080b1c',glow:null,stars:320},
+  foggy:{top:'#9aa5ae',mid:'#aeb8c0',hor:'#c9d1d7',gnd:'#b0b8be',glow:null,stars:0},
+  spooky:{top:'#0a0516',mid:'#1c1030',hor:'#4a2a6a',gnd:'#150a24',glow:'rgba(150,90,220,.25)',stars:110},
+  vivid:{top:'#2a9bff',mid:'#6ec6ff',hor:'#d8f2ff',gnd:'#a8d890',glow:null,stars:0}};
+const SKYGENC={};
+function genSky(n){if(SKYGENC[n])return SKYGENC[n];
+  const p=SKYPAL[n],S=512,out={},mix=function(a,b,t){return '#'+new THREE.Color(a).lerp(new THREE.Color(b),t).getHexString()},e45=mix(p.mid,p.top,.5);
+  Object.keys(SKYFACE).forEach(function(f,fi){
+    const c=document.createElement('canvas');c.width=c.height=S;const x=c.getContext('2d'),r=RNG(fi*977+n.length*31+7);
+    if(f==='t'){const g=x.createRadialGradient(S/2,S/2,0,S/2,S/2,S*.72);g.addColorStop(0,p.top);g.addColorStop(.69,e45);g.addColorStop(1,e45);x.fillStyle=g;x.fillRect(0,0,S,S)}
+    else if(f==='bo'){x.fillStyle=p.gnd;x.fillRect(0,0,S,S)}
+    else{const g=x.createLinearGradient(0,0,0,S);g.addColorStop(0,e45);g.addColorStop(.3,p.mid);g.addColorStop(.5,p.hor);g.addColorStop(.56,mix(p.hor,p.gnd,.5));g.addColorStop(1,p.gnd);x.fillStyle=g;x.fillRect(0,0,S,S);
+      if(p.glow){const q=x.createLinearGradient(0,S*.3,0,S*.62);q.addColorStop(0,'rgba(0,0,0,0)');q.addColorStop(.62,p.glow);q.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=q;x.fillRect(0,S*.3,S,S*.32)}}
+    if(p.stars&&f!=='bo'){const top=f==='t',cnt=top?p.stars:Math.round(p.stars*.45);
+      for(let i=0;i<cnt;i++){const px=r()*S,py=top?r()*S:r()*S*.44,fade=top?1:1-py/(S*.46),big=r()<.07,a=(.35+.65*r())*fade;
+        x.fillStyle='rgba(255,255,255,'+a.toFixed(2)+')';const z=big?2.4:1.2;x.fillRect(px,py,z,z);
+        if(big){x.fillStyle='rgba(200,220,255,'+(a*.25).toFixed(2)+')';x.fillRect(px-1.5,py-1.5,z+3,z+3)}}}
+    const t=new THREE.CanvasTexture(c);t.center.set(.5,.5);t.repeat.set(-1,1);t.rotation=f==='bo'?Math.PI:0;t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;out[f]=t});
+  return SKYGENC[n]=out}
+/* Lighting -> skybox: "set lighting to sunset" also switches the sky.
+   1) uploaded images ending in the lighting name (SkyboxLsunset, SkyboxRsunset ...) win; 2) otherwise the built-in sky for that preset;
+   3) default lighting (or a name with neither) puts the normal sky back. A skybox picked by a "set skybox to" block is left alone unless uploaded images match. */
 function skyForLight(n){const imgs=P.assets.images,o=Object.assign({},skyDefault());let hit=0;
   if(n)Object.keys(imgs).forEach(function(k){const q=skyParse(k);if(q&&q.s!==''&&q.s.toLowerCase().replace(/[^a-z]/g,'')===n){o[q.f]=k;hit++}});
-  if(hit){SKYO=o;SKYAUTO=true}else if(SKYAUTO){SKYO=null;SKYAUTO=false}}
+  if(hit){SKYO=o;SKYAUTO=true;SKYGEN=null;return}
+  if(SKYO&&!SKYAUTO){SKYGEN=null;return}
+  if(SKYAUTO){SKYO=null;SKYAUTO=false}
+  SKYGEN=n&&SKYPAL[n]?n:null}
+function skyFogHex(){return (!SKYO&&SKYGEN&&SKYPAL[SKYGEN])?new THREE.Color(SKYPAL[SKYGEN].hor).getHex():null}
 /* Rebuilds the six sides only when something changed (cheap check every frame) */
-function skyApply(){const eff=skyEff(),imgs=P.assets.images;let sig='',any=false;
+function skyApply(){const gen=(!SKYO&&SKYGEN&&SKYPAL[SKYGEN])?SKYGEN:null;
+  if(gen){const sg='gen:'+gen;if(sg===skySig)return;skySig=sg;skyAny=false;skyGenOn=true;const T=genSky(gen);
+    Object.keys(SKYFACE).forEach(function(f){const m=skyBox.material[SKYFACE[f]];if(m.map!==T[f]){m.map=T[f];m.needsUpdate=true}m.visible=true});return}
+  skyGenOn=false;
+  const eff=skyEff(),imgs=P.assets.images;let sig='',any=false;
   Object.keys(SKYFACE).forEach(function(f){const n=eff[f],src=n&&imgs[n];sig+=f+':'+(src?n+'|'+src.length+'|'+src.slice(-24):'')+';';if(src)any=true});
   if(sig===skySig)return;skySig=sig;skyAny=any;
   Object.keys(SKYFACE).forEach(function(f){const n=eff[f],src=n&&imgs[n],m=skyBox.material[SKYFACE[f]];
@@ -3752,7 +3788,7 @@ function skyApply(){const eff=skyEff(),imgs=P.assets.images;let sig='',any=false
     if(!t){t=new THREE.TextureLoader().load(src);t.center.set(.5,.5);t.repeat.set(-1,1);t.rotation=f==='bo'?Math.PI:0;t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;SKYTX[k]=t}
     if(m.map!==t){m.map=t;m.needsUpdate=true}m.visible=true})}
 function skyTick(dt){const e=lightEnv(),a=(e.tod-6)/12*Math.PI,d=new THREE.Vector3(Math.cos(a)*14,Math.sin(a)*14,6).normalize(),day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),R=700,cp=camera.position;
-  skyApply();skyG.visible=!stage.visible&&!skyAny;skyBox.visible=!stage.visible&&skyAny;skyBox.position.copy(cp);
+  skyApply();skyG.visible=!stage.visible&&!skyAny;skyBox.visible=!stage.visible&&(skyAny||skyGenOn);skyBox.position.copy(cp);
   sunS.visible=d.y>-.1;sunS.position.set(cp.x+d.x*R,cp.y+d.y*R,cp.z+d.z*R);
   moonS.visible=d.y<.1;moonS.position.set(cp.x-d.x*R,cp.y-d.y*R,cp.z-d.z*R);
   cloudS.forEach(function(q){const u=q.userData;u.az+=u.sp*dt;const ce=Math.cos(u.el);q.position.set(cp.x+Math.sin(u.az)*ce*800,cp.y+Math.sin(u.el)*800,cp.z-Math.cos(u.az)*ce*800);q.material.color.setScalar(.3+.7*k)})}
@@ -3801,7 +3837,7 @@ function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
 let fogOn=false;
 function applyEnv(){updSkyTex();const e=lightEnv(),a=(e.tod-6)/12*Math.PI,day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),c=new THREE.Color(e.sky).multiplyScalar(k);
   scene.background=c;hemi.intensity=(.25+.5*k)*e.bright;sun.intensity=.85*day*e.sun*e.bright;sunDir.set(Math.cos(a)*14,Math.max(2,Math.sin(a)*14),6);
-  const on=e.fog>0;scene.fog=on?new THREE.Fog(c.getHex(),12,Math.max(30,900-e.fog*8.5)):null;
+  const on=e.fog>0,fh=skyFogHex();scene.fog=on?new THREE.Fog(fh!==null?fh:c.getHex(),12,Math.max(30,900-e.fog*8.5)):null;
   if(on!==fogOn){fogOn=on;if(PG)PG.traverse(function(o){if(o.material)o.material.needsUpdate=true})}
   lightX()}
 
@@ -4327,7 +4363,7 @@ function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing);try{hotRender()}catch(e){}try{renderGui()}catch(e){}}
 function setRun(v){running=v;sync()}
-function resetWorld(){RUNC.clear();RUNW.clear();Object.keys(ATTR).forEach(function(k){delete ATTR[k]});Object.keys(PD).forEach(function(k){delete PD[k]});PDL=null;KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();SKYO=null;SKYAUTO=false;LIGHTO=null;SPW={};RO={};RV={};RD={};RVY={};RY={};CO={};FRI={};TM=new Map();RAG={};RSZ={};SKIN={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts();try{applyEnv()}catch(e){}}
+function resetWorld(){RUNC.clear();RUNW.clear();Object.keys(ATTR).forEach(function(k){delete ATTR[k]});Object.keys(PD).forEach(function(k){delete PD[k]});PDL=null;KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();SKYO=null;SKYAUTO=false;SKYGEN=null;LIGHTO=null;SPW={};RO={};RV={};RD={};RVY={};RY={};CO={};FRI={};TM=new Map();RAG={};RSZ={};SKIN={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts();try{applyEnv()}catch(e){}}
 function boot(my){reser();try{spawnHere()}catch(e){}const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
   hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
   setTimeout(function(){if(my===S&&(running||playing))firePJ('pjoin',P.player.name)},120);
