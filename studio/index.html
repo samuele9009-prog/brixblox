@@ -3754,19 +3754,19 @@ const SKYGENC={};
 /* Painted sky: every pixel of the six sides is worked out from the direction it looks in, so the sides join with no seams.
    Gradient (horizon -> overhead), sun or moon glow, a layer of lit and shaded clouds, and stars. */
 function skyHash(x,y){let n=Math.imul(x|0,374761393)+Math.imul(y|0,668265263);n=Math.imul(n^(n>>>13),1274126177);return((n^(n>>>16))>>>0)/4294967296}
-function skyNoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+function skyNoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*xf*(xf*(xf*6-15)+10),v=yf*yf*yf*(yf*(yf*6-15)+10);
   return(skyHash(xi,yi)*(1-u)+skyHash(xi+1,yi)*u)*(1-v)+(skyHash(xi,yi+1)*(1-u)+skyHash(xi+1,yi+1)*u)*v}
-function skyFbm(x,y){let s=0,a=.5;for(let i=0;i<5;i++){s+=a*skyNoise(x,y);x=x*2.03+17.3;y=y*2.03+9.1;a*=.5}return Math.min(1,Math.max(0,(s-.22)/.52))}
+function skyFbm(x,y,oc){let s=0,a=.5,n=oc||6;for(let i=0;i<n;i++){s+=a*skyNoise(x,y);const t=x*1.96-y*.6+17.3;y=x*.6+y*1.96+9.1;x=t;a*=.5}return Math.min(1,Math.max(0,(s-.22)/.54))}
 function skySmooth(a,b,x){const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t)}
 function skyDir(f,tu,tv){const U=1-tu,V=tv,a=(U-.5)*2,b=(.5-V)*2,c=(V-.5)*2;/* where each pixel sits on the box, same as three.js BoxGeometry */
   const v=f==='r'?[1,c,-a]:f==='l'?[-1,c,a]:f==='t'?[a,1,b]:f==='bo'?[a,-1,c]:f==='ba'?[a,c,1]:[-a,c,-1],m=Math.hypot(v[0],v[1],v[2]);return[v[0]/m,v[1]/m,v[2]/m]}
-function genSky(n,pp,eo,S0){if(!pp&&SKYGENC[n])return SKYGENC[n];
+function genSky(n,pp,eo,S0,only){if(!pp&&SKYGENC[n])return SKYGENC[n];
   const p=pp||SKYPAL[n],S=S0||512,out={},rgb=function(h){const k=parseInt(h.slice(1),16);return[(k>>16&255)/255,(k>>8&255)/255,k&255?(k&255)/255:0]},
     zen=rgb(p.zen),mid=rgb(p.mid),hor=rgb(p.hor),gnd=rgb(p.gnd),cl=p.cl,lit=rgb(cl.lit),sh=rgb(cl.sh),
     env=eo||(LPRE[n]&&LPRE[n].env)||P.env,ang=(env.tod-6)/12*Math.PI,sl=Math.hypot(Math.cos(ang)*14,Math.sin(ang)*14,6),
     sd=[Math.cos(ang)*14/sl,Math.sin(ang)*14/sl,6/sl],md=[-sd[0],-sd[1],-sd[2]],sg=p.sg,mg=p.mg,
     ox=n.length*7.31+(p.seed||0)*13.7,oy=n.length*3.77+(p.seed||0)*9.3;
-  Object.keys(SKYFACE).forEach(function(f,fi){
+  Object.keys(SKYFACE).forEach(function(f,fi){if(only&&f!==only)return;
     const c=document.createElement('canvas');c.width=c.height=S;const x=c.getContext('2d'),im=x.createImageData(S,S),D=im.data;
     for(let py=0;py<S;py++)for(let px=0;px<S;px++){
       const d=skyDir(f,(px+.5)/S,1-(py+.5)/S),e=d[1];let r,g,b;
@@ -3776,10 +3776,15 @@ function genSky(n,pp,eo,S0){if(!pp&&SKYGENC[n])return SKYGENC[n];
       if(sg){const dt=Math.max(0,d[0]*sd[0]+d[1]*sd[1]+d[2]*sd[2]),w=sg[3]*(Math.pow(dt,28)*.7+Math.pow(dt,6)*.2)+sg[3]*Math.pow(dt,3)*.1*(1-Math.min(1,Math.abs(e)*3));
         r+=sg[0]*w;g+=sg[1]*w;b+=sg[2]*w}
       if(mg){const dt=Math.max(0,d[0]*md[0]+d[1]*md[1]+d[2]*md[2]),w=mg[3]*(Math.pow(dt,40)*.5+Math.pow(dt,8)*.14);r+=mg[0]*w;g+=mg[1]*w;b+=mg[2]*w}
-      if(e>.005){const q=1/(e+.2),qx=d[0]*q*cl.sc+ox,qz=d[2]*q*cl.sc+oy,nn=skyFbm(qx,qz),t0=1-cl.cov;
+      if(e>.005){const q=1/(e+.2),oc=e<.08?4:e<.2?5:6,bx=d[0]*q*cl.sc+ox,bz=d[2]*q*cl.sc+oy,
+          qx=bx+(skyNoise(bx*.7+3.1,bz*.7)-.5)*1.1,qz=bz+(skyNoise(bx*.7,bz*.7+7.7)-.5)*1.1,nn=skyFbm(qx,qz,oc),t0=1-cl.cov;
         let dn=skySmooth(t0,t0+cl.soft*.5,nn)*cl.op*skySmooth(.005,.16,e);
-        if(dn>.003){const n2=skyFbm(qx+sd[0]*.35,qz+sd[2]*.35),lf=Math.min(1,Math.max(0,.55+(nn-n2)*3.2)),hz=1-skySmooth(0,.4,e),dd=Math.min(1,dn*1.4);
-          let cr=sh[0]+(lit[0]-sh[0])*lf,cg=sh[1]+(lit[1]-sh[1])*lf,cb=sh[2]+(lit[2]-sh[2])*lf;
+        if(dn>.003){const n2=skyFbm(qx+sd[0]*.3,qz+sd[2]*.3,oc),n3=skyFbm(qx+sd[0]*.9,qz+sd[2]*.9,Math.min(oc,4)),
+            lf=Math.min(1,Math.max(0,.55+(nn-n2)*3.4-(nn-n3)*.5)),hz=1-skySmooth(0,.4,e),dd=Math.min(1,dn*1.4),
+            sdot=Math.max(0,d[0]*sd[0]+d[1]*sd[1]+d[2]*sd[2]),rim=(1-skySmooth(.15,.8,dd))*(.25+.75*Math.pow(sdot,3))*.55,
+            base=.82+.18*skySmooth(.1,.7,nn);
+          let cr=(sh[0]+(lit[0]-sh[0])*lf)*base,cg=(sh[1]+(lit[1]-sh[1])*lf)*base,cb=(sh[2]+(lit[2]-sh[2])*lf)*base;
+          cr+=(lit[0]-cr)*rim;cg+=(lit[1]-cg)*rim;cb+=(lit[2]-cb)*rim;
           cr+=(hor[0]-cr)*hz*.7;cg+=(hor[1]-cg)*hz*.7;cb+=(hor[2]-cb)*hz*.7;
           r+=(cr-r)*dn;g+=(cg-g)*dn;b+=(cb-b)*dn}}
       const k=(py*S+px)*4;D[k]=Math.min(255,Math.max(0,r*255));D[k+1]=Math.min(255,Math.max(0,g*255));D[k+2]=Math.min(255,Math.max(0,b*255));D[k+3]=255}
@@ -3823,11 +3828,13 @@ function skybGet(){if(!P.env.skyb)P.env.skyb=Object.assign({},SKYB_DEF);else for
 function skybPal(b){const h=function(x){const k=parseInt(x.slice(1),16);return[(k>>16&255)/255,(k>>8&255)/255,(k&255)/255]},s=h(b.sc);
   return{zen:b.zen,mid:b.mid,hor:b.hor,gnd:b.gnd,sg:b.ss>0&&b.glow>0?[s[0],s[1],s[2],b.glow]:undefined,mg:b.moon===false?undefined:[.8,.85,1,.35],
     cl:{cov:b.cov,soft:b.soft,sc:b.csc,lit:b.lit,sh:b.sh,op:b.cop},stars:b.stars,seed:b.seed}}
-const SKYBC={sig:'',q:0,at:0,imgs:null};
+const SKYBC={sig:'',q:0,at:0,imgs:null,hi:null,n:0};
 /* draws small while sliders move, then sharp after a second of no changes */
 function skybImgs(){const b=P.env.skyb,sig=JSON.stringify(b)+'|'+P.env.tod;
-  if(SKYBC.sig!==sig||!SKYBC.imgs){SKYBC.sig=sig;SKYBC.q=256;SKYBC.imgs=genSky('custom',skybPal(b),P.env,256);SKYBC.at=performance.now()}
-  else if(SKYBC.q===256&&performance.now()-SKYBC.at>1000){SKYBC.q=512;SKYBC.imgs=genSky('custom',skybPal(b),P.env,512)}
+  if(SKYBC.sig!==sig||!SKYBC.imgs){SKYBC.sig=sig;SKYBC.q=256;SKYBC.hi=null;SKYBC.n=0;SKYBC.imgs=genSky('custom',skybPal(b),P.env,256);SKYBC.at=performance.now()}
+  else if(SKYBC.q===256&&performance.now()-SKYBC.at>900){SKYBC.q=512;SKYBC.imgs=genSky('custom',skybPal(b),P.env,512);SKYBC.hi=Object.keys(SKYFACE)}
+  else if(SKYBC.q===512&&SKYBC.hi&&performance.now()-SKYBC.at>1800){/* sharp 1024px pass, one side per frame so the editor never freezes */
+    const f=SKYBC.hi.shift();if(f){const o=Object.assign({},SKYBC.imgs);o[f]=genSky('custom',skybPal(b),P.env,1024,f)[f];SKYBC.imgs=o;SKYBC.n=(SKYBC.n||0)+1}if(!SKYBC.hi.length)SKYBC.q=1024}
   return SKYBC.imgs}
 function skyBuilderUI(d){const b=skybGet(),h=el('h4','','Sky Builder');h.style.margin='14px 0 4px';d.append(h);
   const redo=function(){save();applyEnv()},again=function(){redo();props()};
@@ -3870,13 +3877,14 @@ function skyApply(){let gen=(!SKYO&&SKYGEN&&SKYPAL[SKYGEN])?SKYGEN:null,eff,imgs
   if(gen){try{imgs=genSky(gen);eff={r:'r',l:'l',t:'t',bo:'bo',ba:'ba',f:'f'}}catch(err){log('Error: could not draw the '+gen+' sky - '+(err&&err.message));SKYGEN=null;gen=null;skySig=''}}
   if(!gen&&!SKYO&&skybOn()){try{skybGet();imgs=skybImgs();gen='custom';eff={r:'r',l:'l',t:'t',bo:'bo',ba:'ba',f:'f'}}catch(err){log('Error: could not draw your custom sky - '+(err&&err.message));P.env.skyb.on=false;gen=null;skySig=''}}
   if(!gen){eff=skyEff();imgs=P.assets.images}
-  skyGenOn=!!gen;let sig=gen?'gen '+gen+(gen==='custom'?SKYBC.sig+SKYBC.q:'')+';':'',any=false;
+  skyGenOn=!!gen;let sig=gen?'gen '+gen+(gen==='custom'?SKYBC.sig+SKYBC.q+'.'+SKYBC.n:'')+';':'',any=false;
   Object.keys(SKYFACE).forEach(function(f){const n=eff[f],src=n&&imgs[n];sig+=f+':'+(src?n+'|'+src.length+'|'+src.slice(-24):'')+';';if(src)any=true});
   if(sig===skySig)return;skySig=sig;skyAny=gen?false:any;
   Object.keys(SKYFACE).forEach(function(f){const n=eff[f],src=n&&imgs[n],m=skyBox.material[SKYFACE[f]];
     if(!src){m.visible=false;return}
-    const k=(gen?gen+(gen==='custom'?SKYBC.q:'')+'|':'')+f+'|'+src.length+'|'+src.slice(-24);let t=SKYTX[k];
-    if(!t){t=new THREE.TextureLoader().load(src);t.center.set(.5,.5);t.repeat.set(-1,1);t.rotation=f==='bo'?Math.PI:0;t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;if(gen==='custom')t.userData={cust:k};SKYTX[k]=t}
+    const k=(gen?gen+(gen==='custom'?SKYBC.q+'.'+SKYBC.n:'')+'|':'')+f+'|'+src.length+'|'+src.slice(-24);let t=SKYTX[k];
+    if(!t){t=new THREE.TextureLoader().load(src,gen==='custom'?function(){skySig=''}:undefined);t.center.set(.5,.5);t.repeat.set(-1,1);t.rotation=f==='bo'?Math.PI:0;t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;if(gen==='custom')t.userData={cust:k};SKYTX[k]=t}
+    if(gen==='custom'&&!t.image&&m.map){m.visible=true;return}
     if(m.map!==t){const o=m.map;m.map=t;m.needsUpdate=true;if(o&&o.userData&&o.userData.cust){delete SKYTX[o.userData.cust];o.dispose()}}m.visible=true})}
 /* Sun, moon and clouds change with the lighting too. sun/moon: c = colour, z = size, o = opacity.
    The painted sky already has real clouds, so the flat drifting cloud sprites are off (n = 0) while a lighting is on; n = how many of the 10 show, c/o/z/s = colour, opacity, size, drift speed. They fade smoothly between lightings. */
