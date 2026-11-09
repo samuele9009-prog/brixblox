@@ -1691,8 +1691,10 @@ async function playAnim(name,S,only){let A=P.anims[name];if(!A){log('Error: no a
   const hid=Object.keys(A.keys).filter(function(id){const q=byId(id);return q&&q.av&&id!==P.avId});S.hold=S.hold||{};hid.forEach(function(id){S.hold[id]=(S.hold[id]||0)+1});
   if(hid.length){NANIM.c++;NANIM.n=name}
   const gk=Object.keys(A.keys).filter(function(id){const q=byId(id);return q&&!q.av});gk.forEach(function(id){RBUSY[id]=(RBUSY[id]||0)+1});
-  try{const t0=performance.now();let t=0;while(t<A.len&&!S.stop){t=(performance.now()-t0)/1000;applyKeyed(evalPose(A,Math.min(t,A.len)));await sl(16)}}
-  finally{gk.forEach(function(id){RBUSY[id]=Math.max(0,(RBUSY[id]||1)-1)});hid.forEach(function(id){S.hold[id]=Math.max(0,(S.hold[id]||1)-1);if(!S.hold[id]){const g=J[id],bs=g&&g.userData.base,D=180/Math.PI;
+  /* Each body part obeys one animation at a time: the newest one to start owns it, so two animations can no longer fight over (mix on) the same part. */
+  const tok=++ATOK,mine=Object.keys(A.keys);mine.forEach(function(id){RTOK[id]=tok});
+  try{const t0=performance.now();let t=0;while(t<A.len&&!S.stop){t=(performance.now()-t0)/1000;const po=evalPose(A,Math.min(t,A.len)),fo={};for(const k in po){if(RTOK[k.replace(/^p:/,'')]===tok)fo[k]=po[k]}applyKeyed(fo);await sl(16)}}
+  finally{mine.forEach(function(id){if(RTOK[id]===tok)delete RTOK[id]});gk.forEach(function(id){RBUSY[id]=Math.max(0,(RBUSY[id]||1)-1)});hid.forEach(function(id){S.hold[id]=Math.max(0,(S.hold[id]||1)-1);if(!S.hold[id]){const g=J[id],bs=g&&g.userData.base,D=180/Math.PI;
       if(g){S.bp[id]=[g.rotation.x*D,(g.rotation.y-(g.userData.gry||0))*D,g.rotation.z*D];if(bs)S.bp['p:'+id]=[g.position.x-bs.x,g.position.y-bs.y,g.position.z-bs.z]}}});
     if(hid.length){S.ak='';S.bl=.2}}}
 
@@ -5156,7 +5158,7 @@ function hotRender(){if(!hotEl){hotEl=el('div');hotEl.id='hotbar';hotEl.style.cs
 addEventListener('keydown',function(e){const m=/^(?:Digit|Numpad)([1-9])$/.exec(e.code);if(!m||e.ctrlKey||e.metaKey||e.altKey||e.repeat||!(running||playing)||menuEl)return;
   if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;const id=S.items[+m[1]-1];if(!id)return;itemEquip(S.heldItem===id?null:id)});
 /* ===== Rig gear: an item held in a rig's hand. Shows in the editor and in the game, follows the arm when it animates, and the arm takes a hold pose while playing. ===== */
-const RGEAR={},RBUSY={},GOVR={};
+const RGEAR={},RBUSY={},GOVR={},RTOK={};let ATOK=0;
 function gearItemId(r){return GOVR[r.id]!==undefined?GOVR[r.id]:(r.gear&&r.gear.item)||''}
 function gearHand(r){const g=r.gear||{},ps=rigParts(r).filter(function(q){return !q.stab});let h=g.hand&&byId(g.hand);if(h&&ps.indexOf(h)>=0)return h;
   return ps.find(function(q){return /^r.?arm$|right.?(arm|hand)|^r.?hand$/i.test(q.name)})||ps.find(function(q){return /arm|hand/i.test(q.name)})||null}
