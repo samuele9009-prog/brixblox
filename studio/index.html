@@ -4147,7 +4147,7 @@ function guiPaint(e,g,k,ed){const s=e.style;
   s.overflow=g.clip===false?'visible':'hidden';
   s.opacity=(g.alpha===undefined?1:g.alpha)*(ed&&g.vis===false?.35:1);
   s.fontWeight=g.bold===false?'400':'700';s.fontFamily=GFONT[g.ff||'']||'inherit';
-  s.textAlign=g.al||'center';s.justifyContent=g.al==='left'?'flex-start':g.al==='right'?'flex-end':'center'}
+  s.textAlign=g.al||'center';s.justifyContent=g.al==='left'?'flex-start':g.al==='right'?'flex-end':'center';guiUI(e,g,k,ed)}
 function guiPlace(g){const e=GE[g.id];if(e){e.style.left=g.x+'%';e.style.top=g.y+'%';e.style.width=g.w+'%';e.style.height=g.h+'%'}guiBox()}
 function makeSB(){const b=document.createElement('div');b.className='gsb';const lb=document.createElement('div');lb.className='gsl';b.append(lb);
   ['nw','n','ne','e','se','s','sw','w'].forEach(function(d){const h=document.createElement('div');h.className='gsh '+d;h.onpointerdown=function(ev){guiResizeStart(ev,d)};b.append(h)});return b}
@@ -4271,6 +4271,38 @@ function guiBar(ed){GB.replaceChildren();if(!ed){GB.hidden=true;return}GB.hidden
   const hn=document.createElement('div');hn.className='gh';hn.textContent='Drag to move · drag the white squares to resize (Shift keeps the shape) · double-click to type · arrows nudge · Ctrl+Z undoes. Frames can hold other GUI: use "Add into", or drag rows onto a Frame in the Explorer. The 3D view is locked until you press Done.';GB.append(hn);
   GB.style.top=g&&(GL.getBoundingClientRect().height?(GE[g.id]?(GE[g.id].getBoundingClientRect().top+GE[g.id].getBoundingClientRect().height/2-GL.getBoundingClientRect().top)>GL.getBoundingClientRect().height/2:g.y>50):g.y>50)?'6px':'auto';
   GB.style.bottom=GB.style.top==='6px'?'auto':'6px'}
+
+/* ===== Roblox-style UI objects on a GUI: UICorner, UIStroke, UIGradient, UIScale. Add them from the + on a GUI in the Explorer. ===== */
+const UINAME={corner:'UICorner',stroke:'UIStroke',gradient:'UIGradient',scale:'UIScale'},UIICON={corner:'\u25DC',stroke:'\u25CC',gradient:'\u25D0',scale:'\u2922'},
+  UIDESC={corner:'Rounds the corners of this GUI (pixels, or a percent for pills and circles)',stroke:'An outline around this GUI, or around its text',gradient:'Fades the background from one colour to another',scale:'Makes this GUI and everything inside it bigger or smaller'},
+  UIDEF={corner:{mode:'px',r:12},stroke:{th:2,c:'#ffffff',tr:0,mode:'border'},gradient:{c1:'#ff5f6d',c2:'#ffc371',rot:90,tr:0},scale:{s:1}};
+let UIFOC=null;
+function guiUI(e,g,k,ed){const L=g.ui;if(!L||!L.length)return;const s=e.style;
+  L.forEach(function(u){
+    if(u.t==='corner')s.borderRadius=u.mode==='%'?Math.max(0,Math.min(50,u.r))+'%':Math.max(0,u.r*k)+'px';
+    else if(u.t==='stroke'){const col=hexA(u.c,1-(u.tr||0));
+      if(u.mode==='text'){s.webkitTextStroke=Math.max(0,u.th*k)+'px '+col;s.paintOrder='stroke fill'}
+      else{const w=Math.max(.5,u.th*k)+'px';s.boxShadow=(s.boxShadow&&s.boxShadow!=='none'?s.boxShadow+',':'')+'0 0 0 '+w+' '+col}}
+    else if(u.t==='gradient'&&g.type!=='image')s.backgroundImage='linear-gradient('+u.rot+'deg,'+hexA(u.c1,1-(u.tr||0))+','+hexA(u.c2,1-(u.tr||0))+')';
+    else if(u.t==='scale')s.transform='scale('+u.s+')'})}
+function uiAdd(g,t){g.ui=Array.isArray(g.ui)?g.ui:[];
+  if(g.ui.some(function(u){return u.t===t})){msg(g.name+' already has a '+UINAME[t]+'. Change it in the properties.')}
+  else{g.ui.push(Object.assign({t:t},JSON.parse(JSON.stringify(UIDEF[t]))));msg('Added a '+UINAME[t]+' to '+g.name+'.')}
+  UIFOC=t;openG[g.id]=true;selGui=g.id;sel=[];selModel=null;selSvc=null;openS.gui=true;hl();save();renderGui();renderParts();props()}
+function uiProps(d,g,head){const L=g.ui||[];
+  head('UI objects');
+  const ad=el('select');const o0=el('option','','+ Add UI object...');o0.value='';ad.append(o0);
+  Object.keys(UINAME).forEach(function(t){if(L.some(function(u){return u.t===t}))return;const op=el('option','',UINAME[t]);op.value=t;ad.append(op)});
+  ad.onchange=function(){if(ad.value)uiAdd(g,ad.value)};d.append(ad);
+  L.forEach(function(u){const h=el('div','',UIICON[u.t]+'  '+UINAME[u.t]);h.style.cssText='font-weight:800;margin:12px 0 4px;padding:4px 8px;border-radius:6px;background:rgba(167,139,250,.18);display:flex;justify-content:space-between;align-items:center';
+    const rm=el('button','btn ghost small','Remove');rm.type='button';rm.onclick=function(){g.ui=g.ui.filter(function(x){return x!==u});save();renderGui();renderParts();props()};h.append(rm);d.append(h);
+    if(UIFOC===u.t){UIFOC=null;setTimeout(function(){try{h.scrollIntoView({block:'nearest'})}catch(x){}},0)}
+    const sel2=function(lbl,key,opts){const s2=el('select');opts.forEach(function(o){const op=el('option','',o[1]);op.value=o[0];s2.append(op)});s2.value=u[key];s2.onchange=function(){u[key]=s2.value;save();renderGui();props()};d.append(lab(lbl,s2))};
+    const col=function(lbl,key){const c=el('input');c.type='color';c.value=u[key];c.oninput=function(){u[key]=c.value;save();renderGui()};d.append(lab(lbl,c))};
+    if(u.t==='corner'){sel2('Radius unit','mode',[['px','Pixels'],['%','Percent (50% = pill or circle)']]);slider(d,'Corner radius',u,'r',0,u.mode==='%'?50:100,1,function(v){return v+(u.mode==='%'?'%':'px')},renderGui)}
+    else if(u.t==='stroke'){sel2('Applies to','mode',[['border','The edge of the GUI'],['text','The text']]);slider(d,'Thickness',u,'th',0,16,.5,null,renderGui);col('Colour','c');slider(d,'Transparency',u,'tr',0,1,.05,function(v){return Math.round(v*100)+'%'},renderGui)}
+    else if(u.t==='gradient'){col('Colour 1','c1');col('Colour 2','c2');slider(d,'Rotation',u,'rot',0,360,5,function(v){return v+'\u00B0'},renderGui);slider(d,'Transparency',u,'tr',0,1,.05,function(v){return Math.round(v*100)+'%'},renderGui);d.append(el('p','note','The gradient replaces the background colour.'))}
+    else if(u.t==='scale')slider(d,'Scale',u,'s',.1,3,.05,function(v){return Math.round(v*100)+'%'},renderGui)})}
 function guiProps(d,g){const T=GTYPE[g.type]||GTYPE.frame;
   if(g.alpha===undefined)g.alpha=1;if(g.bw===undefined)g.bw=0;if(!g.bc)g.bc='#ffffff';
   const head=function(t){const h=el('div','',t);h.style.cssText='font-weight:800;margin:14px 0 4px;font-size:11px;opacity:.75;text-transform:uppercase;letter-spacing:.05em';d.append(h)};
@@ -4312,6 +4344,7 @@ function guiProps(d,g){const T=GTYPE[g.type]||GTYPE.frame;
   ac.onclick=function(){P.guis.forEach(function(x){x.rc=g.rc;x.round=g.round;x.cn=g.cn?g.cn.slice():[1,1,1,1]});save();renderGui();msg('Applied to all GUI.')};d.append(ac);
   if(g.type==='image'){head('Picture');const is=el('select');[['','None']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})).forEach(function(o){const op=el('option','',o[1]);op.value=o[0];is.append(op)});
     is.value=P.assets.images[g.img]?g.img:'';is.onchange=function(){g.img=is.value;save();renderGui()};d.append(lab('Picture (upload under Assets first)',is))}
+  uiProps(d,g,head);
   head('Scripts');
   guiScripts(d,g);
   head('Behaviour');
@@ -4334,6 +4367,7 @@ function guiTreeRows(pid,d,scrRows){guiKids(pid).forEach(function(g){const T=GTY
     r.ondragover=function(e){if(GDRAG&&GDRAG!==g.id&&!guiIsIn(g.id,GDRAG)){e.preventDefault();r.classList.add('gdrop')}};
     r.ondragleave=function(){r.classList.remove('gdrop')};
     r.ondrop=function(e){e.preventDefault();r.classList.remove('gdrop');const m=guiById(GDRAG);GDRAG=null;if(m)guiSetParent(m,g.id)};
+    if(open)(g.ui||[]).forEach(function(u){xrow({d:d+1,ic:UIICON[u.t],icc:'#a78bfa',nm:UINAME[u.t],bd:['UI'],on:false,go:function(){if(animOn())return;guiSelect(g.id);UIFOC=u.t;props()}})});
     if(scrRows)scrRows(g.id,d+1);if(ks.length&&open)guiTreeRows(g.id,d+1,scrRows)})}
 function guiRootDrop(r){r.ondragover=function(e){if(GDRAG){e.preventDefault();r.classList.add('gdrop')}};r.ondragleave=function(){r.classList.remove('gdrop')};
   r.ondrop=function(e){e.preventDefault();r.classList.remove('gdrop');const m=guiById(GDRAG);GDRAG=null;if(m)guiSetParent(m,'')}}
@@ -4455,7 +4489,8 @@ function ctxName(c){if(c.t==='gui'){const gg=guiById(c.id);return gg?gg.name:''}
   const o=c.t==='model'?byModel(c.id):byId(c.id);return o?o.name:''}
 function mi(ic,c,t,d,fn){return {ic:ic,c:c,t:t,d:d,fn:fn}}
 function addGroups(c){if(c.t==='gui'){const O2=[];[['text','Text','A text label inside this GUI'],['button','Button','A button inside this GUI'],['frame','Frame','A box inside this GUI'],['image','Image','A picture inside this GUI']].forEach(function(q){const T=GTYPE[q[0]];O2.push(mi(T.i,T.c,q[1],q[2],function(){addGui(q[0],c.id)}))});const S2=[['When this GUI is clicked','guithisclick','Runs when a player clicks this GUI'],['When start','start','Runs when the game starts'],['When I receive','recv','Runs when a broadcast message arrives'],['When key held','keyheld','Runs again and again while a key is held down'],['Function','def','A reusable set of blocks']].map(function(q){return mi('\u270E','#c9822b','Script: '+q[0],q[2],function(){addScript(c.id,q[1])})});
-    return [{g:'Put inside this GUI',items:O2},{g:'Scripts inside this GUI',items:S2}]}
+    const U2=Object.keys(UINAME).map(function(t){return mi(UIICON[t],'#a78bfa',UINAME[t],UIDESC[t],function(){const gg=guiById(c.id);if(gg)uiAdd(gg,t)})});
+    return [{g:'Put inside this GUI',items:O2},{g:'UI objects (like Roblox Studio)',items:U2},{g:'Scripts inside this GUI',items:S2}]}
   const O=[],Sx=[],A=[],k=c.k,own=c.t==='svc'?null:c.id;
   const scr=function(g,t,d){return mi('\u270E','#c9822b',g,d,function(){addScript(own,t)})};
   if(c.t==='svc'){
