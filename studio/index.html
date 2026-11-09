@@ -750,6 +750,10 @@ const PLAYREQ=store.get('brixblox-play');if(PLAYREQ)store.del('brixblox-play');
 const SB_URL='https://ocgjqoeohuahyzhhfdie.supabase.co',SB_KEY='sb_publishable_8O1KHSBnGsoF9QjL0BVVeg_lAgjVlEc';
 let sb=null,cloudErr=false,PEND=false,upBusy=false,upBtn=null;const cpT={};
 try{if(window.supabase&&ME&&!ME.demo)sb=window.supabase.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:40}},auth:{persistSession:true,autoRefreshToken:true,storage:{getItem:function(k){return store.get(k)},setItem:function(k,v){store.set(k,v)},removeItem:function(k){store.del(k)}}}})}catch(e){sb=null}
+/* BrixBlox Premium: a star shows next to Premium players. The AI and the hourly bonus are checked on the server, not here. */
+const PREMN=new Set();
+if(ME&&ME.prem)PREMN.add(String(ME.username).toLowerCase());
+try{if(sb)sb.rpc('premium_all').then(function(r){if(r&&Array.isArray(r.data))r.data.forEach(function(n){PREMN.add(String(n).toLowerCase())})},function(){})}catch(e){}
 /* Published games are also copied to the cloud so other players can find and play them. Uploaded audio stays on this device. */
 /* Thumbnail: an image named Thumbnail becomes the game's card picture (shrunk to 320x180 so the game list stays light). */
 let thCache={s:null,o:null};
@@ -3045,6 +3049,69 @@ addEventListener('keydown',function(e){if(e.code!=='KeyP'||!e.shiftKey||e.ctrlKe
 addEventListener('blur',function(){for(const k in keys)keys[k]=false});
 
 /* Editor shortcuts: P new part, Backspace/Delete remove, Ctrl+G group, Ctrl+Shift+G union into one part, Ctrl+Alt+U split union, Ctrl+Alt+G ungroup (ignored while typing or in the script area) */
+
+/* ===== Ask AI: type what you want and Gemini builds the blocks. The AI itself lives on the server (functions/api/blocks.js) so the key stays secret. ===== */
+const AI_URL=(function(){try{return localStorage.getItem('bbAiUrl')||'/api/blocks'}catch(x){return '/api/blocks'}})();
+const AI_DD={keys:'a key name: a-z, 0-9, space, enter, shift, ctrl, alt, tab, escape, up, down, left, right, f1-f12',bool:'true or false',dir:'front, back, left, right, up or down',ease:'smooth, linear, in, out, back, bounce or elastic',tset:'fov, distance, speed or jump',mathf:'abs, floor, ceiling, sqrt, sin, cos, tan, asin, acos, atan, ln, log',accslot:'auto, hat, face, facc, neck or back',behav:'idle, wander, follow nearest, follow random or follow player',guipart:'background, text or border',var:'a variable name',item:'an item name',spawn:'a spawnpoint name',gui:'a GUI name',guit:'a GUI name',img:'an image name or none',light:'a lighting name',skybox:'a skybox name'};
+function aiCatalog(){const L=[];
+  Object.keys(BD).forEach(function(t){const D=BD[t];if(D.rep)return;
+    const dd=D.dd?Object.keys(D.dd).map(function(i){return 'arg'+(+i+1)+'='+(AI_DD[D.dd[i]]||D.dd[i])}).join('; '):'';
+    const tip=String(D.tip||'').split('. ')[0].slice(0,110);
+    L.push(t+' | '+D.l+' | defaults '+JSON.stringify(D.a)+(D.hat?' | EVENT: starts a script':'')+(D.k?' | HOLDS BLOCKS INSIDE (use k)':'')+(dd?' | '+dd:'')+(tip?' | '+tip:''))});
+  return L.join('\n')}
+function aiFacts(){const f=[];try{const g=(P.guis||[]).map(function(x){return x.name});if(g.length)f.push('GUI names: '+g.slice(0,40).join(', '))}catch(x){}
+  try{const v=(P.vars||[]).map(function(x){return typeof x==='string'?x:x&&x.name}).filter(Boolean);if(v.length)f.push('Variables that exist: '+v.slice(0,40).join(', '))}catch(x){}return f.join('\n')}
+function aiParse(t){t=String(t||'').replace(/^\s*```(?:json)?/i,'').replace(/```\s*$/,'').trim();let o=null;
+  try{o=JSON.parse(t)}catch(x){const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a>=0&&b>a){try{o=JSON.parse(t.slice(a,b+1))}catch(y){}}}
+  if(!o||!Array.isArray(o.scripts))throw new Error('The AI answered in a way Studio could not read. Try asking again.');return o}
+function aiOwner(){if(selScr&&selScr.o)return selScr.o;if(selGui)return selGui;const p=sel.length?byId(sel[0]):null;return p?(p.model||p.id):null}
+function aiInsert(scripts,attach){let blocks=0,dropped=0,made=0;const owner=attach?aiOwner():null;
+  const clean2=function(arr,depth,first){const out=[];if(!Array.isArray(arr)||depth>6)return out;
+    arr.forEach(function(b){if(blocks>=120){dropped++;return}if(!b||typeof b.t!=='string'||!BD[b.t]||BD[b.t].rep){dropped++;return}
+      const D=BD[b.t];if(D.hat&&!(first&&!out.length)){dropped++;return}
+      const a=D.a.map(function(d,i){let v=Array.isArray(b.a)&&b.a[i]!==undefined&&b.a[i]!==null?String(b.a[i]):d;
+        const dt=D.dd&&D.dd[i];if(dt==='bool'){v=/^(true|yes|on|1)$/i.test(v)?'true':/^(false|no|off|0)$/i.test(v)?'false':d}else if(dt==='keys')v=v.toLowerCase();return v});
+      const nb={t:b.t,a:a,k:D.k?clean2(b.k,depth+1,false):null};blocks++;out.push(nb)});return out};
+  scripts.slice(0,8).forEach(function(sc){let bl=clean2(sc,0,true);if(!bl.length)return;
+    if(!BD[bl[0].t].hat){bl.unshift(mk('start'))}
+    if(owner)bl[0].o=owner;P.scripts.push(bl);made++;selScr=bl[0]});
+  if(made){clean();rend();renderParts()}return {made:made,blocks:blocks,dropped:dropped}}
+function aiUpsell(){const ov=el('div');ov.style.cssText='position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+  const close=function(){ov.remove()};ov.onpointerdown=function(e){if(e.target===ov)close()};
+  const bx=el('div');bx.style.cssText='width:min(460px,100%);background:#232527;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px';
+  const h=el('div','','\u2728 Ask AI is a Premium feature');h.style.cssText='font-weight:800;font-size:1.1rem';
+  const p=el('p','','Type what you want and the AI builds the blocks for you. Get BrixBlox Premium for 200 blockbucks (one time). You also get a star next to your name and Premium-only shop items.');p.style.cssText='margin:0;line-height:1.45';
+  const row=el('div','tb');const go=el('button','btn small','Get Premium');go.type='button';const cl=el('button','btn ghost small','Not now');cl.type='button';cl.onclick=close;
+  go.onclick=function(){try{store.set('brixblox-gopremium','1')}catch(e){}location.href=SITE_URL};
+  row.append(go,cl);bx.append(h,p,row);ov.append(bx);document.body.append(ov)}
+(function(){const btn=el('button','btn ghost small','\u2728 Ask AI'+(ME&&ME.prem?'':' \uD83D\uDD12'));btn.type='button';btn.title='Type what you want and the AI builds the blocks for you';
+  const rb=$('s-run');if(rb&&rb.parentNode)rb.parentNode.insertBefore(btn,rb);else return;
+  let ov=null,busy=false;
+  const close=function(){if(ov){ov.remove();ov=null}};
+  btn.onclick=function(){if(ov){close();return}
+    if(!(ME&&ME.prem)){aiUpsell();return}
+    ov=el('div');ov.style.cssText='position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+    ov.onpointerdown=function(e){if(e.target===ov)close()};
+    const bx=el('div');bx.style.cssText='width:min(560px,100%);background:#232527;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;max-height:90vh;overflow:auto';
+    const h=el('div','','\u2728 Ask AI to build blocks');h.style.cssText='font-weight:800;font-size:1.1rem';
+    const ta=el('textarea');ta.rows=4;ta.maxLength=600;ta.placeholder='Example: when a player touches this block, hurt them by 20 and say Ouch. Or: when I press E, teleport me to 0 10 0.';ta.style.cssText='width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:#191b1d;color:#fff;font:inherit;resize:vertical';
+    const own=aiOwner(),on=own&&ownName(own);
+    const at=el('input');at.type='checkbox';at.checked=!!on;at.disabled=!on;const al=lab('Put the new scripts on: '+(on?on:'(nothing is selected, so they go on the world)'),at);al.style.cssText='display:flex;gap:8px;align-items:center;font-size:.9rem';
+    const st=el('p','note','The AI can make mistakes. Blocks it makes up are skipped. Check the result before you play.');st.style.margin='0';
+    const row=el('div','tb');const go=el('button','btn small','Make blocks');go.type='button';const cl=el('button','btn ghost small','Close');cl.type='button';cl.onclick=close;row.append(go,cl);
+    const run=async function(){const q=ta.value.trim();if(!q||busy)return;busy=true;go.disabled=true;st.textContent='Thinking...';
+      try{let tok='';try{if(sb){const ss=await sb.auth.getSession();tok=ss&&ss.data&&ss.data.session?ss.data.session.access_token:''}}catch(x){}
+        if(!tok)throw new Error('Ask AI needs you to be logged in with an online BrixBlox account.');
+        const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({prompt:q,catalog:aiCatalog(),facts:aiFacts()})});
+        let d=null;try{d=await r.json()}catch(x){}
+        if(r.status===403&&d&&d.code==='premium'){ME.prem=false;try{store.set('brixblox-me',JSON.stringify(ME))}catch(x){}busy=false;go.disabled=false;close();aiUpsell();return}
+        if(!r.ok||!d||d.error)throw new Error(d&&d.error?d.error:r.status===404?'The AI server is not set up yet. Add functions/api/blocks.js and your Gemini key to your site first.':'The AI server had a problem (error '+r.status+').');
+        const o=aiParse(d.text),res=aiInsert(o.scripts,at.checked&&!at.disabled);
+        st.textContent=res.made?'Added '+res.made+' script'+(res.made>1?'s':'')+' ('+res.blocks+' blocks)'+(res.dropped?'. Skipped '+res.dropped+' block'+(res.dropped>1?'s':'')+' that do not exist.':'.')+(o.note?' '+String(o.note).slice(0,200):''):(o.note?String(o.note).slice(0,240):'The AI could not make blocks for that. Try describing it differently.')}
+      catch(e){st.textContent=String(e.message||e)}
+      busy=false;go.disabled=false};
+    go.onclick=run;ta.onkeydown=function(e){if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();run()}else if(e.key==='Escape')close();e.stopPropagation()};
+    bx.append(h,ta,al,row,st);ov.append(bx);document.body.append(ov);setTimeout(function(){ta.focus()},0)}})();
 let edArea=true;
 addEventListener('pointerdown',function(e){edArea=!(e.target&&e.target.closest&&e.target.closest('#s-ws,#s-pal'))},true);
 
@@ -3733,7 +3800,7 @@ function playClick(e){const c=clickInfo(e);if(!c)return;const l=clickScripts(c.p
 function nameCol(n){if(n===P.player.name){const q=P.squads.find(function(z){return z.id===P.player.squad});if(q)return q.color}let h=0;for(let i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))>>>0;return 'hsl('+(h%360)+',75%,72%)'}
 /* chatLine(name,message) shows "Name: message" with a coloured name; chatLine(text,null,true) is a system line. Lines fade after 12 s unless you are typing. */
 function chatLine(a,b,sys){const L=$('chat-log'),d=el('div',sys?'sys':'');
-  if(sys)d.textContent=a;else{const n=el('span','cn',a+': ');n.style.color=nameCol(a);if(isAdminName(a))d.append(admIcon(13));d.append(n,document.createTextNode(b))}
+  if(sys)d.textContent=a;else{const n=el('span','cn',a+': ');n.style.color=nameCol(a);if(isAdminName(a))d.append(admIcon(13));if(PREMN.has(String(a).toLowerCase())){const ps=el('span','','\u2605 ');ps.style.cssText='color:#ffc233;font-weight:800';ps.title='BrixBlox Premium';d.append(ps)}d.append(n,document.createTextNode(b))}
   L.append(d);while(L.children.length>60)L.firstChild.remove();L.scrollTop=1e9;setTimeout(function(){d.classList.add('old')},12000)}
 function chatSys(t){chatLine(t,null,true)}
 function chatShow(on){const c=$('chat');c.hidden=!on;if(on)c.classList.remove('min');if(!on){$('chat-log').replaceChildren();$('chat-in').value='';if(document.activeElement===$('chat-in'))$('chat-in').blur()}}
@@ -3782,7 +3849,7 @@ function openGM(){if(menuEl||!(running||playing))return;for(const k in keys)keys
   pn.append(el('div','gmt','Players'));
   const plBox=el('div');pn.append(plBox);
   gmPlFill=function(){plBox.replaceChildren();const q=P.squads.find(function(z){return z.id===P.player.squad}),pl=[[P.player.name+' (you)',q?q.color:'#2fa95a']].concat(S.oth.map(function(n){return [n,'#3b82f6']}));
-    pl.forEach(function(p){const r=el('div','arow'),dt=el('i');dt.style.cssText='width:12px;height:12px;border-radius:4px;flex:none;background:'+p[1];r.append(dt,el('span','nm',p[0]));plBox.append(r)})};gmPlFill();
+    pl.forEach(function(p){const r=el('div','arow'),dt=el('i');dt.style.cssText='width:12px;height:12px;border-radius:4px;flex:none;background:'+p[1];r.append(dt,el('span','nm',(PREMN.has(String(p[0]).replace(/ \(you\)$/,'').toLowerCase())?'\u2605 ':'')+p[0]));plBox.append(r)})};gmPlFill();
   pn.append(el('div','gmt','Settings'));
   slider(pn,'Volume',P.audio,'vol',0,1,.05,function(v){return Math.round(v*100)+'%'},liveVol);
   const mt=el('input');mt.type='checkbox';mt.checked=P.audio.mute;mt.onchange=function(){P.audio.mute=mt.checked;save();liveVol()};pn.append(lab('Mute all sounds',mt));
@@ -5532,7 +5599,7 @@ function bbHud(){const lb=el('button','btn ghost small','Leave game');lb.id='bb-
     if(idle>=WARN_MS&&!warned){warned=true;try{msg('Still there? Move or press a key, or you will be kicked in 2 minutes.')}catch(e){}}
   }catch(e){}},5000);
   setInterval(function(){try{if(document.hidden||!(running||playing))return;
-    if(sb)sb.rpc('play_heartbeat',{p_seconds:60}).then(function(){},function(){});
+    if(sb){sb.rpc('play_heartbeat',{p_seconds:60}).then(function(){},function(){});if(ME.prem&&PLAYINFO&&PLAYINFO.id)sb.rpc('premium_heartbeat',{p_game:String(PLAYINFO.id),p_seconds:60}).then(function(){},function(){})}
     else if(ME.demo)store.set('brixblox-playsec',String((parseInt(store.get('brixblox-playsec')||'0',10)||0)+60))}catch(e){}},60000)})();
 
 /* ===== Admins, player list and admin panel =====
