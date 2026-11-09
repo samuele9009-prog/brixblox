@@ -687,6 +687,7 @@ const BD={
  say:{c:'lk',l:'say _',a:['Hello!'],tip:'Shows a chat bubble above your head for a few seconds.'},
  color:{c:'lk',l:'color _',a:['red'],raw:1},
  setimage:{c:'lk',l:'set image of this object to _',a:['none'],dd:{0:'img'},tip:'Puts a picture from Assets on the object this script belongs to (pick the picture, or none to take it off). It goes back to the part setting when the game restarts. Put the script on an object with the + next to it in the Explorer.'},
+ lighting:{c:'lk',l:'set lighting to _',a:['realistic'],dd:{0:'light'},tip:'Changes the lighting of the whole game. Pick one from the list: Realistic (soft blue haze, soft shadows, film-like colours), Cinematic, Sunny, Sunset, Night, Foggy, Spooky or Vivid colours. Default puts the normal lighting back. It changes the time of day, sky colour, fog, light colour, shadows and colour tint together. It goes back to default when the game restarts.'},
  skybox:{c:'lk',l:'set skybox to _',a:['default'],dd:{0:'skybox'},tip:'Changes the sky. Upload images under Assets named SkyboxL (left), SkyboxR (right), SkyboxF (front), SkyboxBa (back), SkyboxT (top) and SkyboxBo (bottom): images with exactly these names are the default sky. Images with something after the letters (SkyboxL1, SkyboxR1 ...) are NOT used until a block picks them: pick 1 to switch every side ending in 1 at once, or pick one image to change just that side. default goes back to the plain names and none removes the skybox. It goes back to the default when the game restarts.'},
  transparency:{c:'lk',l:'set transparency to _',a:['0.5'],tip:'Makes the object this script belongs to see-through: 0 is solid, 0.5 is half see-through, 1 is invisible. With no object it changes your own character. It goes back to the part setting when the game restarts.'},
  wait:{c:'ct',l:'wait _ secs',a:['1']},
@@ -883,7 +884,7 @@ function newVarDlg(done){mdl('New variable',function(c,close){const n=el('input'
 function ddSel(b,i,kind,ro){
   if(ro){const n=el('input');n.value=b.a[i];n.readOnly=true;fit(n);return n}
   const s=el('select','ddsel');s.title=kind==='var'?'Pick a variable, or make a new one':'';
-  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='img'?[['none','none']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})):kind==='guipart'?[['background','background'],['text','text'],['border','border']]:kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='ease'?EASEOPT.slice():kind==='tset'?TSETOPT.slice():kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='skybox'?skyOpts():kind==='bool'?[['true','true'],['false','false']]:kind==='spawn'?P.parts.filter(function(q){return q.spawn&&!q.parent}).map(function(q){return [q.name,q.name]}):kind==='item'?itemsL().map(function(i){return [i.name,i.name]}):varList().map(function(v){return [v,v]});
+  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='img'?[['none','none']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})):kind==='guipart'?[['background','background'],['text','text'],['border','border']]:kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='ease'?EASEOPT.slice():kind==='tset'?TSETOPT.slice():kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='light'?LIGHTOPT.slice():kind==='skybox'?skyOpts():kind==='bool'?[['true','true'],['false','false']]:kind==='spawn'?P.parts.filter(function(q){return q.spawn&&!q.parent}).map(function(q){return [q.name,q.name]}):kind==='item'?itemsL().map(function(i){return [i.name,i.name]}):varList().map(function(v){return [v,v]});
     if(kind==='item'&&o.length&&!o.some(function(q){return q[0]===String(b.a[i])})){b.a[i]=o[0][0];save()}
     if(kind==='item'&&!o.length)o=[[String(b.a[i]),'(make an item first)']];
     const cur=String(b.a[i]);if(cur&&!o.some(function(q){return q[0]===cur}))o.unshift([cur,cur]);
@@ -1109,7 +1110,7 @@ function dEnd(e){removeEventListener('pointermove',dMoveRaf);dEv=null;if(dRaf){c
 
 
 /* BricBloc as text */
-const KW={skybox:'set skybox to',spawnon:'turn on spawnpoint',spawnrep:'replace current spawnpoint with',spawnoff:'turn off spawnpoint',giveattr:'give attribute',pdset:'set player saved data',pdchange:'change player saved data',pdget:'get player saved data',pdadditem:'put in saved inventory',pdremitem:'take out of saved inventory',pdsave:'save player data',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',friction:'set friction',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',ragdollex:'set ragdoll exaggeration',playercolon:'enable player collision',playercoloff:'disable player collision',fov:'set camera fov',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',setrig:'set player to rig',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
+const KW={lighting:'set lighting',skybox:'set skybox to',spawnon:'turn on spawnpoint',spawnrep:'replace current spawnpoint with',spawnoff:'turn off spawnpoint',giveattr:'give attribute',pdset:'set player saved data',pdchange:'change player saved data',pdget:'get player saved data',pdadditem:'put in saved inventory',pdremitem:'take out of saved inventory',pdsave:'save player data',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',friction:'set friction',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',ragdollex:'set ragdoll exaggeration',playercolon:'enable player collision',playercoloff:'disable player collision',fov:'set camera fov',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',setrig:'set player to rig',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){clearTimeout(view._t);view._t=setTimeout(view0,250)}
 function view0(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
@@ -1276,6 +1277,7 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
     case'voidh':{const v=Number(val(a[0],S));if(isFinite(v))S.voidY=Math.max(-1e6,Math.min(1e6,v));break}
     case'fov':S.fov=Math.max(30,Math.min(120,n(0)));break;
     case'skybox':skySet(String(a[0]).trim());break;
+    case'lighting':lightSet(String(val(a[0],S)).trim());break;
     case'shiftlockon':S.sla=true;break;
     case'shiftlockoff':S.sla=false;S.sl=false;break;
     case'shiftlockkey':S.slk=String(val(a[0],S)).trim().toLowerCase()||'shift';break;
@@ -3744,7 +3746,7 @@ function skyApply(){const eff=skyEff(),imgs=P.assets.images;let sig='',any=false
     const k=f+'|'+src.length+'|'+src.slice(-24);let t=SKYTX[k];
     if(!t){t=new THREE.TextureLoader().load(src);t.center.set(.5,.5);t.repeat.set(-1,1);t.rotation=f==='bo'?Math.PI:0;t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;SKYTX[k]=t}
     if(m.map!==t){m.map=t;m.needsUpdate=true}m.visible=true})}
-function skyTick(dt){const e=P.env,a=(e.tod-6)/12*Math.PI,d=new THREE.Vector3(Math.cos(a)*14,Math.sin(a)*14,6).normalize(),day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),R=700,cp=camera.position;
+function skyTick(dt){const e=lightEnv(),a=(e.tod-6)/12*Math.PI,d=new THREE.Vector3(Math.cos(a)*14,Math.sin(a)*14,6).normalize(),day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),R=700,cp=camera.position;
   skyApply();skyG.visible=!stage.visible&&!skyAny;skyBox.visible=!stage.visible&&skyAny;skyBox.position.copy(cp);
   sunS.visible=d.y>-.1;sunS.position.set(cp.x+d.x*R,cp.y+d.y*R,cp.z+d.z*R);
   moonS.visible=d.y<.1;moonS.position.set(cp.x-d.x*R,cp.y-d.y*R,cp.z-d.z*R);
@@ -3759,11 +3761,44 @@ function focusSel(){let ps=sel.map(function(id){return byId(id)}).filter(functio
 addEventListener('keydown',function(e){if(e.code!=='KeyF'||e.ctrlKey||e.metaKey||e.altKey||e.shiftKey||playing||running)return;
   const a=document.activeElement;if(a&&(/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a.isContentEditable))return;if($('studio').getClientRects().length===0)return;
   e.preventDefault();focusSel()});
+/* ===== Lighting presets (the "set lighting to" block). Each one changes the time of day, sky colour, fog, light colours and strength, tone mapping, shadow softness and a colour grade (tint, contrast, vignette). ===== */
+const LPRE={
+  realistic:{env:{tod:15.5,sky:'#4f8fd8',bright:1,sun:1.3,fog:52},hs:'#bcd6ff',hg:'#2f3b33',hk:1.05,sc:'#ffeccc',tm:1,ex:1.15,soft:1,g:{f:'contrast(1.1) saturate(1.1) brightness(1.03)',vig:.42,tint:'#1b4dff',ta:.1,tb:'soft-light'}},
+  cinematic:{env:{tod:16.5,sky:'#2f6fe0',bright:.95,sun:1.2,fog:68},hs:'#9fc4ff',hg:'#1f2c3a',hk:1.05,sc:'#ffd9a8',tm:1,ex:1.2,soft:1,g:{f:'contrast(1.18) saturate(.95) brightness(1.02)',vig:.55,tint:'#1646ff',ta:.18,tb:'soft-light'}},
+  sunny:{env:{tod:12.5,sky:'#7fc8ff',bright:1.1,sun:1.2,fog:0},hs:'#ffffff',hg:'#9ab87a',hk:1,sc:'#fff6e0',tm:0,ex:1,soft:1,g:{f:'saturate(1.12) contrast(1.04)',vig:0,tint:'#ffd27a',ta:.05,tb:'soft-light'}},
+  sunset:{env:{tod:18.2,sky:'#ff9a5a',bright:.95,sun:1,fog:35},hs:'#ffc89a',hg:'#4a3a46',hk:1,sc:'#ff9a4d',tm:1,ex:1.15,soft:1,g:{f:'contrast(1.08) saturate(1.2)',vig:.35,tint:'#ff6a1f',ta:.14,tb:'soft-light'}},
+  night:{env:{tod:23,sky:'#0b1030',bright:.95,sun:.4,fog:40},hs:'#5f78c8',hg:'#0d1126',hk:1.1,sc:'#9fb4ff',tm:1,ex:1.25,soft:1,g:{f:'contrast(1.1) saturate(.9)',vig:.5,tint:'#1a2a7a',ta:.2,tb:'soft-light'}},
+  foggy:{env:{tod:11,sky:'#aab4bd',bright:.95,sun:.6,fog:92},hs:'#dfe6ec',hg:'#7a8288',hk:1,sc:'#f2f4f6',tm:0,ex:1,soft:1,g:{f:'saturate(.75) contrast(.96)',vig:.25,tint:'#cfd8e0',ta:.12,tb:'soft-light'}},
+  spooky:{env:{tod:21.5,sky:'#1c1030',bright:.85,sun:.3,fog:62},hs:'#7a5fb0',hg:'#120a1e',hk:1,sc:'#8a6fd0',tm:1,ex:1.2,soft:1,g:{f:'contrast(1.15) saturate(.85)',vig:.65,tint:'#5a1a8a',ta:.16,tb:'soft-light'}},
+  vivid:{env:{tod:13,sky:'#6ec6ff',bright:1.1,sun:1.1,fog:0},hs:'#ffffff',hg:'#8fc27a',hk:1,sc:'#ffffff',tm:0,ex:1,soft:0,g:{f:'saturate(1.4) contrast(1.06)',vig:0,tint:'#ffffff',ta:0,tb:'normal'}}
+};
+const LIGHTOPT=[['default','Default'],['realistic','Realistic (blue haze, soft shadows)'],['cinematic','Cinematic (strong blue, dark edges)'],['sunny','Sunny'],['sunset','Sunset'],['night','Night'],['foggy','Foggy'],['spooky','Spooky'],['vivid','Vivid colours']];
+let LIGHTO=null,lxSig='',lxT=null,lxV=null;
+function lightEnv(){return LIGHTO&&LPRE[LIGHTO]?Object.assign({},P.env,LPRE[LIGHTO].env):P.env}
+function lightSet(n){n=String(n||'').toLowerCase().replace(/[^a-z]/g,'');LIGHTO=(n&&LPRE[n])?n:null;try{applyEnv()}catch(e){}}
+function lxEls(){if(lxT)return;const c=document.querySelector('.cvw');if(!c)return;
+  lxT=document.createElement('div');lxV=document.createElement('div');
+  [lxT,lxV].forEach(function(d){d.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:3;display:none';c.append(d)})}
+function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
+  if(L){hemi.color.set(L.hs);hemi.groundColor.set(L.hg);hemi.intensity*=L.hk;sun.color.set(L.sc)}
+  else{hemi.color.set(0xffffff);hemi.groundColor.set(0x88aa88);sun.color.set(0xffffff)}
+  const sig=L?LIGHTO:'';
+  if(sig!==lxSig){lxSig=sig;
+    renderer.toneMapping=L&&L.tm?THREE.ACESFilmicToneMapping:THREE.NoToneMapping;renderer.toneMappingExposure=L?L.ex:1;
+    const soft=!!(L&&L.soft);renderer.shadowMap.type=soft?THREE.PCFSoftShadowMap:THREE.PCFShadowMap;
+    const ms=soft?2048:1024;if(sun.shadow.mapSize.x!==ms){sun.shadow.mapSize.set(ms,ms);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
+    sun.shadow.radius=soft?5:3;renderer.shadowMap.needsUpdate=true;
+    scene.traverse(function(o){if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(function(m){m.needsUpdate=true})}})}
+  lxEls();const g=L&&L.g;cv.style.filter=g?g.f:'';
+  if(lxT){
+    if(g&&g.ta>0){lxT.style.display='block';lxT.style.background=g.tint;lxT.style.opacity=g.ta*3.2>1?1:g.ta*3.2;lxT.style.mixBlendMode=g.tb}else lxT.style.display='none';
+    if(g&&g.vig>0){lxV.style.display='block';lxV.style.background='radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(0,0,0,'+g.vig+') 100%)'}else lxV.style.display='none'}}
 let fogOn=false;
-function applyEnv(){updSkyTex();const e=P.env,a=(e.tod-6)/12*Math.PI,day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),c=new THREE.Color(e.sky).multiplyScalar(k);
+function applyEnv(){updSkyTex();const e=lightEnv(),a=(e.tod-6)/12*Math.PI,day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),c=new THREE.Color(e.sky).multiplyScalar(k);
   scene.background=c;hemi.intensity=(.25+.5*k)*e.bright;sun.intensity=.85*day*e.sun*e.bright;sunDir.set(Math.cos(a)*14,Math.max(2,Math.sin(a)*14),6);
   const on=e.fog>0;scene.fog=on?new THREE.Fog(c.getHex(),12,Math.max(30,900-e.fog*8.5)):null;
-  if(on!==fogOn){fogOn=on;if(PG)PG.traverse(function(o){if(o.material)o.material.needsUpdate=true})}}
+  if(on!==fogOn){fogOn=on;if(PG)PG.traverse(function(o){if(o.material)o.material.needsUpdate=true})}
+  lightX()}
 
 /* ===== GUI: text, buttons, frames and images that sit on top of the stage. Sizes are percentages of the stage, so they fit any window size. ===== */
 let selGui=null,GR={};
@@ -4287,7 +4322,7 @@ function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing);try{hotRender()}catch(e){}try{renderGui()}catch(e){}}
 function setRun(v){running=v;sync()}
-function resetWorld(){RUNC.clear();RUNW.clear();Object.keys(ATTR).forEach(function(k){delete ATTR[k]});Object.keys(PD).forEach(function(k){delete PD[k]});PDL=null;KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();SKYO=null;SPW={};RO={};RV={};RD={};RVY={};RY={};CO={};FRI={};TM=new Map();RAG={};RSZ={};SKIN={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts()}
+function resetWorld(){RUNC.clear();RUNW.clear();Object.keys(ATTR).forEach(function(k){delete ATTR[k]});Object.keys(PD).forEach(function(k){delete PD[k]});PDL=null;KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();SKYO=null;LIGHTO=null;SPW={};RO={};RV={};RD={};RVY={};RY={};CO={};FRI={};TM=new Map();RAG={};RSZ={};SKIN={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts();try{applyEnv()}catch(e){}}
 function boot(my){reser();try{spawnHere()}catch(e){}const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
   hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
   setTimeout(function(){if(my===S&&(running||playing))firePJ('pjoin',P.player.name)},120);
@@ -4449,7 +4484,7 @@ function dropOn(d,t){if(!dropOK(d,t))return;const ps=dragParts(d);let msg0='';
    (only the position of the block is sent, never code, so nothing can be injected). "client side" blocks only ever run on the computer that reached them,
    and are skipped on the other players when they replay a server side block. */
 const LOCALH={landed:1,touched:1,clicked:1,key:1,keydrop:1,keyheld:1,keyrel:1,chat:1,guiclick:1,guithisclick:1,itemhold:1,itemunhold:1,screenclick:1};
-const RSKIP={move:1,turn:1,goto:1,jump:1,animate:1,say:1,color:1,walkanim:1,jumpanim:1,idleanim:1,fallanim:1,holdanim:1,holdwalkanim:1,fov:1,shiftlockon:1,shiftlockoff:1,pspeed:1,playercol:1,ragdollex:1,playercolon:1,playercoloff:1,tweenset:1,
+const RSKIP={move:1,turn:1,goto:1,jump:1,animate:1,say:1,color:1,walkanim:1,jumpanim:1,idleanim:1,fallanim:1,holdanim:1,holdwalkanim:1,fov:1,shiftlockon:1,shiftlockoff:1,pspeed:1,lighting:1,playercol:1,ragdollex:1,playercolon:1,playercoloff:1,tweenset:1,
   givebadge:1,awardbadge:1,giveattr:1,removeattr:1,giveitem:1,removeitem:1,accadd:1,accrem:1,accwear:1,accstrip:1,kick:1,ban:1,addplayer:1,randplayer:1,getcount:1,print:1,setvol:1};
 const RSELF={tweensize:1,tweentrans:1,tweencolor:1,transparency:1,kill:1,pushparent:1};
 const SSVARS=['toucher','clicker','speaker','message','joiner','leaver'];
