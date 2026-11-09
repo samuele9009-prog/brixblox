@@ -1691,7 +1691,7 @@ async function playAnim(name,S,only){let A=P.anims[name];if(!A){log('Error: no a
   const hid=Object.keys(A.keys).filter(function(id){const q=byId(id);return q&&q.av&&id!==P.avId});S.hold=S.hold||{};hid.forEach(function(id){S.hold[id]=(S.hold[id]||0)+1});
   const pa=Object.keys(A.keys).some(function(id){const q=byId(id);return q&&q.av});if(pa)S.pa=(S.pa||0)+1;
   if(hid.length||pa){NANIM.c++;NANIM.n=name}
-  const gk=Object.keys(A.keys).filter(function(id){return !!byId(id)});gk.forEach(function(id){RBUSY[id]=(RBUSY[id]||0)+1});
+  const gk=Object.keys(A.keys).filter(function(id){return !!byId(id)});gk.forEach(function(id){RBUSY[id]=(RBUSY[id]||0)+1;RDONE[id]=1});
   /* Each body part obeys one animation at a time: the newest one to start owns it, so two animations can no longer fight over (mix on) the same part. */
   const tok=++ATOK,mine=Object.keys(A.keys);mine.forEach(function(id){RTOK[id]=tok});
   try{const t0=performance.now();let t=0;while(t<A.len&&!S.stop){t=(performance.now()-t0)/1000;const po=evalPose(A,Math.min(t,A.len)),fo={};for(const k in po){if(RTOK[k.replace(/^p:/,'')]===tok)fo[k]=po[k]}applyKeyed(fo);await sl(16)}}
@@ -5159,7 +5159,7 @@ function hotRender(){if(!hotEl){hotEl=el('div');hotEl.id='hotbar';hotEl.style.cs
 addEventListener('keydown',function(e){const m=/^(?:Digit|Numpad)([1-9])$/.exec(e.code);if(!m||e.ctrlKey||e.metaKey||e.altKey||e.repeat||!(running||playing)||menuEl)return;
   if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;const id=S.items[+m[1]-1];if(!id)return;itemEquip(S.heldItem===id?null:id)});
 /* ===== Rig gear: an item held in a rig's hand. Shows in the editor and in the game, follows the arm when it animates, and the arm takes a hold pose while playing. ===== */
-const RGEAR={},RBUSY={},GOVR={},RTOK={};let ATOK=0;
+const RGEAR={},RBUSY={},RDONE={},GOVR={},RTOK={};let ATOK=0;
 function gearItemId(r){return GOVR[r.id]!==undefined?GOVR[r.id]:(r.gear&&r.gear.item)||''}
 function gearHand(r){const g=r.gear||{},ps=rigParts(r).filter(function(q){return !q.stab});let h=g.hand&&byId(g.hand);if(h&&ps.indexOf(h)>=0)return h;
   return ps.find(function(q){return /^r.?arm$|right.?(arm|hand)|^r.?hand$/i.test(q.name)})||ps.find(function(q){return /arm|hand/i.test(q.name)})||null}
@@ -5174,10 +5174,10 @@ function gearSync(){const want={};
       const g=itemMake(E,it);g.position.y+=1-(h.size[1]||2)/2;/* items are made for a 2 stud arm: line the grip up with the bottom of this hand part */m.add(g);e.obj=g})});
   for(const id in RGEAR)if(!want[id]){const c=RGEAR[id];if(c.obj&&c.obj.parent)c.obj.parent.remove(c.obj);delete RGEAR[id]}}
 /* While playing, a rig with gear raises its hand (or loops the hold animation you picked). Parts that a script animation is moving right now are left alone. */
-function gearTick(){if(!(playing||running))return;const t=performance.now()/1000;
+function gearTick(){if(!(playing||running)){for(const k in RDONE)delete RDONE[k];return}const t=performance.now()/1000;
   for(const id in RGEAR){const e=RGEAR[id];if(!e.obj)continue;const r=byId(id);if(!r)continue;const rg=RAG['rig:'+id];if(rg&&rg.sim&&!rg.gone)continue;
     const g=r.gear||{},h=gearHand(r);if(!h)continue;
-    if(g.anim==='none'||RBUSY[r.id]||rigParts(r).some(function(q){return RBUSY[q.id]}))continue;
+    if(g.anim==='none'||RBUSY[r.id]||RDONE[r.id]||rigParts(r).some(function(q){return RBUSY[q.id]||RDONE[q.id]}))continue;
     const A=g.anim&&g.anim!=='default'?P.anims[g.anim]:null;
     if(A&&A.len){const po=evalPose(A,t%A.len),o={};for(const k in po){if(!RBUSY[k.replace(/^p:/,'')])o[k]=po[k]}applyKeyed(o)}
     else if(!RBUSY[h.id])applyKeyed((function(){const o={};o[h.id]=[80+Math.sin(t*2.2)*3,0,0];return o})())}}
