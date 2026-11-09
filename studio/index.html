@@ -737,7 +737,7 @@ function cloudPush(id,now){if(!sb||!ME)return;clearTimeout(cpT[id]);cpT[id]=setT
     if(now)try{if(cloudErr)mdl('Update did NOT go live',function(c,close){c.append(el('p','','Your changes are saved in this Studio, but they were not sent online, so other players still see the old version.'),el('p','note','Reason: '+(cloudWhy||'unknown error')));c.append(mb('OK','',close))});else msg('Update is live online ('+new Date().toLocaleTimeString()+'). Other players get it the next time they join the game.')}catch(e){}}
   },now?0:1500)}
 /* Changing only Public / Private updates just that setting online, not the rest of your changes */
-function cloudVis(id,v){if(!sb||!ME)return;sb.from('games').update({vis:v,updated_at:new Date().toISOString()}).eq('id',id).then(function(r){if(r&&r.error)cloudPush(id,true)},function(){cloudPush(id,true)})}
+function cloudVis(id,v){if(!sb||!ME)return;sb.from('games').update({vis:v,updated_at:new Date().toISOString()}).eq('id',id).then(function(r){if(r&&r.error)msg('Could not change Public/Private online - check your internet and try again')},function(){msg('Could not change Public/Private online - check your internet and try again')})}
 function cloudDel(id){if(!sb)return;sb.from('games').delete().eq('id',id).then(function(){},function(){})}
 /* In a real game your character looks like your BrixBlox avatar: yellow head and arms, your shirt colour, green legs. */
 function siteLook(Q){const T=(Q.parts||[]).find(function(p){return p.av&&p.name==='Torso'});
@@ -773,7 +773,6 @@ if(VIEWONLY&&sb&&PLAYINFO&&PLAYINFO.id&&!PLAYINFO.fresh){(function(){
   }).catch(function(){ov.remove();if(window.BBTAG)BBTAG.textContent='build v5 \u00b7 could not reach the online copy (using the saved one)'})})()}
 function persistGame(){const L=glib(),pv=L[gameId],js=JSON.stringify(P),lh=pv?(pv.lh!==undefined?pv.lh:hsh(pv.data)):undefined;
   L[gameId]={id:gameId,name:P.name,vis:gameVis||'private',at:Date.now(),owner:(pv&&pv.owner&&pv.owner.id)?pv.owner:(ME?{id:ME.id,name:ME.username}:undefined),data:js,lh:lh,ch:pv&&pv.ch,ct:pv&&pv.ct,thumb:(pv&&pv.thumb)||undefined};store.set(GKEY,JSON.stringify(L));PEND=calcPend();try{updateStat()}catch(e){}
-  if(PEND&&!VIEWONLY&&sb&&ME&&gameId)cloudPush(gameId);
   const gid=gameId;thumbFor(P).then(function(th){const L2=glib();if(!L2[gid]||(L2[gid].thumb||null)===(th||null))return;if(th)L2[gid].thumb=th;else delete L2[gid].thumb;store.set(GKEY,JSON.stringify(L2))})}
 function save(){if(gameId)persistGame()}
 function clean(){P.scripts=P.scripts.filter(function(s){return s.length})}
@@ -3256,7 +3255,17 @@ function entTick(dt){skinTick();Object.keys(Object.assign({},RAG,RSZ)).forEach(f
   const T=entTargets(key),e=RAG[key];if(!T||(e&&e.gone))return;
   const g=T.g,r=T.root,s=RSZ[key]||1;let lo=1e9;T.parts.forEach(function(p){lo=Math.min(lo,p.pos[1]-p.size[1]/2)});const arm=r.pos[1]-lo;
   g.scale.setScalar(s);
-  if(e){e.t+=dt;if(!e.sim){e.sim=simInit(key,T,e);if(e.pf!=null){ragPush(e,key,e.pf,e.pd,e.pv);e.pf=null;e.pd=null;e.pv=null}}let u=1;
+  if(e){e.t+=dt;if(!e.sim){e.sim=simInit(key,T,e);if(e.pf!=null){ragPush(e,key,e.pf,e.pd,e.pv);e.pf=null;e.pd=null;e.pv=null}}
+    /* falling into the void while ragdolled: the ragdoll body keeps overwriting the player position every frame, so the normal void reset never stuck. Stop the ragdoll and respawn here. */
+    if(key==='main'&&e.sim&&!e.gone&&!S.fly){const vY=S.voidY!=null?S.voidY:-150;
+      if(feet0()+(e.sim.bodies[0].x[1]-r.pos[1])<vY){
+        limbsRest(T,r);g.rotation.set(e.sim.rt[0],e.sim.rt[1],e.sim.rt[2]);
+        delete RAG.main;S.rag=false;S.pd=null;S.vy=0;S.gr=false;S.fp=null;S.pvx=S.pvz=0;S.ix=S.iy=0;
+        if(e.dead)S.hp=MAXHP;
+        if(!spawnHere()){S.x=0;S.y=0;S.h=12}
+        S.ch=S.h;g.position.set(r.pos[0]+S.x,r.pos[1]+S.h,r.pos[2]-S.y);
+        return}}
+    let u=1;
     if(e.t<e.end||e.dead){simStep(e.sim,dt);
       /* a remote player's ragdoll is only a copy: keep pulling its body to where that player really is, so the two screens never drift apart */
       const nn=T.np,R0=byId(P.avId);if(nn&&nn.net&&nn.tx!=null&&R0){const b0=e.sim.bodies[0],k=1-Math.exp(-dt*10),
@@ -4158,8 +4167,7 @@ if(!P.v13){P.v13=1;if(P.avId&&P.anims.walk&&!P.anims['hold item walk']){holdWalk
 if(!P.v14){P.v14=1;if(P.avId){if(!P.anims.fall)fallAnim();if(!P.anims['hold item jump'])holdJumpAnim();save()}}
 if(!P.v15){P.v15=1;if(P.anims['hold item fall']){delete P.anims['hold item fall'];if(curA==='hold item fall')curA=P.anims.walk?'walk':Object.keys(P.anims)[0];save()}}
 applyEnv();rebuildParts();renderParts();anims();requestAnimationFrame(frame);loadBig();setTimeout(gcBig,4000);
-if(gameId&&!VIEWONLY&&sb&&!PEND&&(Object.keys(P.assets.audio).some(function(n){return bigRef(P.assets.audio[n])})||Object.keys(P.assets.meshes||{}).some(function(n){return bigRef(P.assets.meshes[n])})))setTimeout(function(){cloudPush(gameId)},3000);
-if(gameId&&!VIEWONLY&&sb&&PEND)setTimeout(function(){cloudPush(gameId)},2500);
+/* no automatic uploads: the game only goes online when you press Publish or Update */
 
 
 /* ===== Folders: keep the Explorer tidy. Parts and models get p.fold = the folder id. Ctrl+Shift+F makes one from the selection, Ctrl+U ungroups a model or dissolves a folder. ===== */
