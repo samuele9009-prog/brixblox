@@ -3776,8 +3776,9 @@ function skyForLight(n){const imgs=P.assets.images,o=Object.assign({},skyDefault
 function skyFogHex(){return (!SKYO&&SKYGEN&&SKYPAL[SKYGEN])?new THREE.Color(SKYPAL[SKYGEN].hor).getHex():null}
 /* Rebuilds the six sides only when something changed (cheap check every frame) */
 function skyApply(){const gen=(!SKYO&&SKYGEN&&SKYPAL[SKYGEN])?SKYGEN:null;
-  if(gen){const sg='gen:'+gen;if(sg===skySig)return;skySig=sg;skyAny=false;skyGenOn=true;const T=genSky(gen);
-    Object.keys(SKYFACE).forEach(function(f){const m=skyBox.material[SKYFACE[f]];if(m.map!==T[f]){m.map=T[f];m.needsUpdate=true}m.visible=true});return}
+  if(gen){const sg='gen:'+gen;if(sg===skySig)return;skySig=sg;skyAny=false;skyGenOn=true;
+    try{const T=genSky(gen);Object.keys(SKYFACE).forEach(function(f){const m=skyBox.material[SKYFACE[f]];if(m.map!==T[f]){m.map=T[f];m.needsUpdate=true}m.visible=true})}
+    catch(err){log('Error: could not draw the '+gen+' sky - '+(err&&err.message));SKYGEN=null;skyGenOn=false;skySig=''}return}
   skyGenOn=false;
   const eff=skyEff(),imgs=P.assets.images;let sig='',any=false;
   Object.keys(SKYFACE).forEach(function(f){const n=eff[f],src=n&&imgs[n];sig+=f+':'+(src?n+'|'+src.length+'|'+src.slice(-24):'')+';';if(src)any=true});
@@ -3812,7 +3813,7 @@ function skyTick(dt){const e=lightEnv(),a=(e.tod-6)/12*Math.PI,d=new THREE.Vecto
   skyApply();skyG.visible=!stage.visible&&!skyAny;skyBox.visible=!stage.visible&&(skyAny||skyGenOn);skyBox.position.copy(cp);
   sunS.visible=d.y>-.1;sunS.position.set(cp.x+d.x*R,cp.y+d.y*R,cp.z+d.z*R);
   moonS.visible=d.y<.1;moonS.position.set(cp.x-d.x*R,cp.y-d.y*R,cp.z-d.z*R);
-  skyLook(dt,k);cloudS.forEach(function(q){const u=q.userData;u.az+=u.sp*dt*SKYS.cs;const ce=Math.cos(u.el);q.position.set(cp.x+Math.sin(u.az)*ce*800,cp.y+Math.sin(u.el)*800,cp.z-Math.cos(u.az)*ce*800)})}
+  try{skyLook(dt,k)}catch(err){if(!skyLook.bad){skyLook.bad=1;log('Error: sun/moon/clouds - '+(err&&err.message))}}cloudS.forEach(function(q){const u=q.userData;u.az+=u.sp*dt*SKYS.cs;const ce=Math.cos(u.el);q.position.set(cp.x+Math.sin(u.az)*ce*800,cp.y+Math.sin(u.el)*800,cp.z-Math.cos(u.az)*ce*800)})}
 /* F: fly the camera to a spot in front of whatever is selected */
 function focusSel(){let ps=sel.map(function(id){return byId(id)}).filter(function(p){return p&&!p.stab});
   if(!ps.length&&animT){const r=byId(animT);if(r)ps=rigParts(r).filter(function(p){return !p.stab})}
@@ -3837,7 +3838,8 @@ const LPRE={
 const LIGHTOPT=[['default','Default'],['realistic','Realistic (blue haze, soft shadows)'],['cinematic','Cinematic (strong blue, dark edges)'],['sunny','Sunny'],['sunset','Sunset'],['night','Night'],['foggy','Foggy'],['spooky','Spooky'],['vivid','Vivid colours']];
 let LIGHTO=null,lxSig='',lxT=null,lxV=null;
 function lightEnv(){return LIGHTO&&LPRE[LIGHTO]?Object.assign({},P.env,LPRE[LIGHTO].env):P.env}
-function lightSet(n){n=String(n||'').toLowerCase().replace(/[^a-z]/g,'');LIGHTO=(n&&LPRE[n])?n:null;try{skyForLight(LIGHTO)}catch(e){}try{applyEnv()}catch(e){}}
+function lightSet(n){n=String(n||'').toLowerCase().replace(/[^a-z]/g,'');LIGHTO=(n&&LPRE[n])?n:null;try{skyForLight(LIGHTO)}catch(e){log('Error: lighting sky - '+(e&&e.message))}try{applyEnv()}catch(e){log('Error: lighting - '+(e&&e.message))}
+  log('Lighting: '+(LIGHTO||'default')+' | sky: '+(SKYO?(SKYAUTO?'your uploaded images for it':'the skybox you picked'):SKYGEN?'built-in '+SKYGEN+' sky':'normal sky'))}
 function lxEls(){if(lxT)return;const c=document.querySelector('.cvw');if(!c)return;
   lxT=document.createElement('div');lxV=document.createElement('div');
   [lxT,lxV].forEach(function(d){d.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:3;display:none';c.append(d)})}
