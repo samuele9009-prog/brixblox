@@ -3097,8 +3097,10 @@ function dirOf(key,nm){nm=String(nm==null?'front':nm).trim().toLowerCase();let f
 function pushKey(key,f,dur,dn){dur=dur==null?.5:Math.max(.05,dur);const dv=dirOf(key,dn),rg=RAG[key];if(rg&&!rg.gone&&(rg.dead||rg.t<rg.end)){if(rg.sim)ragPush(rg,key,f,dur,dv);else{rg.pf=f;rg.pd=dur;rg.pv=dv}return}if(key==='main'){if(!S.pd){S.pd={dx:dv.x*f,dy:-dv.z*f,dur:dur,el:0,ep:0};if(dv.y){const H=dv.y*f;S.vy=Math.sign(H)*Math.sqrt(2*P.rules.grav*Math.abs(H));if(H>0)S.gr=false}}}
   else if(key.slice(0,4)==='rig:'){const id=key.slice(4);if(!RD[id])RD[id]={dx:dv.x*f,dy:dv.y*f,dz:dv.z*f,dur:dur,el:0,ep:0}}
   else log('Warning: push parent rig can only push a rig or your player.')}
-function pushMe(dt){if(S.pd){const d=S.pd;d.el+=dt;const u=Math.min(1,d.el/d.dur),e=u*u*(3-2*u),dl=e-d.ep;d.ep=e;const rg=RAG.main;if(rg&&rg.sim&&!rg.gone){rg.sim.bodies.forEach(function(b){b.x[0]+=d.dx*dl;b.x[2]-=d.dy*dl;if(b.xp){b.xp[0]+=d.dx*dl;b.xp[2]-=d.dy*dl}})}else{S.x+=d.dx*dl;S.y+=d.dy*dl}if(u>=1)S.pd=null}
-  if(!(S.ix||S.iy))return;S.x+=S.ix*dt;S.y+=S.iy*dt;const k=Math.exp(-dt*3);S.ix*=k;S.iy*=k;if(Math.hypot(S.ix,S.iy)<.05)S.ix=S.iy=0}
+/* A hard push used to move you many studs in one frame, jumping over thin walls before collide() could stop it. Now the move is cut into small steps and wall collision runs after every step. */
+function PSTEP(mx,my){const tot=Math.hypot(mx,my),n=Math.min(400,Math.max(1,Math.ceil(tot/.35)));for(let i=0;i<n;i++){S.x+=mx/n;S.y+=my/n;try{collide()}catch(e){}}}
+function pushMe(dt){if(S.pd){const d=S.pd;d.el+=dt;const u=Math.min(1,d.el/d.dur),e=u*u*(3-2*u),dl=e-d.ep;d.ep=e;const rg=RAG.main;if(rg&&rg.sim&&!rg.gone){rg.sim.bodies.forEach(function(b){b.x[0]+=d.dx*dl;b.x[2]-=d.dy*dl;if(b.xp){b.xp[0]+=d.dx*dl;b.xp[2]-=d.dy*dl}})}else{PSTEP(d.dx*dl,d.dy*dl)}if(u>=1)S.pd=null}
+  if(!(S.ix||S.iy))return;PSTEP(S.ix*dt,S.iy*dt);const k=Math.exp(-dt*3);S.ix*=k;S.iy*=k;if(Math.hypot(S.ix,S.iy)<.05)S.ix=S.iy=0}
 function entTargets(key){
   if(key==='main'){const r=byId(P.avId);return r&&J[r.id]?{g:J[r.id],root:r,parts:P.parts.filter(function(p){return p.av}),gs:J}:null}
   if(key.slice(0,4)==='rig:'){const r=byId(key.slice(4));return r&&J[r.id]?{g:J[r.id],root:r,parts:rigParts(r),gs:J}:null}
