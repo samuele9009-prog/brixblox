@@ -3760,12 +3760,12 @@ function skyFbm(x,y){let s=0,a=.5;for(let i=0;i<5;i++){s+=a*skyNoise(x,y);x=x*2.
 function skySmooth(a,b,x){const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t)}
 function skyDir(f,tu,tv){const U=1-tu,V=tv,a=(U-.5)*2,b=(.5-V)*2,c=(V-.5)*2;/* where each pixel sits on the box, same as three.js BoxGeometry */
   const v=f==='r'?[1,c,-a]:f==='l'?[-1,c,a]:f==='t'?[a,1,b]:f==='bo'?[a,-1,c]:f==='ba'?[a,c,1]:[-a,c,-1],m=Math.hypot(v[0],v[1],v[2]);return[v[0]/m,v[1]/m,v[2]/m]}
-function genSky(n){if(SKYGENC[n])return SKYGENC[n];
-  const p=SKYPAL[n],S=512,out={},rgb=function(h){const k=parseInt(h.slice(1),16);return[(k>>16&255)/255,(k>>8&255)/255,k&255?(k&255)/255:0]},
+function genSky(n,pp,eo,S0){if(!pp&&SKYGENC[n])return SKYGENC[n];
+  const p=pp||SKYPAL[n],S=S0||512,out={},rgb=function(h){const k=parseInt(h.slice(1),16);return[(k>>16&255)/255,(k>>8&255)/255,k&255?(k&255)/255:0]},
     zen=rgb(p.zen),mid=rgb(p.mid),hor=rgb(p.hor),gnd=rgb(p.gnd),cl=p.cl,lit=rgb(cl.lit),sh=rgb(cl.sh),
-    env=(LPRE[n]&&LPRE[n].env)||P.env,ang=(env.tod-6)/12*Math.PI,sl=Math.hypot(Math.cos(ang)*14,Math.sin(ang)*14,6),
+    env=eo||(LPRE[n]&&LPRE[n].env)||P.env,ang=(env.tod-6)/12*Math.PI,sl=Math.hypot(Math.cos(ang)*14,Math.sin(ang)*14,6),
     sd=[Math.cos(ang)*14/sl,Math.sin(ang)*14/sl,6/sl],md=[-sd[0],-sd[1],-sd[2]],sg=p.sg,mg=p.mg,
-    ox=n.length*7.31,oy=n.length*3.77;
+    ox=n.length*7.31+(p.seed||0)*13.7,oy=n.length*3.77+(p.seed||0)*9.3;
   Object.keys(SKYFACE).forEach(function(f,fi){
     const c=document.createElement('canvas');c.width=c.height=S;const x=c.getContext('2d'),im=x.createImageData(S,S),D=im.data;
     for(let py=0;py<S;py++)for(let px=0;px<S;px++){
@@ -3784,11 +3784,76 @@ function genSky(n){if(SKYGENC[n])return SKYGENC[n];
           r+=(cr-r)*dn;g+=(cg-g)*dn;b+=(cb-b)*dn}}
       const k=(py*S+px)*4;D[k]=Math.min(255,Math.max(0,r*255));D[k+1]=Math.min(255,Math.max(0,g*255));D[k+2]=Math.min(255,Math.max(0,b*255));D[k+3]=255}
     x.putImageData(im,0,0);
-    if(p.stars&&f!=='bo'){const rr=RNG(fi*977+n.length*31+7),top=f==='t',cnt=top?p.stars:Math.round(p.stars*.5),tint=n==='spooky'?'215,200,255':'255,255,255';
+    if(p.stars&&f!=='bo'){const rr=RNG(fi*977+n.length*31+7+(p.seed||0)*101),top=f==='t',cnt=top?p.stars:Math.round(p.stars*.5),tint=n==='spooky'?'215,200,255':'255,255,255';
       for(let i=0;i<cnt;i++){const px=rr()*S,py=rr()*S,e=skyDir(f,px/S,1-py/S)[1];if(e<.04)continue;const a=(.35+.65*rr())*skySmooth(.04,.4,e),big=rr()<.07,z=big?2.4:1.2;
         x.fillStyle='rgba('+tint+','+a.toFixed(2)+')';x.fillRect(px,py,z,z);if(big){x.fillStyle='rgba(200,220,255,'+(a*.25).toFixed(2)+')';x.fillRect(px-1.5,py-1.5,z+3,z+3)}}}
     out[f]=p.stars?c.toDataURL('image/png'):c.toDataURL('image/jpeg',.92)});
-  return SKYGENC[n]=out}
+  if(!pp)SKYGENC[n]=out;return out}
+/* ===== Sky Builder: make your own skybox from sky, cloud and sun presets, then tweak every colour. Lives in Explorer > Atmosphere. Saved in P.env.skyb. ===== */
+const SKYB_SKY={
+  'Clear day':{zen:'#2a6fd0',mid:'#58a2e6',hor:'#c2defa',gnd:'#8fa9b8',stars:0,moon:true},
+  'Deep blue':{zen:'#0f3a9c',mid:'#2a6fd6',hor:'#8fbcf0',gnd:'#4f6f9a',stars:0,moon:true},
+  'Golden hour':{zen:'#2c4f9a',mid:'#d58a7a',hor:'#ffc98a',gnd:'#7a5a50',stars:0,moon:true},
+  'Sunset':{zen:'#241a55',mid:'#a04d6c',hor:'#ffb06a',gnd:'#654646',stars:40,moon:true},
+  'Dawn pink':{zen:'#4a5aa8',mid:'#e49ab8',hor:'#ffd3b0',gnd:'#8a6a78',stars:15,moon:true},
+  'Twilight':{zen:'#0b1038',mid:'#3a3a85',hor:'#c9708a',gnd:'#2a2440',stars:160,moon:true},
+  'Starry night':{zen:'#02030c',mid:'#070d26',hor:'#16224a',gnd:'#080b1c',stars:380,moon:true},
+  'Overcast':{zen:'#8e9aa5',mid:'#a7b1ba',hor:'#c9d1d7',gnd:'#aab2b9',stars:0,moon:false},
+  'Tropical':{zen:'#0f86e0',mid:'#3fc3f0',hor:'#c8f4ff',gnd:'#8fd8c0',stars:0,moon:true},
+  'Alien teal':{zen:'#220a4a',mid:'#1c8a8a',hor:'#9affd0',gnd:'#14403a',stars:120,moon:true},
+  'Crimson':{zen:'#2a0510',mid:'#8a1a2a',hor:'#ff7a50',gnd:'#3a1018',stars:60,moon:true}};
+const SKYB_CLOUD={
+  'None':{cov:0,soft:.4,csc:1.5,cop:0},
+  'Wispy':{cov:.3,soft:.7,csc:2.4,cop:.7},
+  'Scattered':{cov:.5,soft:.4,csc:1.6,cop:.95},
+  'Puffy':{cov:.6,soft:.3,csc:1.1,cop:1},
+  'Overcast':{cov:.95,soft:.6,csc:1.1,cop:.9},
+  'Stormy':{cov:.9,soft:.35,csc:1.3,cop:.95,lit:'#8a93a3',sh:'#2a2f3c'}};
+const SKYB_SUN={
+  'Bright day':{sc:'#fff1cc',ss:.65,glow:.55},
+  'Warm':{sc:'#ffd08a',ss:.8,glow:.7},
+  'Red sun':{sc:'#ff5a2a',ss:1.2,glow:1},
+  'White hot':{sc:'#ffffff',ss:.5,glow:.45},
+  'Blue star':{sc:'#8ab8ff',ss:.9,glow:.7},
+  'Huge pale':{sc:'#fff4e0',ss:1.7,glow:.6},
+  'No sun':{sc:'#ffffff',ss:0,glow:0}};
+const SKYB_DEF=Object.assign({on:false,sky:'Clear day',cloud:'Scattered',sun:'Bright day',lit:'#ffffff',sh:'#8d9db5',seed:1},SKYB_SKY['Clear day'],SKYB_CLOUD.Scattered,SKYB_SUN['Bright day']);
+function skybOn(){return !!(P&&P.env&&P.env.skyb&&P.env.skyb.on)}
+function skybGet(){if(!P.env.skyb)P.env.skyb=Object.assign({},SKYB_DEF);else for(const k in SKYB_DEF)if(P.env.skyb[k]===undefined)P.env.skyb[k]=SKYB_DEF[k];return P.env.skyb}
+function skybPal(b){const h=function(x){const k=parseInt(x.slice(1),16);return[(k>>16&255)/255,(k>>8&255)/255,(k&255)/255]},s=h(b.sc);
+  return{zen:b.zen,mid:b.mid,hor:b.hor,gnd:b.gnd,sg:b.ss>0&&b.glow>0?[s[0],s[1],s[2],b.glow]:undefined,mg:b.moon===false?undefined:[.8,.85,1,.35],
+    cl:{cov:b.cov,soft:b.soft,sc:b.csc,lit:b.lit,sh:b.sh,op:b.cop},stars:b.stars,seed:b.seed}}
+const SKYBC={sig:'',q:0,at:0,imgs:null};
+/* draws small while sliders move, then sharp after a second of no changes */
+function skybImgs(){const b=P.env.skyb,sig=JSON.stringify(b)+'|'+P.env.tod;
+  if(SKYBC.sig!==sig||!SKYBC.imgs){SKYBC.sig=sig;SKYBC.q=256;SKYBC.imgs=genSky('custom',skybPal(b),P.env,256);SKYBC.at=performance.now()}
+  else if(SKYBC.q===256&&performance.now()-SKYBC.at>1000){SKYBC.q=512;SKYBC.imgs=genSky('custom',skybPal(b),P.env,512)}
+  return SKYBC.imgs}
+function skyBuilderUI(d){const b=skybGet(),h=el('h4','','Sky Builder');h.style.margin='14px 0 4px';d.append(h);
+  const redo=function(){save();applyEnv()},again=function(){redo();props()};
+  const on=el('input');on.type='checkbox';on.checked=!!b.on;on.onchange=function(){b.on=on.checked;again()};
+  const ol=el('label','','Use my custom sky');ol.append(on);d.append(ol);
+  if(!b.on){d.append(el('p','note','Turn this on to build your own skybox: pick a sky, clouds and a sun, then change every colour. A skybox picked with a block, uploaded Skybox images or a lighting preset (set lighting to ...) take over while they are active.'));return}
+  const pick=function(t,tab,key,apply){const s=el('select');Object.keys(tab).forEach(function(n){const o=el('option','',n);o.value=n;s.append(o)});s.value=b[key]||Object.keys(tab)[0];
+    s.onchange=function(){b[key]=s.value;apply(tab[s.value]);again()};d.append(lab(t,s))};
+  pick('Sky preset',SKYB_SKY,'sky',function(p){Object.assign(b,p)});
+  pick('Cloud preset',SKYB_CLOUD,'cloud',function(p){Object.assign(b,{lit:'#ffffff',sh:SKYB_SKY[b.sky]&&b.sky==='Starry night'?'#0a1230':'#8d9db5'},p)});
+  pick('Sun preset',SKYB_SUN,'sun',function(p){Object.assign(b,p)});
+  const colr=function(t,k){const c=el('input');c.type='color';c.value=b[k];c.oninput=function(){b[k]=c.value;redo()};d.append(lab(t,c))},pct=function(v){return v.toFixed(2)};
+  d.append(el('p','note','Atmosphere colours'));
+  colr('Overhead colour','zen');colr('Mid sky colour','mid');colr('Horizon colour (also fog)','hor');colr('Ground / below horizon','gnd');
+  d.append(el('p','note','Sun'));
+  colr('Sun colour','sc');slider(d,'Sun size',b,'ss',0,2.5,.05,pct,redo);slider(d,'Sun glow',b,'glow',0,1.5,.05,pct,redo);
+  d.append(el('p','note','Clouds'));
+  slider(d,'Cloud amount',b,'cov',0,1,.01,pct,redo);slider(d,'Cloud softness',b,'soft',.1,.8,.01,pct,redo);slider(d,'Cloud size',b,'csc',.6,3,.05,pct,redo);slider(d,'Cloud opacity',b,'cop',0,1,.01,pct,redo);
+  colr('Cloud light colour','lit');colr('Cloud shadow colour','sh');
+  const rb=mb('Shuffle clouds','ghost',function(){b.seed=Math.floor(Math.random()*1000);redo()});rb.style.marginTop='6px';d.append(rb);
+  d.append(el('p','note','Night'));
+  slider(d,'Stars',b,'stars',0,500,5,null,redo);
+  const mo=el('input');mo.type='checkbox';mo.checked=b.moon!==false;mo.onchange=function(){b.moon=mo.checked;redo()};const ml=el('label','','Moon glow at night');ml.append(mo);d.append(ml);
+  const rs=mb('Reset sky','ghost',function(){P.env.skyb=Object.assign({},SKYB_DEF,{on:true});again()});rs.style.marginTop='8px';d.append(rs);
+  d.append(el('p','note','Tip: Time of day moves the sun and moon across your sky.'))}
+
 /* Lighting -> skybox: "set lighting to sunset" also switches the sky.
    1) uploaded images ending in the lighting name (SkyboxLsunset, SkyboxRsunset ...) win; 2) otherwise the built-in sky for that preset;
    3) default lighting (or a name with neither) puts the normal sky back. A skybox picked by a "set skybox to" block is left alone unless uploaded images match. */
@@ -3798,20 +3863,21 @@ function skyForLight(n){const imgs=P.assets.images,o=Object.assign({},skyDefault
   if(SKYO&&!SKYAUTO){SKYGEN=null;return}
   if(SKYAUTO){SKYO=null;SKYAUTO=false}
   SKYGEN=n&&SKYPAL[n]?n:null}
-function skyFogHex(){return (!SKYO&&SKYGEN&&SKYPAL[SKYGEN])?new THREE.Color(SKYPAL[SKYGEN].hor).getHex():null}
+function skyFogHex(){if(!SKYO&&!SKYGEN&&skybOn())return new THREE.Color(P.env.skyb.hor).getHex();return (!SKYO&&SKYGEN&&SKYPAL[SKYGEN])?new THREE.Color(SKYPAL[SKYGEN].hor).getHex():null}
 /* Rebuilds the six sides only when something changed (cheap check every frame) */
 function skyApply(){let gen=(!SKYO&&SKYGEN&&SKYPAL[SKYGEN])?SKYGEN:null,eff,imgs;
   /* the built-in sky goes down exactly the same road as uploaded Skybox images: six picture sources -> six textures */
   if(gen){try{imgs=genSky(gen);eff={r:'r',l:'l',t:'t',bo:'bo',ba:'ba',f:'f'}}catch(err){log('Error: could not draw the '+gen+' sky - '+(err&&err.message));SKYGEN=null;gen=null;skySig=''}}
+  if(!gen&&!SKYO&&skybOn()){try{skybGet();imgs=skybImgs();gen='custom';eff={r:'r',l:'l',t:'t',bo:'bo',ba:'ba',f:'f'}}catch(err){log('Error: could not draw your custom sky - '+(err&&err.message));P.env.skyb.on=false;gen=null;skySig=''}}
   if(!gen){eff=skyEff();imgs=P.assets.images}
-  skyGenOn=!!gen;let sig=gen?'gen '+gen+';':'',any=false;
+  skyGenOn=!!gen;let sig=gen?'gen '+gen+(gen==='custom'?SKYBC.sig+SKYBC.q:'')+';':'',any=false;
   Object.keys(SKYFACE).forEach(function(f){const n=eff[f],src=n&&imgs[n];sig+=f+':'+(src?n+'|'+src.length+'|'+src.slice(-24):'')+';';if(src)any=true});
   if(sig===skySig)return;skySig=sig;skyAny=gen?false:any;
   Object.keys(SKYFACE).forEach(function(f){const n=eff[f],src=n&&imgs[n],m=skyBox.material[SKYFACE[f]];
     if(!src){m.visible=false;return}
-    const k=(gen?gen+'|':'')+f+'|'+src.length+'|'+src.slice(-24);let t=SKYTX[k];
-    if(!t){t=new THREE.TextureLoader().load(src);t.center.set(.5,.5);t.repeat.set(-1,1);t.rotation=f==='bo'?Math.PI:0;t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;SKYTX[k]=t}
-    if(m.map!==t){m.map=t;m.needsUpdate=true}m.visible=true})}
+    const k=(gen?gen+(gen==='custom'?SKYBC.q:'')+'|':'')+f+'|'+src.length+'|'+src.slice(-24);let t=SKYTX[k];
+    if(!t){t=new THREE.TextureLoader().load(src);t.center.set(.5,.5);t.repeat.set(-1,1);t.rotation=f==='bo'?Math.PI:0;t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;if(gen==='custom')t.userData={cust:k};SKYTX[k]=t}
+    if(m.map!==t){const o=m.map;m.map=t;m.needsUpdate=true;if(o&&o.userData&&o.userData.cust){delete SKYTX[o.userData.cust];o.dispose()}}m.visible=true})}
 /* Sun, moon and clouds change with the lighting too. sun/moon: c = colour, z = size, o = opacity.
    The painted sky already has real clouds, so the flat drifting cloud sprites are off (n = 0) while a lighting is on; n = how many of the 10 show, c/o/z/s = colour, opacity, size, drift speed. They fade smoothly between lightings. */
 const SKYV={
@@ -3824,7 +3890,8 @@ const SKYV={
   spooky:{sun:{c:'#ffffff',z:1,o:1},moon:{c:'#c9a0ff',z:1.7,o:1},cl:{c:'#7d5fb0',o:.75,n:0,z:1.4,s:1.8}},
   vivid:{sun:{c:'#ffffff',z:.75,o:1},moon:{c:'#ffffff',z:1,o:1},cl:{c:'#ffffff',o:1,n:0,z:.8,s:1.3}}};
 const SKYS={sc:new THREE.Color(1,1,1),sz:1,so:1,mc:new THREE.Color(1,1,1),mz:1,mo:1,cc:new THREE.Color(1,1,1),cz:1,cs:1,t:new THREE.Color()};
-function skyLook(dt,k){const v=LIGHTO&&SKYV[LIGHTO]||null,f=1-Math.exp(-4*Math.min(Math.max(dt||0,0),.1)),sun=v&&v.sun,moon=v&&v.moon,cl=v&&v.cl;
+function skyLook(dt,k){let v=LIGHTO&&SKYV[LIGHTO]||null;if(!v&&!SKYO&&!SKYGEN&&skybOn()){const b=P.env.skyb;v={sun:{c:b.sc,z:b.ss,o:b.ss>0?1:0},moon:{c:'#ffffff',z:1,o:b.moon===false?0:1},cl:{c:'#ffffff',o:.85,n:0,z:1,s:1}}}
+  const f=1-Math.exp(-4*Math.min(Math.max(dt||0,0),.1)),sun=v&&v.sun,moon=v&&v.moon,cl=v&&v.cl;
   const customSun=sunS.material.map!==SKYD.sun,customMoon=moonS.material.map!==SKYD.moon;
   SKYS.sc.lerp(SKYS.t.set(sun&&!customSun?sun.c:'#ffffff'),f);SKYS.sz+=((sun?sun.z:1)-SKYS.sz)*f;SKYS.so+=((sun?sun.o:1)-SKYS.so)*f;
   SKYS.mc.lerp(SKYS.t.set(moon&&!customMoon?moon.c:'#ffffff'),f);SKYS.mz+=((moon?moon.z:1)-SKYS.mz)*f;SKYS.mo+=((moon?moon.o:1)-SKYS.mo)*f;
@@ -4163,7 +4230,7 @@ function svcProps(d){const s=SV.find(function(x){return x.k===selSvc});if(!s)ret
   const pct=function(v){return v.toFixed(2)};
   if(s.k==='atmos'){const col=el('input');col.type='color';col.value=P.env.sky;col.oninput=function(){P.env.sky=col.value;save();applyEnv()};d.append(lab('Sky colour',col));
     slider(d,'Time of day',P.env,'tod',0,24,.25,clock,applyEnv);slider(d,'Brightness',P.env,'bright',.2,2,.05,pct,applyEnv);
-    slider(d,'Sun strength',P.env,'sun',0,1.5,.05,pct,applyEnv);slider(d,'Fog',P.env,'fog',0,100,1,null,applyEnv)}
+    slider(d,'Sun strength',P.env,'sun',0,1.5,.05,pct,applyEnv);slider(d,'Fog',P.env,'fog',0,100,1,null,applyEnv);skyBuilderUI(d)}
   else if(s.k==='rules'){slider(d,'Gravity',P.rules,'grav',20,400,5);slider(d,'Jump power',P.rules,'jump',10,120,1);slider(d,'Walk speed',P.rules,'speed',4,40,1);
     slider(d,'Camera distance',P.rules,'cam',4,60,1,null,function(){cdT=P.rules.cam});slider(d,'Field of view',P.rules,'fov',30,120,1);
     const b=el('button','btn ghost small','Reset to defaults');b.type='button';b.style.marginTop='10px';b.onclick=function(){Object.assign(P.rules,{grav:190,jump:48,speed:16,cam:14});save();props()};d.append(b);
