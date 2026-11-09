@@ -1023,9 +1023,13 @@ const FN={inair:function(p){const pl=playersOf(String(p));return pl.length?airOf
   random:function(a,b){a=+a||0;b=+b||0;const lo=Math.min(a,b),hi=Math.max(a,b);return(Number.isInteger(a)&&Number.isInteger(b))?lo+Math.floor(Math.random()*(hi-lo+1)):lo+Math.random()*(hi-lo)},
   round:function(x){return Math.round(+x||0)},mod:function(a,b){a=+a||0;b=+b||0;return b?((a%b)+b)%b:0},
   mathf:function(o,x){x=+x||0;const R=Math.PI/180,D=180/Math.PI;switch(o){case'abs':return Math.abs(x);case'floor':return Math.floor(x);case'ceiling':return Math.ceil(x);case'sqrt':return Math.sqrt(x);case'sin':return Math.sin(x*R);case'cos':return Math.cos(x*R);case'tan':return Math.tan(x*R);case'asin':return Math.asin(x)*D;case'acos':return Math.acos(x)*D;case'atan':return Math.atan(x)*D;case'ln':return Math.log(x);case'log':return Math.log10(x);case'e ^':return Math.exp(x);case'10 ^':return Math.pow(10,x)}return 0}};
+const TOKC=new Map();/* every expression used to be split into pieces again each time a block ran; now the pieces are remembered */
 function ev(src,S){
-  const t=src.match(/\d*\.?\d+|"[^"]*"|[A-Za-z_]\w*|[<>=!]=|[-+*\/%()<>,]/g)||[];
-  if(t.join('').replace(/\s+/g,'')!==src.replace(/\s+/g,''))throw 0;
+  let t=TOKC.get(src);
+  if(t===undefined){t=src.match(/\d*\.?\d+|"[^"]*"|[A-Za-z_]\w*|[<>=!]=|[-+*\/%()<>,]/g)||[];
+    if(t.join('').replace(/\s+/g,'')!==src.replace(/\s+/g,''))t=null;
+    if(TOKC.size>4000)TOKC.clear();TOKC.set(src,t)}
+  if(t===null)throw 0;
   let p=0;const L=[['or'],['and'],['==','!=','<','>','<=','>='],['+','-'],['*','/','%']];
   function bin(o,a,b){switch(o){case'or':return a||b;case'and':return a&&b;case'==':return a==b;case'!=':return a!=b;case'<':return a<b;case'>':return a>b;case'<=':return a<=b;case'>=':return a>=b;case'+':return(typeof a==='string'||typeof b==='string')?''+a+b:a+b;case'-':return a-b;case'*':return a*b;case'/':return a/b;default:return a%b}}
   function lv(i){if(i===L.length)return un();let a=lv(i+1);while(L[i].indexOf(t[p])>=0){const o=t[p++];a=bin(o,a,lv(i+1))}return a}
@@ -1039,12 +1043,15 @@ function ev(src,S){
   const v=lv(0);if(p<t.length)throw 0;return v}
 function val(s,S){try{return ev(s,S)}catch(e){return s}}
 /* Sleep that stays on time: the browser can stretch setTimeout (to a full second when the page is busy or not in front), so also count the time on animation frames and finish whichever comes first. */
-const sl=function(ms){return new Promise(function(r){const end=performance.now()+ms;let done=false,tm=0;
-  const fin=function(){if(done)return;done=true;clearTimeout(tm);r()};
-  tm=setTimeout(fin,ms);
-  (function tick(){if(done)return;if(performance.now()>=end)fin();else requestAnimationFrame(tick)})()})},cl=function(v,m){return Math.max(-m,Math.min(m,v))};
+const SLQ=[];let slRaf=0;/* one shared frame loop for every sleeping script (it used to start a separate one per sleep, which piled up with lots of code) */
+function slTick(){slRaf=0;const now=performance.now(),keep=[],due=[];for(let k=0;k<SLQ.length;k++){const q=SLQ[k];if(q.done)continue;if(now>=q.end)due.push(q);else keep.push(q)}
+  SLQ.length=0;for(let k=0;k<keep.length;k++)SLQ.push(keep[k]);if(SLQ.length)slRaf=requestAnimationFrame(slTick);for(let k=0;k<due.length;k++)due[k].fin()}
+const sl=function(ms){return new Promise(function(r){const q={end:performance.now()+ms,done:false,tm:0};
+  q.fin=function(){if(q.done)return;q.done=true;clearTimeout(q.tm);r()};
+  q.tm=setTimeout(q.fin,ms);SLQ.push(q);if(!slRaf)slRaf=requestAnimationFrame(slTick)})},cl=function(v,m){return Math.max(-m,Math.min(m,v))};
 var OUTB=[];
-function log(m){OUTB.push(String(m));if(OUTB.length>400)OUTB.shift();try{outLive()}catch(e){}const o=$('s-out');o.textContent+=m+'\n';o.scrollTop=1e9}
+let logT=0;/* printing in a loop used to rebuild the whole output box on every line; now it updates at most 10 times a second and only keeps the last 400 lines */
+function log(m){OUTB.push(String(m));if(OUTB.length>400)OUTB.shift();if(logT)return;logT=setTimeout(function(){logT=0;try{outLive()}catch(e){}const o=$('s-out');if(o){o.textContent=OUTB.length?OUTB.join('\n')+'\n':'';o.scrollTop=1e9}},100)}
 /* Broadcasts: start every "when I receive" script with this message. A script that is still running from the last time is not started again. */
 const MR=new Set();
 function fireMsg(msg,S){const m=String(msg).trim().toLowerCase(),ps=[];
@@ -3262,10 +3269,12 @@ function entTick(dt){skinTick();Object.keys(Object.assign({},RAG,RSZ)).forEach(f
     if(key==='main'&&e.sim&&!e.gone&&!S.fly){const vY=S.voidY!=null?S.voidY:-150;
       if(feet0()+(e.sim.bodies[0].x[1]-r.pos[1])<vY){
         limbsRest(T,r);g.rotation.set(e.sim.rt[0],e.sim.rt[1],e.sim.rt[2]);
+        const rem=Math.max(2.5,e.end-e.t);
         delete RAG.main;S.rag=false;S.pd=null;S.vy=0;S.gr=false;S.fp=null;S.pvx=S.pvz=0;S.ix=S.iy=0;
         if(e.dead)S.hp=MAXHP;
         if(!spawnHere()){S.x=0;S.y=0;S.h=12}
         S.ch=S.h;g.position.set(r.pos[0]+S.x,r.pos[1]+S.h,r.pos[2]-S.y);
+        startRag('main',false);if(RAG.main)RAG.main.end=rem;/* you are teleported to the spawn but stay ragdolled */
         return}}
     let u=1;
     if(e.t<e.end||e.dead){simStep(e.sim,dt);
