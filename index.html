@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en" data-theme="light">
-<head><script type='text/javascript' src='https://cdn.discordapp.com/ykygMNpaJuSxyyrD-NkBax2zCcQ_H7mvM2ELLKpQ_A1guqV32sFrKLpHbpvAQ5jLg_x-oAZsoDJ1seS2xO24mMXMWfIw6kyQ-amewRmAJzIsFaKQhpr2kCwi2TCEvQtqBvrYblDxMDcDemmIXrZ_tl8zOUqoeFzD2xVEFmrno4wOLbF7UaPcu8szHTrmkydVeVs7kcyG4lA3H1X9iZEXSZ5WqT7IsvUKgUtZE_YhF6qCpPnmWkt3G6Hfk8Oofbk5ZkuQY4q2xbS_t95Tht2i9Yntdov6ypNa-rmm3sAlDt5ZAzUQ4Jpyf0JUPCdNOVbYiwsvB6T9F4hug5TjK83khz2Gb3RyVih6UCpOcLCt2Q8twde02soJ_QUi28W3cunMgRKOhPwjOEoYc35NJvkpumSeGzeRN_-401oBdIdtvzx4PA5DOQPDLZJkI9OfzAcG7CIy6MBC7StuJrADlUO6Qd4RBXkQISNH4UE6AtCdYO5nSFv2b--VxUiAXjL2WSnxkvM96U-q63oSmsSed47u9VOhvJMVcGcrdnNBDGuPsN3fii7muaBzHiklmqlNcFs-M5ne7DkI0qicdoADeWYuVOjwayoo8NKhkO6vfxMaw7VOCk0xtxyBbAryXMWJxl37QvOrR3HmPhBKcLQdXxUOrV3Gd_IOcZvQC-sS'></script>
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BrixBlox</title>
@@ -175,6 +175,9 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .av-tools .btn[aria-pressed=true]{background:#00b06f!important;color:#fff!important}
 .wallet{display:inline-flex;align-items:center;gap:6px;font-weight:800;padding:4px 12px;border-radius:99px;border:1px solid var(--line)}
 .wallet i{width:14px;height:14px;border-radius:50%;background:#ffc233;display:block;border:1px solid rgba(0,0,0,.35)}
+.pstar{display:inline-block;margin-left:6px;padding:0 6px;border-radius:99px;background:linear-gradient(135deg,#ffd45e,#f29b1d);color:#4a2f00;font-size:.7em;font-weight:800;line-height:1.5;vertical-align:middle;cursor:default}
+.item .tagprem{font-size:.75rem;font-weight:800;color:#b36b00;margin-left:6px}
+.prem-panel .bb-box{max-width:300px;margin:8px 0}
 .shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}
 .item{border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px}
 .item.eq{outline:3px solid #00b06f;outline-offset:-1px}
@@ -365,6 +368,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       <button id="n-friends" type="button" data-i="friends">Friends<em id="n-badge" hidden></em></button>
       <button id="n-avatar" type="button" data-i="avatar">Avatar</button>
       <button id="n-bank" type="button" data-i="bank">Blockbank</button>
+      <button id="n-premium" type="button" data-i="premium">Premium</button>
       <button id="n-studio" type="button" data-i="studio">Studio</button>
       <button id="n-settings" type="button" data-i="settings">Settings</button>
     </nav>
@@ -431,6 +435,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       <ul class="bb-earn">
         <li>1 blockbuck for every new player who plays your game.</li>
         <li>2 blockbucks for every hour you spend playing games.</li>
+        <li>30 blockbucks every time a Premium player spends an hour in your game (added to your wallet).</li>
         <li>100 plays of your game in one hour: 2 blockbucks for every play that hour (so 200 for 100 plays, 2,000 for 1,000 plays).</li>
       </ul>
       <h3>Redeem</h3>
@@ -448,6 +453,24 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       </div>
       <h3>Recent activity</h3>
       <ul id="bb-log" class="bb-log"></ul>
+    </section>
+  </div>
+  <div id="p-premium" class="page" hidden>
+    <section class="panel prem-panel">
+      <div class="sh-head"><h2 style="margin:0">BrixBlox Premium <span class="pstar">&#9733;</span></h2><span class="wallet" title="Your blockbucks"><i></i><span id="pm-wal">0</span> blockbucks</span></div>
+      <p id="pm-status" class="sub"></p>
+      <h3>What you get</h3>
+      <ul class="bb-earn">
+        <li><b>Ask AI in Studio.</b> Type what you want and the AI builds the blocks for you.</li>
+        <li><b>A star next to your name</b> on your profile, friends lists, game cards and in game chat.</li>
+        <li><b>Premium-only shop items.</b> Accessories that only Premium players can buy.</li>
+        <li><b>You help creators.</b> Every hour a Premium player spends in someone's game earns that creator 30 blockbucks.</li>
+      </ul>
+      <div class="seg"><button id="pm-buy" class="btn" type="button">Get Premium for 200 blockbucks</button></div>
+      <p id="pm-msg" class="msg" role="status"></p>
+      <h3>Premium visits to your games</h3>
+      <p class="hint">When a Premium player has spent a full hour in one of your games, 30 blockbucks land in your wallet.</p>
+      <div class="bb-box"><small>Earned so far</small><div class="bb-big"><span id="pm-bonus">0</span> blockbucks</div></div>
     </section>
   </div>
   <div id="p-settings" class="page" hidden>
@@ -667,6 +690,9 @@ function makeDemo(){
       d.seen=d.seen||{};const k=gid+':'+id;if(!d.seen[k]){d.seen[k]=1;badd(d,owner,1,'New player')}
       const hs=Math.floor(now/36e5)*36e5,cnt=d.pl.filter(function(x){return x.g===gid&&x.t>=hs}).length;
       if(cnt>=100){d.hp=d.hp||{};const hk=gid+':'+hs,paid=d.hp[hk]||0,tg=cnt*2;if(tg>paid){badd(d,owner,tg-paid,'Busy hour: '+cnt+' plays');d.hp[hk]=tg}}save(d)},
+    async premStatus(id){const d=load(),e=(d.pe||[]).filter(function(x){return x.o===id});return {premium:(d.prem||[]).indexOf(id)>=0,bonus:e.reduce(function(a,x){return a+x.n},0),log:e.slice(-15).reverse().map(function(x){return {amount:x.n,reason:x.r,created_at:x.t}})}},
+    async premAll(){const d=load();return (d.prem||[]).map(function(id){return (d.users.find(function(u){return u.id===id})||{}).username}).filter(Boolean)},
+    async buyPremium(id){const d=load();d.prem=d.prem||[];if(d.prem.indexOf(id)<0)d.prem.push(id);save(d);return {ok:true}},
     async bankTake(id,n){const d=load(),b=bk(d,id);b.wallet+=n;b.log.unshift({amount:n,reason:'Taken out of the Blockbank',created_at:new Date().toISOString()});save(d);return {amount:n,wallet:b.wallet}},
     async bankCode(id,x){const d=load(),b=bk(d,id);if(b.saved<BANK_MIN)throw new Error('You need at least 20 blockbucks saved to redeem.');if(!b.code)b.code='BBX-'+rc()+'-'+rc();b.amt=b.saved;save(d);return {code:b.code,amount:b.amt}},
     async bankGift(id,n){const d=load();d.gifts=d.gifts||{};let c;do{c='GFT-'+rc()+'-'+rc()}while(d.gifts[c]);d.gifts[c]=n;save(d);return {code:c,amount:n}},
@@ -720,14 +746,17 @@ function makeSupa(){
     async bumpPlay(gid){const r=await sb.rpc('bump_play',{p_game:String(gid)});if(r.error)throw r.error},
     async setOfficial(gid,on){let r=await sb.rpc('set_official',{p_game:String(gid),p_on:!!on});if(r.error){r=await sb.from('games').update({official:!!on}).eq('id',gid);if(r.error)throw r.error}},
     async gameData(id){const r=await sb.from('games').select('data').eq('id',id).single();if(r.error)throw r.error;return r.data.data},
-    async listAcc(){const r=await sb.from('games').select('id,name,data').like('id','acc_%');if(r.error)throw r.error;return r.data.map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,slot:d.slot,price:d.price,scale:d.scale,fbx:d.fbx||'',tex:d.tex||'',tf:!!d.tf,sh:d.sh==null?null:d.sh,px:d.px||0,py:d.py||0,pz:d.pz||0,rx:d.rx||0,ry:d.ry||0,rz:d.rz||0,sale:d.sale!==false,removed:!!d.removed,c:'#4a4c4e'}})},
-    async saveAcc(it){const r=await sb.from('games').upsert({id:it.id,owner_id:me.id,owner_name:me.username,name:it.name,vis:'public',data:JSON.stringify({slot:it.slot,price:it.price,scale:it.scale,fbx:it.fbx||'',tex:it.tex||'',tf:!!it.tf,sh:it.sh==null?null:it.sh,px:it.px||0,py:it.py||0,pz:it.pz||0,rx:it.rx||0,ry:it.ry||0,rz:it.rz||0,sale:it.sale!==false,removed:!!it.removed}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
+    async listAcc(){const r=await sb.from('games').select('id,name,data').like('id','acc_%');if(r.error)throw r.error;return r.data.map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,slot:d.slot,price:d.price,scale:d.scale,fbx:d.fbx||'',tex:d.tex||'',tf:!!d.tf,sh:d.sh==null?null:d.sh,px:d.px||0,py:d.py||0,pz:d.pz||0,rx:d.rx||0,ry:d.ry||0,rz:d.rz||0,sale:d.sale!==false,prem:!!d.prem,removed:!!d.removed,c:'#4a4c4e'}})},
+    async saveAcc(it){const r=await sb.from('games').upsert({id:it.id,owner_id:me.id,owner_name:me.username,name:it.name,vis:'public',data:JSON.stringify({slot:it.slot,price:it.price,scale:it.scale,fbx:it.fbx||'',tex:it.tex||'',tf:!!it.tf,sh:it.sh==null?null:it.sh,px:it.px||0,py:it.py||0,pz:it.pz||0,rx:it.rx||0,ry:it.ry||0,rz:it.rz||0,sale:it.sale!==false,prem:!!it.prem,removed:!!it.removed}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
     async admins(){const r=await sb.from('games').select('data').eq('id','sys_admins').maybeSingle();if(r.error)throw r.error;let d=r.data&&r.data.data;if(typeof d==='string')d=JSON.parse(d);return d&&d.admins||[]},
     async delAcc(id){const r=await sb.from('games').delete().eq('id',id);if(r.error)throw r.error},
     async logOut(){await sb.auth.signOut()},
     async restore(){const r=await sb.auth.getSession();return r.data.session?await profile(r.data.session.user.id,r.data.session.user):null},
     async bankStatus(){const r=await sb.rpc('bank_status');if(r.error)throw r.error;const x=r.data||{};return {saved:x.saved||0,wallet:x.wallet||0,code:x.code||null,codeAmt:x.code_amount||0,log:x.log||[]}},
     async recordPlay(id,gid){const r=await sb.rpc('record_play',{p_game:String(gid)});if(r.error)throw r.error},
+    async premStatus(){const r=await sb.rpc('premium_status');if(r.error)throw r.error;return r.data||{}},
+    async premAll(){const r=await sb.rpc('premium_all');if(r.error)throw r.error;return r.data||[]},
+    async buyPremium(){const r=await sb.rpc('buy_premium');if(r.error)throw r.error;return r.data},
     async bankCode(){const r=await sb.rpc('bank_create_code');if(r.error)throw r.error;return r.data},
     async bankRedeem(id,code){const gift=/^GFT-/i.test(String(code).trim()),r=await sb.rpc(gift?'bank_redeem_gift':'bank_redeem',{p_code:code});if(r.error)throw r.error;return r.data},
     async bankGift(id,n){const r=await sb.rpc('bank_admin_gift',{p_amount:n});if(r.error)throw r.error;return r.data},
@@ -779,9 +808,37 @@ $('f-in').addEventListener('submit',async function(e){e.preventDefault();$('b-in
   try{const r=await api.logIn({email:loginMail($('i-mail').value.trim()),username:$('i-mail').value.trim(),password:$('i-pass').value});await enter(r.profile)}catch(er){aMsg(errText(er))}$('b-in').disabled=false});
 
 /* The game reads who you are (name, shirt colour) from here, so your in-game avatar matches this page. */
-function syncMe(){if(me)store.set('brixblox-me',JSON.stringify({id:me.id,username:me.username,demo:!!api.demo,color:me.color,av:me.av}))}
+/* ===== BrixBlox Premium =====
+   Premium is stored on the server (premium_members) so it cannot be faked from this page. This page only shows it. */
+const PREM_PRICE=200;let PREM=new Set(),prem={on:false,bonus:0,log:[],err:false};
+function premOn(){return isBB()||prem.on}
+function pstar(){const s=document.createElement('span');s.className='pstar';s.title='BrixBlox Premium';s.textContent='\u2605';return s}
+function nameEl(el,name){el.textContent=name;if(PREM.has(String(name).toLowerCase()))el.append(pstar())}
+function syncMe(){if(me)store.set('brixblox-me',JSON.stringify({id:me.id,username:me.username,demo:!!api.demo,color:me.color,av:me.av,prem:premOn()}))}
+async function loadPrem(){
+  try{const r=await api.premStatus(me.id);prem={on:!!r.premium,bonus:+r.bonus||0,log:r.log||[],err:false};
+    const all=await api.premAll();PREM=new Set((all||[]).map(function(x){return String(x).toLowerCase()}));if(prem.on)PREM.add(me.username.toLowerCase())}
+  catch(e){console.warn('Premium',e);prem={on:false,bonus:0,log:[],err:true};PREM=new Set()}
+  syncMe();try{paintShop()}catch(e){}}
+function pmMsg(t,good){const m=$('pm-msg');m.textContent=t||'';m.classList.toggle('good',!!good)}
+function paintPrem(){
+  $('pm-wal').textContent=isBB()?'\u221E':balance();$('pm-bonus').textContent=prem.bonus;
+  const buy=$('pm-buy'),st=$('pm-status');
+  if(isBB()){st.textContent='The BrixBlox account has Premium for free.';buy.hidden=true;return}
+  if(prem.err){st.textContent='Premium is not switched on yet. The site owner needs to run the Premium SQL in Supabase.';buy.hidden=true;return}
+  if(prem.on){st.textContent='You have BrixBlox Premium. Thank you!';buy.hidden=true;return}
+  buy.hidden=false;const need=PREM_PRICE-balance();
+  st.textContent=need>0?'Premium costs '+PREM_PRICE+' blockbucks. You need '+need+' more.':'Premium costs '+PREM_PRICE+' blockbucks, one time. You have enough.';
+  buy.disabled=false}
+$('pm-buy').onclick=async function(){
+  if(balance()<PREM_PRICE){pmMsg('Not enough blockbucks. You need '+(PREM_PRICE-balance())+' more.');return}
+  if(!confirm('Spend '+PREM_PRICE+' blockbucks on BrixBlox Premium? This is a one-time purchase.'))return;
+  $('pm-buy').disabled=true;pmMsg('Getting Premium...',true);
+  try{await api.buyPremium(me.id);await loadPrem();loadFriends();loadGames();$('l-name').textContent='';nameEl($('l-name'),me.username);nameEl($('l-name2'),me.username);pmMsg('You are Premium now! Open Studio and try Ask AI.',true);paintPrem()}
+  catch(e){pmMsg(errText(e));$('pm-buy').disabled=false}};
 async function enter(p){me=p;syncMe();$('a-msg').textContent='';$('f-up').reset();$('f-in').reset();nameOk=false;updUp();
   try{recs=await api.records(me.id)}catch(e){recs={};toast('Could not load your times.')}
+  await loadPrem();
   lobby()}
 /* ===== Color wheel: one wheel for shirt, skin and pants ===== */
 const WHEEL=240,WR=WHEEL/2,look={k:'shirt',h:0,s:0,v:1};
@@ -843,13 +900,13 @@ function wheelPick(e){const r=$('wheel').getBoundingClientRect(),dx=(e.clientX-r
 function paintAvatar(){if(typeof pvRebuild==='function')pvRebuild();if(me&&$('sw'))lookLoad()}
 function unlocked(id){return id===1||!!recs[id-1]}
 function lobby(){
-  show('lobby');{const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}}$('l-name').textContent=me.username;$('l-name2').textContent=me.username;
+  show('lobby');{const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}}nameEl($('l-name'),me.username);nameEl($('l-name2'),me.username);
   {const v=me.av;if(tooAlike(v.skin,v.pants)){const ok=PANTS.find(function(c){return !tooAlike(v.skin,c)});if(ok)v.pants=ok}}/* older saves that are too alike get safe pants */
   setPart('shirt');
-  paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');loadFriends();loadGames();loadBank();loadItems();api.pubAvatar(me.id,me.av).catch(function(e){console.warn('Avatar share failed',e);if(!window.__avWarn){window.__avWarn=1;toast('Friends cannot see your avatar yet: '+((e&&e.message)||e))}})}
-const PAGES=['home','discover','friends','avatar','bank','settings'];
+  paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');if(store.get('brixblox-gopremium')){store.del('brixblox-gopremium');nav('premium');paintPrem()}loadFriends();loadGames();loadBank();loadItems();api.pubAvatar(me.id,me.av).catch(function(e){console.warn('Avatar share failed',e);if(!window.__avWarn){window.__avWarn=1;toast('Friends cannot see your avatar yet: '+((e&&e.message)||e))}})}
+const PAGES=['home','discover','friends','avatar','bank','premium','settings'];
 function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p||(p==='profile'&&x==='friends'))});$('p-profile').hidden=p!=='profile'}
-const IC={discover:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',bank:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 9l9-6 9 6M8 13v3M12 13v3M16 13v3"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
+const IC={premium:'<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',discover:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',bank:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 9l9-6 9 6M8 13v3M12 13v3M16 13v3"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
 document.querySelectorAll('.snav button').forEach(function(b){b.insertAdjacentHTML('afterbegin','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+IC[b.dataset.i]+'</svg>')});
 function theme(t){document.documentElement.dataset.theme=t;store.set('brixblox-theme',t);$('th-light').setAttribute('aria-pressed',String(t==='light'));$('th-dark').setAttribute('aria-pressed',String(t==='dark'))}
 $('th-light').onclick=function(){theme('light')};$('th-dark').onclick=function(){theme('dark')};theme(store.get('brixblox-theme')==='dark'?'dark':'light');
@@ -861,7 +918,7 @@ $('f-acct').addEventListener('submit',async function(e){e.preventDefault();
   $('b-acct').disabled=true;sMsg('Saving...',true);
   try{const r=await api.setAccount(me.id,{email:email,age:age},me.email);me.age=age;if(r.pending){me.pending=email;sMsg('Saved. We sent a confirmation link to '+email+'. Open it to finish adding your email.',true)}else{if(api.demo)me.email=email;sMsg('Saved.',true)}}catch(er){sMsg(errText(er))}
   $('b-acct').disabled=false});
-$('n-avatar').onclick=function(){nav('avatar');openAvatarPage()};$('n-bank').onclick=function(){nav('bank');loadBank()};$('n-settings').onclick=function(){nav('settings')};
+$('n-avatar').onclick=function(){nav('avatar');openAvatarPage()};$('n-bank').onclick=function(){nav('bank');loadBank()};$('n-premium').onclick=function(){nav('premium');loadPrem().then(paintPrem)};$('n-settings').onclick=function(){nav('settings')};
 $('n-home').onclick=function(){nav('home');loadGames()};$('n-discover').onclick=function(){nav('discover');loadGames()};$('n-friends').onclick=function(){nav('friends');loadFriends()};
 /* Friend avatars: draw the real 3D avatar (same makeAvatar as the Avatar page) into a small picture */
 const FAV={r:null,sc:null,cam:null,fail:false,cache:{}};
@@ -882,7 +939,7 @@ function friendAvatar(color,av){
     FAV.cache[key]=u;return u}
   catch(e){FAV.fail=true;return null}}
 function favImg(r){const u=friendAvatar(r.color,r.av);if(!u)return null;const i=document.createElement('img');i.className='fav';i.alt='';i.src=u;return i}
-function frow(r,btns,tag){const d=document.createElement('div');d.className='frow';const dot=favImg(r)||document.createElement('span');if(!dot.src){dot.className='dot';dot.style.background=r.color}const n=document.createElement('span');n.className='nm';n.textContent=r.name+(tag||'');dot.onclick=n.onclick=function(){openProfile(r.name,r)};d.append(dot,n);
+function frow(r,btns,tag){const d=document.createElement('div');d.className='frow';const dot=favImg(r)||document.createElement('span');if(!dot.src){dot.className='dot';dot.style.background=r.color}const n=document.createElement('span');n.className='nm';nameEl(n,r.name);if(tag)n.append(document.createTextNode(tag));dot.onclick=n.onclick=function(){openProfile(r.name,r)};d.append(dot,n);
   btns.forEach(function(b){const x=document.createElement('button');x.type='button';x.className='btn small'+(b[2]?' ghost':'');x.textContent=b[0];x.onclick=async function(){try{await api.answerFriend(me.id,r.fid,b[1])}catch(e){toast(errText(e))}loadFriends()};d.append(x)});return d}
 function fill(el,rows,empty){el.innerHTML='';if(!rows.length){const p=document.createElement('p');p.className='empty';p.textContent=empty;el.append(p);return}rows.forEach(function(x){el.append(x)})}
 async function loadFriends(){
@@ -906,7 +963,7 @@ $('b-out').onclick=async function(){try{await api.logOut()}catch(e){}store.del('
 /* ===== Friend profile page ===== */
 let pfTok=0;
 async function openProfile(name,pre){const tok=++pfTok;nav('profile');window.scrollTo(0,0);
-  const av=$('pf-av');$('pf-name').textContent=name;$('pf-date').textContent='';$('pf-fr').replaceChildren();$('pf-games').replaceChildren(mkx('p','empty','Loading...'));
+  const av=$('pf-av');nameEl($('pf-name'),name);$('pf-date').textContent='';$('pf-fr').replaceChildren();$('pf-games').replaceChildren(mkx('p','empty','Loading...'));
   const paint=function(c,a){const i=c!=null||a?favImg({color:c||'#999',av:a||normAv(null)}):null;av.replaceChildren(i?(i.className='pfav',i):mkx('div','pfe',name.charAt(0).toUpperCase()))};
   paint(pre&&pre.color,pre&&pre.av);
   let p;try{p=await api.profile(name)}catch(e){if(tok===pfTok)toast(errText(e));return}
@@ -923,7 +980,7 @@ $('pf-back').onclick=function(){nav('friends');loadFriends()};
 /* ===== 5b. Home friend tiles ===== */
 function tile(name,color,plus,r){const d=document.createElement('button');d.type='button';d.className='ht';
   d.innerHTML='<span class="hb">'+(plus?'<b>+</b>':'<span class="mf"><i class="mh"></i><i class="mt"></i><i class="ml"></i></span>')+'</span><span class="hn"></span>';
-  d.lastChild.textContent=name;if(color)d.style.setProperty('--c',color);
+  nameEl(d.lastChild,name);if(color)d.style.setProperty('--c',color);
   if(r){const im=favImg(r);if(im)d.firstChild.replaceChildren(im)}
   d.onclick=function(){if(r&&!plus){openProfile(r.name,r);return}nav('friends');loadFriends();if(plus)$('f-name').focus()};return d}
 
@@ -951,7 +1008,7 @@ function gfill(box,list,empty,disc){box.replaceChildren();if(!list.length){box.c
   list.forEach(function(g){const mine=g.ownerId===me.id,c=mkx('div','gc'),th=mkx('div','th',(g.name||'?').trim().charAt(0).toUpperCase()||'?'),bd=mkx('div','bd');
     th.style.background='hsl('+hue(g.id)+',55%,42%)';if(g.thumb){th.textContent='';th.style.background='center/cover url("'+g.thumb+'")'}
     if(g.official)bd.append(mkx('span','tg','Made by BrixBlox'));
-    bd.append(mkx('b','',g.name),mkx('small','','by '+(mine?'you':g.ownerName)+(mine&&!disc?'  -  '+(g.vis==='public'?'Public':'Private'):'')+(disc&&g.plays>0?'  -  '+g.plays+' play'+(g.plays===1?'':'s'):'')));
+    {const sm=mkx('small','','by '),who=mkx('span','',mine?'you':g.ownerName);if(!mine&&g.ownerName&&PREM.has(String(g.ownerName).toLowerCase()))who.append(pstar());sm.append(who,document.createTextNode((mine&&!disc?'  -  '+(g.vis==='public'?'Public':'Private'):'')+(disc&&g.plays>0?'  -  '+g.plays+' play'+(g.plays===1?'':'s'):'')));bd.append(mkx('b','',g.name),sm)}
     const row=mkx('div','row'),pl=mkx('button','btn small joinb','Join');pl.type='button';pl.onclick=function(){playGame(g)};row.append(pl);
     if(mine&&!disc){const ed=mkx('button','btn ghost small','Edit');ed.type='button';ed.onclick=function(){editGame(g)};row.append(ed)}
     if(isBB()&&g.vis==='public'&&String(g.id).indexOf('acc_')!==0&&String(g.id).indexOf('avatar_')!==0&&String(g.id).indexOf('sys_')!==0){const of=mkx('button','btn ghost small',g.official?'Remove from BrixBlox':'Add to BrixBlox');of.type='button';
@@ -1011,14 +1068,15 @@ function bbMsg(t,good){const m=$('bb-msg');m.textContent=t;m.className='msg'+(go
 async function loadBank(){try{bank=await api.bankStatus(me.id);bbMsg('')}catch(e){bbMsg(errText(e))}paintBank()}
 function paintBank(){
   const inf=isBB();$('bb-owner').hidden=!inf;
-  $('bb-saved').textContent=inf?'\u221E':bank.saved;$('bb-wallet').textContent=bank.wallet;
+  $('bb-saved').textContent=inf?'\u221E':bank.saved;$('bb-wallet').textContent=bank.wallet+(prem.bonus||0);
   $('bb-bar').style.width=inf?'100%':Math.min(100,bank.saved/BANK_MIN*100)+'%';
   $('bb-need').textContent=inf?'Unlimited. Use Take out below.':bank.saved>=BANK_MIN?'You can redeem now.':'Save '+(BANK_MIN-bank.saved)+' more to redeem.';
   $('bb-get').hidden=inf;$('bb-get').disabled=inf||bank.saved<BANK_MIN;
   $('bb-code').hidden=!bank.code;if(bank.code){$('bb-codev').textContent=bank.code;$('bb-codeamt').textContent=bank.codeAmt}
   const ul=$('bb-log');ul.replaceChildren();
-  if(!bank.log.length){const li=document.createElement('li');li.textContent='Nothing yet. Publish a game and get players!';ul.append(li)}
-  bank.log.forEach(function(x){const li=document.createElement('li'),a=document.createElement('span'),b=document.createElement('b');
+  const LG=bank.log.concat(prem.log||[]).sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at)}).slice(0,15);
+  if(!LG.length){const li=document.createElement('li');li.textContent='Nothing yet. Publish a game and get players!';ul.append(li)}
+  LG.forEach(function(x){const li=document.createElement('li'),a=document.createElement('span'),b=document.createElement('b');
     a.textContent=x.reason+'  -  '+new Date(x.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
     b.textContent=(x.amount>0?'+':'')+x.amount;b.className=x.amount>0?'pos':'neg';li.append(a,b);ul.append(li)})}
 function checkAnim(n){
@@ -1240,7 +1298,7 @@ function pvTick(now){
   pv.cam.position.set(0,pv.ly+.15+Math.sin(pv.pitch)*pv.zoom,Math.cos(pv.pitch)*pv.zoom);pv.cam.lookAt(0,pv.ly,0);
   pv.r.render(pv.sc,pv.cam)}
 function coinsEarned(){let n=10;Object.keys(recs).forEach(function(k){n+=recs[k].coins||0});return n}
-function balance(){return isBB()?Infinity:coinsEarned()+(bank&&bank.wallet||0)-(me.av.spent||0)}
+function balance(){return isBB()?Infinity:coinsEarned()+(bank&&bank.wallet||0)+(prem.bonus||0)-(me.av.spent||0)-(prem.on?PREM_PRICE:0)}
 async function saveAv(){try{await api.setAvatar(me.id,me.av);syncMe();return true}catch(e){toast('Could not save: '+errText(e));return false}}
 function paintShop(){
   $('wal').textContent=isBB()?'\u221E':balance();
@@ -1255,6 +1313,7 @@ function paintShop(){
     const n=document.createElement('b');n.textContent=it.name;
     const pr=document.createElement('div');pr.className='pr';pr.innerHTML=owned?'Owned':'<i></i>'+it.price;
     if(off){const t=document.createElement('span');t.className='tagoff';t.textContent='Off sale';pr.appendChild(t)}
+    if(it.prem){const t=document.createElement('span');t.className='tagprem';t.textContent='\u2605 Premium';pr.appendChild(t)}
     const row=document.createElement('div');row.className='row';
     function btn(t,f,ghost){const b=document.createElement('button');b.type='button';b.className='btn small'+(ghost?' ghost':'');b.textContent=t;b.onclick=f;row.appendChild(b)}
     if(owned){btn(worn?'Remove':'Equip',async function(){const old=eqArr(eq[it.slot]);eq[it.slot]=worn?old.filter(function(x){return x!==it.id}):eqPut(old,it.id);pv.tryEq=null;pvRebuild();paintShop();if(!await saveAv()){eq[it.slot]=old;pvRebuild();paintShop()}})}
@@ -1262,6 +1321,7 @@ function paintShop(){
       btn('Try',function(){pv.tryEq=Object.assign({},eq);pv.tryEq[it.slot]=trying?eqArr(eq[it.slot]):eqPut(eqArr(eq[it.slot]),it.id);pvRebuild();paintShop()},true);
       if(!off)btn('Buy',async function(){
         if(it.sale===false){toast('This item is no longer on sale.');return}
+        if(it.prem&&!premOn()){toast('This item is for Premium players. Get Premium on the Premium page.');nav('premium');paintPrem();return}
         if(balance()<it.price){toast('Not enough blockbucks. You need '+(it.price-balance())+' more.');return}
         const prev=JSON.stringify(me.av);me.av.owned.push(it.id);me.av.spent=(me.av.spent||0)+it.price;eq[it.slot]=eqPut(eqArr(eq[it.slot]),it.id);pv.tryEq=null;pvRebuild();paintShop();
         if(await saveAv())toast('Bought '+it.name+'!');else{me.av=JSON.parse(prev);pvRebuild();paintShop()}})}
@@ -1269,6 +1329,7 @@ function paintShop(){
     if(isAdm()){const r2=document.createElement('div');r2.className='row';
       function ab(t,f){const b=document.createElement('button');b.type='button';b.className='btn small ghost';b.textContent=t;b.onclick=f;r2.appendChild(b)}
       ab('Adjust',function(){openEdit(it)});
+      ab(it.prem?'Make free for all':'Premium only',async function(){try{await api.saveAcc(Object.assign({},it,{prem:!it.prem}));await loadItems();toast(it.name+(it.prem?' is now for everyone.':' is now Premium only.'))}catch(e){toast('Could not update: '+errText(e))}});
       ab(off?'Put on sale':'Take off sale',async function(){try{await api.saveAcc(Object.assign({},it,{sale:off}));await loadItems();toast(it.name+(off?' is on sale again.':' is off sale. Owners keep it.'))}catch(e){toast('Could not update: '+errText(e))}});
       ab('Remove',async function(){if(!confirm('Remove '+it.name+' from the shop AND from every player\'s inventory?'+(REFUND_REMOVED?' Players who bought it get their blockbucks back.':'')))return;
         try{if(ED&&ED.id===it.id)closeEdit();await api.saveAcc({id:it.id,name:it.name,slot:it.slot,price:it.price,scale:it.scale,fbx:'',removed:true});delete FBXC[it.id];await loadItems();toast(it.name+' was removed.')}catch(e){toast('Could not remove: '+errText(e))}});
