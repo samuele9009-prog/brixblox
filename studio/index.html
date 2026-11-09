@@ -632,6 +632,8 @@ const BD={
  sethealth:{c:'pl',l:'set health of player _ to _',a:['toucher','100'],tip:'Sets a player\'s health to an exact number from 0 to 100.'},
  gethealth:{c:'pl',l:'get health of player _ into _',a:['player','hp'],dd:{1:'var'},tip:'Stores a player\'s current health (0 to 100) in a variable.'},
  givebadge:{c:'pl',l:'give badge _ to player _',a:['Winner','player'],tip:'Gives a player a badge you made under Assets in the Explorer (Badges). Type the badge name. The player is a name, a variable, or player (the first player in the server) (like toucher). The player sees a pop-up and the badge is saved to their account, once per badge per game. Anyone can earn a badge themselves; only the game owner or an admin can give one to another player.'},
+ riggear:{c:'en',l:'put item _ in hand of rig _',a:['Sword','Rig'],dd:{0:'item'},tip:'Puts an item you made (right-click a mesh under Assets, then Create item) into the hand of a rig. You see the rig hold it in the game and it moves with the rig animations. The rig is named after its model (parts welded together). You can also set gear for a rig without a script: select the rig and use the Gear box.'},
+ rigungear:{c:'en',l:'take the item out of rig _ hand',a:['Rig'],tip:'Makes a rig put down whatever item it is holding.'},
  giveitem:{c:'pl',l:'give item _ to player _',a:['Sword','player'],dd:{0:'item'},tip:'Gives a player an item you made (right-click a mesh under Assets, then Create item). It shows up in the hotbar at the bottom: click it or press its number to hold it. The player is a name, a variable, or player (you).'},
  removeitem:{c:'pl',l:'remove item _ from player _',a:['Sword','player'],dd:{0:'item'},tip:'Takes an item away from a player.'},
  awardbadge:{c:'pl',l:'award badge _ to player _ icon _',a:['Winner','player','\uD83C\uDFC5'],tip:'Gives a player a badge and counts it in their profile. You do not need to make the badge first: it is created for you if it does not exist yet. Each badge is only given once per player per game, and every new badge adds 1 to their badge counter. Type the badge name, then the player (a name, a variable, or player for the first player in the server) and an icon. Anyone can earn a badge themselves; only the game owner or an admin can give one to another player.'},
@@ -1126,7 +1128,7 @@ function dEnd(e){removeEventListener('pointermove',dMoveRaf);dEv=null;if(dRaf){c
 
 
 /* BricBloc as text */
-const KW={lighting:'set lighting',skybox:'set skybox to',spawnon:'turn on spawnpoint',spawnrep:'replace current spawnpoint with',spawnoff:'turn off spawnpoint',giveattr:'give attribute',pdset:'set player saved data',pdchange:'change player saved data',pdget:'get player saved data',pdadditem:'put in saved inventory',pdremitem:'take out of saved inventory',pdsave:'save player data',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',friction:'set friction',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',ragdollex:'set ragdoll exaggeration',playercolon:'enable player collision',playercoloff:'disable player collision',fov:'set camera fov',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',setrig:'set player to rig',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
+const KW={riggear:'put item in hand of rig',rigungear:'take item out of rig hand',lighting:'set lighting',skybox:'set skybox to',spawnon:'turn on spawnpoint',spawnrep:'replace current spawnpoint with',spawnoff:'turn off spawnpoint',giveattr:'give attribute',pdset:'set player saved data',pdchange:'change player saved data',pdget:'get player saved data',pdadditem:'put in saved inventory',pdremitem:'take out of saved inventory',pdsave:'save player data',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',friction:'set friction',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',ragdollex:'set ragdoll exaggeration',playercolon:'enable player collision',playercoloff:'disable player collision',fov:'set camera fov',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',setrig:'set player to rig',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){clearTimeout(view._t);view._t=setTimeout(view0,250)}
 function view0(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
@@ -1347,6 +1349,10 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
     case'teleport':{const x=n(1),y=n(2),z=n(3);resolve(String(val(a[0],S))).forEach(function(t){teleKey(t.key,x,y,z)});break}
     case'kick':{const why=String(val(a[1],S));playersOf(String(val(a[0],S))).forEach(function(t){kickKey(t.key,why,false)});break}
     case'ban':{const why=String(val(a[1],S)),mins=Math.max(0,n(2));playersOf(String(val(a[0],S))).forEach(function(t){banKey(t,why,mins)});break}
+    case'riggear':case'rigungear':{const rn=String(val(a[b.t==='riggear'?1:0],S)).trim(),rr=skinFind(rn);if(!rr){log('Error: there is no rig named \"'+rn+'\". A rig is named after its model (parts welded together).');break}
+      if(b.t==='rigungear'){GOVR[rr.id]='';break}
+      const itn=String(val(a[0],S)).trim(),it=itemBy(itn);if(!it){log('Error: no item named \"'+itn+'\". Right-click a mesh under Assets and press Create item.');break}
+      GOVR[rr.id]=it.id;break}
     case'giveitem':case'removeitem':{const nm=String(val(a[0],S)).trim(),it=itemBy(nm);if(!it){log('Error: no item named "'+nm+'". Right-click a mesh under Assets and press Create item.');break}
       const pl=playersOf(String(val(a[1],S)));if(!pl.length){log('Error: no player matches "'+String(val(a[1],S))+'".');break}
       pl.forEach(function(t){if(t.key!=='main'){log('Warning: items can only be given to your own player for now.');return}if(b.t==='giveitem')itemGive(it);else itemTake(it)});break}
@@ -1663,7 +1669,7 @@ function rebuildParts(){
   const hk={};P.parts.forEach(function(p){if(p.parent)hk[p.parent]=1});
   P.parts.forEach(function(p){const g=J[p.id],v=piv(p),pa=p.parent&&byId(p.parent);
     if(pa){const q=piv(pa);g.position.set(v[0]-q[0],v[1]-q[1],v[2]-q[2]);J[pa.id].add(g)}else{g.position.set(v[0],v[1],v[2]);g.visible=inW(p);PG.add(g)}g.userData.base=g.position.clone();g.userData.gry=!p.parent&&hk[p.id]&&p.ry?p.ry*Math.PI/180:0});
-  refreshRot();stageApply();hl();if(rigOn)applyPose({});else preview();buildEdit();lastCol='';lastSay='\u0000';try{accLocal()}catch(e){}draw()}
+  refreshRot();stageApply();hl();if(rigOn)applyPose({});else preview();buildEdit();lastCol='';lastSay='\u0000';try{accLocal()}catch(e){}try{gearSync()}catch(e){}draw()}
 function applyPose(po,only,hold){P.parts.forEach(function(p){if(only&&!p.av)return;if(hold&&hold[p.id]>0&&p.id!==P.avId)return;if(p.id===P.avId){const o=po&&po['p:'+p.id],ro=po&&po[p.id];J[p.id].userData.off=o?o.slice():null;J[p.id].userData.rot=ro?ro.slice():null;return}const r=(po&&po[p.id])||[0,0,0];J[p.id].rotation.set(r[0]*Math.PI/180,r[1]*Math.PI/180+(J[p.id].userData.gry||0),r[2]*Math.PI/180);if(J[p.id].userData.sq)J[p.id].quaternion.premultiply(J[p.id].userData.sq);const o=po&&po['p:'+p.id],b=J[p.id].userData.base;if(b)J[p.id].position.set(b.x+(o?o[0]:0),b.y+(o?o[1]:0),b.z+(o?o[2]:0))})}
 function evalPosKeys(A,t,o){for(const id in A.keys){const k=A.keys[id].filter(function(x){return x.p}).sort(function(a,b){return a.t-b.t});if(!k.length)continue;const f=k[0],l=k[k.length-1];
   if(t<=f.t)o['p:'+id]=f.p;else if(t>=l.t)o['p:'+id]=l.p;else for(let i=0;i<k.length-1;i++)if(t>=k[i].t&&t<=k[i+1].t){const u=(t-k[i].t)/((k[i+1].t-k[i].t)||1),a=k[i].p,b=k[i+1].p;o['p:'+id]=a.map(function(v,j){return v+(b[j]-v)*u});break}}}
@@ -1675,8 +1681,9 @@ async function playAnim(name,S){const A=P.anims[name];if(!A){log('Error: no anim
   /* Your own character is also posed by the walk / idle / jump animations every frame. Hold its parts while this one plays so they do not fight. */
   const hid=Object.keys(A.keys).filter(function(id){const q=byId(id);return q&&q.av&&id!==P.avId});S.hold=S.hold||{};hid.forEach(function(id){S.hold[id]=(S.hold[id]||0)+1});
   if(hid.length){NANIM.c++;NANIM.n=name}
+  const gk=Object.keys(A.keys).filter(function(id){const q=byId(id);return q&&!q.av});gk.forEach(function(id){RBUSY[id]=(RBUSY[id]||0)+1});
   try{const t0=performance.now();let t=0;while(t<A.len&&!S.stop){t=(performance.now()-t0)/1000;applyKeyed(evalPose(A,Math.min(t,A.len)));await sl(16)}}
-  finally{hid.forEach(function(id){S.hold[id]=Math.max(0,(S.hold[id]||1)-1);if(!S.hold[id]){const g=J[id],bs=g&&g.userData.base,D=180/Math.PI;
+  finally{gk.forEach(function(id){RBUSY[id]=Math.max(0,(RBUSY[id]||1)-1)});hid.forEach(function(id){S.hold[id]=Math.max(0,(S.hold[id]||1)-1);if(!S.hold[id]){const g=J[id],bs=g&&g.userData.base,D=180/Math.PI;
       if(g){S.bp[id]=[g.rotation.x*D,(g.rotation.y-(g.userData.gry||0))*D,g.rotation.z*D];if(bs)S.bp['p:'+id]=[g.position.x-bs.x,g.position.y-bs.y,g.position.z-bs.z]}}});
     if(hid.length){S.ak='';S.bl=.2}}}
 
@@ -2184,7 +2191,7 @@ function vec(t,a,mv){const w=el('div','v3');a.forEach(function(v,i){const n=el('
 function modelProps(d,m){const ps=partsOf(m.id),nm=el('input');nm.value=m.name;nm.oninput=function(){m.name=nm.value;save()};nm.onchange=function(){renderParts()};
   const ms=matSel(ps[0]&&ps[0].mat,function(k){ps.forEach(function(q){setMat(q,k)});all()}),col=el('input');col.type='color';col.value=ps[0]?ps[0].color:'#ffffff';
   col.oninput=function(){avTouch(ps);ps.forEach(function(q){q.color=col.value;M[q.id].material.color.set(col.value)});hl();save()};
-  d.append(lab('Model name',nm),lab('Material (all pieces)',ms),lab('Color (all pieces)',col),el('p','note','Model with '+ps.length+' pieces. Drag the arrows to move all of it. To move one piece, Alt+click it, double-click it, or pick it in the list above.'));if(ps.length)trAll(d,ps,'Transparency (all pieces)');contSel(d)}
+  d.append(lab('Model name',nm),lab('Material (all pieces)',ms),lab('Color (all pieces)',col),el('p','note','Model with '+ps.length+' pieces. Drag the arrows to move all of it. To move one piece, Alt+click it, double-click it, or pick it in the list above.'));if(ps.length)trAll(d,ps,'Transparency (all pieces)');{const gr=ps.find(function(q){return !q.parent&&!q.av&&kids(q).length});if(gr)gearBox(d,gr)}contSel(d)}
 /* Several parts picked at once (Shift/Ctrl-click or a Shift-drag box): material and colour apply to every one of them */
 function multiProps(d,ps){const ms=el('select'),ph=el('option','','Choose a material for all...');ph.value='';ms.append(ph);
   Object.keys(MATS).forEach(function(k){const o=el('option','',MATS[k].n);o.value=k;ms.append(o)});ms.value='';
@@ -2209,7 +2216,7 @@ function props0(){const d=$('p-props');d.replaceChildren();if(selFold&&!sel.leng
     as.onchange=function(){setAcc(p,as.value,wt.value)};wt.onchange=function(){if(as.value)setAcc(p,as.value,wt.value)};
     d.append(lab('Accessory (wear it on a character or rig)',as));d.append(lab('Wear it on',wt));
     if(p.acc)d.append(el('p','note','It is welded to your character, shows on you and on other players, and has no collision. Change Position and Size above to fit it.'))}
-  if(p.stab)d.append(el('p','note','Stabilizer: holds the rig up so the Torso can move and rotate freely. It is hidden and is never animated.'));lightBox(d,p);lightBox(d,p);spawnBox(d,p);tagBox(d,p);contSel(d)}
+  if(p.stab)d.append(el('p','note','Stabilizer: holds the rig up so the Torso can move and rotate freely. It is hidden and is never animated.'));lightBox(d,p);lightBox(d,p);spawnBox(d,p);tagBox(d,p);gearBox(d,p);contSel(d)}
 $('p-add').onclick=function(){newPart()};$('p-shape').onchange=function(){if(this.value)newPart(this.value);this.value=''};$('p-group').onclick=group;$('p-ungroup').onclick=ungroupKey;$('p-union').onclick=unionMake;$('p-split').onclick=unionSplit;$('p-copy').onclick=copySel;$('p-paste').onclick=pasteClip;$('p-dup').onclick=dupSel;
 $('p-weld').onclick=function(){if(sel.length<2){msg('Select the Torso first, then ctrl-click the parts to weld to it.');return}
   const t=byId(sel[0]);let n=0;
@@ -4521,6 +4528,7 @@ function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const
   else{const sp=(keys.ShiftLeft?36:12)*dt,r=[Math.cos(cam.yaw),0,Math.sin(cam.yaw)],go=function(v,k){cam.x+=v[0]*k;cam.y+=v[1]*k;cam.z+=v[2]*k};
     if(keys.KeyW)go(f,sp);if(keys.KeyS)go(f,-sp);if(keys.KeyD)go(r,sp);if(keys.KeyA)go(r,-sp);if(keys.KeyQ)cam.y-=sp;if(keys.KeyE)cam.y+=sp;if(Math.abs(zq)>.001){const zs=zq*(1-Math.exp(-dt*12));zq-=zs;go(f,zs)}else zq=0}
   if(playing||running){twTick(dt);collide();pcollide();physics(dt);objMove(dt);rigAI(dt);npPhys(dt);touchTick()}npTick(dt);
+  try{gearSync();gearTick()}catch(e){}
   draw();entTick(dt);
   if(playing&&!FC){const T=byId(P.avId);if(T){S.ch=S.ch===undefined?S.h:S.ch+(S.h-S.ch)*(1-Math.exp(-dt*9));
     const fx=T.pos[0]+S.x,fy=T.pos[1]+S.ch+1,fz=T.pos[2]-S.y;cd+=(cdT-cd)*(1-Math.exp(-dt*10));if(Math.abs(cdT-cd)<.002)cd=cdT;
@@ -4544,7 +4552,7 @@ function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing);try{hotRender()}catch(e){}try{renderGui()}catch(e){}}
 function setRun(v){running=v;sync()}
-function resetWorld(){RUNC.clear();RUNW.clear();Object.keys(ATTR).forEach(function(k){delete ATTR[k]});Object.keys(PD).forEach(function(k){delete PD[k]});PDL=null;KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();SKYO=null;SKYAUTO=false;SKYGEN=null;LIGHTO=null;SPW={};RO={};RV={};RD={};RVY={};RY={};CO={};FRI={};TM=new Map();RAG={};RSZ={};SKIN={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts();lightStart();try{applyEnv()}catch(e){}}
+function resetWorld(){Object.keys(GOVR).forEach(function(k){delete GOVR[k]});RUNC.clear();RUNW.clear();Object.keys(ATTR).forEach(function(k){delete ATTR[k]});Object.keys(PD).forEach(function(k){delete PD[k]});PDL=null;KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();SKYO=null;SKYAUTO=false;SKYGEN=null;LIGHTO=null;SPW={};RO={};RV={};RD={};RVY={};RY={};CO={};FRI={};TM=new Map();RAG={};RSZ={};SKIN={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts();lightStart();try{applyEnv()}catch(e){}}
 function boot(my){reser();try{spawnHere()}catch(e){}const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
   hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
   setTimeout(function(){if(my===S&&(running||playing))firePJ('pjoin',P.player.name)},120);
@@ -5117,6 +5125,40 @@ function hotRender(){if(!hotEl){hotEl=el('div');hotEl.id='hotbar';hotEl.style.cs
     b.append(n,t);b.onmousedown=function(e){e.preventDefault()};b.onclick=function(){itemEquip(held?null:id)};hotEl.append(b)})}
 addEventListener('keydown',function(e){const m=/^(?:Digit|Numpad)([1-9])$/.exec(e.code);if(!m||e.ctrlKey||e.metaKey||e.altKey||e.repeat||!(running||playing)||menuEl)return;
   if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;const id=S.items[+m[1]-1];if(!id)return;itemEquip(S.heldItem===id?null:id)});
+/* ===== Rig gear: an item held in a rig's hand. Shows in the editor and in the game, follows the arm when it animates, and the arm takes a hold pose while playing. ===== */
+const RGEAR={},RBUSY={},GOVR={};
+function gearItemId(r){return GOVR[r.id]!==undefined?GOVR[r.id]:(r.gear&&r.gear.item)||''}
+function gearHand(r){const g=r.gear||{},ps=rigParts(r).filter(function(q){return !q.stab});let h=g.hand&&byId(g.hand);if(h&&ps.indexOf(h)>=0)return h;
+  return ps.find(function(q){return /^r.?arm$|right.?(arm|hand)|^r.?hand$/i.test(q.name)})||ps.find(function(q){return /arm|hand/i.test(q.name)})||null}
+function gearSync(){const want={};
+  P.parts.forEach(function(r){if(r.parent||r.av||!kids(r).length)return;const iid=gearItemId(r);if(!iid)return;
+    const it=itemsL().find(function(x){return x.id===iid}),h=it&&gearHand(r),m=h&&M[h.id];if(!m)return;want[r.id]=1;
+    const key=[it.id,h.id,it.mesh,it.size,it.px,it.py,it.pz,it.rx,it.ry,it.rz,it.tex].join('|'),c=RGEAR[r.id];
+    if(c&&c.host===m&&c.key===key&&(c.obj?c.obj.parent===m:c.pend))return;
+    if(c&&c.obj&&c.obj.parent)c.obj.parent.remove(c.obj);
+    const e=RGEAR[r.id]={host:m,key:key,obj:null,pend:true};
+    meshLoad(it.mesh).then(function(E){if(RGEAR[r.id]!==e)return;e.pend=false;if(!E||!E.obj)return;
+      const g=itemMake(E,it);g.position.y+=1-(h.size[1]||2)/2;/* items are made for a 2 stud arm: line the grip up with the bottom of this hand part */m.add(g);e.obj=g})});
+  for(const id in RGEAR)if(!want[id]){const c=RGEAR[id];if(c.obj&&c.obj.parent)c.obj.parent.remove(c.obj);delete RGEAR[id]}}
+/* While playing, a rig with gear raises its hand (or loops the hold animation you picked). Parts that a script animation is moving right now are left alone. */
+function gearTick(){if(!(playing||running))return;const t=performance.now()/1000;
+  for(const id in RGEAR){const e=RGEAR[id];if(!e.obj)continue;const r=byId(id);if(!r)continue;const rg=RAG['rig:'+id];if(rg&&rg.sim&&!rg.gone)continue;
+    const g=r.gear||{},h=gearHand(r);if(!h)continue;
+    if(g.anim==='none')continue;
+    const A=g.anim&&g.anim!=='default'?P.anims[g.anim]:null;
+    if(A&&A.len){const po=evalPose(A,t%A.len),o={};for(const k in po){if(!RBUSY[k.replace(/^p:/,'')])o[k]=po[k]}applyKeyed(o)}
+    else if(!RBUSY[h.id])applyKeyed((function(){const o={};o[h.id]=[80+Math.sin(t*2.2)*3,0,0];return o})())}}
+function gearBox(d,r){if(!r||r.parent||r.av||!kids(r).length)return;
+  const items=itemsL(),ps=rigParts(r).filter(function(q){return !q.stab}),g=r.gear||{};
+  d.append(el('p','note','Gear: pick an item for this rig to hold. It shows in its hand here and in the game.'));
+  const is=el('select');[['','No gear']].concat(items.map(function(i){return [i.id,i.name]})).forEach(function(o){const op=el('option','',o[1]);op.value=o[0];is.append(op)});is.value=g.item||'';if(is.value!==(g.item||''))is.value='';
+  const hs=el('select');[['','Auto (right arm)']].concat(ps.map(function(q){return [q.id,q.name]})).forEach(function(o){const op=el('option','',o[1]);op.value=o[0];hs.append(op)});hs.value=g.hand||'';if(hs.value!==(g.hand||''))hs.value='';
+  const as=el('select');[['default','Raise the hand (default)'],['none','No hold pose']].concat(Object.keys(P.anims||{}).map(function(n){return [n,'Loop animation: '+n]})).forEach(function(o){const op=el('option','',o[1]);op.value=o[0];as.append(op)});as.value=g.anim||'default';if(as.value!==(g.anim||'default'))as.value='default';
+  const upd=function(){const ng={item:is.value,hand:hs.value,anim:as.value};if(!ng.item&&!ng.hand&&ng.anim==='default')delete r.gear;else r.gear=ng;delete GOVR[r.id];save();gearSync();try{preview()}catch(e){}};
+  is.onchange=upd;hs.onchange=upd;as.onchange=upd;
+  d.append(lab('Gear (item in hand)',is));
+  if(!items.length)d.append(el('p','note','No items yet. Right-click a mesh under Assets and press Create item.'));
+  d.append(lab('Hand part',hs),lab('Hold pose in the game',as))}
 function itemRows(d){const l=itemsL();if(!l.length){d.append(el('p','empty','No items yet. Right-click a mesh above and press Create item.'));return}
   l.forEach(function(it){const w=el('div','arow');w.append(el('span','nm',it.name+'  ('+it.mesh+')'));
     w.append(mb('Edit','',function(){itemRoom(it.mesh,it)}),mb('Delete','ghost',function(){P.items=itemsL().filter(function(x){return x!==it});S.items=S.items.filter(function(x){return x!==it.id});save();renderParts()}));d.append(w)})}
