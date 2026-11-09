@@ -545,7 +545,7 @@ html,body{overscroll-behavior:none;touch-action:manipulation}
       <div id="s-anim" class="pnl anim" hidden="">
         <div class="an-top">
           <select id="a-sel" aria-label="Animation"></select>
-          <input id="a-new" placeholder="new animation" maxlength="20"><button id="a-add" class="btn ghost small" type="button" title="Create animation">+ New</button>
+          <input id="a-new" placeholder="new animation" maxlength="20"><button id="a-add" class="btn ghost small" type="button" title="Create animation">+ New</button><button id="a-del" class="btn ghost small" type="button" title="Delete this animation">&#128465; Delete</button>
           <button id="a-first" class="btn ghost small" type="button" title="Go to start">&#9198;</button><button id="a-play" class="btn small" type="button" title="Play / pause (Space)">&#9654;</button><button id="a-loop" class="btn ghost small" type="button" aria-pressed="true" title="Loop">&#8635;</button>
           <span id="a-clock" class="an-clock">0.00s</span><span class="an-of">/</span><input id="a-len" type="number" min=".2" step=".1" value="1" title="Length in seconds"><span class="an-of">s</span>
           <select id="a-type" title="Animation type"><option value="other">Type: Other</option><option value="walk">Type: Walking</option></select><label id="a-gl" class="an-of" title="How fast the floor grid scrolls while the animation plays. 10 is a normal walk, 20 is fast." hidden="">Grid speed <input id="a-gs" type="number" min="0" step="1" value="10"></label>
@@ -2914,6 +2914,10 @@ function animUI(){if($('s-anim').hidden)return;fixA();try{animRigsUI()}catch(e){
   g.append(nm,tm);g.scrollLeft=sx;g.scrollTop=sy}
 function anims(){fixA();animUI()}
 function joints(){animUI()}
+$('a-del').onclick=function(){const n=curA;if(!n||!P.anims[n])return;
+  if(!confirm('Delete the animation "'+n+'"? This cannot be undone.'))return;
+  aPlay=false;
+  delete P.anims[n];const ks=Object.keys(P.anims);curA=P.anims.idle?'idle':(ks[0]||'');aT=0;aSelKeys=[];save();animUI();try{preview()}catch(e){}};
 $('a-sel').onchange=function(){curA=this.value;aT=0;aSelKeys=[];animUI();preview()};
 $('a-add').onclick=function(){const n=$('a-new').value.trim().replace(/[^A-Za-z0-9_]/g,'');if(!n)return;if(!P.anims[n])P.anims[n]={len:1,keys:{}};curA=n;aT=0;aSelKeys=[];$('a-new').value='';save();animUI();preview()};
 $('a-len').onchange=function(){const A=P.anims[curA];if(!A)return;A.len=Math.max(.2,+this.value||1);aT=Math.min(aT,A.len);save();animUI();preview()};
