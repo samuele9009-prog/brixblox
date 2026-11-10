@@ -183,6 +183,8 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .item.eq{outline:3px solid #00b06f;outline-offset:-1px}
 .item.tr{outline:3px dashed #3da5ff;outline-offset:-1px}
 .item .sw{width:100%;height:34px;border-radius:6px;border:1px solid rgba(0,0,0,.35)}
+.item .sw.sw3{height:auto;aspect-ratio:1/1;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 30%,#6a7fa8,#2b3a55)!important}
+.item .sw.sw3 canvas{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
 .item b{font-size:.95rem}
 .item .pr{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:5px}
 .item .pr i{width:11px;height:11px;border-radius:50%;background:#ffc233;display:block}
@@ -499,7 +501,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       <p id="pm-status" class="sub"></p>
       <h3>What you get</h3>
       <ul class="bb-earn">
-        <li><b>Ask AI in Studio.</b> Type what you want and the AI builds blocks, GUIs and parts for you.</li>
+        <li><b>Gamepasses in Studio.</b> Add gamepasses to your games with a name, a price and a picture, and reward the players who own them.</li>
         <li><b>A star next to your name</b> on your profile, friends lists, game cards and in game chat.</li>
         <li><b>Premium-only shop items.</b> Accessories that only Premium players can buy.</li>
         <li><b>You help creators.</b> Every hour a Premium player spends in someone's game earns that creator 30 blockbucks.</li>
@@ -892,7 +894,7 @@ $('pm-buy').onclick=async function(){
   if(balance()<PREM_PRICE){pmMsg('Not enough blockbucks. You need '+(PREM_PRICE-balance())+' more.');return}
   if(!confirm('Spend '+PREM_PRICE+' blockbucks on BrixBlox Premium? This is a one-time purchase.'))return;
   $('pm-buy').disabled=true;pmMsg('Getting Premium...',true);
-  try{await api.buyPremium(me.id);await loadPrem();loadFriends();loadGames();$('l-name').textContent='';nameEl($('l-name'),me.username);nameEl($('l-name2'),me.username);pmMsg('You are Premium now! Open Studio and try Ask AI.',true);paintPrem()}
+  try{await api.buyPremium(me.id);await loadPrem();loadFriends();loadGames();$('l-name').textContent='';nameEl($('l-name'),me.username);nameEl($('l-name2'),me.username);pmMsg('You are Premium now! Open Studio and add a gamepass.',true);paintPrem()}
   catch(e){pmMsg(errText(e));$('pm-buy').disabled=false}};
 async function enter(p){me=p;syncMe();$('a-msg').textContent='';$('f-up').reset();$('f-in').reset();nameOk=false;updUp();
   try{recs=await api.records(me.id)}catch(e){recs={};toast('Could not load your times.')}
@@ -1584,16 +1586,62 @@ function pvTick(now){
 function coinsEarned(){let n=10;Object.keys(recs).forEach(function(k){n+=recs[k].coins||0});return n}
 function balance(){return isBB()?Infinity:coinsEarned()+(bank&&bank.wallet||0)+(prem.bonus||0)-(me.av.spent||0)-(prem.on?PREM_PRICE:0)}
 async function saveAv(){try{await api.setAvatar(me.id,me.av);syncMe();return true}catch(e){toast('Could not save: '+errText(e));return false}}
+/* ===== 3D shop tiles: every accessory in the shop is drawn as a small spinning 3D model. One shared renderer draws each model and copies it onto the tile. ===== */
+const TH={r:null,sc:null,cam:null,list:[],ok:null,sz:132,raf:0,t:0,models:{}};
+function thInit(){
+  if(TH.ok!==null)return TH.ok;
+  try{TH.r=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});TH.r.setPixelRatio(1);TH.r.setSize(TH.sz,TH.sz,false);
+    TH.sc=new THREE.Scene();TH.cam=new THREE.PerspectiveCamera(32,1,.05,20);TH.cam.position.set(0,.3,4.2);TH.cam.lookAt(0,0,0);
+    TH.sc.add(new THREE.HemisphereLight(0xffffff,0x8899aa,1));const dl=new THREE.DirectionalLight(0xfff3df,.8);dl.position.set(2,4,3);TH.sc.add(dl);TH.ok=true}
+  catch(e){TH.ok=false}
+  return TH.ok}
+function thModel(it){
+  const key=[it.id,it.scale,it.tex?it.tex.length:0,it.tf?1:0,it.sh,it.rx,it.ry,it.rz].join('|');
+  if(TH.models[key])return TH.models[key];
+  const g=new THREE.Group(),keep=ED;ED=null;/* no editor guides in the tile */
+  try{addItem(g,it.id,{})}finally{ED=keep}
+  if(!g.children.length)return null;
+  g.updateMatrixWorld(true);
+  const bx=new THREE.Box3().setFromObject(g),ct=bx.getCenter(new THREE.Vector3()),sz=bx.getSize(new THREE.Vector3()),m=Math.max(sz.x,sz.y,sz.z)||1;
+  g.position.set(-ct.x,-ct.y,-ct.z);
+  const inner=new THREE.Group();inner.add(g);inner.scale.setScalar(1.25/m);
+  const pivot=new THREE.Group();pivot.add(inner);
+  return TH.models[key]=pivot}
+function thDraw(e){
+  const o=e.o;o.rotation.set(.2,e.a,0);
+  TH.sc.add(o);TH.r.render(TH.sc,TH.cam);TH.sc.remove(o);
+  e.x.clearRect(0,0,TH.sz,TH.sz);e.x.drawImage(TH.r.domElement,0,0,TH.sz,TH.sz)}
+function thTile(sw,it){
+  if(!thInit())return;
+  let o=null;try{o=thModel(it)}catch(x){o=null}
+  if(!o)return;
+  sw.classList.add('sw3');
+  const c=document.createElement('canvas');c.width=c.height=TH.sz;sw.appendChild(c);
+  const e={c:c,x:c.getContext('2d'),o:o,a:.6+Math.random()*5,hov:false};
+  sw.onpointerenter=function(){e.hov=true};sw.onpointerleave=function(){e.hov=false};
+  TH.list.push(e);thDraw(e);thRun()}
+function thRun(){
+  if(TH.raf)return;
+  const step=function(now){
+    TH.raf=0;
+    const pg=$('p-avatar'),lb=$('lobby');
+    if(!TH.list.length||!pg||pg.hidden||!lb||lb.hidden)return;/* the Avatar page is closed: stop. paintShop starts it again. */
+    TH.raf=requestAnimationFrame(step);
+    const dt=Math.min(.1,(now-TH.t)/1000);if(dt<.032)return;TH.t=now;/* about 30 frames a second is plenty for small tiles */
+    TH.list=TH.list.filter(function(e){return e.c.isConnected});
+    const many=TH.list.length>24;/* a very long shop: only the tile under the pointer spins */
+    TH.list.forEach(function(e){if(many&&!e.hov)return;e.a+=dt*(e.hov?2.6:.9);thDraw(e)})};
+  TH.raf=requestAnimationFrame(step)}
 function paintShop(){
   $('wal').textContent=isBB()?'\u221E':balance();
   const tabs=$('shop-tabs');tabs.innerHTML='';
   SLOTS.forEach(function(s){const b=document.createElement('button');b.type='button';b.className='btn ghost small';b.textContent=s[1];b.setAttribute('aria-pressed',String(pv.tab===s[0]));b.onclick=function(){pv.tab=s[0];paintShop()};tabs.appendChild(b)});
-  const g=$('shop');g.innerHTML='';const eq=me.av.eq;
+  TH.list=[];const g=$('shop');g.innerHTML='';const eq=me.av.eq;
   $('shop-note').textContent=pv.tryEq?'Trying on. This is not saved until you buy or equip it.':'Earn blockbucks by collecting them in games or redeeming them in your Blockbank. You get 10 to start. You can wear up to 2 accessories of the same type.';
   ITEMS.filter(function(x){return x.slot===pv.tab&&(x.sale!==false||me.av.owned.indexOf(x.id)>=0||isAdm())}).forEach(function(it){
     const owned=me.av.owned.indexOf(it.id)>=0,worn=eqArr(eq[it.slot]).indexOf(it.id)>=0,trying=!!pv.tryEq&&eqArr(pv.tryEq[it.slot]).indexOf(it.id)>=0&&!worn,off=it.sale===false;
     const d=document.createElement('div');d.className='item'+(worn?' eq':'')+(trying?' tr':'')+(off?' off':'');
-    const sw=document.createElement('div');sw.className='sw';sw.style.background=it.c;
+    const sw=document.createElement('div');sw.className='sw';sw.style.background=it.c;thTile(sw,it);
     const n=document.createElement('b');n.textContent=it.name;
     const pr=document.createElement('div');pr.className='pr';pr.innerHTML=owned?'Owned':'<i></i>'+it.price;
     if(off){const t=document.createElement('span');t.className='tagoff';t.textContent='Off sale';pr.appendChild(t)}
