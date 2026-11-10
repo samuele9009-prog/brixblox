@@ -961,7 +961,7 @@ function lobby(){
   show('lobby');{const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}}nameEl($('l-name'),me.username);nameEl($('l-name2'),me.username);
   {const v=me.av;if(tooAlike(v.skin,v.pants)){const ok=PANTS.find(function(c){return !tooAlike(v.skin,c)});if(ok)v.pants=ok}}/* older saves that are too alike get safe pants */
   setPart('shirt');
-  paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');if(store.get('brixblox-gopremium')){store.del('brixblox-gopremium');nav('premium');paintPrem()}loadFriends();loadGames();loadEvents();$('n-admin').hidden=!isBB();$('n-bill').hidden=!isBB();checkNotices();loadBank();loadItems();api.pubAvatar(me.id,me.av).catch(function(e){console.warn('Avatar share failed',e);if(!window.__avWarn){window.__avWarn=1;toast('Friends cannot see your avatar yet: '+((e&&e.message)||e))}})}
+  paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');if(store.get('brixblox-gopremium')){store.del('brixblox-gopremium');nav('premium');paintPrem()}loadFriends();loadGames();loadEvents();$('n-admin').hidden=!isBB();$('n-bill').hidden=!isBB();loadAdmins();checkNotices();loadBank();loadItems();api.pubAvatar(me.id,me.av).catch(function(e){console.warn('Avatar share failed',e);if(!window.__avWarn){window.__avWarn=1;toast('Friends cannot see your avatar yet: '+((e&&e.message)||e))}})}
 const PAGES=['home','discover','friends','avatar','bank','premium','settings'];
 function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p||(p==='profile'&&x==='friends'))});$('p-profile').hidden=p!=='profile'}
 const IC={premium:'<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',discover:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',bank:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 9l9-6 9 6M8 13v3M12 13v3M16 13v3"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
@@ -1125,12 +1125,12 @@ function paintBB0(){const box=$('bb');clearInterval(bbTimer);box.replaceChildren
 
 /* ===== Admin (BrixBlox account only): find players, warn, ban, remove games, delete accounts ===== */
 function closeAdmin(){const o=$('ado');if(o)o.remove()}
-function openAdmin(){if(!isBB())return;closeAdmin();
+function openAdmin(){if(!isAdm())return;closeAdmin();
   const ov=mkx('div','evo');ov.id='ado';ov.onclick=function(x){if(x.target===ov)closeAdmin()};
   const card=mkx('div','evc'),body=mkx('div','evb'),xb=mkx('button','evx','\u00D7');xb.type='button';xb.setAttribute('aria-label','Close');xb.onclick=closeAdmin;
   card.append(body);ov.append(card,xb);xb.style.position='fixed';xb.style.top='14px';xb.style.right='14px';document.body.append(ov);
   body.append(mkx('h2','','Admin'));
-  const top=mkx('div','bb-adm'),nb=mkx('button','btn small','Create billboard');nb.type='button';nb.onclick=function(){closeAdmin();openBBMgr()};top.append(nb);
+  const top=mkx('div','bb-adm'),nb=mkx('button','btn small','Create billboard');nb.type='button';nb.onclick=function(){closeAdmin();openBBMgr()};if(isBB())top.append(nb);
   const q=document.createElement('input');q.type='text';q.placeholder='Search players by username';q.maxLength=16;q.autocapitalize='off';q.spellcheck=false;q.style.cssText='width:100%;margin:12px 0;box-sizing:border-box';
   const list=mkx('div','adl');body.append(top,q,list);
   let t=0,seq=0;
@@ -1141,13 +1141,14 @@ function openAdmin(){if(!isBB())return;closeAdmin();
       const row=mkx('div','adr');row.style.cssText='border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;display:flex;flex-direction:column;gap:6px';
       const nm=mkx('strong','',p.username);row.append(nm);
       const inf=mkx('small','','Joined '+(p.created_at?new Date(p.created_at).toLocaleDateString():'?')+' \u00B7 '+(p.warns|0)+' warning(s) \u00B7 '+(p.games|0)+' game(s)'+(p.banned?(function(){const b=banParse(p.ban_reason);return ' \u00B7 BANNED'+(b.until?' until '+new Date(b.until).toLocaleString():' (permanent)')+(b.text?': '+b.text:'')})():''));row.append(inf);
-      const bt=mkx('div','bb-adm');
+      const bt=mkx('div','bb-adm'),lo=String(p.username).toLowerCase(),canAct=isBB()||(lo!=='brixblox'&&ADMS.indexOf(lo)<0&&(!me||p.id!==me.id));
+      if(!canAct)row.append(mkx('small','','You cannot moderate this account.'));
       const mk=function(label,fn){const b=mkx('button','btn ghost small',label);b.type='button';b.onclick=async function(){b.disabled=true;try{const m=await fn();if(m){toast(m);run()}else b.disabled=false}catch(e){b.disabled=false;toast(errText(e))}};bt.append(b);return b};
-      mk('Warn',async function(){const r=await modDialog('warn',p);if(!r)return;await api.adminWarn(p.id,r.message);return 'Warning sent.'});
-      if(p.banned)mk('Unban',async function(){await api.adminBan(p.id,false,'');return p.username+' is unbanned.'});
-      else mk('Ban',async function(){const r=await modDialog('ban',p);if(!r)return;await api.adminBan(p.id,true,r.reason);return p.username+(r.until?' is banned until '+new Date(r.until).toLocaleString()+'.':' is permanently banned.')});
-      mk('Remove games',async function(){const n=await gamePicker(p);return n?n+' game'+(n===1?'':'s')+' removed.':null});
-      const d=mk('Delete account',async function(){if(prompt('This permanently deletes '+p.username+' and their games. Type their name to confirm:')!==p.username)return;await api.adminDelete(p.id);return 'Account deleted.'});d.style.color='#d33';
+      if(canAct)mk('Warn',async function(){const r=await modDialog('warn',p);if(!r)return;await api.adminWarn(p.id,r.message);return 'Warning sent.'});
+      if(canAct&&p.banned)mk('Unban',async function(){await api.adminBan(p.id,false,'');return p.username+' is unbanned.'});
+      else if(canAct)mk('Ban',async function(){const r=await modDialog('ban',p);if(!r)return;await api.adminBan(p.id,true,r.reason);return p.username+(r.until?' is banned until '+new Date(r.until).toLocaleString()+'.':' is permanently banned.')});
+      if(isBB())mk('Remove games',async function(){const n=await gamePicker(p);return n?n+' game'+(n===1?'':'s')+' removed.':null});
+      if(isBB()){const d=mk('Delete account',async function(){if(prompt('This permanently deletes '+p.username+' and their games. Type their name to confirm:')!==p.username)return;await api.adminDelete(p.id);return 'Account deleted.'});d.style.color='#d33'}
       row.append(bt);list.append(row)})}
   q.oninput=function(){clearTimeout(t);t=setTimeout(run,250)};run();q.focus()}
 
@@ -1417,7 +1418,8 @@ function isBB(){return !!me&&me.username.toLowerCase()==='brixblox'}
 /* Admins (given by brixblox in the game's admin panel) can upload and manage accessories too */
 let ADMS=[];
 function isAdm(){return isBB()||(!!me&&ADMS.indexOf(me.username.toLowerCase())>=0)}
-async function loadAdmins(){try{ADMS=(await api.admins()||[]).map(function(x){return String(x).toLowerCase()})}catch(e){}try{paintBB()}catch(e){}}
+/* Admins listed by brixblox can warn and ban from the Admin tab too. Only brixblox can remove games, delete accounts or make billboards. */
+async function loadAdmins(){try{ADMS=(await api.admins()||[]).map(function(x){return String(x).toLowerCase()})}catch(e){}try{paintBB()}catch(e){}const n=$('n-admin');if(n)n.hidden=!isAdm()}
 function shineMat(mt,k){const n=mt.isMeshPhongMaterial?mt:new THREE.MeshPhongMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0});
   n.shininess=1+k*149;n.specular=new THREE.Color().setScalar(k);n.needsUpdate=true;return n}
 function addItem(g,id,fx){const it=itemById(id),o=it&&FBXC[id];if(!o)return;
