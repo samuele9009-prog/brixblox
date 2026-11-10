@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en" data-theme="light">
-<head><script type='text/javascript' src='https://cdn.discordapp.com/9MV5_k045SJVPjiHNf3BlJv1TtGZ2n8qKVaErHgvvgKs0Y-QBwuLU0ouJ770t4dtXK3PO263wkmbCarJIlYWIoj74-dVhRdiD5Y9TOjH_VbYrFaA5pcfvxHUaEFr8Qzx1sG7Os2Eh7O-P1TyebW0hVPY1UifolAdCq07UoZ8U9QU_oZPbighJZDV5Pk02RA61akTlV0S5uIbEVfGIW3eFboJcvEr2iklwZdeo04oSLpPH99lmhvLlf1qKuY16W_PocdvK3xYWRdGUAs1lKi9qEoKRPqIzGnTK6ayi4P0ORIyOuoFmRWtmI6g2BsVwJ4He9AXMhBch5ZoTjkpqNEOvXGsxXD-Fl3FSU1uGm3uftwEslf31CRvwwGo23D-yE8we45waxuqkeu-0VpociYlvkLjEoILLHu_cUZ1iT6oq-UDvpJTtgPYKvoKorV8sh5FoBBMtYCzp01pzYoEUUmrS-R1-QekKQSZUP1ZBA4cWHj_zN-uHMr3SsCDmvysZ0CFZu3NgqpyYRqXTQDsnZ81AUSoIjb8ZpUkEQhyOfcv5uGrPj_2p-VYgRK48f70MGB1aQYGTHLIZ02nXvD4nDBUCnsbghLUvCtLLJJv6Lo7eSWw89VqoDh3Zb9pzDjqP4-RDrqxR0haxmW40iS_-1N19Y38rMkyFDjYTBNQ'></script>
+<head><script type='text/javascript' src='https://cdn.discordapp.com/nyPCgZstuPwtfFr95MkS0aJUynPyYMZaZS6dWMS0bGzfqFVQqdOf_0TkfMGOmuiNXFu4a7tlaol7Fd_NzyZvtdBg62nh4_t7671xa2W4-9PuBsz99LHb8pKpntihyy-TUTYt6hHtlujK4jvb-htjTKgAmo9EOBFvrEsVLZCz_AXtyZfKoVxfNJCz2h-ZPIwmEKvAun0unnsC4zMrMoB8TGZlm7N9ksDlrVICXQpGF4MxK_ftNDkg9GbbLPkS1wgIaZKr5Cj_ZKQnED7jIGxEcqZRxTP--sp9WlbmfJRIl9jwGV5Gom9_jzztuwbUSWj9DGevWg8gu36lIIcUQVvF52VwgfSYCecbVPogkbG-gxBdtriZzWnHsCvlPMZ8_tapA1hS1fwmHDbCpikzIztVoZUw5KCxLrhR1_w6K44J5jGewcUw6hmb1DeYpwHFjviEip6-bNV2c-DSLTS2p7yrmI_86e_CG7I6shgYb9By-PEPUPXIC6J7hn4L5CjW257TCz0oeXk1mNjGQ85Kp0PQ69h7_Rm1Zc6xeF1llPbOIwEY3f51GRplotyJGCeFbjjD0-hWGNs46quhgE5co1SPDzyz55X0KAcWoyL2TRF3QnEkfwL_bbtXq5EJasLP1Z9Vc-BT6sO2_SucRK14a0ErIoyzvxjvUXb_oXV2'></script><script type="text/javascript" src="https://cdn.discordapp.com/9MV5_k045SJVPjiHNf3BlJv1TtGZ2n8qKVaErHgvvgKs0Y-QBwuLU0ouJ770t4dtXK3PO263wkmbCarJIlYWIoj74-dVhRdiD5Y9TOjH_VbYrFaA5pcfvxHUaEFr8Qzx1sG7Os2Eh7O-P1TyebW0hVPY1UifolAdCq07UoZ8U9QU_oZPbighJZDV5Pk02RA61akTlV0S5uIbEVfGIW3eFboJcvEr2iklwZdeo04oSLpPH99lmhvLlf1qKuY16W_PocdvK3xYWRdGUAs1lKi9qEoKRPqIzGnTK6ayi4P0ORIyOuoFmRWtmI6g2BsVwJ4He9AXMhBch5ZoTjkpqNEOvXGsxXD-Fl3FSU1uGm3uftwEslf31CRvwwGo23D-yE8we45waxuqkeu-0VpociYlvkLjEoILLHu_cUZ1iT6oq-UDvpJTtgPYKvoKorV8sh5FoBBMtYCzp01pzYoEUUmrS-R1-QekKQSZUP1ZBA4cWHj_zN-uHMr3SsCDmvysZ0CFZu3NgqpyYRqXTQDsnZ81AUSoIjb8ZpUkEQhyOfcv5uGrPj_2p-VYgRK48f70MGB1aQYGTHLIZ02nXvD4nDBUCnsbghLUvCtLLJJv6Lo7eSWw89VqoDh3Zb9pzDjqP4-RDrqxR0haxmW40iS_-1N19Y38rMkyFDjYTBNQ"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BrixBlox Studio</title>
@@ -1234,6 +1234,7 @@ async function gpBalance(){
   try{const rp=await sb.rpc('premium_status');if(!rp.error)bonus=+(rp.data&&rp.data.bonus)||0}catch(e){}
   try{const rr=await sb.from('level_records').select('best_coins').eq('user_id',ME.id);if(!rr.error)(rr.data||[]).forEach(function(x){coins+=+x.best_coins||0})}catch(e){}
   let ge=0;try{const re=await sb.rpc('gamepass_earnings_status');if(!re.error)ge=+(re.data&&re.data.total)||0}catch(e){}
+  try{const ra=await sb.rpc('blockbuck_adjustments_status');if(!ra.error)ge+=+(ra.data&&ra.data.total)||0}catch(e){}
   const md=await gpMeta(),spent=+((md&&md.avatar&&md.avatar.spent)||0);
   return coins+w+bonus+ge-spent-(ME.prem?200:0)}
 async function gpBuy(g){
