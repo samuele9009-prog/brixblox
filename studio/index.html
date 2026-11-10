@@ -5514,6 +5514,20 @@ let leavingEl=null;
 function showLeaving(){if(leavingEl)return;const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:9999;background:#232527;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font:700 1.1rem Montserrat,system-ui,sans-serif';
   o.textContent='Leaving game...';leavingEl=o;document.body.append(o);try{if(document.pointerLockElement)document.exitPointerLock()}catch(e){}
   setTimeout(function(){const b=document.createElement('button');b.type='button';b.className='btn';b.textContent='Back to BrixBlox';b.onclick=function(){location.href=SITE_URL};o.append(b)},3000)}
+/* Ban check: while the studio or a game is open, ask the server every 15 s whether this account was banned. If so, the game is stopped, the connection is closed and the player is signed out and sent to the BrixBlox home page. */
+let acctBanShown=false;
+function banParse(r){r=String(r||'');const m=r.match(/^\[until:([^\]]+)\]\s*/);if(!m)return {until:null,text:r};const t=Date.parse(m[1]);return {until:isNaN(t)?null:t,text:r.slice(m[0].length)}}
+function kickBanned(reason){if(acctBanShown)return;acctBanShown=true;skipUnload=true;try{S.stop=true;running=false;playing=false}catch(e){}
+  try{netLeave(true)}catch(e){}try{if(document.pointerLockElement)document.exitPointerLock()}catch(e){}try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}
+  const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:99999;background:#232527;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;font:700 1.1rem Montserrat,system-ui,sans-serif';
+  const h=document.createElement('div');h.textContent='Your BrixBlox account has been banned';h.style.fontSize='1.5rem';const d=document.createElement('div');d.style.cssText='max-width:440px;font-weight:600;white-space:pre-wrap';d.textContent=reason;
+  const b=document.createElement('button');b.type='button';b.className='btn';b.textContent='OK';
+  function out(){try{store.del('brixblox-me')}catch(e){}(window.top||window).location.replace(SITE_URL)}
+  b.onclick=function(){Promise.resolve(sb&&sb.auth.signOut()).then(out,out)};o.append(h,d,b);document.body.append(o)}
+async function checkBan(){if(acctBanShown||!sb||!ME||ME.demo)return;let n;try{const r=await sb.rpc('my_notices');if(r.error)return;n=r.data}catch(e){return}
+  if(!n||!n.banned)return;const b=banParse(n.ban_reason);if(b.until&&b.until<=Date.now())return;
+  kickBanned((b.until?'Banned until '+new Date(b.until).toLocaleString():'Banned permanently')+(b.text?'\nReason: '+b.text:''))}
+setInterval(function(){if(!document.hidden)checkBan()},15000);document.addEventListener('visibilitychange',function(){if(!document.hidden)checkBan()});setTimeout(checkBan,3000);
 function leaveGame(){skipUnload=true;showLeaving();try{S.stop=true}catch(e){}
   /* wait (briefly) for the goodbye to be sent before the page that holds the connection is closed */
   netLeave().then(function(){if(window.parent!==window)parent.postMessage({bb:'leave'},location.origin);else location.href=SITE_URL})}
