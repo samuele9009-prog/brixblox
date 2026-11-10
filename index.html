@@ -714,7 +714,7 @@ function makeDemo(){
     async listGames(){return []},
     async bumpPlay(){},
     async setOfficial(){},
-    async events(){return []},async saveEvent(){throw new Error('Billboards need the online BrixBlox (Supabase).')},async delEvent(){},async adminSearch(){return []},async adminWarn(){},async adminBan(){},async adminChatLogs(){return []},async adminGames(){},async adminDelete(){},async notices(){return null},async ackNotices(){},
+    async events(){return []},async saveEvent(){throw new Error('Billboards need the online BrixBlox (Supabase).')},async delEvent(){},async adminSearch(){return []},async adminWarn(){},async adminBan(){},async adminChatLogs(){return []},async adminGames(){},async adminListGames(){return []},async adminRemoveGame(){},async adminDelete(){},async notices(){return null},async ackNotices(){},
     async gameData(){return null},
     async listAcc(){try{return (JSON.parse(store.get('brixblox-acc'))||[]).map(function(x){return Object.assign({c:'#4a4c4e'},x)})}catch(e){return []}},
     async saveAcc(it){let a=[];try{a=JSON.parse(store.get('brixblox-acc'))||[]}catch(e){}a=a.filter(function(x){return x.id!==it.id});a.push(it);store.set('brixblox-acc',JSON.stringify(a))},
@@ -791,6 +791,8 @@ function makeSupa(){
     async adminBan(id,on,why){const r=await sb.rpc('admin_ban',{p_user:id,p_on:on,p_reason:why||''});if(r.error)throw r.error},
     async adminChatLogs(id){const r=await sb.rpc('admin_chat_logs',{p_user:id});if(r.error)throw r.error;return r.data||[]},
     async adminGames(id){const r=await sb.rpc('admin_remove_games',{p_user:id});if(r.error)throw r.error},
+    async adminListGames(id){let r=await sb.rpc('admin_list_games',{p_user:id});if(r.error)r=await sb.from('games').select('id,name,vis,updated_at').eq('owner_id',id).order('updated_at',{ascending:false}).limit(200);if(r.error)throw r.error;return r.data||[]},
+    async adminRemoveGame(gid){let r=await sb.rpc('admin_remove_game',{p_game:String(gid)});if(r.error){r=await sb.from('games').delete().eq('id',String(gid)).select('id');if(r.error)throw r.error;if(!(r.data||[]).length)throw new Error('That game could not be removed. Run brixblox-admin-games.sql in Supabase.')}},
     async adminDelete(id){const r=await sb.rpc('admin_delete_account',{p_user:id});if(r.error)throw r.error},
     async notices(){const r=await sb.rpc('my_notices');if(r.error)throw r.error;return r.data},
     async ackNotices(){const r=await sb.rpc('ack_warnings');if(r.error)throw r.error},
@@ -1135,7 +1137,7 @@ function openAdmin(){if(!isBB())return;closeAdmin();
       mk('Warn',async function(){const r=await modDialog('warn',p);if(!r)return;await api.adminWarn(p.id,r.message);return 'Warning sent.'});
       if(p.banned)mk('Unban',async function(){await api.adminBan(p.id,false,'');return p.username+' is unbanned.'});
       else mk('Ban',async function(){const r=await modDialog('ban',p);if(!r)return;await api.adminBan(p.id,true,r.reason);return p.username+(r.until?' is banned until '+new Date(r.until).toLocaleString()+'.':' is permanently banned.')});
-      mk('Remove games',async function(){if(!confirm('Delete ALL games made by '+p.username+'?'))return;await api.adminGames(p.id);return 'Games removed.'});
+      mk('Remove games',async function(){const n=await gamePicker(p);return n?n+' game'+(n===1?'':'s')+' removed.':null});
       const d=mk('Delete account',async function(){if(prompt('This permanently deletes '+p.username+' and their games. Type their name to confirm:')!==p.username)return;await api.adminDelete(p.id);return 'Account deleted.'});d.style.color='#d33';
       row.append(bt);list.append(row)})}
   q.oninput=function(){clearTimeout(t);t=setTimeout(run,250)};run();q.focus()}
@@ -1205,6 +1207,40 @@ function modDialog(kind,p){return new Promise(function(done){
     const until=ms?Date.now()+ms:null;let txt=pick.title+(n?': '+n:'');txt=txt.slice(0,180);
     finish({until:until,reason:(until?'[until:'+new Date(until).toISOString()+'] ':'')+txt})};
   row.append(go,cancel);body.append(row);document.body.append(ov)})}
+
+/* ===== Pick which of a player's games to remove ===== */
+function gamePicker(p){return new Promise(function(done){
+  let finished=false,removed=0;const ov=mkx('div','evo');ov.id='gpo';ov.style.zIndex=30;
+  const card=mkx('div','evc'),body=mkx('div','evb');card.style.maxWidth='540px';card.append(body);ov.append(card);
+  function finish(){if(finished)return;finished=true;removeEventListener('keydown',onKey,true);ov.remove();done(removed)}
+  function onKey(e){if(e.key==='Escape'){e.stopPropagation();finish()}}
+  addEventListener('keydown',onKey,true);ov.onclick=function(x){if(x.target===ov)finish()};
+  body.append(mkx('h2','','Remove games from '+p.username),mkx('p','sub','Tick the games to delete. This cannot be undone.'));
+  const list=mkx('div');list.style.cssText='display:flex;flex-direction:column;gap:6px;margin:10px 0;max-height:320px;overflow:auto';
+  const row=mkx('div','bb-adm');row.style.marginTop='12px';
+  const all=mkx('button','btn ghost small','Select all'),del=mkx('button','btn small','Delete selected'),cancel=mkx('button','btn ghost small','Close');
+  [all,del,cancel].forEach(function(b){b.type='button'});del.disabled=true;del.style.color='#d33';all.hidden=true;
+  row.append(del,all,cancel);body.append(list,row);cancel.onclick=finish;document.body.append(ov);
+  let items=[];
+  function chosen(){return items.filter(function(i){return i.cb.checked})}
+  function upd(){const n=chosen().length;del.disabled=!n;del.textContent=n?'Delete selected ('+n+')':'Delete selected';all.textContent=n===items.length?'Select none':'Select all'}
+  function fill(rows){items=[];list.replaceChildren();
+    if(!rows.length){list.append(mkx('p','empty',removed?'No games left.':'This player has no games.'));all.hidden=true;upd();return}
+    all.hidden=false;
+    rows.forEach(function(g){const lab=document.createElement('label');lab.style.cssText='display:flex;align-items:center;gap:10px;margin:0;padding:8px 10px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-weight:600';
+      const cb=document.createElement('input');cb.type='checkbox';cb.style.cssText='width:18px;height:18px;flex:none';cb.onchange=upd;
+      const t=mkx('div');t.style.cssText='min-width:0;flex:1';const nm=mkx('strong','',g.name||'Untitled game');nm.style.cssText='display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      const meta=mkx('small','',(g.vis==='public'||g.vis===true?'Public':'Private')+(g.updated_at?' \u00B7 updated '+new Date(g.updated_at).toLocaleDateString():''));meta.style.color='var(--muted)';
+      t.append(nm,meta);lab.append(cb,t);list.append(lab);items.push({g:g,cb:cb,lab:lab})});upd()}
+  all.onclick=function(){const on=chosen().length!==items.length;items.forEach(function(i){i.cb.checked=on});upd()};
+  del.onclick=async function(){const sel=chosen();if(!sel.length)return;
+    if(!confirm('Permanently delete '+sel.length+' game'+(sel.length===1?'':'s')+' by '+p.username+'?'))return;
+    del.disabled=all.disabled=cancel.disabled=true;let fail='';
+    for(const i of sel){try{await api.adminRemoveGame(i.g.id);removed++;i.lab.remove();items=items.filter(function(x){return x!==i})}catch(e){fail=errText(e)}}
+    cancel.disabled=all.disabled=false;if(fail)toast('Some games could not be removed: '+fail);
+    if(!items.length)fill([]);else upd()};
+  list.append(mkx('p','empty','Loading games...'));
+  api.adminListGames(p.id).then(fill).catch(function(e){list.replaceChildren(mkx('p','empty',errText(e)))})})}
 async function checkNotices(){if(!me||api.demo||$('ntc'))return;let n;try{n=await api.notices()}catch(e){return}if(!n)return;
   if(n.banned){const b=banParse(n.ban_reason);if(!b.until||b.until>Date.now()){alert('Your BrixBlox account has been banned'+(b.until?' until '+new Date(b.until).toLocaleString():' permanently')+'.'+(b.text?'\nReason: '+b.text:''));try{await api.logOut()}catch(e){}location.reload();return}}
   const w=n.warnings||[];if(!w.length)return;
