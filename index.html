@@ -528,8 +528,8 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
   <div id="p-catalog" class="page" hidden="">
     <section class="panel">
       <div class="sh-head"><h2 style="margin:0">Catalog</h2><span class="wallet" title="Your blockbucks"><i></i><span id="cat-wal">0</span> blockbucks</span></div>
-      <p class="hint">Everything on sale that you can buy. Click an item to see more.</p>
-      <div class="cat-bar"><input id="cat-q" type="text" maxlength="30" placeholder="Search the catalog" autocomplete="off"><div id="cat-tabs" class="seg"></div></div>
+      <p class="hint">Everything that is on sale, including items you already own. Click an item to see more.</p>
+      <div class="cat-bar"><input id="cat-q" type="text" maxlength="30" placeholder="Search the catalog" autocomplete="off"><div id="cat-tabs" class="seg"></div><label id="cat-offl" class="hint" hidden="" style="display:flex;align-items:center;gap:6px;margin:0"><input id="cat-off" type="checkbox" style="width:18px;height:18px"> Show off-sale items (admins)</label></div>
       <div id="cat-grid" class="cat-grid"></div>
     </section>
   </div>
@@ -1936,7 +1936,7 @@ $('ac-go').onclick=async function(){const f=$('ac-file').files[0],nm=$('ac-name'
   $('ac-go').disabled=false};
 function openAvatarPage(){$('acc-up').hidden=!isAdm();loadAdmins().then(function(){$('acc-up').hidden=!isAdm();paintShop()});loadBank().then(paintShop);pvInit();ED=null;$('acc-ed').hidden=true;facePreview(false);pv.tryEq=null;pvRebuild();paintShop()}
 /* ===== Catalog and item pages ===== */
-const CAT={tab:'all',q:''};
+const CAT={tab:'all',q:'',off:false};
 const IV={r:null,sc:null,cam:null,obj:null,fx:{},id:null,mode:'item',yaw:.6,pitch:.2,drag:false,px:0,py:0,w:0,h:0,back:'catalog'};
 function goPage(p){nav(p);if(p==='avatar')openAvatarPage();else if(p==='catalog')paintCatalog();else if(p==='home'||p==='discover')loadGames();else if(p==='friends')loadFriends();else if(p==='bank')loadBank()}
 function slotName(s){const x=SLOTS.filter(function(a){return a[0]===s})[0];return x?x[1]:s}
@@ -1952,29 +1952,29 @@ function admBtns(it){const r=document.createElement('div');r.className='row';con
 function catList(){return ITEMS.filter(function(x){
   if(CAT.tab!=='all'&&x.slot!==CAT.tab)return false;
   if(CAT.q&&String(x.name).toLowerCase().indexOf(CAT.q)<0)return false;
-  if(isAdm())return me.av.owned.indexOf(x.id)<0;/* admins also see off-sale items so they can manage them */
-  return x.sale!==false&&me.av.owned.indexOf(x.id)<0})}
+  return x.sale!==false||(isAdm()&&CAT.off)})}
 function paintCatalog(){
-  if(!me)return;$('cat-wal').textContent=isBB()?'\u221E':balance();
+  if(!me)return;$('cat-wal').textContent=isBB()?'\u221E':balance();$('cat-offl').hidden=!isAdm();$('cat-off').checked=CAT.off&&isAdm();
   const tabs=$('cat-tabs');tabs.replaceChildren();
   [['all','All']].concat(SLOTS).forEach(function(s){const b=document.createElement('button');b.type='button';b.className='btn ghost small';b.textContent=s[1];b.setAttribute('aria-pressed',String(CAT.tab===s[0]));b.onclick=function(){CAT.tab=s[0];paintCatalog()};tabs.appendChild(b)});
   TH.list=[];const g=$('cat-grid');g.replaceChildren();
   const list=catList();
   if(!list.length){const p=mkx('p','empty',ITEMS.length?(CAT.q?'No items match your search.':'Nothing to buy here right now.'):'The catalog is empty.');p.style.gridColumn='1/-1';g.append(p);return}
   list.forEach(function(it){
-    const off=it.sale===false,d=mkx('div','item cat-card'+(off?' off':'')),sw=mkx('div','sw');sw.style.background=it.c;thTile(sw,it);
-    const n=mkx('b','',it.name),pr=mkx('div','pr');pr.innerHTML='<i></i>'+(it.price>0?it.price:'Free');
+    const off=it.sale===false,owned=me.av.owned.indexOf(it.id)>=0,d=mkx('div','item cat-card'+(off?' off':'')),sw=mkx('div','sw');sw.style.background=it.c;thTile(sw,it);
+    const n=mkx('b','',it.name),pr=mkx('div','pr');pr.innerHTML=owned?'Owned':'<i></i>'+(it.price>0?it.price:'Free');
     if(off)pr.append(mkx('span','tagoff','Off sale'));
     if(it.prem)pr.append(mkx('span','tagprem','\u2605 Premium'));
     d.tabIndex=0;d.setAttribute('role','link');d.setAttribute('aria-label',it.name);
     d.onclick=function(){openItem(it.id)};d.onkeydown=function(e){if(e.key==='Enter')openItem(it.id)};
     d.append(sw,n,pr);if(isAdm())d.append(admBtns(it));g.append(d)})}
+$('cat-off').addEventListener('change',function(){CAT.off=this.checked;paintCatalog()});
 $('cat-q').addEventListener('input',function(){CAT.q=this.value.trim().toLowerCase();paintCatalog()});
 async function toggleEquip(it){const eq=me.av.eq,old=eqArr(eq[it.slot]),worn=old.indexOf(it.id)>=0;
   eq[it.slot]=worn?old.filter(function(x){return x!==it.id}):eqPut(old,it.id);pv.tryEq=null;pvRebuild();paintItem();
   if(!await saveAv()){eq[it.slot]=old;pvRebuild()}paintItem()}
 async function buyItem(it){const eq=me.av.eq;
-  if(it.sale===false){toast('This item is no longer on sale.');return}
+  if(it.sale===false&&!isAdm()){toast('This item is no longer on sale.');return}
   if(it.prem&&!premOn()){toast('This item is for Premium players. Get Premium on the Premium page.');nav('premium');paintPrem();return}
   if(balance()<it.price){toast('Not enough blockbucks. You need '+(it.price-balance())+' more.');return}
   const prev=JSON.stringify(me.av);me.av.owned.push(it.id);me.av.spent=(me.av.spent||0)+it.price;eq[it.slot]=eqPut(eqArr(eq[it.slot]),it.id);pv.tryEq=null;pvRebuild();paintItem();
@@ -1995,7 +1995,7 @@ function paintItem(){
   if(owned)pr.append(document.createTextNode('Owned'));else{pr.append(mkx('i'));pr.append(document.createTextNode(it.price>0?String(it.price):'Free'))}
   function btn(t,f,ghost){const x=mkx('button','btn'+(ghost?' ghost':''),t);x.type='button';x.onclick=f;acts.append(x);return x}
   if(owned)btn(worn?'Remove':'Equip',function(){toggleEquip(it)});
-  else if(!off)btn(it.price>0?'Buy for '+it.price:'Get',function(){buyItem(it)});
+  else if(!off||isAdm()){btn(it.price>0?'Buy for '+it.price:'Get',function(){buyItem(it)});if(off)acts.append(mkx('span','hint','Off sale. Only admins can buy this.'))}
   else acts.append(mkx('span','hint','This item is not on sale right now.'));
   const dsc=String(it.descr||'').trim();$('it-desc').className='it-desc'+(dsc?'':' none');$('it-desc').textContent=dsc||'No description yet.';
   adm.hidden=!isAdm();
