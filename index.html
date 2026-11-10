@@ -779,8 +779,13 @@ function makeSupa(){
     async addFriend(id,n){const r=await sb.rpc('send_friend_request',{p_username:n});if(r.error)throw r.error;return r.data},
     async answerFriend(id,fid,yes){const r=await sb.rpc('answer_friend',{p_id:fid,p_accept:yes});if(r.error)throw r.error},
     async listGames(id){const f=['id,name,owner_id,owner_name,vis,updated_at,thumb,official,plays','id,name,owner_id,owner_name,vis,updated_at,thumb,official','id,name,owner_id,owner_name,vis,updated_at,thumb','id,name,owner_id,owner_name,vis,updated_at'];let r;
-      for(let i=0;i<f.length;i++){r=await sb.from('games').select(f[i]).or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(120);if(!r.error)break}
-      if(r.error)throw r.error;return r.data},
+      for(let i=0;i<f.length;i++){r=await sb.from('games').select(f[i]).or('vis.eq.public,owner_id.eq.'+id).order('updated_at',{ascending:false}).limit(300);if(!r.error)break}
+      if(r.error)throw r.error;const rows=r.data||[],seen={};rows.forEach(function(g){seen[g.id]=1});
+      /* "Made by BrixBlox" and most-played games are fetched on their own, so they still show up when they are older than the newest 300 public games */
+      const extra=[['official',function(q){return q.eq('official',true).eq('vis','public').order('updated_at',{ascending:false}).limit(500)}],['plays',function(q){return q.eq('vis','public').gt('plays',0).order('plays',{ascending:false}).limit(60)}]];
+      for(let j=0;j<extra.length;j++){try{let x;for(let i=0;i<f.length;i++){if(f[i].indexOf(extra[j][0])<0)continue;x=await extra[j][1](sb.from('games').select(f[i]));if(!x.error)break}
+        if(x&&!x.error)(x.data||[]).forEach(function(g){if(!seen[g.id]){seen[g.id]=1;rows.push(g)}})}catch(e){}}
+      return rows},
     async bumpPlay(gid){const r=await sb.rpc('bump_play',{p_game:String(gid)});if(r.error)throw r.error},
     async setOfficial(gid,on){let r=await sb.rpc('set_official',{p_game:String(gid),p_on:!!on});if(r.error){r=await sb.from('games').update({official:!!on}).eq('id',gid);if(r.error)throw r.error}},
     async events(){const r=await sb.from('events').select('id,title,descr,thumb,game_ids,active,ends_at,sort,updated_at').order('sort',{ascending:true}).order('updated_at',{ascending:false}).limit(12);if(r.error)throw r.error;return r.data||[]},
