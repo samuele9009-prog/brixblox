@@ -1184,17 +1184,17 @@ function modDialog(kind,p){return new Promise(function(done){
   let sel=null,cn=null,cu=null;
   if(isBan){
     const lb=mkx('label','','Ban length');lb.style.marginTop='4px';
-    sel=document.createElement('select');sel.style.cssText='width:100%;min-height:44px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:1rem;color:var(--ink)';
+    sel=document.createElement('select');sel.style.cssText='width:100%;min-height:44px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:var(--sky);font-size:1rem;color:var(--ink)';
     BAN_DURS.forEach(function(d,i){const o=document.createElement('option');o.value=i;o.textContent=d[0];sel.append(o)});sel.value=1;
     const cr=mkx('div');cr.hidden=true;cr.style.cssText='display:flex;gap:8px;margin-top:8px';
-    cn=document.createElement('input');cn.type='number';cn.min=1;cn.max=3650;cn.value=1;cn.style.cssText='flex:1;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-size:1rem;background:#fff;color:var(--ink)';
-    cu=document.createElement('select');cu.style.cssText='flex:1;min-height:44px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:1rem;color:var(--ink)';
+    cn=document.createElement('input');cn.type='number';cn.min=1;cn.max=3650;cn.value=1;cn.style.cssText='flex:1;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-size:1rem;background:var(--sky);color:var(--ink)';
+    cu=document.createElement('select');cu.style.cssText='flex:1;min-height:44px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:var(--sky);font-size:1rem;color:var(--ink)';
     [['Hours',36e5],['Days',864e5],['Weeks',7*864e5]].forEach(function(u){const o=document.createElement('option');o.value=u[1];o.textContent=u[0];cu.append(o)});cu.value=864e5;
     cr.append(cn,cu);sel.onchange=function(){cr.hidden=BAN_DURS[sel.value][1]!==-1};
     body.append(lb,sel,cr)}
   const nl=mkx('label','','Moderator note (optional)');
   const note=document.createElement('textarea');note.maxLength=200;note.rows=3;note.placeholder='Add anything the player should know...';
-  note.style.cssText='width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font:inherit;font-weight:500;resize:vertical';
+  note.style.cssText='width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--sky);color:var(--ink);font:inherit;font-weight:500;resize:vertical';
   body.append(nl,note);
   const row=mkx('div','bb-adm');row.style.marginTop='16px';
   const cancel=mkx('button','btn ghost','Cancel');cancel.type='button';cancel.onclick=function(){finish(null)};
@@ -1212,7 +1212,7 @@ async function checkNotices(){if(!me||api.demo||$('ntc'))return;let n;try{n=awai
   body.append(mkx('h2','','Warning from BrixBlox'));w.forEach(function(x){const p=mkx('p','',x.message);p.style.whiteSpace='pre-wrap';body.append(p)});
   body.append(mkx('p','sub','Keep breaking the rules and your account can be banned.'));
   const ok=mkx('button','btn','I understand');ok.type='button';ok.onclick=async function(){try{await api.ackNotices()}catch(e){}ov.remove()};body.append(ok);card.append(body);ov.append(card);document.body.append(ov)}
-setInterval(function(){if(me&&!document.hidden)checkNotices()},60000);
+setInterval(function(){if(me&&!document.hidden)checkNotices()},15000);
 function closeEvent(){const o=$('evo');if(o)o.remove()}
 addEventListener('keydown',function(e){if(e.key==='Escape')closeEvent()});
 function openEvent(e){closeEvent();const ov=mkx('div','evo');ov.id='evo';ov.onclick=function(x){if(x.target===ov)closeEvent()};
