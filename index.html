@@ -714,7 +714,7 @@ function makeDemo(){
     async answerFriend(id,fid,yes){const d=load();const f=(d.fr||[]).find(x=>x.id===fid);if(!f)return;if(yes&&f.b===id)f.status='accepted';else d.fr=d.fr.filter(x=>x!==f);save(d)},
     async listGames(){return []},
     async bumpPlay(){},
-    async setOfficial(){},
+    async setOfficial(){},async checkOfficial(){return null},
     async events(){return []},async saveEvent(){throw new Error('Billboards need the online BrixBlox (Supabase).')},async delEvent(){},async adminSearch(){return []},async adminWarn(){},async adminBan(){},async adminChatLogs(){return []},async adminGames(){},async adminListGames(){return []},async adminRemoveGame(){},async adminDelete(){},async notices(){return null},async ackNotices(){},
     async gameData(){return null},
     async listAcc(){try{return (JSON.parse(store.get('brixblox-acc'))||[]).map(function(x){return Object.assign({c:'#4a4c4e'},x)})}catch(e){return []}},
@@ -787,6 +787,7 @@ function makeSupa(){
       for(let j=0;j<extra.length;j++){try{let x;for(let i=0;i<f.length;i++){if(f[i].indexOf(extra[j][0])<0)continue;x=await extra[j][1](sb.from('games').select(f[i]));if(!x.error)break}
         if(x&&!x.error)(x.data||[]).forEach(function(g){if(!seen[g.id]){seen[g.id]=1;rows.push(g)}})}catch(e){}}
       return rows},
+    async checkOfficial(gid){const r=await sb.from('games').select('official').eq('id',String(gid)).maybeSingle();if(r.error)throw r.error;return r.data?!!r.data.official:null},
     async bumpPlay(gid){const r=await sb.rpc('bump_play',{p_game:String(gid)});if(r.error)throw r.error},
     async setOfficial(gid,on){let r=await sb.rpc('set_official',{p_game:String(gid),p_on:!!on});if(r.error){console.warn('set_official rpc failed',r.error);r=await sb.from('games').update({official:!!on}).eq('id',String(gid)).select('id');if(r.error)throw r.error;if(!(r.data||[]).length)throw new Error('SETOFFICIAL_BLOCKED')}},
     async events(){const r=await sb.from('events').select('id,title,descr,thumb,game_ids,active,ends_at,sort,updated_at').order('sort',{ascending:true}).order('updated_at',{ascending:false}).limit(12);if(r.error)throw r.error;return r.data||[]},
@@ -1071,7 +1072,7 @@ function gfill(box,list,empty,disc){box.replaceChildren();if(!list.length){box.c
     const row=mkx('div','row'),pl=mkx('button','btn small joinb','Join');pl.type='button';pl.onclick=function(){playGame(g)};row.append(pl);
     if(mine&&!disc){const ed=mkx('button','btn ghost small','Edit');ed.type='button';ed.onclick=function(){editGame(g)};row.append(ed)}
     if(isBB()&&g.vis==='public'&&String(g.id).indexOf('acc_')!==0&&String(g.id).indexOf('avatar_')!==0&&String(g.id).indexOf('sys_')!==0){const of=mkx('button','btn ghost small',g.official?'Remove from BrixBlox':'Add to BrixBlox');of.type='button';
-      of.onclick=async function(){of.disabled=true;try{const was=g.official;await api.setOfficial(g.id,!was);g.official=!was;toast(was?'Removed from Made by BrixBlox.':'Added to Made by BrixBlox.');if(PUBG)dfill(PUBG);loadGames()}catch(e){of.disabled=false;console.warn('Add to BrixBlox failed',e);toast('Could not change that. Run brixblox-official.sql in Supabase (SQL editor), then try again.')}};row.append(of)}
+      of.onclick=async function(){of.disabled=true;try{const was=!!g.official;await api.setOfficial(g.id,!was);{let now=null;try{now=await api.checkOfficial(g.id)}catch(e){}if(now!==null&&now!==!was){of.disabled=false;toast('The database did not keep that change (it still says '+(now?'official':'not official')+'). Check the set_official function in Supabase.');return}}g.official=!was;toast(was?'Removed from Made by BrixBlox.':'Added to Made by BrixBlox.');if(PUBG)dfill(PUBG);loadGames()}catch(e){of.disabled=false;console.warn('Add to BrixBlox failed',e);toast('Could not change that. Run brixblox-official.sql in Supabase (SQL editor), then try again.')}};row.append(of)}
     bd.append(row);c.append(th,bd);box.append(c)});lockPaint()}
 async function gameData(g){if(g.data)return g.data;try{return await api.gameData(g.id)}catch(e){return null}}
 async function playGame(g){if(/^(acc_|avatar_|sys_)/.test(String(g&&g.id))){toast('That cannot be opened.');return}
