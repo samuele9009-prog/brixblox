@@ -714,7 +714,7 @@ function makeDemo(){
     async listGames(){return []},
     async bumpPlay(){},
     async setOfficial(){},
-    async events(){return []},async saveEvent(){throw new Error('Billboards need the online BrixBlox (Supabase).')},async delEvent(){},async adminSearch(){return []},async adminWarn(){},async adminBan(){},async adminGames(){},async adminDelete(){},async notices(){return null},async ackNotices(){},
+    async events(){return []},async saveEvent(){throw new Error('Billboards need the online BrixBlox (Supabase).')},async delEvent(){},async adminSearch(){return []},async adminWarn(){},async adminBan(){},async adminChatLogs(){return []},async adminGames(){},async adminDelete(){},async notices(){return null},async ackNotices(){},
     async gameData(){return null},
     async listAcc(){try{return (JSON.parse(store.get('brixblox-acc'))||[]).map(function(x){return Object.assign({c:'#4a4c4e'},x)})}catch(e){return []}},
     async saveAcc(it){let a=[];try{a=JSON.parse(store.get('brixblox-acc'))||[]}catch(e){}a=a.filter(function(x){return x.id!==it.id});a.push(it);store.set('brixblox-acc',JSON.stringify(a))},
@@ -789,6 +789,7 @@ function makeSupa(){
     async adminSearch(q){const r=await sb.rpc('admin_search_players',{p_q:q||''});if(r.error)throw r.error;return r.data||[]},
     async adminWarn(id,m){const r=await sb.rpc('admin_warn',{p_user:id,p_msg:m});if(r.error)throw r.error},
     async adminBan(id,on,why){const r=await sb.rpc('admin_ban',{p_user:id,p_on:on,p_reason:why||''});if(r.error)throw r.error},
+    async adminChatLogs(id){const r=await sb.rpc('admin_chat_logs',{p_user:id});if(r.error)throw r.error;return r.data||[]},
     async adminGames(id){const r=await sb.rpc('admin_remove_games',{p_user:id});if(r.error)throw r.error},
     async adminDelete(id){const r=await sb.rpc('admin_delete_account',{p_user:id});if(r.error)throw r.error},
     async notices(){const r=await sb.rpc('my_notices');if(r.error)throw r.error;return r.data},
@@ -1128,18 +1129,84 @@ function openAdmin(){if(!isBB())return;closeAdmin();
     rows.forEach(function(p){
       const row=mkx('div','adr');row.style.cssText='border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;display:flex;flex-direction:column;gap:6px';
       const nm=mkx('strong','',p.username);row.append(nm);
-      const inf=mkx('small','','Joined '+(p.created_at?new Date(p.created_at).toLocaleDateString():'?')+' \u00B7 '+(p.warns|0)+' warning(s) \u00B7 '+(p.games|0)+' game(s)'+(p.banned?' \u00B7 BANNED'+(p.ban_reason?': '+p.ban_reason:''):''));row.append(inf);
+      const inf=mkx('small','','Joined '+(p.created_at?new Date(p.created_at).toLocaleDateString():'?')+' \u00B7 '+(p.warns|0)+' warning(s) \u00B7 '+(p.games|0)+' game(s)'+(p.banned?(function(){const b=banParse(p.ban_reason);return ' \u00B7 BANNED'+(b.until?' until '+new Date(b.until).toLocaleString():' (permanent)')+(b.text?': '+b.text:'')})():''));row.append(inf);
       const bt=mkx('div','bb-adm');
       const mk=function(label,fn){const b=mkx('button','btn ghost small',label);b.type='button';b.onclick=async function(){b.disabled=true;try{const m=await fn();if(m){toast(m);run()}else b.disabled=false}catch(e){b.disabled=false;toast(errText(e))}};bt.append(b);return b};
-      mk('Warn',async function(){const m=prompt('Warning for '+p.username+' (they see it next time they open BrixBlox):');if(!m||!m.trim())return;await api.adminWarn(p.id,m.trim().slice(0,300));return 'Warning sent.'});
+      mk('Warn',async function(){const r=await modDialog('warn',p);if(!r)return;await api.adminWarn(p.id,r.message);return 'Warning sent.'});
       if(p.banned)mk('Unban',async function(){await api.adminBan(p.id,false,'');return p.username+' is unbanned.'});
-      else mk('Ban',async function(){const m=prompt('Ban '+p.username+' from all of BrixBlox. Reason:');if(m===null)return;await api.adminBan(p.id,true,(m||'').trim().slice(0,200));return p.username+' is banned.'});
+      else mk('Ban',async function(){const r=await modDialog('ban',p);if(!r)return;await api.adminBan(p.id,true,r.reason);return p.username+(r.until?' is banned until '+new Date(r.until).toLocaleString()+'.':' is permanently banned.')});
       mk('Remove games',async function(){if(!confirm('Delete ALL games made by '+p.username+'?'))return;await api.adminGames(p.id);return 'Games removed.'});
       const d=mk('Delete account',async function(){if(prompt('This permanently deletes '+p.username+' and their games. Type their name to confirm:')!==p.username)return;await api.adminDelete(p.id);return 'Account deleted.'});d.style.color='#d33';
       row.append(bt);list.append(row)})}
   q.oninput=function(){clearTimeout(t);t=setTimeout(run,250)};run();q.focus()}
+
+/* ===== Moderation dialog: pick a reason + optional moderator note (+ duration for bans) ===== */
+const MOD_REASONS=[
+  {id:'games',title:'Inappropriate parts in games',desc:'BrixBlox does not allow any sort of inappropriate blocks or builds in game like sexual images or rigs doing inappropriate actions, this should be clear at all times because this is a friendly platform/game for any player.'},
+  {id:'item',title:'Offensive Item',desc:'BrixBlox does not allow anything offensive to our player base, please refrain from using any bad or discriminatory language.'},
+  {id:'threat',title:'Threats',caution:'Do not threaten people with bad language this has a chance of becoming a permban.',desc:'BrixBlox is a place where everyone feels safe, you shouldn\u2019t be making anyone feel unsafe.'},
+  {id:'lang',title:'Bad Language',logs:true,desc:'Bypassing the BrixBlox filtration system is not allowed, please refrain from doing this again'}];
+const BAN_DURS=[['1 hour',36e5],['1 day',864e5],['3 days',3*864e5],['7 days',7*864e5],['30 days',30*864e5],['Permanent',0],['Custom\u2026',-1]];
+function banParse(r){r=String(r||'');const m=r.match(/^\[until:([^\]]+)\]\s*/);if(!m)return {until:null,text:r};const t=Date.parse(m[1]);return {until:isNaN(t)?null:t,text:r.slice(m[0].length)}}
+function modDialog(kind,p){return new Promise(function(done){
+  const isBan=kind==='ban';let pick=null,finished=false;
+  const ov=mkx('div','evo');ov.id='mdo';ov.style.zIndex=30;
+  const card=mkx('div','evc'),body=mkx('div','evb');card.style.maxWidth='540px';card.append(body);ov.append(card);
+  function finish(v){if(finished)return;finished=true;removeEventListener('keydown',onKey);ov.remove();done(v)}
+  function onKey(e){if(e.key==='Escape'){e.stopPropagation();finish(null)}}
+  addEventListener('keydown',onKey,true);ov.onclick=function(x){if(x.target===ov)finish(null)};
+  body.append(mkx('h2','',(isBan?'Ban ':'Warn ')+p.username));
+  body.append(mkx('p','sub','Pick a reason'+(isBan?', then choose how long.':'.')));
+  const list=mkx('div');list.style.cssText='display:flex;flex-direction:column;gap:8px;margin:10px 0';
+  const logBox=mkx('div');logBox.hidden=true;logBox.style.cssText='border:1px solid var(--line);border-radius:10px;padding:8px 10px;max-height:150px;overflow:auto;font-size:.85rem;margin:0 0 10px;background:rgba(0,0,0,.03)';
+  const cards=[];
+  function loadLogs(){logBox.hidden=false;logBox.replaceChildren(mkx('small','','Loading chat logs...'));
+    api.adminChatLogs(p.id).then(function(rows){logBox.replaceChildren();
+      if(!rows.length){logBox.append(mkx('small','','No chat logs found for this player.'));return}
+      logBox.append(mkx('strong','','Chat logs (red = caught by the filter)'));
+      rows.slice(0,100).forEach(function(r){const hit=!!r.flagged,ln=mkx('div','',(r.created_at?new Date(r.created_at).toLocaleString()+'  ':'')+(r.raw_text||r.message||r.text||''));
+        ln.style.cssText='padding:3px 0;border-top:1px solid var(--line);word-break:break-word;white-space:pre-wrap'+(hit?';color:#c2321f;font-weight:700':'');
+        if(hit&&r.shown_text){const sh=mkx('small','','  \u2192 others saw: '+r.shown_text);sh.style.cssText='color:var(--muted);font-weight:500';ln.append(sh)}
+        logBox.append(ln)})
+    }).catch(function(e){logBox.replaceChildren(mkx('small','','Chat logs could not be loaded: '+((e&&e.message)||e)))})}
+  MOD_REASONS.forEach(function(r){
+    const c=mkx('div','mdr');c.tabIndex=0;c.setAttribute('role','radio');c.setAttribute('aria-checked','false');
+    c.style.cssText='border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer';
+    c.append(mkx('strong','',r.title));
+    const det=mkx('div');det.hidden=true;det.style.marginTop='6px';
+    if(r.caution){const cb=mkx('div','','Caution: '+r.caution);cb.style.cssText='margin:0 0 6px;padding:8px 10px;border-radius:8px;border:1px solid #c2321f;background:rgba(194,50,31,.08);color:#c2321f;font-size:.85rem;font-weight:700';det.append(cb)}
+    const d=mkx('small','',r.desc);d.style.cssText='display:block;color:var(--muted);font-weight:500;line-height:1.4';det.append(d);c.append(det);
+    function choose(){pick=r;cards.forEach(function(x){const on=x.c===c;x.c.setAttribute('aria-checked',on);x.c.style.borderColor=on?'var(--berry)':'var(--line)';x.c.style.boxShadow=on?'0 0 0 2px var(--berry)':'none';x.det.hidden=!on});
+      if(r.logs)loadLogs();else logBox.hidden=true;go.disabled=false}
+    c.onclick=choose;c.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();choose()}};
+    cards.push({c:c,det:det});list.append(c)});
+  body.append(list,logBox);
+  let sel=null,cn=null,cu=null;
+  if(isBan){
+    const lb=mkx('label','','Ban length');lb.style.marginTop='4px';
+    sel=document.createElement('select');sel.style.cssText='width:100%;min-height:44px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:1rem;color:var(--ink)';
+    BAN_DURS.forEach(function(d,i){const o=document.createElement('option');o.value=i;o.textContent=d[0];sel.append(o)});sel.value=1;
+    const cr=mkx('div');cr.hidden=true;cr.style.cssText='display:flex;gap:8px;margin-top:8px';
+    cn=document.createElement('input');cn.type='number';cn.min=1;cn.max=3650;cn.value=1;cn.style.cssText='flex:1;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-size:1rem;background:#fff;color:var(--ink)';
+    cu=document.createElement('select');cu.style.cssText='flex:1;min-height:44px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:1rem;color:var(--ink)';
+    [['Hours',36e5],['Days',864e5],['Weeks',7*864e5]].forEach(function(u){const o=document.createElement('option');o.value=u[1];o.textContent=u[0];cu.append(o)});cu.value=864e5;
+    cr.append(cn,cu);sel.onchange=function(){cr.hidden=BAN_DURS[sel.value][1]!==-1};
+    body.append(lb,sel,cr)}
+  const nl=mkx('label','','Moderator note (optional)');
+  const note=document.createElement('textarea');note.maxLength=200;note.rows=3;note.placeholder='Add anything the player should know...';
+  note.style.cssText='width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font:inherit;font-weight:500;resize:vertical';
+  body.append(nl,note);
+  const row=mkx('div','bb-adm');row.style.marginTop='16px';
+  const cancel=mkx('button','btn ghost','Cancel');cancel.type='button';cancel.onclick=function(){finish(null)};
+  const go=mkx('button','btn',isBan?'Ban player':'Send warning');go.type='button';go.disabled=true;
+  go.onclick=function(){if(!pick)return;const n=note.value.trim();
+    if(!isBan){let m=pick.title+'\n\n';if(pick.caution)m+='Caution: '+pick.caution+'\n\n';m+=pick.desc;if(n)m+='\n\nModerator note: '+n;finish({message:m.slice(0,700)});return}
+    let ms=BAN_DURS[sel.value][1];if(ms===-1){const v=Math.floor(+cn.value);if(!(v>=1)){toast('Enter a ban length of at least 1.');return}ms=v*(+cu.value)}
+    const until=ms?Date.now()+ms:null;let txt=pick.title+(n?': '+n:'');txt=txt.slice(0,180);
+    finish({until:until,reason:(until?'[until:'+new Date(until).toISOString()+'] ':'')+txt})};
+  row.append(go,cancel);body.append(row);document.body.append(ov)})}
 async function checkNotices(){if(!me||api.demo||$('ntc'))return;let n;try{n=await api.notices()}catch(e){return}if(!n)return;
-  if(n.banned){alert('Your BrixBlox account has been banned.'+(n.ban_reason?'\nReason: '+n.ban_reason:''));try{await api.logOut()}catch(e){}location.reload();return}
+  if(n.banned){const b=banParse(n.ban_reason);if(!b.until||b.until>Date.now()){alert('Your BrixBlox account has been banned'+(b.until?' until '+new Date(b.until).toLocaleString():' permanently')+'.'+(b.text?'\nReason: '+b.text:''));try{await api.logOut()}catch(e){}location.reload();return}}
   const w=n.warnings||[];if(!w.length)return;
   const ov=mkx('div','evo');ov.id='ntc';const card=mkx('div','evc'),body=mkx('div','evb');card.style.maxWidth='460px';
   body.append(mkx('h2','','Warning from BrixBlox'));w.forEach(function(x){const p=mkx('p','',x.message);p.style.whiteSpace='pre-wrap';body.append(p)});
