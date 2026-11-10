@@ -422,6 +422,39 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .it-adm textarea,.ed textarea{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font:inherit;font-weight:500;resize:vertical}
 .it-adm .row{display:flex;gap:6px;flex-wrap:wrap}.it-adm .row .btn{flex:0 1 auto;width:auto;margin:0}
 .item.cat-card .row .btn{font-size:.8rem}
+
+/* Item page (store-style layout) + recommendations + favorites */
+.it-hero{display:grid;grid-template-columns:minmax(260px,440px) minmax(0,1fr);gap:30px;align-items:start}
+@media(max-width:760px){.it-hero{grid-template-columns:minmax(0,1fr)}}
+.it-left{display:flex;flex-direction:column;gap:12px;min-width:0}
+.it-view{border-radius:10px}
+.it-ov{position:absolute;right:10px;bottom:10px;display:flex;gap:8px;z-index:2}
+.it-ov button{border:0;border-radius:8px;padding:8px 13px;font:inherit;font-weight:700;font-size:.9rem;cursor:pointer;background:rgba(36,40,52,.9);color:#fff}
+.it-ov button[aria-pressed=true]{background:#fff;color:#1d2147}
+.it-fav{align-self:flex-start;display:flex;align-items:center;gap:8px;background:none;border:0;padding:4px 2px;color:var(--ink);font:inherit;font-weight:700;cursor:pointer}
+.it-fav svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+.it-fav.on svg{fill:#ffb800;stroke:#e09a00}
+.it-info{gap:8px}
+.it-info h2{font-size:2.1rem;line-height:1.15}
+.it-by{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:.95rem}
+.it-by b{color:var(--ink)}
+.it-by svg{width:16px;height:16px;flex:none}
+.it-hr{border:0;border-top:1px solid var(--line);margin:6px 0 8px;width:100%}
+.it-rows{display:grid;grid-template-columns:130px minmax(0,1fr);gap:14px 16px;align-items:start;margin:0}
+@media(max-width:480px){.it-rows{grid-template-columns:96px minmax(0,1fr)}}
+.it-rows dt{color:var(--muted);font-weight:600}
+.it-rows dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.it-rows .it-acts{grid-column:2;flex-direction:column;align-items:stretch;gap:10px}
+.it-price2{display:flex;align-items:center;gap:8px;font-size:1.35rem;font-weight:800}
+.it-price2 i{width:16px;height:16px;border-radius:50%;background:#ffc233;display:block;border:1px solid rgba(0,0,0,.35)}
+.it-acts .btn.it-buy{background:#335fff;color:#fff;border:1px solid #335fff;border-radius:8px;min-height:50px;width:100%;font-size:1.05rem}
+.it-acts .btn.it-sec{background:#fff;color:#1d2147;border:1px solid var(--line);border-radius:8px;min-height:50px;width:100%;font-size:1.05rem}
+.it-acts .btn.it-sec.on{background:#fff6dc}
+.it-recsp{border-radius:10px}
+.it-recsp h3{margin:0 0 12px}
+.it-recs{display:grid;grid-auto-flow:column;grid-auto-columns:150px;gap:12px;overflow-x:auto;padding-bottom:8px}
+.pf-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.gm-info .btn.fav-on{background:#fff6dc}
 </style>
 </head>
 <body>
@@ -464,6 +497,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       <button id="n-home" type="button" class="on" data-i="home">Home</button>
       <button id="n-discover" type="button" data-i="discover">Discover</button>
       <button id="n-friends" type="button" data-i="friends">Friends<em id="n-badge" hidden=""></em></button>
+      <button id="n-profile" type="button" data-i="profile">Profile</button>
       <button id="n-catalog" type="button" data-i="catalog">Catalog</button>
       <button id="n-avatar" type="button" data-i="avatar">Inventory</button>
       <button id="n-bank" type="button" data-i="bank">Blockbank</button>
@@ -536,18 +570,22 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
   <div id="p-item" class="page" hidden="">
     <button id="it-back" class="btn ghost small" type="button" style="align-self:flex-start;width:max-content">&larr; Back</button>
     <section class="it-hero">
-      <div class="it-view"><canvas id="it3d" aria-label="3D view of the item. Drag to turn it."></canvas><div class="av-tip">Drag to turn.</div></div>
+      <div class="it-left">
+        <div class="it-view"><canvas id="it3d" aria-label="3D view of the item. Drag to turn it."></canvas>
+          <div id="it-views" class="it-ov"><button type="button" data-v="worn" aria-pressed="false">Try On</button><button type="button" data-v="item" aria-pressed="true">3D</button></div>
+        </div>
+        <button id="it-fav" class="it-fav" type="button" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/></svg><span id="it-favt">Favorite</span></button>
+      </div>
       <div class="it-info">
         <h2 id="it-name"></h2>
+        <div class="it-by">By <b>BrixBlox</b><svg viewBox="0 0 24 24" aria-label="Verified"><circle cx="12" cy="12" r="10" fill="#335fff"/><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <hr class="it-hr">
         <div id="it-tags" class="it-tags"></div>
-        <div id="it-price" class="it-price"></div>
-        <div id="it-acts" class="it-acts"></div>
-        <div id="it-views" class="it-views"><button class="btn ghost small" type="button" data-v="item" aria-pressed="true">Item</button><button class="btn ghost small" type="button" data-v="worn" aria-pressed="false">On you</button></div>
-        <h3>Description</h3>
-        <p id="it-desc" class="it-desc"></p>
+        <dl id="it-rows" class="it-rows"></dl>
         <div id="it-adm" class="it-adm" hidden=""></div>
       </div>
     </section>
+    <section id="it-recs-box" class="panel it-recsp" hidden=""><h3>Recommendations</h3><div id="it-recs" class="it-recs"></div></section>
   </div>
   <div id="p-bank" class="page" hidden="">
     <section class="panel">
@@ -616,7 +654,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
     <button id="gm-back" class="btn ghost small" type="button">&larr; Back</button>
     <section class="gm-hero">
       <div id="gm-th" class="gm-th"></div>
-      <div class="gm-info"><h2 id="gm-name"></h2><p class="gm-by">By <button id="gm-by" class="gm-link" type="button"></button></p><div id="gm-tag"></div><button id="gm-join" class="btn" type="button">Join</button></div>
+      <div class="gm-info"><h2 id="gm-name"></h2><p class="gm-by">By <button id="gm-by" class="gm-link" type="button"></button></p><div id="gm-tag"></div><button id="gm-join" class="btn" type="button">Join</button><button id="gm-fav" class="btn ghost" type="button">☆ Favorite</button></div>
     </section>
     <section><h3>About this game</h3><dl id="gm-stats" class="gm-stats"></dl></section>
     <section><h3>Badges</h3><div id="gm-bds"></div></section>
@@ -626,6 +664,8 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
     <button id="pf-back" class="btn ghost small" type="button">&larr; Back</button>
     <section class="pf"><div id="pf-av"></div><div><h2 id="pf-name"></h2><p id="pf-date" class="hint"></p></div></section>
     <section><h3 id="pf-fh">Friends</h3><div id="pf-fr" class="hfr"></div></section>
+    <section><h3>Favorite items</h3><div id="pf-fitems" class="pf-items"></div></section>
+    <section><h3>Favorite games</h3><div id="pf-fgames"></div></section>
     <section><h3>Creations</h3><div id="pf-games"></div></section>
   </div>
 </div></main>
@@ -787,7 +827,9 @@ function tooAlike(a,b){return colorDist(a,b)<MIN_LOOK_DIST}
 /* Each slot can hold up to 2 accessories (older saves held one id as a plain string) */
 function eqArr(v){return Array.isArray(v)?v.filter(function(x){return typeof x==='string'&&x}).slice(-2):(typeof v==='string'&&v?[v]:[])}
 function eqPut(arr,id){arr=arr.filter(function(x){return x!==id});arr.push(id);return arr.slice(-2)}
-function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:eqArr(e.hat),face:eqArr(e.face),facc:eqArr(e.facc),back:eqArr(e.back),neck:eqArr(e.neck)},spent:a.spent||0,skin:HEX.test(a.skin)?a.skin:DEF_SKIN,pants:HEX.test(a.pants)?a.pants:DEF_PANTS}}
+function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:eqArr(e.hat),face:eqArr(e.face),facc:eqArr(e.facc),back:eqArr(e.back),neck:eqArr(e.neck)},spent:a.spent||0,skin:HEX.test(a.skin)?a.skin:DEF_SKIN,pants:HEX.test(a.pants)?a.pants:DEF_PANTS,
+    favI:Array.isArray(a.favI)?a.favI.filter(function(x){return typeof x==='string'&&x}).slice(0,100):[],
+    favG:Array.isArray(a.favG)?a.favG.filter(function(g){return g&&g.id!=null}).slice(0,100).map(function(g){return {id:String(g.id),name:String(g.name||'').slice(0,60),ownerId:g.ownerId||null,ownerName:String(g.ownerName||'').slice(0,32)}}):[]}}
 function makeDemo(){
   function load(){try{return JSON.parse(store.get('brixblox-demo'))||{users:[],recs:{},session:null}}catch(e){return {users:[],recs:{},session:null}}}
   function save(d){store.set('brixblox-demo',JSON.stringify(d))}
@@ -929,7 +971,7 @@ function makeSupa(){
     async bankGift(id,n){const r=await sb.rpc('bank_admin_gift',{p_amount:n});if(r.error)throw r.error;return r.data},
     async bankTake(id,n){const r=await sb.rpc('bank_admin_take',{p_amount:n});if(r.error)throw r.error;return r.data},
     async setAvatar(id,a){const r=await sb.auth.updateUser({data:{avatar:a}});if(r.error)throw r.error;try{await this.pubAvatar(id,a)}catch(e){console.warn('Avatar share failed',e);if(!window.__avWarn){window.__avWarn=1;toast('Friends cannot see your avatar yet: '+((e&&e.message)||e))}}},
-    async pubAvatar(id,a){if(!me||!a)return;const r=await sb.from('games').upsert({id:'avatar_'+id,owner_id:id,owner_name:me.username,name:'avatar',vis:'public',data:JSON.stringify({skin:a.skin,pants:a.pants,eq:a.eq}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
+    async pubAvatar(id,a){if(!me||!a)return;const r=await sb.from('games').upsert({id:'avatar_'+id,owner_id:id,owner_name:me.username,name:'avatar',vis:'public',data:JSON.stringify({skin:a.skin,pants:a.pants,eq:a.eq,favI:a.favI||[],favG:a.favG||[]}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
     async setAccount(id,a,cur){const change=!!a.email&&a.email.toLowerCase()!==(cur||'').toLowerCase();const upd={data:{age:a.age}};if(change)upd.email=a.email;const r=await sb.auth.updateUser(upd,change?{emailRedirectTo:location.origin+location.pathname}:undefined);if(r.error)throw r.error;return {pending:change}},
     async setColor(id,c){const r=await sb.from('profiles').update({avatar_color:c}).eq('id',id);if(r.error)throw r.error},
     async submitRun(id,level,ms,coins){const r=await sb.rpc('submit_run',{p_level:level,p_time_ms:ms,p_coins:coins});if(r.error)throw r.error;return r.data},
@@ -1074,8 +1116,9 @@ function lobby(){
   setPart('shirt');
   paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');if(store.get('brixblox-gopremium')){store.del('brixblox-gopremium');nav('premium');paintPrem()}loadFriends();loadGames();loadEvents();$('n-admin').hidden=!isBB();$('n-bill').hidden=!isBB();loadAdmins();checkNotices();loadBank();loadItems();api.pubAvatar(me.id,me.av).catch(function(e){console.warn('Avatar share failed',e);if(!window.__avWarn){window.__avWarn=1;toast('Friends cannot see your avatar yet: '+((e&&e.message)||e))}})}
 const PAGES=['home','discover','friends','avatar','catalog','bank','premium','settings'];
-function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p||(p==='profile'&&x==='friends')||(p==='item'&&x===IV.back))});$('p-profile').hidden=p!=='profile';$('p-game').hidden=p!=='game';$('p-item').hidden=p!=='item'}
-const IC={catalog:'<path d="M5 8h14l-1 12H6zM9 8a3 3 0 016 0"/>',premium:'<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',discover:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',bank:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 9l9-6 9 6M8 13v3M12 13v3M16 13v3"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
+var pfSelf=false,pfName='';
+function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p||(p==='profile'&&x==='friends'&&!pfSelf)||(p==='item'&&x===IV.back))});$('n-profile').classList.toggle('on',(p==='profile'&&pfSelf)||(p==='item'&&IV.back==='profile'&&pfSelf));$('p-profile').hidden=p!=='profile';$('p-game').hidden=p!=='game';$('p-item').hidden=p!=='item'}
+const IC={profile:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',catalog:'<path d="M5 8h14l-1 12H6zM9 8a3 3 0 016 0"/>',premium:'<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',discover:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',bank:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 9l9-6 9 6M8 13v3M12 13v3M16 13v3"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
 document.querySelectorAll('.snav button').forEach(function(b){b.insertAdjacentHTML('afterbegin','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+IC[b.dataset.i]+'</svg>')});
 function theme(t){document.documentElement.dataset.theme=t;store.set('brixblox-theme',t);$('th-light').setAttribute('aria-pressed',String(t==='light'));$('th-dark').setAttribute('aria-pressed',String(t==='dark'))}
 $('th-light').onclick=function(){theme('light')};$('th-dark').onclick=function(){theme('dark')};theme(store.get('brixblox-theme')==='dark'?'dark':'light');
@@ -1087,7 +1130,7 @@ $('f-acct').addEventListener('submit',async function(e){e.preventDefault();
   $('b-acct').disabled=true;sMsg('Saving...',true);
   try{const r=await api.setAccount(me.id,{email:email,age:age},me.email);me.age=age;if(r.pending){me.pending=email;sMsg('Saved. We sent a confirmation link to '+email+'. Open it to finish adding your email.',true)}else{if(api.demo)me.email=email;sMsg('Saved.',true)}}catch(er){sMsg(errText(er))}
   $('b-acct').disabled=false});
-$('n-avatar').onclick=function(){nav('avatar');openAvatarPage()};$('n-catalog').onclick=function(){nav('catalog');paintCatalog();loadBank().then(function(){if(!$('p-catalog').hidden)paintCatalog()})};$('n-bank').onclick=function(){nav('bank');loadBank()};$('n-premium').onclick=function(){nav('premium');loadPrem().then(paintPrem)};$('n-settings').onclick=function(){nav('settings')};$('n-admin').onclick=function(){openAdmin()};$('n-bill').onclick=function(){openBBMgr()};
+$('n-avatar').onclick=function(){nav('avatar');openAvatarPage()};$('n-profile').onclick=function(){openProfile(me.username)};$('n-catalog').onclick=function(){nav('catalog');paintCatalog();loadBank().then(function(){if(!$('p-catalog').hidden)paintCatalog()})};$('n-bank').onclick=function(){nav('bank');loadBank()};$('n-premium').onclick=function(){nav('premium');loadPrem().then(paintPrem)};$('n-settings').onclick=function(){nav('settings')};$('n-admin').onclick=function(){openAdmin()};$('n-bill').onclick=function(){openBBMgr()};
 $('n-home').onclick=function(){nav('home');loadGames()};$('n-discover').onclick=function(){nav('discover');loadGames()};$('n-friends').onclick=function(){nav('friends');loadFriends()};
 /* Friend avatars: draw the real 3D avatar (same makeAvatar as the Avatar page) into a small picture */
 const FAV={r:null,sc:null,cam:null,fail:false,cache:{}};
@@ -1131,20 +1174,22 @@ $('b-out').onclick=async function(){try{await api.logOut()}catch(e){}store.del('
 
 /* ===== Friend profile page ===== */
 let pfTok=0;
-async function openProfile(name,pre){const tok=++pfTok;nav('profile');window.scrollTo(0,0);
+async function openProfile(name,pre){const tok=++pfTok;pfName=name;pfSelf=!!me&&name===me.username;nav('profile');window.scrollTo(0,0);
+  $('pf-fitems').replaceChildren();$('pf-fgames').replaceChildren();if(pfSelf)paintPfFav(me.av,true);
   const av=$('pf-av');nameEl($('pf-name'),name);$('pf-date').textContent='';$('pf-fr').replaceChildren();$('pf-games').replaceChildren(mkx('p','empty','Loading...'));
   const paint=function(c,a){const i=c!=null||a?favImg({color:c||'#999',av:a||normAv(null)}):null;av.replaceChildren(i?(i.className='pfav',i):mkx('div','pfe',name.charAt(0).toUpperCase()))};
   paint(pre&&pre.color,pre&&pre.av);
   let p;try{p=await api.profile(name)}catch(e){if(tok===pfTok)toast(errText(e));return}
   if(tok!==pfTok)return;
   paint(p.color||(pre&&pre.color),p.av);
+  paintPfFav(pfSelf?me.av:p.av,pfSelf);
   $('pf-date').textContent=p.created?'Joined '+new Date(p.created).toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'}):'';
   $('pf-fh').textContent=p.friends?'Friends ('+p.friends.length+')':'Friends';
   if(!p.friends)$('pf-fr').replaceChildren(mkx('p','empty','Friends list is not set up yet (run the profile SQL in Supabase).'));
   else if(!p.friends.length)$('pf-fr').replaceChildren(mkx('p','empty','No friends yet.'));
   else $('pf-fr').replaceChildren.apply($('pf-fr'),p.friends.map(function(r){return tile(r.name,r.color,0,r)}));
   gfill($('pf-games'),p.games.map(function(r){return {id:r.id,name:r.name||'Untitled',vis:r.vis,at:Date.parse(r.updated_at)||0,ownerId:r.owner_id,ownerName:r.owner_name||name,data:null,thumb:r.thumb||null,official:!!r.official,plays:+r.plays||0}}),'Nothing published yet.',true)}
-$('pf-back').onclick=function(){nav('friends');loadFriends()};
+$('pf-back').onclick=function(){if(pfSelf){nav('home');loadGames()}else{nav('friends');loadFriends()}};
 
 /* ===== 5b. Home friend tiles ===== */
 function tile(name,color,plus,r){const d=document.createElement('button');d.type='button';d.className='ht';
@@ -1398,7 +1443,7 @@ async function openGamePage(g){
   $('gm-name').textContent=g.name||'Untitled';
   const by=$('gm-by'),mine=g.ownerId===me.id;nameEl(by,mine?'you':(g.ownerName||'?'));by.onclick=function(){if(g.ownerName)openProfile(g.ownerName)};
   $('gm-tag').replaceChildren(g.official?mkx('span','tg','Made by BrixBlox'):document.createTextNode(''));
-  const jn=$('gm-join');jn.onclick=function(){playGame(g)};
+  const jn=$('gm-join');jn.onclick=function(){playGame(g)};paintGmFav(g);
   $('gm-stats').replaceChildren();gmStat($('gm-stats'),'Created','...');
   $('gm-bds').className='';$('gm-bds').replaceChildren(mkx('p','empty','Loading...'));$('gm-gp').replaceChildren(mkx('p','empty','Loading...'));
   let meta={},P=null;
@@ -1450,7 +1495,7 @@ async function gmBuy(q,price,bt){
     GM.md=Object.assign({},GM.md,{avatar:av,gpass:all});me.av.spent=+av.spent||0;syncMe();try{paintShop()}catch(e){}
     done('You bought '+q.name+'!'+(price>0&&!isBB()?' Join the game to use it.':''),true);toast('You got the '+q.name+' gamepass.')}
   catch(e){done(String((e&&e.message)||'Could not buy it.'),false)}}
-$('gm-back').onclick=function(){const b=GM.back==='profile'?'home':(GM.back||'home');nav(b);if(b==='home'||b==='discover')loadGames()};
+$('gm-back').onclick=function(){if(GM.back==='profile'&&pfName){openProfile(pfName);return}const b=GM.back==='profile'?'home':(GM.back||'home');nav(b);if(b==='home'||b==='discover')loadGames()};
 function evBlank(){return {id:null,title:'',descr:'',thumb:'',game_ids:[],active:true,ends:'',sort:0}}
 function evToEd(e){return {id:e.id,title:e.title||'',descr:e.descr||'',thumb:e.thumb||'',game_ids:(Array.isArray(e.game_ids)?e.game_ids:[]).map(String),active:!!e.active,ends:e.ends_at?new Date(e.ends_at).toLocaleDateString('en-CA'):'',sort:+e.sort||0}}
 async function evReadThumb(f){const url=URL.createObjectURL(f);try{
@@ -1807,7 +1852,7 @@ function thRun(){
   const step=function(now){
     TH.raf=0;
     const pg=$('p-avatar'),lb=$('lobby');
-    if(!TH.list.length||!pg||!lb||lb.hidden||(pg.hidden&&$('p-catalog').hidden))return;/* the Avatar page is closed: stop. paintShop starts it again. */
+    if(!TH.list.length||!pg||!lb||lb.hidden||(pg.hidden&&$('p-catalog').hidden&&$('p-item').hidden&&$('p-profile').hidden))return;/* the Avatar page is closed: stop. paintShop starts it again. */
     TH.raf=requestAnimationFrame(step);
     const dt=Math.min(.1,(now-TH.t)/1000);if(dt<.032)return;TH.t=now;/* about 30 frames a second is plenty for small tiles */
     TH.list=TH.list.filter(function(e){return e.c.isConnected});
@@ -1938,7 +1983,7 @@ function openAvatarPage(){$('acc-up').hidden=!isAdm();loadAdmins().then(function
 /* ===== Catalog and item pages ===== */
 const CAT={tab:'all',q:'',off:false};
 const IV={r:null,sc:null,cam:null,obj:null,fx:{},id:null,mode:'item',yaw:.6,pitch:.2,drag:false,px:0,py:0,w:0,h:0,back:'catalog'};
-function goPage(p){nav(p);if(p==='avatar')openAvatarPage();else if(p==='catalog')paintCatalog();else if(p==='home'||p==='discover')loadGames();else if(p==='friends')loadFriends();else if(p==='bank')loadBank()}
+function goPage(p){nav(p);if(p==='profile')openProfile(pfName);else if(p==='avatar')openAvatarPage();else if(p==='catalog')paintCatalog();else if(p==='home'||p==='discover')loadGames();else if(p==='friends')loadFriends();else if(p==='bank')loadBank()}
 function slotName(s){const x=SLOTS.filter(function(a){return a[0]===s})[0];return x?x[1]:s}
 /* Admin buttons used on catalog cards and the item page (the inventory has its own copy inside paintShop) */
 function admBtns(it){const r=document.createElement('div');r.className='row';const off=it.sale===false;
@@ -1980,30 +2025,88 @@ async function buyItem(it){const eq=me.av.eq;
   const prev=JSON.stringify(me.av);me.av.owned.push(it.id);me.av.spent=(me.av.spent||0)+it.price;eq[it.slot]=eqPut(eqArr(eq[it.slot]),it.id);pv.tryEq=null;pvRebuild();paintItem();
   if(await saveAv())toast('Bought '+it.name+'!');else{me.av=JSON.parse(prev);pvRebuild()}
   paintItem();if(!$('p-catalog').hidden)paintCatalog()}
-function openItem(id){const cur=PAGES.filter(function(x){return !$('p-'+x).hidden})[0];if(cur)IV.back=cur;
+function openItem(id){const cur=PAGES.concat(['profile']).filter(function(x){return !$('p-'+x).hidden})[0];if(cur)IV.back=cur;
   IV.id=id;IV.mode='item';IV.yaw=.6;IV.pitch=.2;nav('item');
   const ct=document.querySelector('#lobby .ct');if(ct)ct.scrollTop=0;paintItem();ivBuild()}
+/* ----- Favorites (saved on your avatar, so they follow your account) ----- */
+function favList(k){if(!me)return [];if(!Array.isArray(me.av[k]))me.av[k]=[];return me.av[k]}
+function isFavItem(id){return favList('favI').indexOf(id)>=0}
+function isFavGame(id){return favList('favG').some(function(g){return String(g.id)===String(id)})}
+async function toggleFavItem(id){const l=favList('favI'),old=l.slice(),i=l.indexOf(id);
+  if(i>=0)l.splice(i,1);else{if(l.length>=100){toast('You can favorite up to 100 items.');return}l.push(id)}
+  paintItem();
+  if(!await saveAv())me.av.favI=old;
+  paintItem()}
+async function toggleFavGame(g){const l=favList('favG'),old=l.slice(),i=l.findIndex(function(x){return String(x.id)===String(g.id)});
+  if(i>=0)l.splice(i,1);else{if(l.length>=100){toast('You can favorite up to 100 games.');return}l.push({id:String(g.id),name:String(g.name||'Untitled').slice(0,60),ownerId:g.ownerId||null,ownerName:String(g.ownerName||'').slice(0,32)})}
+  paintGmFav(g);
+  if(!await saveAv())me.av.favG=old;
+  paintGmFav(g)}
+function paintGmFav(g){const b=$('gm-fav'),f=isFavGame(g.id);b.textContent=f?'\u2605 Favorited':'\u2606 Favorite';b.classList.toggle('fav-on',f);b.setAttribute('aria-pressed',String(f));b.onclick=function(){toggleFavGame(g)}}
+function itemCard(it){
+  const owned=me.av.owned.indexOf(it.id)>=0,d=mkx('div','item cat-card'+(it.sale===false?' off':'')),sw=mkx('div','sw');sw.style.background=it.c;thTile(sw,it);
+  const n=mkx('b','',it.name),pr=mkx('div','pr');pr.innerHTML=owned?'Owned':'<i></i>'+(it.price>0?it.price:'Free');
+  if(it.prem)pr.append(mkx('span','tagprem','\u2605 Premium'));
+  d.tabIndex=0;d.setAttribute('role','link');d.setAttribute('aria-label',it.name);
+  d.onclick=function(){openItem(it.id)};d.onkeydown=function(e){if(e.key==='Enter')openItem(it.id)};
+  d.append(sw,n,pr);return d}
+function paintPfFav(av,self){
+  const ids=av&&Array.isArray(av.favI)?av.favI:[],its=ids.map(function(id){return ITEMS.find(function(x){return x.id===id})}).filter(Boolean);
+  const gi=$('pf-fitems');gi.replaceChildren();
+  if(!its.length)gi.append(mkx('p','empty',self?'You have not favorited any items yet. Open an item and press the star.':'No favorite items yet.'));
+  else its.forEach(function(it){gi.append(itemCard(it))});
+  const gl=(av&&Array.isArray(av.favG)?av.favG:[]).map(function(f){
+    const live=PUBG.find(function(g){return String(g.id)===String(f.id)});
+    return live||{id:f.id,name:f.name||'Untitled',vis:'public',at:0,ownerId:f.ownerId,ownerName:f.ownerName||'?',data:null,thumb:null,official:false,plays:0}});
+  gfill($('pf-fgames'),gl,self?'You have not favorited any games yet. Open a game and press Favorite.':'No favorite games yet.',true)}
+
+/* ----- Recommendations: similar items (same type, similar name, similar price) ----- */
+function recItems(it){
+  const words=function(t){return String(t||'').toLowerCase().split(/[^a-z0-9]+/).filter(function(w){return w.length>2})},mine=words(it.name);
+  return ITEMS.filter(function(x){return x.id!==it.id&&(x.sale!==false||isAdm())}).map(function(x){
+    let sc=0;if(x.slot===it.slot)sc+=4;
+    const xw=words(x.name);mine.forEach(function(w){if(xw.indexOf(w)>=0)sc+=3});
+    if(!!x.prem===!!it.prem)sc+=1;
+    const p=it.price||0,q=x.price||0;sc+=2*(1-Math.min(1,Math.abs(p-q)/Math.max(p,q,1)));
+    return {x:x,sc:sc}}).sort(function(a,b){return b.sc-a.sc}).slice(0,10).map(function(o){return o.x})}
+function paintRecs(it){
+  const key=it.id+'|'+ITEMS.length+'|'+me.av.owned.length;if(IV.recKey===key)return;IV.recKey=key;
+  const box=$('it-recs'),l=recItems(it);box.replaceChildren();$('it-recs-box').hidden=!l.length;
+  l.forEach(function(x){box.append(itemCard(x))})}
+
+const ITYPE={hat:'Head Accessory',face:'Face',facc:'Face Accessory',back:'Back Accessory',neck:'Neck Accessory'},IPLACE={hat:'Head',face:'Face',facc:'Face',back:'Back',neck:'Neck'};
+const ITA=mkx('div','it-acts');ITA.id='it-acts';
 function paintItem(){
-  const it=itemById(IV.id),acts=$('it-acts'),tags=$('it-tags'),adm=$('it-adm');acts.replaceChildren();tags.replaceChildren();
+  const it=itemById(IV.id),acts=ITA,tags=$('it-tags'),adm=$('it-adm'),rows=$('it-rows'),fav=$('it-fav');
+  acts.replaceChildren();tags.replaceChildren();rows.replaceChildren();
   $('it-views').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.v===IV.mode))});
-  if(!it){$('it-name').textContent='Item not found';$('it-price').replaceChildren();$('it-desc').className='it-desc none';$('it-desc').textContent='This item is not available any more.';adm.hidden=true;return}
-  const owned=me.av.owned.indexOf(it.id)>=0,worn=eqArr(me.av.eq[it.slot]).indexOf(it.id)>=0,off=it.sale===false;
+  function row(label,val){const dt=mkx('dt','',label),dd=mkx('dd');if(typeof val==='string')dd.textContent=val;else dd.append(val);rows.append(dt,dd);return dd}
+  if(!it){$('it-name').textContent='Item not found';fav.hidden=true;$('it-recs-box').hidden=true;IV.recKey='';adm.hidden=true;row('Description','This item is not available any more.');return}
+  fav.hidden=false;
+  const owned=me.av.owned.indexOf(it.id)>=0,worn=eqArr(me.av.eq[it.slot]).indexOf(it.id)>=0,off=it.sale===false,isF=isFavItem(it.id);
   $('it-name').textContent=it.name;
   function tag(t,c){tags.append(mkx('span','it-tag '+(c||''),t))}
-  tag(slotName(it.slot));if(it.prem)tag('\u2605 Premium','pr');if(off)tag('Off sale','off');if(worn)tag('Wearing','ok');else if(owned)tag('Owned','ok');
-  const pr=$('it-price');pr.replaceChildren();
-  if(owned)pr.append(document.createTextNode('Owned'));else{pr.append(mkx('i'));pr.append(document.createTextNode(it.price>0?String(it.price):'Free'))}
-  function btn(t,f,ghost){const x=mkx('button','btn'+(ghost?' ghost':''),t);x.type='button';x.onclick=f;acts.append(x);return x}
-  if(owned)btn(worn?'Remove':'Equip',function(){toggleEquip(it)});
-  else if(!off||isAdm()){btn(it.price>0?'Buy for '+it.price:'Get',function(){buyItem(it)});if(off)acts.append(mkx('span','hint','Off sale. Only admins can buy this.'))}
+  if(it.prem)tag('\u2605 Premium','pr');if(off)tag('Off sale','off');if(worn)tag('Wearing','ok');else if(owned)tag('Owned','ok');
+  tags.hidden=!tags.childNodes.length;
+  fav.classList.toggle('on',isF);fav.setAttribute('aria-pressed',String(isF));$('it-favt').textContent=isF?'Favorited':'Favorite';fav.onclick=function(){toggleFavItem(it.id)};
+  const pr=mkx('div','it-price2');if(owned)pr.append(document.createTextNode('Owned'));else{pr.append(mkx('i'));pr.append(document.createTextNode(it.price>0?String(it.price):'Free'))}
+  row('Price',pr);
+  function btn(t,f,cls){const x=mkx('button','btn '+cls,t);x.type='button';x.onclick=f;acts.append(x);return x}
+  if(owned)btn(worn?'Remove':'Equip',function(){toggleEquip(it)},'it-buy');
+  else if(!off||isAdm())btn(it.price>0?'Buy':'Get',function(){buyItem(it)},'it-buy');
   else acts.append(mkx('span','hint','This item is not on sale right now.'));
-  const dsc=String(it.descr||'').trim();$('it-desc').className='it-desc'+(dsc?'':' none');$('it-desc').textContent=dsc||'No description yet.';
+  if(off&&isAdm()&&!owned)acts.append(mkx('span','hint','Off sale. Only admins can buy this.'));
+  const fb=btn(isF?'\u2605 Favorited':'Add to favorites',function(){toggleFavItem(it.id)},'it-sec');fb.classList.toggle('on',isF);
+  rows.append(acts);
+  row('Tradable','No');row('Type',ITYPE[it.slot]||slotName(it.slot));row('Placement','Accessories | '+(IPLACE[it.slot]||slotName(it.slot)));
+  const dsc=String(it.descr||'').trim(),dd=row('Description',dsc||'No description yet.');dd.className='it-desc'+(dsc?'':' none');
   adm.hidden=!isAdm();
   if(isAdm()){adm.replaceChildren();adm.append(mkx('h3','','Admin'));
     const ta=document.createElement('textarea');ta.maxLength=500;ta.rows=4;ta.placeholder='Write a description players will see on this page';ta.value=it.descr||'';
     const sv=mkx('button','btn small','Save description');sv.type='button';
     sv.onclick=async function(){sv.disabled=true;try{await api.saveAcc(Object.assign({},it,{descr:ta.value.trim().slice(0,500)}));await loadItems();toast('Description saved.')}catch(e){toast('Could not save: '+errText(e))}sv.disabled=false};
-    adm.append(ta,sv,admBtns(it))}}
+    adm.append(ta,sv,admBtns(it))}
+  paintRecs(it)}
 $('it-back').onclick=function(){goPage(IV.back)};
 $('it-views').querySelectorAll('button').forEach(function(b){b.onclick=function(){IV.mode=b.dataset.v;IV.yaw=IV.mode==='worn'?.4:.6;paintItem();ivBuild()}});
 function ivInit(){
@@ -2012,7 +2115,7 @@ function ivInit(){
   IV.sc=new THREE.Scene();IV.cam=new THREE.PerspectiveCamera(35,1,.05,50);
   IV.sc.add(new THREE.HemisphereLight(0xffffff,0x8899aa,1));const dl=new THREE.DirectionalLight(0xfff3df,.8);dl.position.set(2,4,3);IV.sc.add(dl);
   const v=$('it3d').parentNode;
-  v.addEventListener('pointerdown',function(e){IV.drag=true;IV.px=e.clientX;IV.py=e.clientY;v.setPointerCapture(e.pointerId)});
+  v.addEventListener('pointerdown',function(e){if(e.target.closest&&e.target.closest('.it-ov'))return;IV.drag=true;IV.px=e.clientX;IV.py=e.clientY;v.setPointerCapture(e.pointerId)});
   v.addEventListener('pointermove',function(e){if(!IV.drag)return;IV.yaw+=(e.clientX-IV.px)*.012;if(IV.mode==='item')IV.pitch=Math.max(-.8,Math.min(1.1,IV.pitch+(e.clientY-IV.py)*.006));IV.px=e.clientX;IV.py=e.clientY});
   ['pointerup','pointercancel'].forEach(function(n){v.addEventListener(n,function(){IV.drag=false})});
   return true}
