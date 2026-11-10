@@ -396,7 +396,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 <main id="lobby" class="screen" hidden>
   <aside class="sb">
     <div class="logo sm"><span class="blk b1"></span><span class="blk b2"></span><span class="blk b3"></span><h1>BrixBlox</h1></div>
-    <div class="sbu"><strong id="l-name"></strong></div>
+    <div class="sbu"><strong id="l-name"></strong><small id="l-build" style="display:block;opacity:.6;font-size:.7rem">Build: billboards v2</small></div>
     <nav class="snav">
       <button id="n-home" type="button" class="on" data-i="home">Home</button>
       <button id="n-discover" type="button" data-i="discover">Discover</button>
@@ -406,6 +406,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       <button id="n-premium" type="button" data-i="premium">Premium</button>
       <button id="n-studio" type="button" data-i="studio">Studio</button>
       <button id="n-settings" type="button" data-i="settings">Settings</button>
+      <button id="n-bill" type="button" data-i="home" hidden>Billboards</button>
       <button id="n-admin" type="button" data-i="settings" hidden>Admin</button>
     </nav>
     <button id="b-out" class="btn ghost small sbfoot" type="button">Log out</button>
@@ -950,7 +951,7 @@ function lobby(){
   show('lobby');{const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}}nameEl($('l-name'),me.username);nameEl($('l-name2'),me.username);
   {const v=me.av;if(tooAlike(v.skin,v.pants)){const ok=PANTS.find(function(c){return !tooAlike(v.skin,c)});if(ok)v.pants=ok}}/* older saves that are too alike get safe pants */
   setPart('shirt');
-  paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');if(store.get('brixblox-gopremium')){store.del('brixblox-gopremium');nav('premium');paintPrem()}loadFriends();loadGames();loadEvents();$('n-admin').hidden=!isBB();checkNotices();loadBank();loadItems();api.pubAvatar(me.id,me.av).catch(function(e){console.warn('Avatar share failed',e);if(!window.__avWarn){window.__avWarn=1;toast('Friends cannot see your avatar yet: '+((e&&e.message)||e))}})}
+  paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');if(store.get('brixblox-gopremium')){store.del('brixblox-gopremium');nav('premium');paintPrem()}loadFriends();loadGames();loadEvents();$('n-admin').hidden=!isBB();$('n-bill').hidden=!isBB();checkNotices();loadBank();loadItems();api.pubAvatar(me.id,me.av).catch(function(e){console.warn('Avatar share failed',e);if(!window.__avWarn){window.__avWarn=1;toast('Friends cannot see your avatar yet: '+((e&&e.message)||e))}})}
 const PAGES=['home','discover','friends','avatar','bank','premium','settings'];
 function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p||(p==='profile'&&x==='friends'))});$('p-profile').hidden=p!=='profile'}
 const IC={premium:'<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',discover:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',bank:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 9l9-6 9 6M8 13v3M12 13v3M16 13v3"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
@@ -965,7 +966,7 @@ $('f-acct').addEventListener('submit',async function(e){e.preventDefault();
   $('b-acct').disabled=true;sMsg('Saving...',true);
   try{const r=await api.setAccount(me.id,{email:email,age:age},me.email);me.age=age;if(r.pending){me.pending=email;sMsg('Saved. We sent a confirmation link to '+email+'. Open it to finish adding your email.',true)}else{if(api.demo)me.email=email;sMsg('Saved.',true)}}catch(er){sMsg(errText(er))}
   $('b-acct').disabled=false});
-$('n-avatar').onclick=function(){nav('avatar');openAvatarPage()};$('n-bank').onclick=function(){nav('bank');loadBank()};$('n-premium').onclick=function(){nav('premium');loadPrem().then(paintPrem)};$('n-settings').onclick=function(){nav('settings')};$('n-admin').onclick=function(){openAdmin()};
+$('n-avatar').onclick=function(){nav('avatar');openAvatarPage()};$('n-bank').onclick=function(){nav('bank');loadBank()};$('n-premium').onclick=function(){nav('premium');loadPrem().then(paintPrem)};$('n-settings').onclick=function(){nav('settings')};$('n-admin').onclick=function(){openAdmin()};$('n-bill').onclick=function(){openBBMgr()};
 $('n-home').onclick=function(){nav('home');loadGames()};$('n-discover').onclick=function(){nav('discover');loadGames()};$('n-friends').onclick=function(){nav('friends');loadFriends()};
 /* Friend avatars: draw the real 3D avatar (same makeAvatar as the Avatar page) into a small picture */
 const FAV={r:null,sc:null,cam:null,fail:false,cache:{}};
