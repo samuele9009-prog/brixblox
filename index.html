@@ -1050,6 +1050,7 @@ async function loadGames(){
   const map={},L=localGames();
   Object.keys(L).forEach(function(id){const g=L[id];if(g.dr)return;/* drafts only live in the Studio until published */map[id]={id:id,name:g.name||'Untitled',vis:g.vis||'private',at:g.at||0,ownerId:g.owner?g.owner.id:me.id,ownerName:g.owner?g.owner.name:me.username,data:g.data,thumb:g.thumb||null}});
   try{const rows=await api.listGames(me.id);rows.forEach(function(r){if(String(r.id).indexOf('acc_')===0||String(r.id).indexOf('avatar_')===0||String(r.id).indexOf('sys_')===0)return;const t=Date.parse(r.updated_at)||0,o=map[r.id];
+    if(o){o.official=!!r.official;o.plays=+r.plays||0}/* the server decides official/plays even when the local copy is newer */
     if(!o||t>o.at)map[r.id]={id:r.id,name:r.name||'Untitled',vis:r.vis,at:t,ownerId:r.owner_id,ownerName:r.owner_name||'?',data:o&&o.data||null,thumb:r.thumb||(o&&o.thumb)||null,official:!!r.official,plays:+r.plays||0}})}catch(e){}
   if(!me)return;
   const all=Object.keys(map).map(function(k){return map[k]}).filter(function(g){return g.vis==='public'||g.ownerId===me.id}).sort(function(a,b){return b.at-a.at});
@@ -1070,7 +1071,7 @@ function gfill(box,list,empty,disc){box.replaceChildren();if(!list.length){box.c
     const row=mkx('div','row'),pl=mkx('button','btn small joinb','Join');pl.type='button';pl.onclick=function(){playGame(g)};row.append(pl);
     if(mine&&!disc){const ed=mkx('button','btn ghost small','Edit');ed.type='button';ed.onclick=function(){editGame(g)};row.append(ed)}
     if(isBB()&&g.vis==='public'&&String(g.id).indexOf('acc_')!==0&&String(g.id).indexOf('avatar_')!==0&&String(g.id).indexOf('sys_')!==0){const of=mkx('button','btn ghost small',g.official?'Remove from BrixBlox':'Add to BrixBlox');of.type='button';
-      of.onclick=async function(){of.disabled=true;try{await api.setOfficial(g.id,!g.official);toast(g.official?'Removed from Made by BrixBlox.':'Added to Made by BrixBlox.');loadGames()}catch(e){of.disabled=false;console.warn('Add to BrixBlox failed',e);toast('Could not change that. Run brixblox-official.sql in Supabase (SQL editor), then try again.')}};row.append(of)}
+      of.onclick=async function(){of.disabled=true;try{const was=g.official;await api.setOfficial(g.id,!was);g.official=!was;toast(was?'Removed from Made by BrixBlox.':'Added to Made by BrixBlox.');if(PUBG)dfill(PUBG);loadGames()}catch(e){of.disabled=false;console.warn('Add to BrixBlox failed',e);toast('Could not change that. Run brixblox-official.sql in Supabase (SQL editor), then try again.')}};row.append(of)}
     bd.append(row);c.append(th,bd);box.append(c)});lockPaint()}
 async function gameData(g){if(g.data)return g.data;try{return await api.gameData(g.id)}catch(e){return null}}
 async function playGame(g){if(/^(acc_|avatar_|sys_)/.test(String(g&&g.id))){toast('That cannot be opened.');return}
