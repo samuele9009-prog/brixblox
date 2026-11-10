@@ -327,16 +327,30 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .dsec{margin-bottom:26px}.dsec h2{margin-bottom:4px}.dsec .sub{color:var(--muted);margin:0 0 10px;font-size:.9rem}
 .gc .row .btn{flex:1;padding:0 8px}
 .gc .row{flex-wrap:wrap}
-/* Gamepasses window (opened from the Passes button on a game card) */
-.gpm .gpbal{display:inline-flex;align-items:center;gap:6px;font-weight:800;margin:0 0 10px}
-.gpm .gpbal i,.gpm .gpp i{width:12px;height:12px;border-radius:50%;background:#ffc233;display:inline-block}
-.gpm .gpcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
-.gpm .gpc{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--line);border-radius:12px;background:#fff}
-.gpm .gpc .gpi{width:100%;aspect-ratio:1/1;border-radius:8px;background:#8fa3c8 center/cover no-repeat;display:grid;place-items:center;font-size:2.4rem;color:#fff}
-.gpm .gpc b{overflow-wrap:anywhere}.gpm .gpc small{color:var(--muted);line-height:1.3}
-.gpm .gpp{display:flex;align-items:center;gap:6px;font-weight:800;margin-top:auto}
-.gpm .gpc .btn{width:100%;justify-content:center;text-align:center}
-.gpm .gpst{min-height:1.4em;margin:12px 0 0;font-weight:700}.gpm .gpst.ok{color:#1c8a4a}.gpm .gpst.bad{color:#c4382a}
+/* Game page */
+.gm-hero{display:flex;gap:22px;flex-wrap:wrap;align-items:stretch;margin:10px 0 18px}
+.gm-th{width:min(420px,100%);aspect-ratio:16/9;border-radius:14px;display:grid;place-items:center;font-size:5rem;font-weight:800;color:#fff;background-size:cover;background-position:center;border:1px solid var(--line)}
+.gm-info{flex:1;min-width:240px;display:flex;flex-direction:column;gap:8px;justify-content:center}
+.gm-info h2{margin:0;overflow-wrap:anywhere}
+.gm-info .btn{align-self:flex-start;min-width:160px;justify-content:center}
+.gm-by{margin:0;color:var(--muted)}
+.gm-link{background:none;border:0;padding:0;font:inherit;font-weight:800;color:var(--ink);text-decoration:underline;cursor:pointer}
+.gm-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0}
+.gm-stats div{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.gm-stats dt{font-size:.78rem;color:var(--muted)}.gm-stats dd{margin:2px 0 0;font-weight:800}
+.gm-bds{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.gm-bd{display:flex;gap:10px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px}
+.gm-bd .ic{font-size:1.8rem;width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:50%;background:#fff;border:1px solid var(--line)}
+.gm-bd small{display:block;color:var(--muted)}
+#p-game .gpbal{display:inline-flex;align-items:center;gap:6px;font-weight:800;margin:0 0 10px}
+#p-game .gpbal i,#p-game .gpp i{width:12px;height:12px;border-radius:50%;background:#ffc233;display:inline-block}
+#p-game .gpcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+#p-game .gpc{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
+#p-game .gpc .gpi{width:100%;aspect-ratio:1/1;border-radius:8px;background:#8fa3c8 center/cover no-repeat;display:grid;place-items:center;font-size:2.4rem;color:#fff}
+#p-game .gpc b{overflow-wrap:anywhere}#p-game .gpc small{color:var(--muted);line-height:1.3}
+#p-game .gpp{display:flex;align-items:center;gap:6px;font-weight:800;margin-top:auto}
+#p-game .gpc .btn{width:100%;justify-content:center;text-align:center}
+#p-game .gpst{min-height:1.4em;margin:12px 0 0;font-weight:700}#p-game .gpst.ok{color:#1c8a4a}#p-game .gpst.bad{color:#c4382a}
 
 
 /* Billboards: events at the top of Home */
@@ -536,6 +550,16 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       <h3>Requests</h3><div id="f-req"></div>
       <h3>Friends</h3><div id="f-list"></div>
     </section>
+  </div>
+  <div id="p-game" class="page" hidden>
+    <button id="gm-back" class="btn ghost small" type="button">&larr; Back</button>
+    <section class="gm-hero">
+      <div id="gm-th" class="gm-th"></div>
+      <div class="gm-info"><h2 id="gm-name"></h2><p class="gm-by">By <button id="gm-by" class="gm-link" type="button"></button></p><div id="gm-tag"></div><button id="gm-join" class="btn" type="button">Join</button></div>
+    </section>
+    <section><h3>About this game</h3><dl id="gm-stats" class="gm-stats"></dl></section>
+    <section><h3>Badges</h3><div id="gm-bds"></div></section>
+    <section><h3>Gamepasses</h3><div id="gm-gp"></div></section>
   </div>
   <div id="p-profile" class="page" hidden>
     <button id="pf-back" class="btn ghost small" type="button">&larr; Back</button>
@@ -831,6 +855,7 @@ function makeSupa(){
     async restore(){const r=await sb.auth.getSession();return r.data.session?await profile(r.data.session.user.id,r.data.session.user):null},
     async bankStatus(){const r=await sb.rpc('bank_status');if(r.error)throw r.error;const x=r.data||{};return {saved:x.saved||0,wallet:x.wallet||0,code:x.code||null,codeAmt:x.code_amount||0,log:x.log||[]}},
     async recordPlay(id,gid){const r=await sb.rpc('record_play',{p_game:String(gid)});if(r.error)throw r.error},
+    async gameMeta(gid){const r=await sb.from('games').select('created_at,updated_at,plays').eq('id',String(gid)).maybeSingle();if(r.error){const q=await sb.from('games').select('updated_at,plays').eq('id',String(gid)).maybeSingle();return q.data||{}}return r.data||{}},
     async gpMeta(){const r=await sb.auth.getUser();return (r&&r.data&&r.data.user&&r.data.user.user_metadata)||{}},
     async gpBuy(gid,pid){const r=await sb.rpc('gamepass_buy',{p_game:String(gid),p_pass_id:String(pid)});if(r.error)throw new Error(/gamepass_buy/.test(r.error.message||'')?'Gamepass sales are not switched on yet. The site owner needs to run the gamepass SQL in Supabase.':r.error.message);return r.data},
     async gpSave(av,gp){const r=await sb.auth.updateUser({data:{avatar:av,gpass:gp}});if(r.error)throw r.error},
@@ -988,7 +1013,7 @@ function lobby(){
   setPart('shirt');
   paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');if(store.get('brixblox-gopremium')){store.del('brixblox-gopremium');nav('premium');paintPrem()}loadFriends();loadGames();loadEvents();$('n-admin').hidden=!isBB();$('n-bill').hidden=!isBB();loadAdmins();checkNotices();loadBank();loadItems();api.pubAvatar(me.id,me.av).catch(function(e){console.warn('Avatar share failed',e);if(!window.__avWarn){window.__avWarn=1;toast('Friends cannot see your avatar yet: '+((e&&e.message)||e))}})}
 const PAGES=['home','discover','friends','avatar','bank','premium','settings'];
-function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p||(p==='profile'&&x==='friends'))});$('p-profile').hidden=p!=='profile'}
+function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p||(p==='profile'&&x==='friends'))});$('p-profile').hidden=p!=='profile';$('p-game').hidden=p!=='game'}
 const IC={premium:'<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',discover:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',bank:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 9l9-6 9 6M8 13v3M12 13v3M16 13v3"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
 document.querySelectorAll('.snav button').forEach(function(b){b.insertAdjacentHTML('afterbegin','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+IC[b.dataset.i]+'</svg>')});
 function theme(t){document.documentElement.dataset.theme=t;store.set('brixblox-theme',t);$('th-light').setAttribute('aria-pressed',String(t==='light'));$('th-dark').setAttribute('aria-pressed',String(t==='dark'))}
@@ -1094,8 +1119,7 @@ function gfill(box,list,empty,disc){box.replaceChildren();if(!list.length){box.c
     th.style.background='hsl('+hue(g.id)+',55%,42%)';if(g.thumb){th.textContent='';th.style.background='center/cover url("'+g.thumb+'")'}
     if(g.official)bd.append(mkx('span','tg','Made by BrixBlox'));
     {const sm=mkx('small','','by '),who=mkx('span','',mine?'you':g.ownerName);if(!mine&&g.ownerName&&PREM.has(String(g.ownerName).toLowerCase()))who.append(pstar());sm.append(who,document.createTextNode((mine&&!disc?'  -  '+(g.vis==='public'?'Public':'Private'):'')+(disc&&g.plays>0?'  -  '+g.plays+' play'+(g.plays===1?'':'s'):'')));bd.append(mkx('b','',g.name),sm)}
-    const row=mkx('div','row'),pl=mkx('button','btn small joinb','Join');pl.type='button';pl.onclick=function(){playGame(g)};row.append(pl);
-    if(!/^(acc_|avatar_|sys_)/.test(String(g.id))){const gpb=mkx('button','btn ghost small','\uD83C\uDFAB Passes');gpb.type='button';gpb.title='See and buy this game\'s gamepasses';gpb.onclick=function(){openPasses(g)};row.append(gpb)}
+    th.style.cursor='pointer';th.title='Open game page';th.tabIndex=0;th.setAttribute('role','link');th.onclick=function(){openGamePage(g)};th.onkeydown=function(e){if(e.key==='Enter')openGamePage(g)};const row=mkx('div','row'),pl=mkx('button','btn small joinb','Join');pl.type='button';pl.onclick=function(){playGame(g)};row.append(pl);
     if(mine&&!disc){const ed=mkx('button','btn ghost small','Edit');ed.type='button';ed.onclick=function(){editGame(g)};row.append(ed)}
     if(isBB()&&g.vis==='public'&&String(g.id).indexOf('acc_')!==0&&String(g.id).indexOf('avatar_')!==0&&String(g.id).indexOf('sys_')!==0){const of=mkx('button','btn ghost small',g.official?'Remove from BrixBlox':'Add to BrixBlox');of.type='button';
       of.onclick=async function(){of.disabled=true;try{const was=!!g.official;await api.setOfficial(g.id,!was);{let now=null;try{now=await api.checkOfficial(g.id)}catch(e){}if(now!==null&&now!==!was){of.disabled=false;toast('The database did not keep that change (it still says '+(now?'official':'not official')+'). Check the set_official function in Supabase.');return}}g.official=!was;toast(was?'Removed from Made by BrixBlox.':'Added to Made by BrixBlox.');if(PUBG)dfill(PUBG);loadGames()}catch(e){of.disabled=false;console.warn('Add to BrixBlox failed',e);toast('Could not change that. Run brixblox-official.sql in Supabase (SQL editor), then try again.')}};row.append(of)}
@@ -1295,58 +1319,77 @@ function openEvent(e){closeEvent();const ov=mkx('div','evo');ov.id='evo';ov.oncl
   const body=mkx('div','evb'),gb=mkx('div');if(e.descr)body.append(mkx('p','evd',e.descr));
   body.append(mkx('h3','','Games in this event'),gb);card.append(hd,body);ov.append(card);document.body.append(ov);
   gfill(gb,evGames(e),'No games have been added to this event yet. Check back soon.',true)}
-/* ===== Gamepasses on the front page: press Passes on a game card to see its gamepasses and buy them without joining the game =====
-   Same rules as buying inside the game: the server records the sale and pays the creator, the pass is kept in your account per game, the price comes out of your blockbucks. */
+/* ===== Game pages: click a game's thumbnail to open its page with Join, dates, creator, badges and gamepasses (buy them without joining) =====
+   Buying works like buying inside the game: the server records the sale and pays the creator, the pass is kept in your account per game, the price comes out of your blockbucks. */
 function gpImgOk(u){return typeof u==='string'&&/^data:image\/(png|jpe?g|gif|webp);base64,/i.test(u)}
 function gpOwnedIn(md,gid){const a=md&&md.gpass&&md.gpass[String(gid)];return (Array.isArray(a)?a:[]).map(String)}
-async function openPasses(g){
+var GM={g:null,passes:[],md:{},busy:false,tok:0,back:'home'};
+function gmDate(v){const t=v?Date.parse(v):NaN;return isFinite(t)?new Date(t).toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'}):'Unknown'}
+function gmStat(dl,k,v){const d=mkx('div'),dt=mkx('dt','',k),dd=mkx('dd');if(v&&v.nodeType)dd.append(v);else dd.textContent=v;d.append(dt,dd);dl.append(d)}
+async function openGamePage(g){
+  if(/^(acc_|avatar_|sys_)/.test(String(g&&g.id))){toast('That cannot be opened.');return}
   closeEvent();
-  const ov=mkx('div','evo');ov.id='evo';ov.onclick=function(x){if(x.target===ov)closeEvent()};
-  const card=mkx('div','evc gpm'),body=mkx('div','evb'),x=mkx('button','evx','\u00D7');x.type='button';x.setAttribute('aria-label','Close');x.onclick=closeEvent;
-  card.append(body);ov.append(card,x);x.style.position='fixed';x.style.top='14px';x.style.right='14px';document.body.append(ov);
-  body.append(mkx('h2','',(g.name||'Game')+' gamepasses'),mkx('p','sub','Loading...'));
-  let passes=[],md={};
+  const cur=PAGES.concat(['profile']).filter(function(x){return !$('p-'+x).hidden})[0];if(cur)GM.back=cur;
+  const tok=++GM.tok;GM.g=g;GM.passes=[];GM.md={};GM.busy=false;
+  nav('game');window.scrollTo(0,0);
+  const th=$('gm-th');th.textContent=(g.name||'?').trim().charAt(0).toUpperCase()||'?';th.style.background='hsl('+hue(String(g.id))+',55%,42%)';
+  if(g.thumb){th.textContent='';th.style.background='center/cover url("'+g.thumb+'")'}
+  $('gm-name').textContent=g.name||'Untitled';
+  const by=$('gm-by'),mine=g.ownerId===me.id;nameEl(by,mine?'you':(g.ownerName||'?'));by.onclick=function(){if(g.ownerName)openProfile(g.ownerName)};
+  $('gm-tag').replaceChildren(g.official?mkx('span','tg','Made by BrixBlox'):document.createTextNode(''));
+  const jn=$('gm-join');jn.onclick=function(){playGame(g)};
+  $('gm-stats').replaceChildren();gmStat($('gm-stats'),'Created','...');
+  $('gm-bds').className='';$('gm-bds').replaceChildren(mkx('p','empty','Loading...'));$('gm-gp').replaceChildren(mkx('p','empty','Loading...'));
+  let meta={},P=null;
+  try{if(!api.demo&&api.gameMeta)meta=await api.gameMeta(g.id)||{}}catch(e){}
+  try{const d=await gameData(g);P=typeof d==='string'?JSON.parse(d):d}catch(e){}
+  try{if(!api.demo&&api.gpMeta)GM.md=await api.gpMeta()||{}}catch(e){}
+  if(tok!==GM.tok)return;
+  const dl=$('gm-stats');dl.replaceChildren();
+  gmStat(dl,'Created',gmDate(meta.created_at||(P&&P.created)));
+  gmStat(dl,'Last updated',gmDate(meta.updated_at||g.at));
+  const cb=mkx('button','gm-link',mine?'you':(g.ownerName||'?'));cb.type='button';cb.onclick=by.onclick;gmStat(dl,'Creator',cb);
+  const pl=+(meta.plays!=null?meta.plays:g.plays)||0;gmStat(dl,'Plays',String(pl));
+  if(!P){$('gm-bds').replaceChildren(mkx('p','empty','Could not load this game.'));$('gm-gp').replaceChildren(mkx('p','empty','Could not load this game.'));return}
+  const bds=Array.isArray(P.badges)?P.badges:[],box=$('gm-bds');
+  box.className='';if(!bds.length)box.replaceChildren(mkx('p','empty','This game has no badges yet.'));
+  else{box.replaceChildren();box.className='gm-bds';bds.forEach(function(b){const c=mkx('div','gm-bd'),t=mkx('div'),n=mkx('b','',b.name||'Badge');t.append(n);if(b.desc)t.append(mkx('small','',b.desc));c.append(mkx('div','ic',(b.icon||'\uD83C\uDFC5')),t);box.append(c)})}
+  GM.passes=(Array.isArray(P.gamepasses)?P.gamepasses:[]).filter(function(q){return q&&q.id!=null});
+  gmPasses()}
+function gmBal(){return balance()+(me.av.spent||0)-(+((GM.md.avatar||{}).spent)||0)}
+function gmPasses(st,good){
+  const box=$('gm-gp'),g=GM.g;box.replaceChildren();
+  if(api.demo){box.append(mkx('p','empty','Gamepasses need an online BrixBlox account.'));return}
+  if(!GM.passes.length){box.append(mkx('p','empty','This game has no gamepasses yet.'));return}
+  const bw=mkx('div','gpbal');bw.append(mkx('i'),document.createTextNode(isBB()?'Unlimited blockbucks':gmBal()+' blockbucks'));box.append(bw);
+  const own=gpOwnedIn(GM.md,g.id),grid=mkx('div','gpcards');
+  GM.passes.forEach(function(q){
+    const c=mkx('div','gpc'),th=mkx('div','gpi',gpImgOk(q.img)?'':'\uD83C\uDFAB'),price=Math.max(0,Math.floor(+q.price)||0),has=own.indexOf(String(q.id))>=0;
+    if(gpImgOk(q.img))th.style.backgroundImage='url("'+q.img+'")';
+    const pr=mkx('div','gpp');if(price>0&&!has)pr.append(mkx('i'));pr.append(document.createTextNode(has?'Owned':price>0?String(price):'Free'));
+    const bt=mkx('button','btn small'+(has?' ghost':''),has?'Owned':'Buy');bt.type='button';bt.disabled=has||GM.busy;bt.onclick=function(){gmBuy(q,price,bt)};
+    c.append(th,mkx('b','',q.name||'Gamepass'),mkx('small','',q.desc||''),pr,bt);grid.append(c)});
+  box.append(grid);
+  const sm=mkx('p','gpst'+(st?(good?' ok':' bad'):''),st||'');sm.setAttribute('role','status');box.append(sm)}
+async function gmBuy(q,price,bt){
+  if(GM.busy)return;const g=GM.g,tok=GM.tok;
+  if(price>0&&!isBB()&&!confirm('Buy "'+q.name+'" for '+price+' blockbucks?'))return;
+  GM.busy=true;bt.disabled=true;bt.textContent='Buying...';
+  const done=function(m,ok){GM.busy=false;if(tok===GM.tok)gmPasses(m,ok)};
   try{
-    const d=await gameData(g),P=typeof d==='string'?JSON.parse(d):d;
-    passes=Array.isArray(P&&P.gamepasses)?P.gamepasses.filter(function(q){return q&&q.id!=null}):[];
-    if(!api.demo&&api.gpMeta)md=await api.gpMeta()||{}
-  }catch(e){body.replaceChildren(mkx('h2','',(g.name||'Game')+' gamepasses'),mkx('p','empty','Could not load this game\'s gamepasses. Try again.'));return}
-  if(!$('evo')||$('evo')!==ov)return;
-  let busy=false;
-  const bal=function(){return balance()+(me.av.spent||0)-(+((md.avatar||{}).spent)||0)};
-  function render(st,good){
-    body.replaceChildren(mkx('h2','',(g.name||'Game')+' gamepasses'),mkx('p','sub','by '+(g.ownerId===me.id?'you':(g.ownerName||'?'))+'. Passes stay with your account for this game.'));
-    if(api.demo){body.append(mkx('p','empty','Gamepasses need an online BrixBlox account.'));return}
-    if(!passes.length){body.append(mkx('p','empty','This game has no gamepasses yet.'));return}
-    const bw=mkx('div','gpbal');bw.append(mkx('i'),document.createTextNode(isBB()?'Unlimited blockbucks':bal()+' blockbucks'));body.append(bw);
-    const own=gpOwnedIn(md,g.id),grid=mkx('div','gpcards');
-    passes.forEach(function(q){
-      const c=mkx('div','gpc'),th=mkx('div','gpi',gpImgOk(q.img)?'':'\uD83C\uDFAB'),price=Math.max(0,Math.floor(+q.price)||0),has=own.indexOf(String(q.id))>=0;
-      if(gpImgOk(q.img))th.style.backgroundImage='url("'+q.img+'")';
-      const pr=mkx('div','gpp');if(price>0&&!has)pr.append(mkx('i'));pr.append(document.createTextNode(has?'Owned':price>0?String(price):'Free'));
-      const bt=mkx('button','btn small'+(has?' ghost':''),has?'Owned':'Buy');bt.type='button';bt.disabled=has||busy;
-      bt.onclick=function(){buy(q,price,bt)};
-      c.append(th,mkx('b','',q.name||'Gamepass'),mkx('small','',q.desc||''),pr,bt);grid.append(c)});
-    body.append(grid);
-    const sm=mkx('p','gpst'+(st?(good?' ok':' bad'):''),st||'');sm.setAttribute('role','status');body.append(sm)}
-  async function buy(q,price,bt){
-    if(busy)return;
-    if(price>0&&!isBB()&&!confirm('Buy "'+q.name+'" for '+price+' blockbucks?'))return;
-    busy=true;bt.disabled=true;bt.textContent='Buying...';
-    try{
-      md=await api.gpMeta()||{};/* read your account again so a pass bought a moment ago in the game is not missed or paid for twice */
-      if(gpOwnedIn(md,g.id).indexOf(String(q.id))>=0){busy=false;render('You already own '+q.name+'.',true);return}
-      const pay=price>0&&!isBB();
-      if(pay&&bal()<price){busy=false;render('Not enough blockbucks. You need '+(price-bal())+' more.',false);return}
-      const sale=await api.gpBuy(g.id,q.id);
-      const av=Object.assign({},md.avatar||me.av||{}),all=Object.assign({},md.gpass||{}),list=gpOwnedIn(md,g.id);
-      if(list.indexOf(String(q.id))<0)list.push(String(q.id));all[String(g.id)]=list;
-      if(pay&&sale&&sale.new)av.spent=(+av.spent||0)+price;
-      await api.gpSave(av,all);
-      md=Object.assign({},md,{avatar:av,gpass:all});me.av.spent=+av.spent||0;syncMe();try{paintShop()}catch(e){}
-      busy=false;render('You bought '+q.name+'!'+(price>0&&!isBB()?' Open the game to use it.':''),true);toast('You got the '+q.name+' gamepass.')}
-    catch(e){busy=false;render(String((e&&e.message)||'Could not buy it.'),false)}}
-  render()}
+    GM.md=await api.gpMeta()||{};/* read your account again so a pass bought a moment ago in the game is not missed or paid for twice */
+    if(gpOwnedIn(GM.md,g.id).indexOf(String(q.id))>=0){done('You already own '+q.name+'.',true);return}
+    const pay=price>0&&!isBB();
+    if(pay&&gmBal()<price){done('Not enough blockbucks. You need '+(price-gmBal())+' more.',false);return}
+    const sale=await api.gpBuy(g.id,q.id);
+    const av=Object.assign({},GM.md.avatar||me.av||{}),all=Object.assign({},GM.md.gpass||{}),list=gpOwnedIn(GM.md,g.id);
+    if(list.indexOf(String(q.id))<0)list.push(String(q.id));all[String(g.id)]=list;
+    if(pay&&sale&&sale.new)av.spent=(+av.spent||0)+price;
+    await api.gpSave(av,all);
+    GM.md=Object.assign({},GM.md,{avatar:av,gpass:all});me.av.spent=+av.spent||0;syncMe();try{paintShop()}catch(e){}
+    done('You bought '+q.name+'!'+(price>0&&!isBB()?' Join the game to use it.':''),true);toast('You got the '+q.name+' gamepass.')}
+  catch(e){done(String((e&&e.message)||'Could not buy it.'),false)}}
+$('gm-back').onclick=function(){const b=GM.back==='profile'?'home':(GM.back||'home');nav(b);if(b==='home'||b==='discover')loadGames()};
 function evBlank(){return {id:null,title:'',descr:'',thumb:'',game_ids:[],active:true,ends:'',sort:0}}
 function evToEd(e){return {id:e.id,title:e.title||'',descr:e.descr||'',thumb:e.thumb||'',game_ids:(Array.isArray(e.game_ids)?e.game_ids:[]).map(String),active:!!e.active,ends:e.ends_at?new Date(e.ends_at).toLocaleDateString('en-CA'):'',sort:+e.sort||0}}
 async function evReadThumb(f){const url=URL.createObjectURL(f);try{
