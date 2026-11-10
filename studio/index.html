@@ -641,6 +641,8 @@ const BD={
  itemunhold:{c:'ev',hat:1,l:'when player stops holding _ in hand',a:['Sword'],dd:{0:'item'},tip:'Runs when you put the item you pick away (or switch to another item, or it is taken from you).'},
  screenclick:{c:'ev',hat:1,l:'when player clicks screen',a:[],tip:'Runs every time you click on the game screen while playing (press Play). Clicking the hotbar at the bottom does not count. The variable clicker holds your name.'},
  landed:{c:'ev',hat:1,l:'when player hits ground from higher than _ studs',a:['20'],tip:'Runs when you land after falling from higher than this many studs (jumping off a ledge, a tall build, or being pushed). The variable fallheight holds how far you fell. Type a small number like 5 to trigger on short drops too.'},
+ gphas:{c:'ev',hat:1,l:'when player has gamepass _',a:['Gamepass1'],dd:{0:'gp'},tip:'Runs when you start the game owning the gamepass you pick, and right after you buy it. Add gamepasses with the Gamepasses button above (Premium). The variable passplayer holds your name.'},
+ standstill:{c:'ev',hat:1,l:'when player standing still',a:[],tip:'Runs when your character has stood still on the ground for half a second. It runs once each time you stop, and again the next time you stop after moving.'},
  pleave:{c:'ev',hat:1,l:'when a player leaves',a:[],tip:'Runs when a player leaves, is kicked or banned. The variable leaver holds their name. "number of players" is already updated.'},
  clicked:{c:'ev',hat:1,l:'when this block is clicked from _ studs away',a:['20'],tip:'Runs when you click the object this script belongs to while playing (press Play). The number is how far away you can click from. The variable clicker holds your name.'},
  chat:{c:'ev',hat:1,l:'when player says _ in chat',a:['hello'],raw:1,tip:'Runs when a player types this in the chat box (press / while playing, type, then press Enter to send). It matches the whole message, or the start of it when the message continues after a space (so \"!kick Bob\" matches !kick). Type * to match every message. The variables speaker and message are filled in.'},
@@ -785,7 +787,7 @@ const BD={
  def:{c:'fn',hat:1,l:'define _',a:['spin'],raw:1},
  call:{c:'fn',l:'call _',a:['spin'],raw:1}
 };
-const EVH=['landed','key','keydrop','keyheld','keyrel','recv','touched','clicked','chat','guiclick','guithisclick','pjoin','pleave','itemhold','itemunhold','screenclick'];
+const EVH=['gphas','standstill','landed','key','keydrop','keyheld','keyrel','recv','touched','clicked','chat','guiclick','guithisclick','pjoin','pleave','itemhold','itemunhold','screenclick'];
 function mk(t,a,k){return {t:t,a:a||BD[t].a.slice(),k:BD[t].k?(k||[]):null}}
 function starter(){return [[mk('start'),mk('say',['Hello!']),mk('repeat',['4'],[mk('move',['6']),mk('turn',['90']),mk('wait',['0.3'])])]]}
 /* Games only exist on disk once they are published. An unpublished game is a draft that is lost when the page closes. */
@@ -935,7 +937,7 @@ function varList(){const v=new Set((P&&Array.isArray(P.vars))?P.vars:[]);
     if(b.k)w(b.k)})};
   P.scripts.forEach(function(sc){w(sc)});
   const has=function(t){return P.scripts.some(function(sc){return sc[0].t===t})};
-  if(has('landed'))v.add('fallheight');if(has('touched'))v.add('toucher');if(has('pjoin'))v.add('joiner');if(has('pleave'))v.add('leaver');if(has('clicked')||has('guiclick')||has('guithisclick')||has('screenclick'))v.add('clicker');if(has('chat')){v.add('speaker');v.add('message')}
+  if(has('landed'))v.add('fallheight');if(has('gphas'))v.add('passplayer');if(has('touched'))v.add('toucher');if(has('pjoin'))v.add('joiner');if(has('pleave'))v.add('leaver');if(has('clicked')||has('guiclick')||has('guithisclick')||has('screenclick'))v.add('clicker');if(has('chat')){v.add('speaker');v.add('message')}
   return Array.from(v).sort()}
 const KEYOPT=(function(){const o=[];'abcdefghijklmnopqrstuvwxyz'.split('').forEach(function(c){o.push([c,c.toUpperCase()])});'0123456789'.split('').forEach(function(c){o.push([c,c])});
   [['space','Space'],['enter','Enter'],['shift','Shift'],['ctrl','Ctrl'],['alt','Alt'],['tab','Tab'],['escape','Escape'],['backspace','Backspace'],['up','Up arrow'],['down','Down arrow'],['left','Left arrow'],['right','Right arrow']].forEach(function(q){o.push(q)});
@@ -957,15 +959,17 @@ function newVarDlg(done){mdl('New variable',function(c,close){const n=el('input'
 function ddSel(b,i,kind,ro){
   if(ro){const n=el('input');n.value=b.a[i];n.readOnly=true;fit(n);return n}
   const s=el('select','ddsel');s.title=kind==='var'?'Pick a variable, or make a new one':'';
-  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='img'?[['none','none']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})):kind==='guipart'?[['background','background'],['text','text'],['border','border']]:kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='ease'?EASEOPT.slice():kind==='tset'?TSETOPT.slice():kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='light'?LIGHTOPT.slice():kind==='skybox'?skyOpts():kind==='bool'?[['true','true'],['false','false']]:kind==='spawn'?P.parts.filter(function(q){return q.spawn&&!q.parent}).map(function(q){return [q.name,q.name]}):kind==='item'?itemsL().map(function(i){return [i.name,i.name]}):varList().map(function(v){return [v,v]});
+  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='img'?[['none','none']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})):kind==='guipart'?[['background','background'],['text','text'],['border','border']]:kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='ease'?EASEOPT.slice():kind==='tset'?TSETOPT.slice():kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='light'?LIGHTOPT.slice():kind==='skybox'?skyOpts():kind==='bool'?[['true','true'],['false','false']]:kind==='spawn'?P.parts.filter(function(q){return q.spawn&&!q.parent}).map(function(q){return [q.name,q.name]}):kind==='gp'?gpList().map(function(g){return [g.name,g.name]}):kind==='item'?itemsL().map(function(i){return [i.name,i.name]}):varList().map(function(v){return [v,v]});
     if(kind==='item'&&o.length&&!o.some(function(q){return q[0]===String(b.a[i])})){b.a[i]=o[0][0];save()}
     if(kind==='item'&&!o.length)o=[[String(b.a[i]),'(make an item first)']];
+    if(kind==='gp'&&o.length&&!o.some(function(q){return q[0]===String(b.a[i])})){b.a[i]=o[0][0];save()}
+    if(kind==='gp'&&!o.length)o=[[String(b.a[i]),'(make a gamepass first)']];
     const cur=String(b.a[i]);if(cur&&!o.some(function(q){return q[0]===cur}))o.unshift([cur,cur]);
     o.forEach(function(q){const op=el('option','',q[1]);op.value=q[0];s.append(op)});
     if(kind==='var'){const nw=el('option','','\uFF0B New variable\u2026');nw.value='\u0001new';s.append(nw)}
     s.value=cur};
   fill();
-  s.onpointerdown=function(e){e.stopPropagation();if(kind==='var'||kind==='gui'||kind==='guit'||kind==='img'||kind==='item'||kind==='spawn'||kind==='skybox')fill()};
+  s.onpointerdown=function(e){e.stopPropagation();if(kind==='var'||kind==='gui'||kind==='guit'||kind==='img'||kind==='item'||kind==='spawn'||kind==='skybox'||kind==='gp')fill()};
   s.onchange=function(){
     if(s.value==='\u0001new'){newVarDlg(function(v){if(v){b.a[i]=v;save();rend();renderParts()}else fill()});return}
     b.a[i]=s.value;reser();save();view()};
@@ -1191,7 +1195,7 @@ function view0(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0]
 /* BricBloc interpreter. Expressions are parsed by hand, never eval'd. */
 /* Functions the round blocks turn into: join, letter, length, contains, random, round, mod and the "abs of" list */
 const KH=new Set(),KP=new Set();
-addEventListener('keydown',function(e){if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;keyNames(e).forEach(function(k){KH.add(k);if(running||playing)KP.add(k)})},true);
+addEventListener('keydown',function(e){if(menuEl||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;keyNames(e).forEach(function(k){KH.add(k);if(running||playing)KP.add(k)})},true);
 addEventListener('keyup',function(e){keyNames(e).forEach(function(k){KH.delete(k)})},true);
 addEventListener('blur',function(){KH.clear();KP.clear()});
 const ATTR={};
@@ -1207,6 +1211,51 @@ async function pdSave(){if(!ME)return {ok:false,why:'not signed in'};await pdLoa
   const all=Object.assign({},await pdAcct());all[pdGid()]={f:d.f,i:d.i};
   try{if(sb){const r=await sb.auth.updateUser({data:{pdata:all}});if(r.error)throw r.error}}catch(e){return {ok:false,why:String((e&&e.message)||e)}}
   ME.pd=all;try{store.set('brixblox-me',JSON.stringify(ME))}catch(e){}return {ok:true}}
+/* ===== Gamepasses (the part the game uses): which passes this player owns, buying one, and the two events that read them ===== */
+const GPMAX=20,GP={own:{},ready:null,busy:false};
+function gpList(){return Array.isArray(P.gamepasses)?P.gamepasses:[]}
+function gpFind(k){const q=String(k==null?'':k).trim().toLowerCase();return gpList().find(function(g){return String(g.name).trim().toLowerCase()===q||String(g.id)===String(k)})||null}
+function gpHas(k){const g=gpFind(k);return !!g&&!!GP.own[g.id]}
+function gpIsBB(){return !!ME&&String(ME.username||'').toLowerCase()==='brixblox'}
+async function gpMeta(){if(!sb)return null;try{const r=await sb.auth.getUser();return (r&&r.data&&r.data.user&&r.data.user.user_metadata)||null}catch(e){return null}}
+/* Passes you bought are kept in your account per game. Testing in the Studio never saves anything, so every Play starts with none. */
+function gpLoad(){if(!GP.ready)GP.ready=(async function(){GP.own={};if(!VIEWONLY)return;
+  const md=await gpMeta(),all=(md&&md.gpass)||(ME&&ME.gp)||{},a=all[pdGid()];(Array.isArray(a)?a:[]).forEach(function(id){GP.own[String(id)]=1})})();return GP.ready}
+function gpReset(){GP.own={};GP.ready=null;GP.busy=false}
+function gpFire(g){if(!(running||playing)||!g)return;S.v.passplayer=String((P.player&&P.player.name)||(ME&&ME.username)||'');
+  P.scripts.forEach(function(sc){if(sc[0].t==='gphas'&&gpFind(sc[0].a[0])===g)fireScript(sc)})}
+async function gpStart(my){await gpLoad();if(my!==S||!(running||playing))return;gpList().forEach(function(g){if(GP.own[g.id])gpFire(g)})}
+/* Same sum as the Avatar page: 10 to start + coins from old courses + redeemed wallet + Premium visit bonus - spent - the Premium price */
+async function gpBalance(){
+  if(gpIsBB())return Infinity;
+  if(!sb||!ME)throw new Error('Sign in to an online BrixBlox account to buy gamepasses.');
+  const rb=await sb.rpc('bank_status');if(rb.error)throw new Error('Could not check your blockbucks. Try again.');
+  const w=+(rb.data&&rb.data.wallet)||0;let bonus=0,coins=10;
+  try{const rp=await sb.rpc('premium_status');if(!rp.error)bonus=+(rp.data&&rp.data.bonus)||0}catch(e){}
+  try{const rr=await sb.from('level_records').select('best_coins').eq('user_id',ME.id);if(!rr.error)(rr.data||[]).forEach(function(x){coins+=+x.best_coins||0})}catch(e){}
+  const md=await gpMeta(),spent=+((md&&md.avatar&&md.avatar.spent)||0);
+  return coins+w+bonus-spent-(ME.prem?200:0)}
+async function gpBuy(g){
+  if(GP.busy)return {ok:false,why:'One moment, still working on the last one.'};
+  GP.busy=true;
+  try{await gpLoad();
+    if(GP.own[g.id])return {ok:true,had:true};
+    const price=Math.max(0,Math.floor(+g.price)||0);
+    if(!VIEWONLY){GP.own[g.id]=1;gpFire(g);return {ok:true,test:true}}/* testing in the Studio is free */
+    if(!sb||!ME)return {ok:false,why:'Sign in to an online BrixBlox account to buy gamepasses.'};
+    const pay=price>0&&!gpIsBB();
+    if(pay){const bal=await gpBalance();if(bal<price)return {ok:false,why:'Not enough blockbucks. You need '+(price-bal)+' more.'}}
+    const md=(await gpMeta())||{},av=Object.assign({},md.avatar||ME.av||{}),all=Object.assign({},md.gpass||ME.gp||{}),gid=pdGid(),list=(Array.isArray(all[gid])?all[gid]:[]).map(String);
+    if(list.indexOf(String(g.id))<0)list.push(String(g.id));all[gid]=list;
+    if(pay)av.spent=(+av.spent||0)+price;
+    const r=await sb.auth.updateUser({data:{avatar:av,gpass:all}});if(r.error)throw r.error;
+    ME.av=av;ME.gp=all;try{store.set('brixblox-me',JSON.stringify(ME))}catch(e){}
+    GP.own[g.id]=1;gpFire(g);return {ok:true}}
+  catch(e){return {ok:false,why:String((e&&e.message)||e)}}
+  finally{GP.busy=false}}
+/* "when player standing still": once each time the character has stood still on the ground for half a second */
+function ssTick(dt,mv){if(menuEl||S.fly||S.rag||!S.gr||mv||Math.hypot(S.pvx,S.pvz)>.3){S.stt=0;S.ssd=false;return}
+  S.stt=(S.stt||0)+dt;if(S.stt>=.5&&!S.ssd){S.ssd=true;P.scripts.forEach(function(sc){if(sc[0].t==='standstill')fireScript(sc)})}}
 function attrKeys(str){const q=String(str).trim().toLowerCase(),pl=plist(),m=pl.filter(function(x){return String(x.name).toLowerCase()===q});if(m.length)return m.map(function(x){return String(x.name).toLowerCase()});
   const pm=/^player(\d*)$/.exec(q);if(pm){const x=pl[pm[1]?+pm[1]-1:0];if(x)return [String(x.name).toLowerCase()]}return []}
 function attrNm(a){return String(a).trim().toLowerCase()}
@@ -1542,7 +1591,7 @@ function draw(){const T=byId(P.avId),g=T&&J[T.id];
 /* ===== Parts, welds, rig editor, animator ===== */
 P.parts=P.parts||[];P.models=P.models||[];P.anims=P.anims||{};P.nid=P.nid||1;
 if(!VIEWONLY)siteColors(P);
-P.vars=Array.isArray(P.vars)?P.vars:[];P.assets=P.assets||{};P.assets.images=P.assets.images||{};P.assets.audio=P.assets.audio||{};P.assets.meshes=P.assets.meshes||{};P.assets.avol=P.assets.avol||{};P.badges=Array.isArray(P.badges)?P.badges:[];P.guis=Array.isArray(P.guis)?P.guis:[];P.bans=Array.isArray(P.bans)?P.bans:[];
+P.vars=Array.isArray(P.vars)?P.vars:[];P.assets=P.assets||{};P.assets.images=P.assets.images||{};P.assets.audio=P.assets.audio||{};P.assets.meshes=P.assets.meshes||{};P.assets.avol=P.assets.avol||{};P.badges=Array.isArray(P.badges)?P.badges:[];P.guis=Array.isArray(P.guis)?P.guis:[];P.bans=Array.isArray(P.bans)?P.bans:[];P.gamepasses=Array.isArray(P.gamepasses)?P.gamepasses:[];
 P.env=Object.assign({sky:'#8fd3ff',tod:14,bright:1,sun:1,fog:0},P.env||{});P.rules=Object.assign({grav:190,jump:48,speed:16,cam:14,fov:70},P.rules||{});P.audio=Object.assign({vol:.5,mute:false},P.audio||{});
 P.squads=P.squads||[{id:'q1',name:'Red Squad',color:'#e5484d'},{id:'q2',name:'Blue Squad',color:'#3b82f6'}];P.player=P.player||{name:'Player1',squad:''};
 let FRI={},GAQ=null;/* FRI: friction set by a script block (by object id). GAQ: the part groundAt found last */
@@ -3090,7 +3139,7 @@ cv.onpointerleave=function(){setHover(null);animHover(null);cv.style.cursor=''};
 document.addEventListener('pointerlockchange',function(){lockPend=false;if(document.pointerLockElement!==cv){look=false;cv.style.cursor=''}});
 cv.onpointerup=cv.onpointercancel=function(e){if(e&&e.type==='pointercancel'&&(lockPend||document.pointerLockElement===cv))return;look=false;cv.style.cursor='';if(document.pointerLockElement===cv&&!lockMode())document.exitPointerLock();if(gd){const g0=gd;gd=null;if(g0.an&&(g0.mode==='rot'||g0.pos))animRotEnd(g0);save();if(!g0.an){rebuildParts();props()}else if(!g0.pos&&g0.mode==='move')rebuildParts()}};
 cv.onwheel=function(e){e.preventDefault();if(playing&&!FC){if(cdT<=.01&&e.deltaY>0)cdT=2.5;else{cdT*=Math.exp(e.deltaY*.0015);if(e.deltaY<0&&cdT<1.4)cdT=0}cdT=Math.max(0,Math.min(60,cdT));return}zq+=-e.deltaY*.02};
-addEventListener('keydown',function(e){if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;if(playing&&e.code==='Space')e.preventDefault();if(e.ctrlKey||e.metaKey){keys[e.code]=false;return}keys[e.code]=true});
+addEventListener('keydown',function(e){if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;if(playing&&e.code==='Space')e.preventDefault();if(e.ctrlKey||e.metaKey){keys[e.code]=false;return}if(menuEl)return;/* the game menu is open: no movement keys */keys[e.code]=true});
 addEventListener('keyup',function(e){keys[e.code]=false});
 /* Admin freecam: Shift+P while playing turns the camera into the free Studio camera (WASD, Q/E, Shift = fast, right-drag to look, scroll to zoom). Press Shift+P again to go back to your character. */
 addEventListener('keydown',function(e){if(e.code!=='KeyP'||!e.shiftKey||e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
@@ -3099,106 +3148,103 @@ addEventListener('blur',function(){for(const k in keys)keys[k]=false});
 
 /* Editor shortcuts: P new part, Backspace/Delete remove, Ctrl+G group, Ctrl+Shift+G union into one part, Ctrl+Alt+U split union, Ctrl+Alt+G ungroup (ignored while typing or in the script area) */
 
-/* ===== Ask AI: type what you want and Gemini builds the blocks. The AI itself lives on the server (functions/api/blocks.js) so the key stays secret. ===== */
-const AI_URL=(function(){try{return localStorage.getItem('bbAiUrl')||'/api/blocks'}catch(x){return '/api/blocks'}})();
-const AI_DD={keys:'a key name: a-z, 0-9, space, enter, shift, ctrl, alt, tab, escape, up, down, left, right, f1-f12',bool:'true or false',dir:'front, back, left, right, up or down',ease:'smooth, linear, in, out, back, bounce or elastic',tset:'fov, distance, speed or jump',mathf:'abs, floor, ceiling, sqrt, sin, cos, tan, asin, acos, atan, ln, log',accslot:'auto, hat, face, facc, neck or back',behav:'idle, wander, follow nearest, follow random or follow player',guipart:'background, text or border',var:'a variable name',item:'an item name',spawn:'a spawnpoint name',gui:'a GUI name',guit:'a GUI name',img:'an image name or none',light:'a lighting name',skybox:'a skybox name'};
-function aiCatalog(){const L=[];
-  Object.keys(BD).forEach(function(t){const D=BD[t];if(D.rep)return;
-    const dd=D.dd?Object.keys(D.dd).map(function(i){return 'arg'+(+i+1)+'='+(AI_DD[D.dd[i]]||D.dd[i])}).join('; '):'';
-    const tip=String(D.tip||'').split('. ')[0].slice(0,110);
-    L.push(t+' | '+D.l+' | defaults '+JSON.stringify(D.a)+(D.hat?' | EVENT: starts a script':'')+(D.k?' | HOLDS BLOCKS INSIDE (use k)':'')+(dd?' | '+dd:'')+(tip?' | '+tip:''))});
-  return L.join('\n')}
-function aiFacts(){const f=[];try{f.push('Materials: '+Object.keys(MATS).join(', '));const ps=(P.parts||[]).filter(function(q){return !q.model}).map(function(q){return q.name}).slice(0,30);if(ps.length)f.push('Existing part names: '+ps.join(', '))}catch(x){}try{const g=(P.guis||[]).map(function(x){return x.name});if(g.length)f.push('GUI names: '+g.slice(0,40).join(', '))}catch(x){}
-  try{const v=(P.vars||[]).map(function(x){return typeof x==='string'?x:x&&x.name}).filter(Boolean);if(v.length)f.push('Variables that exist: '+v.slice(0,40).join(', '))}catch(x){}return f.join('\n')}
-function aiParse(t){t=String(t||'').replace(/^\s*```(?:json)?/i,'').replace(/```\s*$/,'').trim();let o=null;
-  try{o=JSON.parse(t)}catch(x){const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a>=0&&b>a){try{o=JSON.parse(t.slice(a,b+1))}catch(y){}}}
-  if(o&&!Array.isArray(o.scripts)&&(Array.isArray(o.guis)||Array.isArray(o.parts)))o.scripts=[];
-  if(!o||!Array.isArray(o.scripts))throw new Error('The AI answered in a way Studio could not read. Try asking again.');return o}
-function aiOwner(){if(selScr&&selScr.o)return selScr.o;if(selGui)return selGui;const p=sel.length?byId(sel[0]):null;return p?(p.model||p.id):null}
-function aiNum(v,lo,hi,d){v=parseFloat(v);return isFinite(v)?Math.min(hi,Math.max(lo,v)):d}
-/* Where new parts go: in front of the camera (or on the surface it looks at). Parts from the AI are positioned relative to this point. */
-function aiOrigin(){try{const f=fwd(),o=new THREE.Vector3(cam.x,cam.y,cam.z);ray.set(o,new THREE.Vector3(f[0],f[1],f[2]));const h=ray.intersectObjects(pickable(),false)[0];
-  const r=(h&&h.distance<60)?[h.point.x,h.point.y,h.point.z]:[o.x+f[0]*12,0,o.z+f[2]*12];return r.map(function(v){return Math.round(v*2)/2})}catch(e){return [0,0,0]}}
-function aiBuild(o,attach){
-  const res={made:0,blocks:0,dropped:0,guis:0,parts:0},ren={},pend=[];
-  const GD={text:{x:35,y:5,w:30,h:10,text:'Hello!',bg:'#000000',op:0,color:'#ffffff',fs:26,round:0},
-    button:{x:40,y:80,w:20,h:9,text:'Click me',bg:'#00b06f',op:1,color:'#ffffff',fs:20,round:10},
-    frame:{x:30,y:30,w:40,h:40,text:'',bg:'#232527',op:.85,color:'#ffffff',fs:20,round:8},
-    image:{x:40,y:35,w:20,h:30,text:'',bg:'#ffffff',op:0,color:'#ffffff',fs:20,round:0}};
-  (Array.isArray(o.guis)?o.guis:[]).slice(0,12).forEach(function(x){
-    if(!x||typeof x!=='object'||!GTYPE[x.type]){res.dropped++;return}
-    const D=GD[x.type],want=String(x.name||GTYPE[x.type].n).trim().slice(0,24)||GTYPE[x.type].n,nm=guiName(want);
-    let par='';if(x.parent){const pn=String(x.parent).trim(),f=guiByName(ren[pn.toLowerCase()]||pn)[0];if(f)par=f.id}
-    const w=aiNum(x.w,1,100,D.w),h=aiNum(x.h,1,100,D.h);
-    const g={id:'u'+P.nid++,name:nm,type:x.type,vis:true,img:'',parent:par,w:w,h:h,x:aiNum(x.x,0,100-w,D.x),y:aiNum(x.y,0,100-h,D.y),
-      text:x.text==null?D.text:String(x.text).slice(0,120),bg:cssHex(x.bg)||D.bg,color:cssHex(x.color)||D.color,
-      op:aiNum(x.op,0,1,D.op),fs:aiNum(x.fs,8,120,D.fs),round:aiNum(x.round,0,50,D.round)};
-    P.guis.push(g);res.guis++;if(nm.toLowerCase()!==want.toLowerCase())ren[want.toLowerCase()]=nm;pend.push([x.scripts,g.id])});
-  const SHP={box:'box',block:'box',cube:'box',ball:'sphere',sphere:'sphere',cyl:'cyl',cylinder:'cyl',wedge:'wedge',triangle:'wedge',ramp:'wedge'},org=aiOrigin();
-  (Array.isArray(o.parts)?o.parts:[]).slice(0,25).forEach(function(x){
-    if(!x||typeof x!=='object'){res.dropped++;return}
-    const sh=SHP[String(x.shape||'box').toLowerCase()]||'box',size=[aiNum(x.w,.2,300,4),aiNum(x.h,.2,300,1),aiNum(x.d,.2,300,4)];
-    const pos=[org[0]+aiNum(x.x,-300,300,0),Math.max(.1,org[1]+aiNum(x.y,-50,300,size[1]/2)),org[2]+aiNum(x.z,-300,300,0)].map(function(v){return Math.round(v*100)/100});
-    const q=mkPart(String(x.name||'Part').trim().slice(0,24)||'Part',pos,size,cssHex(x.color)||'#b8c0c8');
-    if(sh!=='box')q.shape=sh;
-    const mk=String(x.material||'').toLowerCase();if(MATS[mk]&&mk!=='plastic')q.mat=mk;
-    const tr=aiNum(x.transparency,0,1,0);if(tr>0)q.tr=tr;
-    if(x.solid===false)q.nocol=true;
-    res.parts++;pend.push([x.scripts,q.id])});
-  if(res.guis||res.parts){try{all()}catch(e){}}
-  const add=function(list,owner,att){const r=aiInsert(list,att,owner,ren);res.made+=r.made;res.blocks+=r.blocks;res.dropped+=r.dropped};
-  pend.forEach(function(q){if(Array.isArray(q[0])&&q[0].length)add(q[0].slice(0,4),q[1],false)});
-  add(o.scripts||[],null,attach);
-  return res}
-function aiInsert(scripts,attach,ownerOv,ren){let blocks=0,dropped=0,made=0;const owner=ownerOv||(attach?aiOwner():null);
-  const clean2=function(arr,depth,first){const out=[];if(!Array.isArray(arr)||depth>6)return out;
-    arr.forEach(function(b){if(blocks>=120){dropped++;return}if(!b||typeof b.t!=='string'||!BD[b.t]||BD[b.t].rep){dropped++;return}
-      const D=BD[b.t];if(D.hat&&!(first&&!out.length)){dropped++;return}
-      const a=D.a.map(function(d,i){let v=Array.isArray(b.a)&&b.a[i]!==undefined&&b.a[i]!==null?String(b.a[i]):d;
-        if(ren&&ren[v.trim().toLowerCase()])v=ren[v.trim().toLowerCase()];
-        const dt=D.dd&&D.dd[i];if(dt==='bool'){v=/^(true|yes|on|1)$/i.test(v)?'true':/^(false|no|off|0)$/i.test(v)?'false':d}else if(dt==='keys')v=v.toLowerCase();return v});
-      const nb={t:b.t,a:a,k:D.k?clean2(b.k,depth+1,false):null};blocks++;out.push(nb)});return out};
-  scripts.slice(0,8).forEach(function(sc){let bl=clean2(sc,0,true);if(!bl.length)return;
-    if(!BD[bl[0].t].hat){bl.unshift(mk('start'))}
-    if(owner)bl[0].o=owner;P.scripts.push(bl);made++;selScr=bl[0]});
-  if(made){clean();rend();renderParts()}return {made:made,blocks:blocks,dropped:dropped}}
-function aiUpsell(){const ov=el('div');ov.style.cssText='position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+/* ===== Gamepasses (the part you see): the creator's Gamepasses window in Studio (Premium) and the Gamepasses tab in the game menu ===== */
+function gpStyle(){if(document.getElementById('gp-css'))return;const s=document.createElement('style');s.id='gp-css';
+  s.textContent='.gpcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}'
+  +'.gpc{display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid rgba(255,255,255,.22);border-radius:12px;background:rgba(255,255,255,.07)}'
+  +'.gpc .gpi{width:100%;aspect-ratio:1/1;border-radius:8px;background:#2b3a55 center/cover no-repeat;display:grid;place-items:center;font-size:2.2rem;color:#fff}'
+  +'.gpc b{overflow-wrap:anywhere;font-size:.92rem}.gpc small{color:rgba(255,255,255,.74);line-height:1.3}'
+  +'.gpc .gpp{display:flex;align-items:center;gap:6px;font-weight:800;font-size:.85rem}.gpc .gpp i{width:11px;height:11px;border-radius:50%;background:#ffc233;display:block}'
+  +'.gmp .gpc .btn{width:100%;text-align:center;padding:0 10px}'
+  +'.gpr{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid rgba(255,255,255,.2);border-radius:10px}'
+  +'.gpr .gpi{width:48px;height:48px;flex:none;border-radius:8px;background:#2b3a55 center/cover no-repeat;display:grid;place-items:center;font-size:1.4rem}'
+  +'.gpr .gpn{flex:1;min-width:0;display:flex;flex-direction:column}.gpr .gpn b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gpr .gpn small{opacity:.75}'
+  +'.gpf{display:flex;flex-direction:column;gap:6px}.gpf label{font-size:.8rem;font-weight:700;opacity:.85;display:block;margin:0}'
+  +'.gpf input[type=text],.gpf input[type=number],.gpf select{width:100%;min-height:38px;box-sizing:border-box;padding:0 10px;border:1px solid rgba(255,255,255,.25);border-radius:8px;background:#191b1d;color:#fff;font:inherit}'
+  +'.gpf .gpi{width:96px;height:96px;border-radius:10px;background:#2b3a55 center/cover no-repeat;display:grid;place-items:center;font-size:2rem}';
+  document.head.append(s)}
+function gpImgOk(u){return typeof u==='string'&&/^data:image\/(png|jpe?g|gif|webp);base64,/i.test(u)}
+function gpFit(src){return new Promise(function(ok,no){const im=new Image();
+  im.onload=function(){const m=256,k=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);let d=c.toDataURL('image/png');if(d.length>120000)d=c.toDataURL('image/jpeg',.85);ok(d)};
+  im.onerror=function(){no(new Error('Could not read that image.'))};im.src=src})}
+function gpRead(f){return new Promise(function(ok,no){const r=new FileReader();r.onload=function(){gpFit(r.result).then(ok,no)};r.onerror=function(){no(new Error('Could not read that file.'))};r.readAsDataURL(f)})}
+function gpThumb(d,cls){const t=el('div',cls||'gpi',gpImgOk(d.img)?'':'\uD83C\uDFAB');if(gpImgOk(d.img))t.style.backgroundImage='url("'+d.img+'")';return t}
+function gpUpsell(){const ov=el('div');ov.style.cssText='position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
   const close=function(){ov.remove()};ov.onpointerdown=function(e){if(e.target===ov)close()};
   const bx=el('div');bx.style.cssText='width:min(460px,100%);background:#232527;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px';
-  const h=el('div','','\u2728 Ask AI is a Premium feature');h.style.cssText='font-weight:800;font-size:1.1rem';
-  const p=el('p','','Type what you want and the AI builds blocks, GUIs and parts for you. Get BrixBlox Premium for 200 blockbucks (one time). You also get a star next to your name and Premium-only shop items.');p.style.cssText='margin:0;line-height:1.45';
+  const h=el('div','','\uD83C\uDFAB Gamepasses are a Premium feature');h.style.cssText='font-weight:800;font-size:1.1rem';
+  const p=el('p','','With BrixBlox Premium you can add gamepasses to your games: give each one a name, a price and a picture, then use the "when player has gamepass" block to reward the players who own it. Premium is 200 blockbucks (one time). You also get a star next to your name and Premium-only shop items.');p.style.cssText='margin:0;line-height:1.45';
   const row=el('div','tb');const go=el('button','btn small','Get Premium');go.type='button';const cl=el('button','btn ghost small','Not now');cl.type='button';cl.onclick=close;
   go.onclick=function(){try{store.set('brixblox-gopremium','1')}catch(e){}location.href=SITE_URL};
   row.append(go,cl);bx.append(h,p,row);ov.append(bx);document.body.append(ov)}
-(function(){const btn=el('button','btn ghost small','\u2728 Ask AI'+(ME&&ME.prem?'':' \uD83D\uDD12'));btn.type='button';btn.title='Type what you want and the AI builds blocks, GUIs and parts for you';
+function gpManager(){
+  if(!(ME&&ME.prem)){gpUpsell();return}
+  gpStyle();if(!Array.isArray(P.gamepasses))P.gamepasses=[];
+  const ov=el('div');ov.style.cssText='position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+  const close=function(){document.removeEventListener('keydown',esc,true);ov.remove()};
+  const esc=function(e){if(e.key==='Escape'){e.stopPropagation();close()}};document.addEventListener('keydown',esc,true);
+  ov.onpointerdown=function(e){if(e.target===ov)close()};
+  const bx=el('div');bx.style.cssText='width:min(600px,100%);background:#232527;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;max-height:90vh;overflow:auto';
+  let ed=null;
+  const draw=function(){bx.replaceChildren();
+    const h=el('div','','\uD83C\uDFAB Gamepasses');h.style.cssText='font-weight:800;font-size:1.1rem';
+    const sub=el('p','note','Players buy these from the game menu (Esc). Use the "when player has gamepass" block to give owners something special. Testing in the Studio is free.');sub.style.margin='0';
+    bx.append(h,sub);
+    const L=gpList();
+    L.forEach(function(g){const r=el('div','gpr'),n=el('div','gpn');n.append(el('b','',g.name),el('small','',(g.price>0?g.price+' blockbucks':'Free')+(g.desc?' \u00B7 '+g.desc:'')));
+      const eb=mb('Edit','ghost',function(){ed={id:g.id,name:g.name,price:g.price,desc:g.desc||'',img:g.img||''};draw()}),db=mb('Delete','ghost',function(){if(!confirm('Delete the gamepass "'+g.name+'"? Players who own it lose it in this game.'))return;P.gamepasses=gpList().filter(function(x){return x!==g});save();if(ed&&ed.id===g.id)ed=null;draw()});
+      r.append(gpThumb(g),n,eb,db);bx.append(r)});
+    if(!L.length)bx.append(el('p','note','No gamepasses yet.'));
+    if(!ed&&L.length<GPMAX){bx.append(mb('+ New gamepass','',function(){ed={id:null,name:'Gamepass'+(L.length+1),price:50,desc:'',img:''};draw()}))}
+    if(!ed&&L.length>=GPMAX)bx.append(el('p','note','A game can have up to '+GPMAX+' gamepasses.'));
+    if(ed){const f=el('div','gpf');
+      const nm=el('input');nm.type='text';nm.maxLength=24;nm.value=ed.name;nm.oninput=function(){ed.name=nm.value};
+      const pr=el('input');pr.type='number';pr.min=0;pr.max=100000;pr.step=1;pr.value=ed.price;pr.oninput=function(){ed.price=pr.value};
+      const ds=el('input');ds.type='text';ds.maxLength=100;ds.value=ed.desc;ds.oninput=function(){ed.desc=ds.value};
+      let pv=gpThumb(ed);
+      const fi=el('input');fi.type='file';fi.accept='image/*';
+      const st=el('div','note','');
+      const paint=function(){const t=gpThumb(ed);pv.replaceWith(t);pv=t};
+      fi.onchange=async function(){const file=fi.files&&fi.files[0];if(!file)return;try{ed.img=await gpRead(file);paint();st.textContent=''}catch(e){st.textContent=String(e.message||e)}};
+      const as=el('select');const o0=el('option','','\u2026or pick one from this game\'s Assets');o0.value='';as.append(o0);
+      Object.keys(P.assets.images||{}).forEach(function(k){const o=el('option','',k);o.value=k;as.append(o)});
+      as.onchange=async function(){if(!as.value)return;try{ed.img=await gpFit(P.assets.images[as.value]);paint();st.textContent=''}catch(e){st.textContent=String(e.message||e)}as.value=''};
+      const rm=mb('Remove picture','ghost',function(){ed.img='';paint()});
+      const row=el('div','tb');
+      const sv=mb('Save gamepass','',function(){
+        const name=String(ed.name||'').trim().slice(0,24),price=Math.floor(Number(ed.price));
+        if(!name){st.textContent='Give the gamepass a name.';return}
+        if(gpList().some(function(g){return g.id!==ed.id&&String(g.name).trim().toLowerCase()===name.toLowerCase()})){st.textContent='Another gamepass already uses that name.';return}
+        if(!isFinite(price)||price<0||price>100000){st.textContent='The price must be a whole number from 0 to 100000.';return}
+        const rec={id:ed.id||('gp'+Date.now().toString(36)+Math.floor(Math.random()*1e3).toString(36)),name:name,price:price,desc:String(ed.desc||'').trim().slice(0,100),img:gpImgOk(ed.img)?ed.img:''};
+        const old=ed.id&&gpFind(ed.id);
+        if(old){P.scripts.forEach(function(sc){if(sc[0].t==='gphas'&&String(sc[0].a[0]).trim().toLowerCase()===String(old.name).trim().toLowerCase())sc[0].a[0]=name});P.gamepasses=gpList().map(function(g){return g===old?rec:g})}
+        else P.gamepasses=gpList().concat([rec]);
+        save();try{rend();renderParts()}catch(e){}ed=null;draw()});
+      const cn=mb('Cancel','ghost',function(){ed=null;draw()});
+      row.append(sv,cn);
+      f.append(lab('Name',nm),lab('Price in blockbucks (0 is free)',pr),lab('Short description (optional)',ds),el('div','','Picture'),pv,fi,as,rm,st,row);
+      bx.append(f)}
+    const cl=mb('Close','ghost',close);cl.style.alignSelf='flex-start';bx.append(cl)};
+  draw();ov.append(bx);document.body.append(ov)}
+(function(){const btn=el('button','btn ghost small','\uD83C\uDFAB Gamepasses'+(ME&&ME.prem?'':' \uD83D\uDD12'));btn.type='button';btn.title='Add gamepasses to your game (Premium)';
   const rb=$('s-run');if(rb&&rb.parentNode)rb.parentNode.insertBefore(btn,rb);else return;
-  let ov=null,busy=false;
-  const close=function(){if(ov){ov.remove();ov=null}};
-  btn.onclick=function(){if(ov){close();return}
-    if(!(ME&&ME.prem)){aiUpsell();return}
-    ov=el('div');ov.style.cssText='position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
-    ov.onpointerdown=function(e){if(e.target===ov)close()};
-    const bx=el('div');bx.style.cssText='width:min(560px,100%);background:#232527;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;max-height:90vh;overflow:auto';
-    const h=el('div','','\u2728 Ask AI to build for you');h.style.cssText='font-weight:800;font-size:1.1rem';
-    const ta=el('textarea');ta.rows=4;ta.maxLength=600;ta.placeholder='Example: when a player touches this block, hurt them by 20 and say Ouch. Or: make a red lava floor that hurts players. Or: add a score text at the top and a Reset button.';ta.style.cssText='width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:#191b1d;color:#fff;font:inherit;resize:vertical';
-    const own=aiOwner(),on=own&&ownName(own);
-    const at=el('input');at.type='checkbox';at.checked=!!on;at.disabled=!on;const al=lab('Put the new scripts on: '+(on?on:'(nothing is selected, so they go on the world)'),at);al.style.cssText='display:flex;gap:8px;align-items:center;font-size:.9rem';
-    const st=el('p','note','The AI can make mistakes. Blocks it makes up are skipped. Check the result before you play.');st.style.margin='0';
-    const row=el('div','tb');const go=el('button','btn small','Make blocks');go.type='button';const cl=el('button','btn ghost small','Close');cl.type='button';cl.onclick=close;row.append(go,cl);
-    const run=async function(){const q=ta.value.trim();if(!q||busy)return;busy=true;go.disabled=true;st.textContent='Thinking...';
-      try{let tok='';try{if(sb){const ss=await sb.auth.getSession();tok=ss&&ss.data&&ss.data.session?ss.data.session.access_token:''}}catch(x){}
-        if(!tok)throw new Error('Ask AI needs you to be logged in with an online BrixBlox account.');
-        const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({prompt:q,catalog:aiCatalog(),facts:aiFacts()})});
-        let d=null;try{d=await r.json()}catch(x){}
-        if(r.status===403&&d&&d.code==='premium'){ME.prem=false;try{store.set('brixblox-me',JSON.stringify(ME))}catch(x){}busy=false;go.disabled=false;close();aiUpsell();return}
-        if(!r.ok||!d||d.error)throw new Error(d&&d.error?d.error:r.status===404?'The AI server is not set up yet. Add functions/api/blocks.js and your Gemini key to your site first.':'The AI server had a problem (error '+r.status+').');
-        const o=aiParse(d.text),res=aiBuild(o,at.checked&&!at.disabled);
-        const bits=[];if(res.guis)bits.push(res.guis+' GUI');if(res.parts)bits.push(res.parts+' part'+(res.parts>1?'s':''));if(res.made)bits.push(res.made+' script'+(res.made>1?'s':'')+' ('+res.blocks+' blocks)');
-        st.textContent=bits.length?'Added '+bits.join(', ')+(res.dropped?'. Skipped '+res.dropped+' thing'+(res.dropped>1?'s':'')+' that do not exist.':'.')+(o.note?' '+String(o.note).slice(0,200):''):(o.note?String(o.note).slice(0,240):'The AI could not make that. Try describing it differently.')}
-      catch(e){st.textContent=String(e.message||e)}
-      busy=false;go.disabled=false};
-    go.onclick=run;ta.onkeydown=function(e){if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();run()}else if(e.key==='Escape')close();e.stopPropagation()};
-    bx.append(h,ta,al,row,st);ov.append(bx);document.body.append(ov);setTimeout(function(){ta.focus()},0)}})();
+  btn.onclick=gpManager})();
+/* The Gamepasses tab in the game menu */
+function gpFillPage(pg){gpStyle();pg.replaceChildren();
+  pg.append(el('p','note',VIEWONLY?'Passes you buy stay with your account for this game.':'Testing in the Studio: buying a pass is free and is forgotten when you stop.'));
+  const grid=el('div','gpcards'),st=el('div','gmst');pg.append(grid,st);
+  gpLoad().then(function(){grid.replaceChildren();
+    gpList().forEach(function(g){const c=el('div','gpc'),own=!!GP.own[g.id],price=Math.max(0,Math.floor(+g.price)||0),pr=el('div','gpp');
+      if(price>0)pr.append(el('i'));pr.append(document.createTextNode(own?'Owned':price>0?String(price):'Free'));
+      const bt=mb(own?'Owned':(VIEWONLY?'Buy':'Get (test)'),own?'ghost':'',async function(){
+        if(VIEWONLY&&price>0&&!confirm('Buy "'+g.name+'" for '+price+' blockbucks?'))return;
+        bt.disabled=true;st.className='gmst';st.textContent='Buying...';
+        const r=await gpBuy(g);
+        if(r.ok){st.className='gmst ok';st.textContent=(r.test?'Test purchase: ':'You bought ')+g.name+'!';try{chatSys('You got the '+g.name+' gamepass.')}catch(e){}gpFillPage(pg)}
+        else{st.className='gmst bad';st.textContent=r.why||'Could not buy it.';bt.disabled=false}});
+      bt.disabled=own;c.append(gpThumb(g),el('b','',g.name),el('small','',g.desc||''),pr,bt);grid.append(c)})})}
 let edArea=true;
 addEventListener('pointerdown',function(e){edArea=!(e.target&&e.target.closest&&e.target.closest('#s-ws,#s-pal'))},true);
 
@@ -3260,20 +3306,20 @@ function sizer(h,sg){h.oncontextmenu=function(e){e.preventDefault()};
 sizer($('rz-l'),-1);sizer($('rz-r'),1);
 
 /* Play: your character walks with WASD, Space jumps. Solid parts block you; Movable parts get pushed. */
-function play(dt,f){const SP=(S.fly&&amAdmin()?2.2:1)*(S.speed!=null?S.speed:P.rules.speed),l=Math.hypot(f[0],f[2])||1,ux=f[0]/l,uz=f[2]/l,jy=window.__joy,an=!!jy&&(Math.abs(jy.x)>.001||Math.abs(jy.y)>.001)&&!keys.KeyW&&!keys.KeyA&&!keys.KeyS&&!keys.KeyD,ix=S.rag?0:an?jy.x:(keys.KeyD?1:0)-(keys.KeyA?1:0),iz=S.rag?0:an?jy.y:(keys.KeyW?1:0)-(keys.KeyS?1:0);
+function play(dt,f){const SP=(S.fly&&amAdmin()?2.2:1)*(S.speed!=null?S.speed:P.rules.speed),l=Math.hypot(f[0],f[2])||1,ux=f[0]/l,uz=f[2]/l,jy=menuEl?null:window.__joy,an=!!jy&&(Math.abs(jy.x)>.001||Math.abs(jy.y)>.001)&&!keys.KeyW&&!keys.KeyA&&!keys.KeyS&&!keys.KeyD,ix=S.rag||menuEl?0:an?jy.x:(keys.KeyD?1:0)-(keys.KeyA?1:0),iz=S.rag||menuEl?0:an?jy.y:(keys.KeyW?1:0)-(keys.KeyS?1:0);
   let wx=ux*iz-uz*ix,wz=uz*iz+ux*ix;const m=Math.hypot(wx,wz),mv=m>(an?.06:0),amt=an?Math.min(1,m):1;/* touch joystick is analog: push further = walk faster */
   if(mv){wx/=m;wz/=m}
   const ka=1-Math.exp(-dt*(S.gr?13*Math.max(.01,S.fric==null?1:S.fric):6));S.pvx+=((mv?wx*SP*amt:0)-S.pvx)*ka;S.pvz+=((mv?wz*SP*amt:0)-S.pvz)*ka;S.x+=S.pvx*dt;S.y-=S.pvz*dt;
   if(cdT<=.01||S.sl){const td=Math.atan2(-uz,ux)*180/Math.PI,df=((td-S.dir+540)%360+360)%360-180;S.dir+=df*(1-Math.exp(-dt*20))}
   else if(mv){const td=Math.atan2(-wz,wx)*180/Math.PI,df=((td-S.dir+540)%360+360)%360-180;S.dir+=df*(1-Math.exp(-dt*14))}
-  if(keys.Space&&S.gr&&!S.rag){S.vy=(S.jumpP!=null?S.jumpP:P.rules.jump);S.gr=false;S.jt=0;jumpSound()}
+  if(keys.Space&&!menuEl&&S.gr&&!S.rag){S.vy=(S.jumpP!=null?S.jumpP:P.rules.jump);S.gr=false;S.jt=0;jumpSound()}
   
   const W=P.anims[S.walkA||'walk'],JA=P.anims[S.jumpA||'jump'],FA=P.anims[S.fallA||'fall'],IA=P.anims[S.idleA||'idle'],air=!S.gr,fall=air&&!!FA&&S.vy<-6,inAir=air&&(!!JA||fall),walking=!air&&!!W&&(mv||Math.hypot(S.pvx,S.pvz)>1.5);let tp={};
   if(inAir){S.jt+=dt;S.air=true;if(fall){S.ft=(S.ft||0)+dt;tp=evalPose(FA,S.ft%(FA.len||1))}else{S.ft=0;tp=evalPose(JA,Math.min(S.jt,JA.len))}}
   else{S.ft=0;if(S.air){S.air=false;S.jt=0}if(W&&(mv||Math.hypot(S.pvx,S.pvz)>1.5)){S.wt+=dt*Math.min(1,Math.hypot(S.pvx,S.pvz)/12+.2);const sn=Math.floor(S.wt/(W.len/2));if(S.sn===undefined)S.sn=sn;else if(sn!==S.sn){S.sn=sn;stepSound()}tp=evalPose(W,S.wt%W.len)}else if(IA){S.it=(S.it||0)+dt;tp=evalPose(IA,S.it%IA.len)}}
   if(S.heldItem&&!S.pa&&!(S.hold&&Object.keys(S.hold).some(function(k){return S.hold[k]>0}))){const HW=P.anims[S.holdWA||'hold item walk'],HA=P.anims[S.holdA||'hold item'],HJ=P.anims['hold item jump'];if(inAir&&HJ)tp=evalPose(HJ,Math.min(S.jt,HJ.len||1));else if(HW&&!air&&(mv||Math.hypot(S.pvx,S.pvz)>1.5))tp=evalPose(HW,S.wt%(HW.len||1));else if(HA)tp=Object.assign({},tp,evalPose(HA,((S.ht=(S.ht||0)+dt))%(HA.len||1)))}
   const ak=(inAir?(fall?'f':'j'):walking?'w':'i')+(S.heldItem?'h':'');if(S.ak!==ak){S.ak=ak;S.bl=.15}S.bl=Math.max(0,(S.bl||0)-dt);const kb=S.bl>0?1-Math.exp(-dt*(air?18:14)):1;P.parts.forEach(function(p){if(p.id===P.avId||!p.av||(S.hold&&S.hold[p.id]>0))return;const t=tp[p.id]||[0,0,0],c=S.bp[p.id]||(S.bp[p.id]=[0,0,0]);for(let i=0;i<3;i++)c[i]+=(t[i]-c[i])*kb;const pk='p:'+p.id,t2=tp[pk]||[0,0,0],c2=S.bp[pk]||(S.bp[pk]=[0,0,0]);for(let i=0;i<3;i++)c2[i]+=(t2[i]-c2[i])*kb});
-  applyPose(S.bp,true,S.hold);S.mv=mv}
+  applyPose(S.bp,true,S.hold);S.mv=mv;try{ssTick(dt,mv)}catch(e){}}
 function solid(r){return CO[r.id]!==undefined?CO[r.id]:!r.nocol}
 function collide(){const T=byId(P.avId);if(!T)return;const R=1.1,fy=feet0()+S.h;
   for(let it=0;it<2;it++)P.parts.forEach(function(q){if(q.av)return;
@@ -3979,7 +4025,7 @@ function openGM(){if(menuEl||!(running||playing))return;for(const k in keys)keys
   vIcon();vr.append(vi,vs,vp);pn.append(vr);
   const tabs=el('div','gmtabs'),body=el('div','gmbody'),pages={},tbs={};
   function pick(k){Object.keys(pages).forEach(function(n){pages[n].hidden=n!==k;tbs[n].classList.toggle('on',n===k)})}
-  [['players','Players'],['settings','Settings'],['help','Help']].forEach(function(t){const b=el('button','gmtab',t[1]);b.type='button';b.onclick=function(){pick(t[0])};tbs[t[0]]=b;tabs.append(b);const pg=el('div','gmpg');pages[t[0]]=pg;body.append(pg)});
+  [['players','Players']].concat(gpList().length?[['passes','Gamepasses']]:[],[['settings','Settings'],['help','Help']]).forEach(function(t){const b=el('button','gmtab',t[1]);b.type='button';b.onclick=function(){pick(t[0])};tbs[t[0]]=b;tabs.append(b);const pg=el('div','gmpg');pages[t[0]]=pg;body.append(pg)});
   pn.append(tabs,body);
   /* Players + report */
   const plBox=el('div'),repBox=el('div','gmrep');repBox.hidden=true;pages.players.append(plBox,repBox);
@@ -4002,6 +4048,7 @@ function openGM(){if(menuEl||!(running||playing))return;for(const k in keys)keys
       if(p[2]){const rb=mb('Report','ghost',function(){openReport(p[0])});r.append(rb);
         if(amAdmin()){const wb=mb('Warn','ghost',function(){warnDlg(p[0],npNetId(p[0]))}),bb=mb('Ban','danger',function(){banDlg(p[0],npNetId(p[0]))});r.append(wb,bb)}}plBox.append(r)});
     if(pl.length===1)plBox.append(el('p','note','Nobody else is in this game right now.'))};gmPlFill();
+  if(pages.passes)gpFillPage(pages.passes);
   /* Settings */
   const sp=pages.settings;
   const mt=el('input');mt.type='checkbox';mt.checked=P.audio.mute;mt.onchange=function(){P.audio.mute=mt.checked;save();liveVol();vIcon()};sp.append(lab('Mute all sounds',mt));
@@ -4747,6 +4794,8 @@ function addGroups(c){if(c.t==='gui'){const O2=[];[['text','Text','A text label 
     Sx.push(scr('Script: when player stops holding item in hand','itemunhold','Runs when you stop holding an item'));
     Sx.push(scr('Script: when player clicks screen','screenclick','Runs every time you click the game screen'));
     Sx.push(scr('Script: when player hits ground from higher than','landed','Runs when you land after falling from higher than the height you type'));
+    Sx.push(scr('Script: when player has gamepass','gphas','Runs when you own a gamepass you made'));
+    Sx.push(scr('Script: when player standing still','standstill','Runs when your character stops and stands still'));
     Sx.push(scr('Function','def','A reusable set of blocks'))}
   const G=[];if(O.length)G.push({g:'Objects',items:O});if(Sx.length)G.push({g:own?'Scripts inside this object':'Scripts',items:Sx});if(A.length)G.push({g:'Animation',items:A});return G}
 function addMenu(btn,ctx,done){closeAdd();const G=addGroups(ctx),m=el('div','addm');m.setAttribute('role','menu');m._done=done;
@@ -4891,10 +4940,11 @@ function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing);try{hotRender()}catch(e){}try{renderGui()}catch(e){}}
 function setRun(v){running=v;sync()}
-function resetWorld(){Object.keys(GOVR).forEach(function(k){delete GOVR[k]});RUNC.clear();RUNW.clear();Object.keys(ATTR).forEach(function(k){delete ATTR[k]});Object.keys(PD).forEach(function(k){delete PD[k]});PDL=null;KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();SKYO=null;SKYAUTO=false;SKYGEN=null;LIGHTO=null;SPW={};RO={};RV={};RD={};RVY={};RY={};CO={};FRI={};TM=new Map();RAG={};RSZ={};SKIN={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts();lightStart();try{applyEnv()}catch(e){}}
+function resetWorld(){gpReset();Object.keys(GOVR).forEach(function(k){delete GOVR[k]});RUNC.clear();RUNW.clear();Object.keys(ATTR).forEach(function(k){delete ATTR[k]});Object.keys(PD).forEach(function(k){delete PD[k]});PDL=null;KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();SKYO=null;SKYAUTO=false;SKYGEN=null;LIGHTO=null;SPW={};RO={};RV={};RD={};RVY={};RY={};CO={};FRI={};TM=new Map();RAG={};RSZ={};SKIN={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts();lightStart();try{applyEnv()}catch(e){}}
 function boot(my){reser();try{spawnHere()}catch(e){}const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
   hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
   setTimeout(function(){if(my===S&&(running||playing))firePJ('pjoin',P.player.name)},120);
+  setTimeout(function(){if(my===S&&(running||playing))gpStart(my).catch(function(e){log('Error: '+e)})},250);
   return {hs:hs,done:Promise.all(hs.filter(function(s){return s[0].t==='start'}).map(function(s){return ex(s.slice(1),my,s[0].o).catch(function(e){log('Error: '+e)})}))}}
 $('s-run').onclick=async function(){this.blur();if(banGate())return;S.stop=true;resetWorld();const my=S;$('s-out').textContent='';OUTB.length=0;try{outLive()}catch(e){};setRun(true);
   const b=boot(my);await b.done;
@@ -4906,7 +4956,7 @@ addEventListener('keydown',function(e){if(e.code!=='KeyL'||!(e.ctrlKey||e.metaKe
   e.preventDefault();if($('studio').getClientRects().length===0)return;
   if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
   if(playing||running)$('s-stop').click();else $('s-play').click()},true);
-addEventListener('keydown',function(e){if(!(running||playing)||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
+addEventListener('keydown',function(e){if(!(running||playing)||menuEl||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
   const k=e.key===' '?'space':e.key.toLowerCase(),kn=({ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',Enter:'enter',Shift:'shift',Control:'ctrl',Alt:'alt',Tab:'tab',Escape:'escape',Backspace:'backspace'})[e.key]||k;
   P.scripts.forEach(function(sc){const h=sc[0],w=String(h.a[0]).trim().toLowerCase();
     if(h.t==='key'&&w===k){e.preventDefault();fireScript(sc)}
@@ -5052,7 +5102,7 @@ function dropOn(d,t){if(!dropOK(d,t))return;const ps=dragParts(d);let msg0='';
    Every player runs the game on their own computer, so "server side" works by telling every other player's computer to run the very same block
    (only the position of the block is sent, never code, so nothing can be injected). "client side" blocks only ever run on the computer that reached them,
    and are skipped on the other players when they replay a server side block. */
-const LOCALH={landed:1,touched:1,clicked:1,key:1,keydrop:1,keyheld:1,keyrel:1,chat:1,guiclick:1,guithisclick:1,itemhold:1,itemunhold:1,screenclick:1};
+const LOCALH={gphas:1,standstill:1,landed:1,touched:1,clicked:1,key:1,keydrop:1,keyheld:1,keyrel:1,chat:1,guiclick:1,guithisclick:1,itemhold:1,itemunhold:1,screenclick:1};
 const RSKIP={move:1,turn:1,goto:1,jump:1,animate:1,say:1,color:1,walkanim:1,jumpanim:1,idleanim:1,fallanim:1,holdanim:1,holdwalkanim:1,fov:1,shiftlockon:1,shiftlockoff:1,pspeed:1,lighting:1,playercol:1,ragdollex:1,playercolon:1,playercoloff:1,tweenset:1,
   givebadge:1,awardbadge:1,giveattr:1,removeattr:1,giveitem:1,removeitem:1,accadd:1,accrem:1,accwear:1,accstrip:1,kick:1,ban:1,addplayer:1,randplayer:1,getcount:1,print:1,setvol:1};
 const RSELF={tweensize:1,tweentrans:1,tweencolor:1,transparency:1,kill:1,pushparent:1};
@@ -5177,7 +5227,7 @@ function coMembers(){const o=[];try{const s=COP.ch.presenceState();Object.keys(s
 function coLeader(){const m=coMembers().filter(function(x){return x.id!==COP.id||COP.on});if(!m.length)return true;const h=m.find(function(x){return x.h});if(h)return h.id===COP.id;
   m.sort(function(a,b){return a.at-b.at||(a.id<b.id?-1:1)});return m[0].id===COP.id}
 function coNorm(){P.parts=P.parts||[];P.models=P.models||[];P.anims=P.anims||{};P.scripts=P.scripts||[];P.vars=Array.isArray(P.vars)?P.vars:[];P.assets=P.assets||{};
-  ['images','audio','meshes','avol'].forEach(function(c){P.assets[c]=P.assets[c]||{}});P.badges=Array.isArray(P.badges)?P.badges:[];P.guis=Array.isArray(P.guis)?P.guis:[];P.bans=Array.isArray(P.bans)?P.bans:[];
+  ['images','audio','meshes','avol'].forEach(function(c){P.assets[c]=P.assets[c]||{}});P.badges=Array.isArray(P.badges)?P.badges:[];P.guis=Array.isArray(P.guis)?P.guis:[];P.bans=Array.isArray(P.bans)?P.bans:[];P.gamepasses=Array.isArray(P.gamepasses)?P.gamepasses:[];
   P.env=Object.assign({sky:'#8fd3ff',tod:14,bright:1,sun:1,fog:0},P.env||{});P.rules=Object.assign({grav:190,jump:48,speed:16,cam:14,fov:70},P.rules||{});P.audio=Object.assign({vol:.5,mute:false},P.audio||{});
   P.squads=P.squads||[{id:'q1',name:'Red Squad',color:'#e5484d'},{id:'q2',name:'Blue Squad',color:'#3b82f6'}];P.player=P.player||{name:'Player1',squad:''}}
 
