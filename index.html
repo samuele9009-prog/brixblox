@@ -414,6 +414,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
   <div class="ct">
   <div id="p-home" class="page">
     <section><h2 class="big">Home</h2><div id="bb" hidden></div><h3 id="h-fh">Friends (0)</h3><div id="h-fr" class="hfr"></div></section>
+    <section class="dsec"><h2>Made by BrixBlox</h2><p class="sub">Games picked by the BrixBlox team.</p><div id="h-off"></div></section>
     <section><h2>Games</h2><div id="h-games"></div></section>
     <section><h2>Your games</h2><div id="h-mine"></div><div class="seg"><button id="g-new" class="btn small" type="button">Create a new game</button><button id="g-studio" class="btn ghost small" type="button">Open BrixBlox Studio</button></div></section>
   </div>
@@ -787,7 +788,7 @@ function makeSupa(){
         if(x&&!x.error)(x.data||[]).forEach(function(g){if(!seen[g.id]){seen[g.id]=1;rows.push(g)}})}catch(e){}}
       return rows},
     async bumpPlay(gid){const r=await sb.rpc('bump_play',{p_game:String(gid)});if(r.error)throw r.error},
-    async setOfficial(gid,on){let r=await sb.rpc('set_official',{p_game:String(gid),p_on:!!on});if(r.error){r=await sb.from('games').update({official:!!on}).eq('id',gid);if(r.error)throw r.error}},
+    async setOfficial(gid,on){let r=await sb.rpc('set_official',{p_game:String(gid),p_on:!!on});if(r.error){console.warn('set_official rpc failed',r.error);r=await sb.from('games').update({official:!!on}).eq('id',String(gid)).select('id');if(r.error)throw r.error;if(!(r.data||[]).length)throw new Error('SETOFFICIAL_BLOCKED')}},
     async events(){const r=await sb.from('events').select('id,title,descr,thumb,game_ids,active,ends_at,sort,updated_at').order('sort',{ascending:true}).order('updated_at',{ascending:false}).limit(12);if(r.error)throw r.error;return r.data||[]},
     async saveEvent(e){const r=await sb.rpc('bb_save_event',{p_id:e.id||null,p_title:e.title,p_descr:e.descr,p_thumb:e.thumb||'',p_games:e.game_ids||[],p_active:!!e.active,p_ends:e.ends_at||null,p_sort:e.sort|0});if(r.error)throw r.error;return r.data},
     async delEvent(id){const r=await sb.rpc('bb_delete_event',{p_id:id});if(r.error)throw r.error},
@@ -1057,6 +1058,7 @@ async function loadGames(){
   PUBG=pub;dfill(pub);paintBB();
   gfill($('h-mine'),mine,'You have not published any games yet.')}
 function dfill(pub){
+  gfill($('h-off'),pub.filter(function(g){return g.official}),'Nothing here yet. Check back soon.',true);
   gfill($('d-off'),pub.filter(function(g){return g.official}),'Nothing here yet. Check back soon.',true);
   gfill($('d-pop'),pub.filter(function(g){return g.plays>0}).sort(function(a,b){return b.plays-a.plays||b.at-a.at}).slice(0,12),'No games have been played yet.',true);
   gfill($('d-new'),pub.slice().sort(function(a,b){return b.at-a.at}).slice(0,12),'No games have been published yet.',true)}
@@ -1068,7 +1070,7 @@ function gfill(box,list,empty,disc){box.replaceChildren();if(!list.length){box.c
     const row=mkx('div','row'),pl=mkx('button','btn small joinb','Join');pl.type='button';pl.onclick=function(){playGame(g)};row.append(pl);
     if(mine&&!disc){const ed=mkx('button','btn ghost small','Edit');ed.type='button';ed.onclick=function(){editGame(g)};row.append(ed)}
     if(isBB()&&g.vis==='public'&&String(g.id).indexOf('acc_')!==0&&String(g.id).indexOf('avatar_')!==0&&String(g.id).indexOf('sys_')!==0){const of=mkx('button','btn ghost small',g.official?'Remove from BrixBlox':'Add to BrixBlox');of.type='button';
-      of.onclick=async function(){of.disabled=true;try{await api.setOfficial(g.id,!g.official);toast(g.official?'Removed from Made by BrixBlox.':'Added to Made by BrixBlox.');loadGames()}catch(e){of.disabled=false;toast('Could not change that. Run the Discover SQL in Supabase first.')}};row.append(of)}
+      of.onclick=async function(){of.disabled=true;try{await api.setOfficial(g.id,!g.official);toast(g.official?'Removed from Made by BrixBlox.':'Added to Made by BrixBlox.');loadGames()}catch(e){of.disabled=false;console.warn('Add to BrixBlox failed',e);toast('Could not change that. Run brixblox-official.sql in Supabase (SQL editor), then try again.')}};row.append(of)}
     bd.append(row);c.append(th,bd);box.append(c)});lockPaint()}
 async function gameData(g){if(g.data)return g.data;try{return await api.gameData(g.id)}catch(e){return null}}
 async function playGame(g){if(/^(acc_|avatar_|sys_)/.test(String(g&&g.id))){toast('That cannot be opened.');return}
