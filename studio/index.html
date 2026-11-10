@@ -3863,7 +3863,9 @@ function crossBad(raw){const now=performance.now();CHH=CHH.filter(function(x){re
   if(bad){CHH=[];return true}CHH.push({t:now,l:L,q:q});if(CHH.length>8)CHH.shift();return false}
 function censor(){const n=8+Math.floor(Math.random()*9);let o='';for(let i=0;i<n;i++)o+=CHATSYM[Math.floor(Math.random()*CHATSYM.length)];return o}
 function filt(t){t=String(t);return chatBad(t)?censor():t}
-function sendChat(txt){txt=String(txt).trim().slice(0,120);if(!txt||!(running||playing))return;{const raw=txt;txt=filt(raw);if(txt===raw&&crossBad(raw))txt=censor()}chatLine(P.player.name,txt);netChat(txt);sayBubble(txt);const low=txt.toLowerCase();
+/* Chat log for moderators: every message is saved with what was typed, what others saw, and whether the filter caught it. Needs brixblox-chatlogs.sql in Supabase; fails silently without it. */
+function logChat(raw,shown){try{if(!sb||!ME||ME.demo)return;sb.rpc('log_chat',{p_game:String((PLAYINFO&&PLAYINFO.id)||gameId||''),p_raw:String(raw).slice(0,120),p_shown:String(shown).slice(0,120),p_flagged:raw!==shown}).then(function(){},function(){})}catch(e){}}
+function sendChat(txt){txt=String(txt).trim().slice(0,120);if(!txt||!(running||playing))return;{const raw=txt;txt=filt(raw);if(txt===raw&&crossBad(raw))txt=censor();logChat(raw,txt)}chatLine(P.player.name,txt);netChat(txt);sayBubble(txt);const low=txt.toLowerCase();
   P.scripts.forEach(function(sc){const h=sc[0];if(h.t!=='chat')return;const w=String(h.a[0]).trim().toLowerCase();
     if(w==='*'||(w&&(low===w||low.slice(0,w.length+1)===w+' '))){S.v.speaker=P.player.name;S.v.message=txt;fireScript(sc)}})}
 $('chat-in').onkeydown=function(e){e.stopPropagation();if(e.key==='Enter'){const v=this.value;this.value='';this.blur();sendChat(v)}else if(e.key==='Escape'){this.value='';this.blur()}};
