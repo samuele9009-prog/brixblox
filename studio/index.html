@@ -3885,7 +3885,7 @@ function censor(){const n=8+Math.floor(Math.random()*9);let o='';for(let i=0;i<n
 function filt(t){t=String(t);return chatBad(t)?censor():t}
 /* Chat log for moderators: every message is saved with what was typed, what others saw, and whether the filter caught it. Needs brixblox-chatlogs.sql in Supabase; fails silently without it. */
 function logChat(raw,shown){try{if(!sb||!ME||ME.demo)return;sb.rpc('log_chat',{p_game:String((PLAYINFO&&PLAYINFO.id)||gameId||''),p_raw:String(raw).slice(0,120),p_shown:String(shown).slice(0,120),p_flagged:raw!==shown}).then(function(){},function(){})}catch(e){}}
-function sendChat(txt){txt=String(txt).trim().slice(0,120);if(!txt||!(running||playing))return;{const raw=txt;txt=filt(raw);if(txt===raw&&crossBad(raw))txt=censor();logChat(raw,txt);CHATRAW=raw}chatLine(P.player.name,txt);netChat(txt);sayBubble(txt);const low=txt.toLowerCase();
+function sendChat(txt){txt=String(txt).trim().slice(0,120);if(!txt||!(running||playing))return;let rawTxt=txt;{const raw=txt;txt=filt(raw);if(txt===raw&&crossBad(raw))txt=censor();logChat(raw,txt);CHATRAW=raw;rawTxt=raw}chatLine(P.player.name,txt);netChat(txt,rawTxt);sayBubble(txt);const low=txt.toLowerCase();
   P.scripts.forEach(function(sc){const h=sc[0];if(h.t!=='chat')return;const w=String(h.a[0]).trim().toLowerCase();
     if(w==='*'||(w&&(low===w||low.slice(0,w.length+1)===w+' '))){S.v.speaker=P.player.name;S.v.message=txt;fireScript(sc)}})}
 $('chat-in').onkeydown=function(e){e.stopPropagation();if(e.key==='Enter'){const v=this.value;this.value='';this.blur();sendChat(v)}else if(e.key==='Escape'){this.value='';this.blur()}};
@@ -3950,7 +3950,8 @@ function openGM(){if(menuEl||!(running||playing))return;for(const k in keys)keys
     row.append(send,cancel);repBox.append(lab('Reason',sel),lab('Details',ta),st,row)}
   gmPlFill=function(){if(!repBox.hidden)return;plBox.replaceChildren();const q=P.squads.find(function(z){return z.id===P.player.squad}),pl=[[P.player.name+' (you)',q?q.color:'#2fa95a',0]].concat(S.oth.map(function(n){return [n,'#3b82f6',1]}));
     pl.forEach(function(p){const r=el('div','gmpr'),dt=el('i');dt.style.cssText='width:12px;height:12px;border-radius:4px;flex:none;background:'+p[1];r.append(dt,el('span','nm',(PREMN.has(String(p[0]).replace(/ \(you\)$/,'').toLowerCase())?'\u2605 ':'')+p[0]));
-      if(p[2]){const rb=mb('Report','ghost',function(){openReport(p[0])});r.append(rb)}plBox.append(r)});
+      if(p[2]){const rb=mb('Report','ghost',function(){openReport(p[0])});r.append(rb);
+        if(amAdmin()){const wb=mb('Warn','ghost',function(){warnDlg(p[0],npNetId(p[0]))}),bb=mb('Ban','ghost',function(){banDlg(p[0],npNetId(p[0]))});r.append(wb,bb)}}plBox.append(r)});
     if(pl.length===1)plBox.append(el('p','note','Nobody else is in this game right now.'))};gmPlFill();
   /* Settings */
   const sp=pages.settings;
@@ -5615,7 +5616,7 @@ function netLeave(fast){
   const done=Promise.all(jobs.map(function(j){return Promise.resolve(j).catch(function(){})}));
   return Promise.race([done,new Promise(function(r){setTimeout(r,800)})]).then(close,close)}
 addEventListener('pagehide',function(){netLeave(true)});
-function netChat(t){if(NET.on)NET.ch.send({type:'broadcast',event:'c',payload:{id:NET.id,n:ME.username,t:t}})}
+function netChat(t,raw){if(NET.on){const p={id:NET.id,n:ME.username,t:t};if(raw!=null&&String(raw)!==String(t))p.r=String(raw).slice(0,120);/* unfiltered text, only sent when the filter changed it, so reports can show what was really said */NET.ch.send({type:'broadcast',event:'c',payload:p})}}
 async function netJoin(){
   if(!sb||!PLAYINFO||!PLAYINFO.id){NET.fail=true;return}
   const gid=String(PLAYINFO.id).replace(/[^A-Za-z0-9_-]/g,'').slice(0,40);setTimeout(function(){if(!NET.on)NET.fail=true},9000);
@@ -5634,10 +5635,13 @@ async function netJoin(){
     const ch=NET.ch=sb.channel('bbs:'+gid+':'+NET.sid,{config:{presence:{key:NET.id},broadcast:{self:false}}});
     ch.on('broadcast',{event:'p'},function(m){netRecv(m.payload)});
     ch.on('broadcast',{event:'bye'},function(m){const p=m.payload;if(p&&p.id&&p.id!==NET.id)netDrop(p.id)});/* a player pressed Leave: drop them right away */
-    ch.on('broadcast',{event:'c'},function(m){const p=m.payload;if(p&&p.id!==NET.id&&(running||playing)){const t=filt(String(p.t).slice(0,120));CHATRAW=String(p.t).slice(0,120);chatLine(String(p.n).slice(0,16),t);netSay(p.id,t)}});
+    ch.on('broadcast',{event:'c'},function(m){const p=m.payload;if(p&&p.id!==NET.id&&(running||playing)){const t=filt(String(p.t).slice(0,120));CHATRAW=String(p.r!=null?p.r:p.t).slice(0,120);chatLine(String(p.n).slice(0,16),t);netSay(p.id,t)}});
     ch.on('broadcast',{event:'k'},function(m){const p=m.payload;if(!p||p.t!==NET.id||p.id===NET.id||!(running||playing))return;
       const by=String(p.n||'').slice(0,24);if(!isAdminName(by))return;if(admIsBB(ME&&ME.username)&&!admIsBB(by))return;/* nobody but brixblox can kill brixblox */
       startRag('main',true);chatSys('You were killed by admin '+by+'.')});
+    ch.on('broadcast',{event:'wn'},function(m){const p=m.payload;if(!p||p.t!==NET.id||p.id===NET.id)return;
+      const by=String(p.n||'').slice(0,24);if(!isAdminName(by)||admIsBB(ME&&ME.username))return;if(isAdminName(ME&&ME.username)&&!admIsBB(by))return;
+      showWarned(by,String(p.m||'').slice(0,700))});
     ch.on('broadcast',{event:'bn'},function(m){const p=m.payload;if(!p||p.t!==NET.id||p.id===NET.id)return;
       const by=String(p.n||'').slice(0,24);if(!isAdminName(by)||admIsBB(ME&&ME.username))return;if(isAdminName(ME&&ME.username)&&!admIsBB(by))return;
       showBanned(String(p.r||'').slice(0,120),typeof p.u==='number'?p.u:null)});
@@ -5805,6 +5809,30 @@ function banDlg(name,netId){mdl('Ban '+name,function(c,close){
   [rs,mn].forEach(function(i){i.style.cssText='min-height:32px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink)'});
   c.append(lab('Reason',rs),lab('Minutes (0 = forever)',mn),msg2);
   const r=el('div','tb');r.append(mb('Ban','',async function(){try{await banUser(name,rs.value,Math.max(0,+mn.value||0),netId);admMsg.textContent=name+' was banned.';close()}catch(e){msg2.textContent=(e&&e.message)||String(e)}}),mb('Cancel','ghost',close));c.append(r)})}
+
+/* ===== Warnings: listed admins can warn players in the game they are in ===== */
+const WARN_REASONS=[['Inappropriate parts in games','BrixBlox does not allow any sort of inappropriate blocks or builds in game like sexual images or rigs doing inappropriate actions, this should be clear at all times because this is a friendly platform/game for any player.'],['Offensive Item','BrixBlox does not allow anything offensive to our player base, please refrain from using any bad or discriminatory language.'],['Threats','BrixBlox is a place where everyone feels safe, you shouldn\u2019t be making anyone feel unsafe. Do not threaten people with bad language, this has a chance of becoming a permban.'],['Bad Language','Bypassing the BrixBlox filtration system is not allowed, please refrain from doing this again.']];
+function showWarned(by,text){mdl('Warning from BrixBlox',function(c,close){const p=el('p','',text);p.style.whiteSpace='pre-wrap';c.append(p,el('p','note','Sent by '+by+'. Please follow the rules so you do not get banned.'));const r=el('div','tb');r.append(mb('I understand','',close));c.append(r)})}
+async function warnUser(name,text,netId){
+  if(!amAdmin())throw new Error('Only admins can warn.');const k=admName(name);
+  if(!/^[a-z0-9_]{1,24}$/.test(k))throw new Error('That is not a valid username.');
+  if(admIsBB(k))throw new Error('brixblox cannot be warned.');
+  if(isAdminName(k)&&!admIsBB(ME.username))throw new Error('Only brixblox can warn an admin.');
+  if(admName(ME.username)===k)throw new Error('You cannot warn yourself.');
+  text=String(text||'').trim().slice(0,700);if(!text)throw new Error('Write a reason first.');
+  if(netId&&NET.on&&NET.ch)NET.ch.send({type:'broadcast',event:'wn',payload:{id:NET.id,n:ME.username,t:netId,m:text}});
+  /* also keep a record on the account when the database allows it (the player sees it next time they open BrixBlox) */
+  try{if(sb){const r=await sb.from('profiles').select('id').ilike('username',k.replace(/_/g,'\\_')).limit(1);const id=r.data&&r.data[0]&&r.data[0].id;if(id)await sb.rpc('admin_warn',{p_user:id,p_msg:text})}}catch(e){}
+  chatSys('You warned '+name+'.')}
+function warnDlg(name,netId){mdl('Warn '+name,function(c,close){
+  const sel=el('select'),note=el('textarea'),msg2=el('p','note','');
+  WARN_REASONS.forEach(function(r,i){const o=el('option','',r[0]);o.value=i;sel.append(o)});
+  sel.style.cssText='min-height:34px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink)';
+  note.maxLength=200;note.rows=3;note.placeholder='Moderator note (optional)';note.style.cssText='padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);font:inherit';
+  c.append(lab('Reason',sel),note,msg2);
+  const r=el('div','tb');r.append(mb('Send warning','',async function(){const w=WARN_REASONS[+sel.value];let t=w[0]+'\n\n'+w[1];if(note.value.trim())t+='\n\nModerator note: '+note.value.trim();
+    try{await warnUser(name,t,netId);admMsg.textContent=name+' was warned.';close()}catch(e){msg2.textContent=(e&&e.message)||String(e)}}),mb('Cancel','ghost',close));c.append(r)})}
+function npNetId(name){const n=NP.find(function(q){return q.net&&(q.un||q.name)===name});return n?n.net:null}
 const banSec=el('div'),banLs=el('div'),banIn=el('input'),banGo=el('button','btn small','Ban');
 banIn.type='text';banIn.maxLength=24;banIn.placeholder='Username';banIn.style.cssText='flex:1;min-width:0;min-height:34px;border-radius:8px;border:1px solid #555;background:#191b1d;color:#fff;padding:0 8px';
 banGo.type='button';banGo.style.cssText='width:auto;margin:0;min-height:34px;padding:0 10px;font-size:.85rem';
@@ -5853,8 +5881,8 @@ setInterval(function(){
     const r=el('div');r.style.cssText='display:flex;align-items:center;padding:3px 10px;gap:0';if(isAdminName(p.n))r.append(admIcon(14));const t=el('span',null,p.n+(p.me?' (you)':''));t.style.cssText='overflow:hidden;text-overflow:ellipsis;white-space:nowrap';r.append(t);plBody.append(r)})}
   if(admPanel.style.display==='block'){flyBtn.textContent='Fly: '+(S.fly?'ON':'off')+'  (F)';admPl.replaceChildren();
     if(!others.length){const e=el('div',null,'Nobody else is here.');e.style.cssText='color:#bdbebe;font-size:.78rem';admPl.append(e)}
-    others.forEach(function(e){const row=admRow(e.un||e.name,'Kill',function(){admKill(e.net,e.un||e.name)}),bb=el('button','btn small ghost','Ban');
-      bb.type='button';bb.style.cssText='width:auto;margin:0;min-height:28px;padding:0 10px;font-size:.8rem';bb.onclick=function(){banDlg(e.un||e.name,e.net)};row.append(bb);admPl.append(row)})}
+    others.forEach(function(e){const row=admRow(e.un||e.name,'Kill',function(){admKill(e.net,e.un||e.name)}),bb=el('button','btn small ghost','Ban'),wb=el('button','btn small ghost','Warn');
+      [bb,wb].forEach(function(b){b.type='button';b.style.cssText='width:auto;margin:0;min-height:28px;padding:0 10px;font-size:.8rem'});bb.onclick=function(){banDlg(e.un||e.name,e.net)};wb.onclick=function(){warnDlg(e.un||e.name,e.net)};row.append(wb,bb);admPl.append(row)})}
 },500);
 setInterval(admLoad,45000);admLoad();
 setInterval(function(){const w=document.getElementById('bb-who');if(w)w.textContent='build 2026-11-07 \u00b7 signed in as '+(ME?ME.username:'nobody')+' \u00b7 '+(amAdmin()?'admin':'not admin')},5000);setInterval(bansLoad,30000);bansLoad();
