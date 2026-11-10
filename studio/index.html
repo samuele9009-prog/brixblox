@@ -1424,7 +1424,7 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
       const pl=b.t==='nearplayer'||b.t==='nearplayers',many=b.t.slice(-1)==='s',og=origin(o),cnt=many?Math.max(1,Math.floor(n(0))):1,rg=n(many?1:0),vn=String(a[many?2:1]).trim();
       if(!vn){log('Error: type a variable name to store the result in.');break}
       const r=nearest(pl?plist():rlist(),og,rg,cnt);S.v[vn]=r.map(function(x){return x.name}).join(',');if(many)S.v[vn+'_count']=r.length;break}
-    case'ragdoll':resolve(String(val(a[0],S))).forEach(function(t){startRag(t.key,false)});break;
+    case'ragdoll':resolve(String(val(a[0],S))).forEach(function(t){/* inside server side, another player ragdolls only on their own computer; everyone else is shown that real pose, so all screens match */if(t.key.slice(0,3)==='np:'&&(S.remote||S.inss>0))return;startRag(t.key,false)});break;
     case'ragdollex':{const v=+n(0);S.rex=Math.max(1,Math.min(100,isFinite(v)?v:1));break}
     case'unragdoll':resolve(String(val(a[0],S))).forEach(function(t){const e=RAG[t.key];if(e&&!e.dead&&e.t<=e.end)e.end=Math.max(e.t,RFALL)});break;
     case'kill':startRag(origin(o).self,true);break;
@@ -5124,7 +5124,7 @@ async function ssRun(b,S,o){const path=bPath(b);let send=false;
   if(path&&!S.remote&&typeof NET!=='undefined'&&NET.on&&NET.ch&&!inCli(path)){const h=P.scripts[path[0]][0].t;send=!!LOCALH[h]||h==='def'}
   if(send){const v={};SSVARS.forEach(function(k){if(S.v[k]!=null)v[k]=String(S.v[k]).slice(0,60)});
     try{NET.ch.send({type:'broadcast',event:'ss',payload:{id:NET.id,n:String(P.player.name).slice(0,24),p:path,v:v}})}catch(e){}}
-  await ex(b.k,S,o)}
+  if(send){S.inss=(S.inss||0)+1;try{await ex(b.k,S,o)}finally{S.inss--}}else await ex(b.k,S,o)}
 function ssRecv(p){if(!p||p.id===NET.id||!(running||playing)||!Array.isArray(p.p)||p.p.length<2||p.p.length>14)return;
   const path=p.p.map(Number);if(path.some(function(x){return !(x>=0)||x%1}))return;
   const nw=performance.now();if(nw-ssT>1000){ssT=nw;ssN=0}if(++ssN>40)return;/* a flood of messages is ignored */
