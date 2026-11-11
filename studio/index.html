@@ -992,7 +992,7 @@ function bbLoad(name,thumb){bbLoadHide(true);const o=document.createElement('div
 function bbLoadHide(now){const o=BBL;if(!o)return;BBL=null;if(now){o.remove();return}
   const wait=Math.max(0,250-(Date.now()-BBLT));setTimeout(function(){o.style.opacity='0';setTimeout(function(){o.remove()},200)},wait)}
 var BBREADY=false,BBCHK=false;
-function bbReadyTry(){if(!BBREADY||BBCHK)return;bbLoadHide();try{parent.postMessage({bb:'ready'},location.origin)}catch(e){}}
+function bbReadyTry(){if(!BBREADY)return;bbLoadHide();try{parent.postMessage({bb:'ready'},location.origin)}catch(e){}}
 /* the games you made yourself (what the teleport block can pick from) */
 function ownG(g){return !!g&&!g.dr&&(!g.owner||!ME||g.owner.id===ME.id)&&!(g.co&&g.owner&&ME&&g.owner.id!==ME.id)}
 function myGames(){const L=glib();return Object.keys(L).filter(function(k){return !/^(acc_|avatar_|sys_)/.test(k)&&k!==gameId&&ownG(L[k])}).sort(function(a,b){return (L[b].at||0)-(L[a].at||0)}).map(function(k){return [k,(L[k].name||'Untitled')+(L[k].vis==='private'?' (private)':'')]})}
@@ -5904,7 +5904,7 @@ try{const u=new URL(location.href),cd=u.searchParams.get('coop');if(cd&&!VIEWONL
 if(VIEWONLY){$('studio').classList.add('vo');setFs(true,true);
   document.querySelector('#studio .logo h1').textContent=P.name+(PLAYINFO&&PLAYINFO.owner?'  -  by '+PLAYINFO.owner:'');
   $('s-fs').onclick=function(){try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen()}catch(x){}};
-  $('s-fs').textContent='Fullscreen';setTimeout(function(){$('s-play').click();netJoin()},60);bbHud();setTimeout(function(){BBREADY=true;bbReadyTry()},250);setTimeout(function(){BBCHK=false;bbReadyTry()},1200)}
+  $('s-fs').textContent='Fullscreen';setTimeout(function(){$('s-play').click();netJoin();BBREADY=true;requestAnimationFrame(function(){requestAnimationFrame(bbReadyTry)})},60);bbHud();setTimeout(function(){BBREADY=true;bbReadyTry()},1500)}
 /* ===== Items: made from a mesh in the item room, given with the "give item" block, held from the hotbar ===== */
 function itemsL(){return P.items=Array.isArray(P.items)?P.items:[]}
 function itemBy(n){const k=String(n).trim().toLowerCase();return itemsL().find(function(i){return String(i.name).toLowerCase()===k})||null}
