@@ -911,14 +911,13 @@ if(P.name==='My first BricBloc game')P.name='My first BrixBlox game';
 PEND=calcPend();
 /* Real play: always use the copy that is live online, so you see exactly what other players see (not an older/local copy). */
 if(VIEWONLY&&PLAYINFO){const tg=document.createElement('div');tg.style.cssText='position:fixed;left:8px;bottom:6px;z-index:9998;font:700 11px sans-serif;color:#fff;opacity:.6;pointer-events:none;text-shadow:0 1px 2px #000';tg.textContent='build v5 \u00b7 '+(PLAYINFO.fresh?'live online copy loaded':(sb?'checking online copy...':'NOT connected online'));document.body.append(tg);window.BBTAG=tg}
-if(VIEWONLY){bbLoad(PLAYINFO&&PLAYINFO.name||P.name,PLAYINFO&&PLAYINFO.thumb)}
-if(VIEWONLY&&sb&&PLAYINFO&&PLAYINFO.id&&!PLAYINFO.fresh){(function(){BBCHK=true;
+if(VIEWONLY&&sb&&PLAYINFO&&PLAYINFO.id&&!PLAYINFO.fresh){(function(){bbLoad(PLAYINFO.name||P.name,PLAYINFO.thumb);
   withTimeout(sb.from('games').select('data').eq('id',String(PLAYINFO.id)).maybeSingle(),8000,'slow').then(function(r){
     let cd=r&&r.data&&r.data.data;if(!r||r.error||cd==null)throw 0;if(typeof cd!=='string')cd=JSON.stringify(cd);
     const q=JSON.parse(cd);if(!q||!Array.isArray(q.scripts))throw 0;
-    if(hsh(cd)===hsh(String(PLAYINFO.data))){BBCHK=false;bbReadyTry();if(window.BBTAG)BBTAG.textContent='build v5 \u00b7 live online copy loaded';return}
+    if(hsh(cd)===hsh(String(PLAYINFO.data))){bbLoadHide(true);if(window.BBTAG)BBTAG.textContent='build v5 \u00b7 live online copy loaded';return}
     store.set('brixblox-play',JSON.stringify(Object.assign({},PLAYINFO,{data:cd,fresh:1})));skipUnload=true;location.reload()
-  }).catch(function(){BBCHK=false;bbReadyTry();if(window.BBTAG)BBTAG.textContent='build v5 \u00b7 could not reach the online copy (using the saved one)'})})()}
+  }).catch(function(){bbLoadHide(true);if(window.BBTAG)BBTAG.textContent='build v5 \u00b7 could not reach the online copy (using the saved one)'})})()}
 function persistGame(){const L=glib(),pv=L[gameId],js=JSON.stringify(P),lh=pv?(pv.lh!==undefined?pv.lh:hsh(pv.data)):undefined;
   L[gameId]={id:gameId,name:P.name,vis:gameVis||'private',at:Date.now(),owner:(pv&&pv.owner&&pv.owner.id)?pv.owner:(ME?{id:ME.id,name:ME.username}:undefined),data:js,lh:lh,ch:pv&&pv.ch,ct:pv&&pv.ct,dr:(gameDraft?1:undefined),thumb:(pv&&pv.thumb)||undefined,co:(pv&&pv.co)||undefined,cot:pv&&pv.cot,cofail:(pv&&pv.cofail)||undefined};
   let okS=store.set(GKEY,JSON.stringify(L));
@@ -5904,7 +5903,7 @@ try{const u=new URL(location.href),cd=u.searchParams.get('coop');if(cd&&!VIEWONL
 if(VIEWONLY){$('studio').classList.add('vo');setFs(true,true);
   document.querySelector('#studio .logo h1').textContent=P.name+(PLAYINFO&&PLAYINFO.owner?'  -  by '+PLAYINFO.owner:'');
   $('s-fs').onclick=function(){try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen()}catch(x){}};
-  $('s-fs').textContent='Fullscreen';setTimeout(function(){$('s-play').click();netJoin();BBREADY=true;requestAnimationFrame(function(){requestAnimationFrame(bbReadyTry)})},60);bbHud();setTimeout(function(){BBREADY=true;bbReadyTry()},1500)}
+  $('s-fs').textContent='Fullscreen';setTimeout(function(){$('s-play').click();netJoin()},60);bbHud()}
 /* ===== Items: made from a mesh in the item room, given with the "give item" block, held from the hotbar ===== */
 function itemsL(){return P.items=Array.isArray(P.items)?P.items:[]}
 function itemBy(n){const k=String(n).trim().toLowerCase();return itemsL().find(function(i){return String(i.name).toLowerCase()===k})||null}
