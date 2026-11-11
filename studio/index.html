@@ -989,11 +989,11 @@ function bbLoad(name,thumb){const o=document.createElement('div');o.id='bb-load'
   const nm=document.createElement('div');nm.textContent=String(name||'Loading...');nm.style.cssText='font-weight:800;font-size:1.6rem;text-align:center;max-width:80vw;text-shadow:0 2px 8px rgba(0,0,0,.4)';
   const bar=document.createElement('div');bar.style.cssText='width:min(260px,60vw);height:6px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden;position:relative';
   const fill=document.createElement('div');fill.style.cssText='position:absolute;top:0;left:-40%;width:40%;height:100%;border-radius:3px;background:#ffc233';bar.append(fill);
-  try{fill.animate([{left:'-40%'},{left:'100%'}],{duration:1100,iterations:Infinity,easing:'ease-in-out'})}catch(e){}
+  try{fill.animate([{left:'-40%'},{left:'100%'}],{duration:700,iterations:Infinity,easing:'ease-in-out'})}catch(e){}
   const sub=document.createElement('div');sub.textContent='Loading...';sub.style.cssText='opacity:.75;font-weight:700;font-size:.95rem';
-  o.append(card,nm,bar,sub);document.body.append(o);try{o.animate([{opacity:1,visibility:'visible'},{opacity:0,visibility:'hidden'}],{delay:5000,duration:300,fill:'forwards'})}catch(e){}setTimeout(function(){try{o.remove()}catch(e){}if(BBL===o)BBL=null},5500);BBL=o;BBLT=Date.now();setTimeout(function(){if(BBL===o)bbLoadHide(true)},5000)}
+  o.append(card,nm,bar,sub);document.body.append(o);try{o.animate([{opacity:1,visibility:'visible'},{opacity:0,visibility:'hidden'}],{delay:1400,duration:300,fill:'forwards'})}catch(e){}setTimeout(function(){try{o.remove()}catch(e){}if(BBL===o)BBL=null},1700);BBL=o;BBLT=Date.now();setTimeout(function(){if(BBL===o)bbLoadHide(true)},1400)}
 function bbLoadHide(now){const o=BBL;if(!o)return;BBL=null;if(now){o.remove();return}
-  const wait=Math.max(0,5000-(Date.now()-BBLT));setTimeout(function(){o.style.opacity='0';setTimeout(function(){o.remove()},200)},wait)}
+  const wait=Math.max(0,1400-(Date.now()-BBLT));setTimeout(function(){o.style.opacity='0';setTimeout(function(){o.remove()},200)},wait)}
 var BBREADY=false,BBCHK=false;
 function bbReadyTry(){if(!BBREADY)return;bbLoadHide();try{parent.postMessage({bb:'ready'},location.origin)}catch(e){}}
 /* the games you made yourself (what the teleport block can pick from) */
@@ -1813,8 +1813,8 @@ function pbrPatch(m,o){o=o||{};const fn=function(sh){sh.fragmentShader=sh.fragme
     .replace(/void\s+main\s*\(\s*\)\s*\{/,function(){return 'vec3 acesP(vec3 x){return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0);}\nvoid main() {'})
     .replace('#include <color_fragment>',o.lin?'#include <color_fragment>':'#include <color_fragment>\n diffuseColor.rgb=pow(max(diffuseColor.rgb,vec3(0.0)),vec3(2.2));')
     .replace('#include <emissivemap_fragment>',o.lin?'#include <emissivemap_fragment>':'#include <emissivemap_fragment>\n totalEmissiveRadiance=pow(max(totalEmissiveRadiance,vec3(0.0)),vec3(2.2));')
-    .replace('#include <encodings_fragment>',(o.k?'gl_FragColor.rgb*='+(+o.k).toFixed(3)+';\n':'')+'#ifndef TONE_MAPPING\n gl_FragColor.rgb=acesP(gl_FragColor.rgb);\n#endif\n gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.0)),vec3(0.4545));')};
-  m.userData.pbr=1;m.userData.pbrFn=fn;m.onBeforeCompile=fn;m.customProgramCacheKey=function(){return 'pbr2'+(o.lin?'L':'')+(o.k?'k'+o.k:'')}}
+    .replace('#include <encodings_fragment>',(o.fill?'gl_FragColor.rgb+=diffuseColor.rgb*'+(+o.fill).toFixed(3)+';\n':'')+(o.k?'gl_FragColor.rgb*='+(+o.k).toFixed(3)+';\n':'')+'#ifndef TONE_MAPPING\n gl_FragColor.rgb=acesP(gl_FragColor.rgb);\n#endif\n gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.0)),vec3(0.4545));')};
+  m.userData.pbr=1;m.userData.pbrFn=fn;m.onBeforeCompile=fn;m.customProgramCacheKey=function(){return 'pbr2'+(o.lin?'L':'')+(o.k?'k'+o.k:'')+(o.fill?'f'+o.fill:'')}}
 /* Shininess: 0 = dull / matte, 1 = mirror-like. Stored on the part as p.shine; a part without it keeps its material's normal look. */
 function shineDef(p){if(p.shape==='mesh')return meshShineDef(p);const q=PBR[MATS[p.mat]?p.mat:'plastic']||PBR.plastic;return Math.round(Math.max(0,Math.min(1,(1-q[0])/.95))*20)/20}
 function shineApply(m,v){v=Math.max(0,Math.min(1,+v||0));m.roughness=1-v*.95;
@@ -1992,12 +1992,12 @@ function accMat(n){n.side=THREE.DoubleSide;n.depthWrite=true;if('skinning' in n)
   if(n.isMeshStandardMaterial&&!n.userData.pbr){/* these used to skip the world's colour and tone-mapping step, which made them look dark and flat */
     if(n.color&&n.emissive&&n.emissive.getHex()===0){n.emissive.copy(n.color).multiplyScalar(.13);if(n.map)n.emissiveMap=n.map}
     if(ENVOK&&!n.envMap){n.envMap=ENVT;n.userData.envB=Math.max(n.userData.envB||0,.55);n.envMapIntensity=n.userData.envB*ENVK}
-    pbrPatch(n,{lin:!n.userData.rawTex,k:1.3})}
+    pbrPatch(n,{lin:!n.userData.rawTex,k:1.15,fill:.3})}
   return depthNudge(n,0.02,0.0004)}
 function accFreeze(c,w){c.traverse(function(o){o.updateMatrix();o.matrixAutoUpdate=false});w.updateMatrix();w.matrixAutoUpdate=false}
 function accTex(url,flip){const k=(flip?'f':'n')+url;if(ACCT[k])return ACCT[k];const t=new THREE.TextureLoader().load(url);t.flipY=!flip;t.wrapS=t.wrapT=THREE.RepeatWrapping;return ACCT[k]=t}
 function shineMat(mt,k,raw){const n=mt.isMeshStandardMaterial?mt:new THREE.MeshStandardMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0});
-  n.roughness=Math.max(.1,.92-k*.8);n.metalness=0;n.userData.envB=.3+k*.9;n.envMapIntensity=n.userData.envB*ENVK;n.envMap=(ENVOK&&k>.35)?ENVT:null;pbrPatch(n,{lin:!raw,k:1.25});n.needsUpdate=true;return n}
+  n.roughness=Math.max(.1,.92-k*.8);n.metalness=0;n.userData.envB=.3+k*.9;n.envMapIntensity=n.userData.envB*ENVK;n.envMap=(ENVOK&&k>.35)?ENVT:null;pbrPatch(n,{lin:!raw,k:1.15,fill:.3});n.needsUpdate=true;return n}
 function accMake(slot,id,hs){/* hs: head height scale, so items still fit a resized head */
   const e=ACCI[id];if(!e||!e.obj)return null;const it=e.it,sl=ACCS[slot];if(!sl)return null;
   const c=e.obj.clone(true);c.position.set(0,0,0);
@@ -4619,7 +4619,7 @@ function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
     const ms=soft?2048:1024;if(sun.shadow.mapSize.x!==ms){sun.shadow.mapSize.set(ms,ms);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
     sun.shadow.radius=soft?5:3;renderer.shadowMap.needsUpdate=true;
     scene.traverse(function(o){if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(function(m){m.needsUpdate=true})}})}
-  lxEls();const g=L&&L.g;cv.style.filter=g?g.f:'saturate(.74) brightness(.93)';
+  lxEls();const g=L&&L.g;cv.style.filter=g?g.f:'saturate(.88) brightness(.93)';
   if(lxT){
     if(E.haze){lxT.style.display='block';lxT.style.background=E.haze;lxT.style.opacity=E.hazek==null?.22:E.hazek;lxT.style.mixBlendMode='normal'}
     else if(g&&g.ta>0){lxT.style.display='block';lxT.style.background=g.tint;lxT.style.opacity=g.ta*3.2>1?1:g.ta*3.2;lxT.style.mixBlendMode=g.tb}else lxT.style.display='none';
