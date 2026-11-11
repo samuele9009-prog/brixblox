@@ -87,5 +87,6 @@ footer{color:var(--muted);font-size:.85rem;text-align:center}
 
   <footer>These policies can change over time. Playing BrixBlox means you agree to follow them.</footer>
 </main>
+<script>document.getElementById("back").addEventListener("click",function(e){try{if(document.referrer&&new URL(document.referrer).origin===location.origin&&history.length>1){e.preventDefault();history.back()}}catch(x){}})</script>
 </body>
 </html>
