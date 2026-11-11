@@ -1256,7 +1256,7 @@ var BBL=null,BBLT=0,BBLK=0;
 function bbLoad(name,thumb){bbLoadHide(true);const o=document.createElement('div');o.id='bb-load';
   o.style.cssText='position:fixed;inset:0;z-index:70;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:linear-gradient(160deg,#1d2147,#3a2f7a);color:#fff;font-family:Montserrat,system-ui,sans-serif;transition:opacity .2s';
   const card=document.createElement('div');card.style.cssText='width:min(420px,78vw);aspect-ratio:16/10;border-radius:18px;box-shadow:0 14px 40px rgba(0,0,0,.45);background:#2b2f66;overflow:hidden;display:flex;align-items:center;justify-content:center;font:800 4rem sans-serif';
-  const t=String(thumb||'');if(/^(data:image\/|https:\/\/)/.test(t))card.style.background='center/cover no-repeat url("'+t.replace(/["\\\s]/g,'')+'")';else{const h=Array.from(String(name||'?')).reduce(function(a,c){return (a*31+c.charCodeAt(0))%360},7);card.style.background='hsl('+h+',55%,42%)';card.textContent=(String(name||'?').trim().charAt(0)||'?').toUpperCase()}
+  const t=String(thumb||'');if(/^(data:image\/|https?:\/\/|\/)/.test(t))card.style.background='center/cover no-repeat url("'+t.replace(/["\\\s]/g,'')+'")';else{const h=Array.from(String(name||'?')).reduce(function(a,c){return (a*31+c.charCodeAt(0))%360},7);card.style.background='hsl('+h+',55%,42%)';card.textContent=(String(name||'?').trim().charAt(0)||'?').toUpperCase()}
   const nm=document.createElement('div');nm.textContent=String(name||'Loading...');nm.style.cssText='font-weight:800;font-size:1.6rem;text-align:center;max-width:80vw;text-shadow:0 2px 8px rgba(0,0,0,.4)';
   const bar=document.createElement('div');bar.style.cssText='width:min(260px,60vw);height:6px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden;position:relative';
   const fill=document.createElement('div');fill.style.cssText='position:absolute;top:0;left:-40%;width:40%;height:100%;border-radius:3px;background:#ffc233';bar.append(fill);
@@ -1264,7 +1264,7 @@ function bbLoad(name,thumb){bbLoadHide(true);const o=document.createElement('div
   const sub=document.createElement('div');sub.textContent='Loading...';sub.style.cssText='opacity:.75;font-weight:700;font-size:.95rem';
   o.append(card,nm,bar,sub);document.body.append(o);BBL=o;BBLT=Date.now();clearTimeout(BBLK);BBLK=setTimeout(function(){bbLoadHide(true)},3000)}
 function bbLoadHide(now){const o=BBL;if(!o)return;BBL=null;clearTimeout(BBLK);if(now){o.remove();return}
-  const wait=Math.max(0,250-(Date.now()-BBLT));setTimeout(function(){o.style.opacity='0';setTimeout(function(){o.remove()},200)},wait)}
+  const wait=Math.max(0,900-(Date.now()-BBLT));setTimeout(function(){o.style.opacity='0';setTimeout(function(){o.remove()},200)},wait)}
 async function playGame(g){if(/^(acc_|avatar_|sys_)/.test(String(g&&g.id))){toast('That cannot be opened.');return}
   if(joining||$('pl-frame'))return;
   if(lockHeld()){lockPaint();toast(LOCK_MSG);return}
@@ -1274,9 +1274,9 @@ async function playGame(g){if(/^(acc_|avatar_|sys_)/.test(String(g&&g.id))){toas
 async function playGame2(g){const d=await gameData(g);if(!d){bbLoadHide(true);toast('Could not load that game.');return}
   await Promise.race([Promise.resolve(api.recordPlay(me.id,g.id,g.ownerId)).catch(function(){}),new Promise(function(r){setTimeout(r,1500)})]);
   try{const k='brixblox-bump:'+g.id,n=Date.now();if(n-(+store.get(k)||0)>3e5){store.set(k,String(n));Promise.resolve(api.bumpPlay(g.id)).catch(function(){})}}catch(e){}/* counts toward Frequently played, once per 5 minutes per game on this device */
-  store.set('brixblox-play',JSON.stringify({id:g.id,data:d,owner:g.ownerName,ownerId:g.ownerId,name:g.name}));openPlayer()}
+  store.set('brixblox-play',JSON.stringify({id:g.id,data:d,owner:g.ownerName,ownerId:g.ownerId,name:g.name}));try{sessionStorage.setItem('bb-thumb',g.thumb||'')}catch(e){}openPlayer()}
 /* Games run right here on BrixBlox in a full-screen player (no Studio buttons). The Studio only saves the game. */
-function openPlayer(){if($('pl-frame'))return;const f=document.createElement('iframe');f.id='pl-frame';f.src=STUDIO_URL+'?player=1';f.setAttribute('allow','fullscreen; autoplay');f.onload=function(){bbLoadHide(true)};f.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:60;background:#111';document.body.append(f)}
+function openPlayer(){if($('pl-frame'))return;const f=document.createElement('iframe');f.id='pl-frame';f.src=STUDIO_URL+'?player=1';f.setAttribute('allow','fullscreen; autoplay');f.onload=function(){bbLoadHide()};f.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:60;background:#111';document.body.append(f)}
 function closePlayer(){bbLoadHide(true);const f=$('pl-frame');if(f)f.remove();lockEnd();try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}kbLockTop();const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}if(me){loadBank();loadGames()}}
 
 /* ===== 5d. Billboards: events shown at the top of Home for everyone. Only the brixblox account makes them. ===== */
