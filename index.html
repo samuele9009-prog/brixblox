@@ -455,6 +455,20 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .it-recs{display:grid;grid-auto-flow:column;grid-auto-columns:150px;gap:12px;overflow-x:auto;padding-bottom:8px}
 .pf-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .gm-info .btn.fav-on{background:#fff6dc}
+/* compact item page */
+.it-hero{grid-template-columns:minmax(240px,340px) minmax(0,1fr);gap:22px}
+@media(max-width:760px){.it-hero{grid-template-columns:minmax(0,1fr)}.it-left{max-width:340px}}
+.it-left{gap:6px}
+.it-fav{padding:0 2px}.it-fav svg{width:22px;height:22px}
+.it-info h2{font-size:1.6rem}
+.it-info{gap:6px}
+.it-hr{margin:2px 0 4px}
+.it-rows{gap:9px 14px;font-size:.95rem}
+.it-price2{font-size:1.15rem}
+.it-acts .btn.it-buy,.it-acts .btn.it-sec{min-height:40px;font-size:.95rem}
+.it-rows .it-acts{gap:8px}
+.it-recs{grid-auto-columns:120px;gap:10px;padding-bottom:4px}
+.it-recsp{padding:12px 14px}.it-recsp h3{margin:0 0 8px}
 </style>
 </head>
 <body>
@@ -918,6 +932,9 @@ function makeSupa(){
       try{const f=['id,name,owner_id,owner_name,vis,updated_at,thumb,official,plays','id,name,owner_id,owner_name,vis,updated_at,thumb','id,name,owner_id,owner_name,vis,updated_at'];let r;
         for(let i=0;i<f.length;i++){r=await sb.from('games').select(f[i]).eq('owner_name',name).eq('vis','public').order('updated_at',{ascending:false}).limit(60);if(!r.error)break}
         games=(r.data||[]).filter(function(g){const k=String(g.id);return k.indexOf('acc_')!==0&&k.indexOf('avatar_')!==0&&k.indexOf('sys_')!==0})}catch(e){}
+      /* favorites are shared through the public avatar row, so any player can see them even if the avatar function leaves them out */
+      try{const q=await sb.from('games').select('data').eq('id','avatar_'+(await sb.from('profiles').select('id').eq('username',name).maybeSingle()).data.id).maybeSingle();
+        if(q.data){let d=q.data.data;if(typeof d==='string')d=JSON.parse(d);if(d){const a=avs[name]||{};if(!Array.isArray(a.favI)&&Array.isArray(d.favI))a.favI=d.favI;if(!Array.isArray(a.favG)&&Array.isArray(d.favG))a.favG=d.favG;if(!avs[name]&&d.eq)Object.assign(a,{skin:d.skin,pants:d.pants,eq:d.eq});avs[name]=a}}}catch(e){}
       fr=((info&&info.friends)||[]).map(function(f){return {name:f.username,color:f.avatar_color,av:normAv(avs[f.username])}});
       return {name:name,color:color,av:normAv(avs[name]),created:created,friends:info?fr:null,games:games}},
     async addFriend(id,n){const r=await sb.rpc('send_friend_request',{p_username:n});if(r.error)throw r.error;return r.data},
