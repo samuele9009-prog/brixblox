@@ -911,7 +911,7 @@ if(P.name==='My first BricBloc game')P.name='My first BrixBlox game';
 PEND=calcPend();
 /* Real play: always use the copy that is live online, so you see exactly what other players see (not an older/local copy). */
 if(VIEWONLY&&PLAYINFO){const tg=document.createElement('div');tg.style.cssText='position:fixed;left:8px;bottom:6px;z-index:9998;font:700 11px sans-serif;color:#fff;opacity:.6;pointer-events:none;text-shadow:0 1px 2px #000';tg.textContent='build v5 \u00b7 '+(PLAYINFO.fresh?'live online copy loaded':(sb?'checking online copy...':'NOT connected online'));document.body.append(tg);window.BBTAG=tg}
-if(VIEWONLY&&sb&&PLAYINFO&&PLAYINFO.id&&!PLAYINFO.fresh){(function(){bbLoad(PLAYINFO.name||P.name,PLAYINFO.thumb);
+if(VIEWONLY&&sb&&PLAYINFO&&PLAYINFO.id&&!PLAYINFO.fresh){(function(){bbLoad(PLAYINFO.name||P.name,(function(){try{return sessionStorage.getItem('bb-thumb')}catch(e){return ''}})());
   withTimeout(sb.from('games').select('data').eq('id',String(PLAYINFO.id)).maybeSingle(),8000,'slow').then(function(r){
     let cd=r&&r.data&&r.data.data;if(!r||r.error||cd==null)throw 0;if(typeof cd!=='string')cd=JSON.stringify(cd);
     const q=JSON.parse(cd);if(!q||!Array.isArray(q.scripts))throw 0;
@@ -981,7 +981,7 @@ var BBL=null,BBLT=0;
 function bbLoad(name,thumb){bbLoadHide(true);const o=document.createElement('div');o.id='bb-load';
   o.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:linear-gradient(160deg,#1d2147,#3a2f7a);color:#fff;font-family:Montserrat,system-ui,sans-serif;transition:opacity .2s';
   const card=document.createElement('div');card.style.cssText='width:min(420px,78vw);aspect-ratio:16/10;border-radius:18px;box-shadow:0 14px 40px rgba(0,0,0,.45);background:#2b2f66;overflow:hidden;display:flex;align-items:center;justify-content:center;font:800 4rem sans-serif';
-  const t=String(thumb||'');if(/^(data:image\/|https:\/\/)/.test(t))card.style.background='center/cover no-repeat url("'+t.replace(/["\\\s]/g,'')+'")';else{const h=Array.from(String(name||'?')).reduce(function(a,c){return (a*31+c.charCodeAt(0))%360},7);card.style.background='hsl('+h+',55%,42%)';card.textContent=(String(name||'?').trim().charAt(0)||'?').toUpperCase()}
+  const t=String(thumb||'');if(/^(data:image\/|https?:\/\/|\/)/.test(t))card.style.background='center/cover no-repeat url("'+t.replace(/["\\\s]/g,'')+'")';else{const h=Array.from(String(name||'?')).reduce(function(a,c){return (a*31+c.charCodeAt(0))%360},7);card.style.background='hsl('+h+',55%,42%)';card.textContent=(String(name||'?').trim().charAt(0)||'?').toUpperCase()}
   const nm=document.createElement('div');nm.textContent=String(name||'Loading...');nm.style.cssText='font-weight:800;font-size:1.6rem;text-align:center;max-width:80vw;text-shadow:0 2px 8px rgba(0,0,0,.4)';
   const bar=document.createElement('div');bar.style.cssText='width:min(260px,60vw);height:6px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden;position:relative';
   const fill=document.createElement('div');fill.style.cssText='position:absolute;top:0;left:-40%;width:40%;height:100%;border-radius:3px;background:#ffc233';bar.append(fill);
@@ -1009,7 +1009,7 @@ async function tpGame(id){if(TPBUSY)return;
     const oid=PLAYINFO&&PLAYINFO.ownerId,same=oid?String(row.owner_id)===String(oid):String(row.owner_name||'').trim().toLowerCase()===String(PLAYINFO&&PLAYINFO.owner||'').trim().toLowerCase();
     if(!same)throw new Error('You can only teleport to games made by the same creator.');
     let d=row.data;if(typeof d!=='string')d=JSON.stringify(d);const q=JSON.parse(d);if(!q||!Array.isArray(q.scripts))throw new Error('That game could not be opened.');
-    bbLoad(row.name,row.thumb);
+    bbLoad(row.name,row.thumb);try{sessionStorage.setItem('bb-thumb',row.thumb||'')}catch(e){}
     try{await Promise.race([sb.rpc('record_play',{p_game:String(row.id)}),new Promise(function(z){setTimeout(z,1500)})])}catch(e){}
     store.set('brixblox-play',JSON.stringify({id:row.id,data:d,owner:row.owner_name,ownerId:row.owner_id,name:row.name,fresh:1}));
     skipUnload=true;location.reload()}
