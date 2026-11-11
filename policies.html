@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BrixBlox Policies</title>
+<style>
+:root{--ink:#1d2147;--muted:#565c85;--paper:#fffaf0;--bg:#f3ecdc;--line:rgba(29,33,71,.16);--accent:#00b06f;--warn:#c2321f}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--ink:#eceefc;--muted:#a9aed0;--paper:#1f2238;--bg:#14162a;--line:rgba(236,238,252,.18)}}
+:root[data-theme=dark]{--ink:#eceefc;--muted:#a9aed0;--paper:#1f2238;--bg:#14162a;--line:rgba(236,238,252,.18)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:24px 18px 70px;display:grid;gap:16px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.back{display:inline-block;padding:9px 16px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font-weight:700;text-decoration:none}
+h1{margin:0;font-size:2rem}
+.lead{margin:0;color:var(--muted)}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px}
+nav.toc a{padding:6px 12px;border-radius:99px;border:1px solid var(--line);background:var(--paper);color:var(--ink);text-decoration:none;font-size:.9rem;font-weight:700}
+nav.toc a:hover{border-color:var(--accent)}
+section{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px 20px;scroll-margin-top:16px}
+section:target{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+h2{margin:0 0 6px;font-size:1.25rem}
+p{margin:6px 0}
+ul{margin:6px 0 0;padding-left:22px}
+li{margin:3px 0}
+.caution{border-left:4px solid var(--warn);padding:6px 12px;margin:10px 0 0;background:rgba(194,50,31,.08);border-radius:0 8px 8px 0}
+footer{color:var(--muted);font-size:.85rem;text-align:center}
+</style>
+</head>
+<body>
+<script>try{var t=localStorage.getItem('brixblox-theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}</script>
+<main class="wrap">
+  <div class="top"><h1>BrixBlox Policies</h1><a class="back" href="./" id="back">&larr; Back to BrixBlox</a></div>
+  <p class="lead">BrixBlox is a friendly place for players of every age. These rules keep it that way. Please read them before you build, chat or play.</p>
+  <nav class="toc" aria-label="Policies">
+    <a href="#games">Games</a><a href="#item">Items</a><a href="#threat">Threats</a><a href="#lang">Language</a><a href="#actions">Warnings &amp; bans</a>
+  </nav>
+
+  <section id="games">
+    <h2>Inappropriate parts in games</h2>
+    <p>BrixBlox does not allow any sort of inappropriate blocks or builds in a game, like sexual images or rigs doing inappropriate actions. This should be clear at all times because this is a friendly platform for any player.</p>
+    <ul>
+      <li>No sexual, graphic or disturbing builds, signs, avatars or animations.</li>
+      <li>No games that exist only to shock, scare or harass other players.</li>
+      <li>You are responsible for everything inside the games you publish.</li>
+    </ul>
+  </section>
+
+  <section id="item">
+    <h2>Offensive items</h2>
+    <p>BrixBlox does not allow anything offensive to our player base. Please refrain from using any bad or discriminatory language, in item names, descriptions, textures or anything else you make.</p>
+    <ul>
+      <li>No hateful or discriminatory symbols, names or text.</li>
+      <li>No items that copy or mock a real person in a harmful way.</li>
+    </ul>
+  </section>
+
+  <section id="threat">
+    <h2>Threats</h2>
+    <p>BrixBlox is a place where everyone feels safe. You shouldn&rsquo;t be making anyone feel unsafe.</p>
+    <ul>
+      <li>No threats of any kind, in chat, game text, usernames or anywhere else.</li>
+      <li>No bullying, stalking or targeting a player over and over.</li>
+    </ul>
+    <p class="caution"><strong>Do not threaten people with bad language.</strong> This has a chance of becoming a permanent ban.</p>
+  </section>
+
+  <section id="lang">
+    <h2>Bad language</h2>
+    <p>Bypassing the BrixBlox filtration system is not allowed. Please refrain from doing this again.</p>
+    <ul>
+      <li>Do not swap letters, add spaces or use symbols to get a blocked word past the filter.</li>
+      <li>Chat that is filtered may be logged and reviewed by moderators.</li>
+    </ul>
+  </section>
+
+  <section id="actions">
+    <h2>Warnings and bans</h2>
+    <p>If you break a rule, a moderator can send you a warning. A warning shows the reason and what to change. If you keep breaking the rules, your account can be banned. A ban can last for a set time or be permanent, depending on what happened.</p>
+    <ul>
+      <li>Serious or repeated breaks can lead to a ban without further warning.</li>
+      <li>Games or items that break these policies can be removed.</li>
+      <li>Think a mistake was made? Ask the BrixBlox team respectfully, and do not make a second account to get around a ban.</li>
+    </ul>
+  </section>
+
+  <footer>These policies can change over time. Playing BrixBlox means you agree to follow them.</footer>
+</main>
+<script>document.getElementById("back").addEventListener("click",function(e){try{if(document.referrer&&new URL(document.referrer).origin===location.origin&&history.length>1){e.preventDefault();history.back()}}catch(x){}})</script>
+</body>
+</html>
