@@ -5276,7 +5276,14 @@ function vzSkin(z,m){
   let ov=m.userData.vzOv;
   if(!ov||ov.parent!==m){ov=new THREE.Mesh(m.geometry,z.mat);ov.scale.setScalar(1.004);ov.castShadow=false;ov.receiveShadow=false;ov.renderOrder=1;m.add(ov);m.userData.vzOv=ov}
   else if(ov.geometry!==m.geometry)ov.geometry=m.geometry;
-  {const g=m.geometry;if(!g.boundingBox)g.computeBoundingBox();const bs=g.boundingBox.getSize(new THREE.Vector3()),ws=new THREE.Vector3();m.getWorldScale(ws);const th=[bs.x*ws.x,bs.y*ws.y,bs.z*ws.z],ax=(th[0]<=th[1]&&th[0]<=th[2])?0:(th[1]<=th[2]?1:2),k=Math.max(1.004,6/Math.max(1e-3,th[ax])),sc=[1.004,1.004,1.004];sc[ax]=k;ov.scale.set(sc[0],sc[1],sc[2])}/* thick overlay: the camera can never slip through the window's near-plane gap */
+  try{const g=m.geometry;if(!g.boundingBox)g.computeBoundingBox();const bb=g.boundingBox,bs=bb.getSize(new THREE.Vector3()),bc=bb.getCenter(new THREE.Vector3()),ws=new THREE.Vector3(),ks='xyz';
+    m.updateWorldMatrix(true,false);m.getWorldScale(ws);
+    const th=[bs.x*Math.abs(ws.x),bs.y*Math.abs(ws.y),bs.z*Math.abs(ws.z)],ax=(th[0]<=th[1]&&th[0]<=th[2])?0:(th[1]<=th[2]?1:2),k1=(ax+1)%3,k2=(ax+2)%3,
+      lc=camera.position.clone();m.worldToLocal(lc);
+    const d=(lc[ks[ax]]-bc[ks[ax]])*Math.abs(ws[ks[ax]]),inb=Math.abs(lc[ks[k1]]-bc[ks[k1]])<bs[ks[k1]]/2+.6&&Math.abs(lc[ks[k2]]-bc[ks[k2]])<bs[ks[k2]]/2+.6;
+    let k=1.004,off=0;
+    if(inb&&Math.abs(d)<3){k=Math.max(1.004,4/Math.max(1e-3,th[ax]));off=-(d>=0?1:-1)*(k-1)*bs[ks[ax]]/2}
+    ov.scale.set(1.004,1.004,1.004);ov.scale[ks[ax]]=k;ov.position.set(0,0,0);ov.position[ks[ax]]=off}catch(e){}
   z.ov=ov}
 /* The box of screen pixels (top-left origin) the part covers. If the camera is right up against it, that is the whole screen. */
 function vzRectOf(m,W,H){const g=m.geometry;if(!g.boundingBox)g.computeBoundingBox();const bb=g.boundingBox;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
@@ -5298,10 +5305,11 @@ function vzNoCol(id){for(const k in VZ){if(VZ[k].a===id||VZ[k].b===id)return tru
 const vzPrev=new THREE.Vector3(),vzCur=new THREE.Vector3(),vzL0=new THREE.Vector3(),vzL1=new THREE.Vector3(),vzLc=new THREE.Vector3(),
   vzTA=new THREE.Matrix4(),vzTB=new THREE.Matrix4(),vzTX=new THREE.Matrix4(),vzQA=new THREE.Quaternion(),vzQB=new THREE.Quaternion(),vzQD=new THREE.Quaternion(),
   vzTP=new THREE.Vector3(),vzTS=new THREE.Vector3(),vzTV=new THREE.Vector3(),vzBB=new THREE.Vector3(),vzBC=new THREE.Vector3();let vzHave=false,VF=null;const vzFm=new THREE.Matrix4(),vzFs=new THREE.Vector3(),vzFt=new THREE.Vector3(),vzFp=new THREE.Vector3(),vzFq=new THREE.Quaternion();
+/* Third person: your body crosses first, the camera (behind you) crosses later. Until the camera reaches the window it is drawn on the OLD side of the window, so the world never jumps. */
 function vzFold(){if(!VF)return;const mA=M[VF.a];if(!mA||!playing||!VZ[VF.a]){VF=null;return}
   camera.updateMatrixWorld();vzFm.multiplyMatrices(VF.inv,camera.matrixWorld);vzFm.decompose(vzFp,vzFq,vzFs);
   mA.updateWorldMatrix(true,false);vzFt.copy(vzFp);mA.worldToLocal(vzFt);
-  if((vzFt[VF.k]-VF.bc)*VF.s<=0){VF=null;return}/* the camera reached the window: from here on it is simply on the other side, with no change to the picture */
+  if((vzFt[VF.k]-VF.bc)*VF.s<=0){VF=null;return}
   camera.position.copy(vzFp);camera.quaternion.copy(vzFq);camera.updateMatrixWorld()}
 function vzWalk(){
   if(!playing||FC||!Object.keys(VZ).length){vzHave=false;return}
@@ -5333,7 +5341,7 @@ function vzWalk(){
     vzTV.set(Math.sin(cam.yaw)*Math.cos(cam.pit),Math.sin(cam.pit),-Math.cos(cam.yaw)*Math.cos(cam.pit)).applyQuaternion(vzQD);
     cam.yaw=Math.atan2(vzTV.x,-vzTV.z);cam.pit=Math.asin(Math.max(-1,Math.min(1,vzTV.y)));
     const dr=S.dir*Math.PI/180;vzTV.set(Math.cos(dr),0,-Math.sin(dr)).applyQuaternion(vzQD);S.dir=Math.atan2(-vzTV.z,vzTV.x)*180/Math.PI;
-    VF=(camD>.5)?{inv:vzTX.clone().invert(),a:z.a,k:ks[ax],bc:vzBC[ks[ax]],s:a0>0?1:-1}:null;/* third person: the camera keeps looking through the window until IT crosses */
+    VF=(camD>.5)?{inv:vzTX.clone().invert(),a:z.a,k:ks[ax],bc:vzBC[ks[ax]],s:a0>0?1:-1}:null;
     vzHave=false;z.force=true;
     return}
   vzPrev.copy(vzCur)}
