@@ -1714,11 +1714,29 @@ neon:{n:'Neon',c:'#00f0ff',sh:0,sp:'#000000'}};
 const PBR={plastic:[.4,0,0,.6],wood:[.75,0,.02,.3],planks:[.7,0,.04,.3],brick:[.9,0,-.07,.2],cobble:[.88,0,.12,.25],slate:[.7,0,.07,.35],concrete:[.93,0,.04,.2],asphalt:[.95,0,.05,.15],
 tile:[.14,0,.03,.8],marble:[.12,0,.012,.85],granite:[.35,0,.03,.6],metal:[.32,.9,.01,1],diamond:[.4,.85,.05,1],corrugated:[.45,.85,.07,1],rust:[.9,.3,.05,.3],grass:[.95,0,.07,.15],
 foliage:[.8,0,.05,.25],dirt:[.97,0,.07,.1],gravel:[.92,0,.1,.2],sand:[.96,0,.025,.15],snow:[.7,0,.03,.4],ice:[.08,0,.01,1],water:[.04,0,.02,1],glass:[.02,0,0,1],fabric:[.95,0,.015,.15],neon:[.5,0,0,.5]};
-/* fine grain over every texture so surfaces never look clean and flat */
-function texGrain(c,S,h){const cx=c.getContext('2d'),im=cx.getImageData(0,0,S,S),d=im.data,r=RNG(h+91);for(let i=0;i<d.length;i+=4){const n=1+(r()-.5)*.1;d[i]=Math.min(255,d[i]*n);d[i+1]=Math.min(255,d[i+1]*n);d[i+2]=Math.min(255,d[i+2]*n)}cx.putImageData(im,0,0)}
-const TC={};
-function tex(k){if(!TC[k]){const S=256,c=document.createElement('canvas');c.width=c.height=S;let h=0;for(let i=0;i<k.length;i++)h=h*31+k.charCodeAt(i);TX[k](c.getContext('2d'),S,RNG(h+7));try{texGrain(c,S,h)}catch(e){}
-  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());TC[k]=t}return TC[k]}
+/* Tileable noise: gives every material large patches of colour variation, baked crevice shading, real surface height and uneven shininess */
+function vno(S,cells,r){const g=new Float32Array(cells*cells);for(let i=0;i<g.length;i++)g[i]=r();const o=new Float32Array(S*S);
+  for(let y=0;y<S;y++){const fy=y/S*cells,y0=Math.floor(fy),ty=fy-y0,sy=ty*ty*(3-2*ty),ya=(y0%cells)*cells,yb=((y0+1)%cells)*cells;
+    for(let x=0;x<S;x++){const fx=x/S*cells,x0=Math.floor(fx),tx=fx-x0,sx=tx*tx*(3-2*tx),xa=x0%cells,xb=(x0+1)%cells,A=g[ya+xa],B=g[ya+xb],C=g[yb+xa],D=g[yb+xb];o[y*S+x]=A+(B-A)*sx+(C-A)*sy+(A-B-C+D)*sx*sy}}return o}
+function fbm(S,r){const W=[[3,.34],[6,.26],[12,.18],[24,.12],[48,.07],[96,.03]],o=new Float32Array(S*S);W.forEach(function(w){const n=vno(S,w[0],r);for(let i=0;i<o.length;i++)o[i]+=n[i]*w[1]});return o}
+/* [crevice shading, colour variation, how much of the height is noise] */
+const TPD=[.35,.14,.35],TP={tile:[.12,.05,.15],marble:[.1,.08,.2],metal:[.12,.07,.2],diamond:[.15,.07,.2],corrugated:[.15,.08,.2],granite:[.3,.12,.3],ice:[.05,.05,.2],water:[.05,.04,.25],snow:[.25,.06,.3],
+brick:[.45,.2,.3],cobble:[.5,.2,.3],concrete:[.35,.2,.45],asphalt:[.35,.18,.5],grass:[.55,.22,.5],foliage:[.5,.2,.4],dirt:[.55,.22,.55],gravel:[.5,.2,.4],sand:[.3,.14,.45],wood:[.4,.18,.3],planks:[.4,.18,.3],rust:[.45,.3,.5],fabric:[.3,.1,.3],slate:[.4,.16,.3]};
+const TC={},TCH={},TCR={};
+function texBuild(k){let h=0;for(let i=0;i<k.length;i++)h=h*31+k.charCodeAt(i);
+  const S=512,b=document.createElement('canvas');b.width=b.height=256;TX[k](b.getContext('2d'),256,RNG(h+7));
+  const c=document.createElement('canvas');c.width=c.height=S;const x=c.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(b,0,0,S,S);
+  const im=x.getImageData(0,0,S,S),d=im.data,r=RNG(h+91),F=fbm(S,r),G=fbm(S,r),tp=TP[k]||TPD,hc=document.createElement('canvas'),rc=document.createElement('canvas');hc.width=hc.height=rc.width=rc.height=S;
+  const hx=hc.getContext('2d'),rx=rc.getContext('2d'),hi=hx.createImageData(S,S),ri=rx.createImageData(S,S),hd=hi.data,rd=ri.data,cl=function(v){return v<0?0:v>1?1:v};
+  for(let i=0,n=S*S;i<n;i++){const j=i*4,f=cl((F[i]-.5)*2.6+.5),g=cl((G[i]-.5)*2.6+.5),lum=d[j]/255,hg=cl(((lum*(1-tp[2])+f*tp[2])-.5)*1.7+.5),sh=Math.max(.3,1+tp[0]*(hg-.5)*1.2),tn=1+(g-.5)*tp[1]*2;
+    d[j]=Math.min(255,d[j]*sh*tn*(1+(g-.5)*.07));d[j+1]=Math.min(255,d[j+1]*sh*tn);d[j+2]=Math.min(255,d[j+2]*sh*tn*(1-(g-.5)*.07));
+    const hv=hg*255;hd[j]=hd[j+1]=hd[j+2]=hv;hd[j+3]=255;const rv=(.72+.28*g)*255;rd[j]=rd[j+1]=rd[j+2]=rv;rd[j+3]=255}
+  x.putImageData(im,0,0);hx.putImageData(hi,0,0);rx.putImageData(ri,0,0);
+  const mk=function(cv){const t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());return t};
+  TC[k]=mk(c);TCH[k]=mk(hc);TCR[k]=mk(rc)}
+function tex(k){if(!TC[k])texBuild(k);return TC[k]}
+function texH(k){tex(k);return TCH[k]}
+function texR(k){tex(k);return TCR[k]}
 const ITX={};
 function imgTex(nm){const src=P.assets.images[nm];if(!src)return null;const k=nm+'|'+src.length+'|'+src.slice(-32);let t=ITX[k];if(t)return t;
   const im=new Image();t=new THREE.Texture(im);im.onload=function(){t.needsUpdate=true};im.src=src;ITX[k]=t;return t}
@@ -1728,12 +1746,21 @@ function texPng(k){return /^data:image\/(png|gif|webp)/i.test(P.assets.images[k]
 /* used by the "set image" block: swaps the picture while the game runs, the part setting is not changed */
 function imgApply(q,key){const m=M[q.id];if(!m||!texOK(q))return;const old=m.material;
   m.material=mkMat(Object.assign({},q,{tex:null}));
-  if(key){const t=imgTex(key);if(t){const mt=m.material;mt.map=t;mt.bumpMap=null;mt.color.set(0xffffff);mt.vertexColors=false;if(texPng(key)){mt.transparent=true;mt.alphaTest=.04}mt.needsUpdate=true}}
+  if(key){const t=imgTex(key);if(t){const mt=m.material;mt.map=t;mt.bumpMap=null;mt.roughnessMap=null;mt.color.set(0xffffff);mt.vertexColors=false;if(texPng(key)){mt.transparent=true;mt.alphaTest=.04}mt.needsUpdate=true}}
   try{old.dispose()}catch(e){}hl()}
+/* Real-life lighting maths for part materials: colours are read as sRGB and lit in linear light, then filmic-mapped and encoded back. Everything else in the scene is untouched. */
+function pbrPatch(m){const fn=function(sh){sh.fragmentShader=sh.fragmentShader
+    .replace(/void\s+main\s*\(\s*\)\s*\{/,function(){return 'vec3 acesP(vec3 x){return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0);}\nvoid main() {'})
+    .replace('#include <color_fragment>','#include <color_fragment>\n diffuseColor.rgb=pow(max(diffuseColor.rgb,vec3(0.0)),vec3(2.2));')
+    .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\n totalEmissiveRadiance=pow(max(totalEmissiveRadiance,vec3(0.0)),vec3(2.2));')
+    .replace('#include <encodings_fragment>','#ifndef TONE_MAPPING\n gl_FragColor.rgb=acesP(gl_FragColor.rgb);\n#endif\n gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.0)),vec3(0.4545));')};
+  m.userData.pbr=1;m.userData.pbrFn=fn;m.onBeforeCompile=fn;m.customProgramCacheKey=function(){return 'pbr2'}}
 function mkMat(p){const k=MATS[p.mat]?p.mat:'plastic',d=MATS[k],q=PBR[k]||PBR.plastic,m=new THREE.MeshStandardMaterial({color:p.color,roughness:p.av?.62:q[0],metalness:p.av?0:(ENVOK?q[1]:q[1]*.35)});
   m.userData.envB=p.av?.35:q[3];m.envMapIntensity=m.userData.envB*ENVK;
-  if(TX[k]){m.map=tex(k);if(q[2]&&!p.av){m.bumpMap=m.map;m.bumpScale=q[2]}}if(d.op){m.transparent=true;m.opacity=d.op}if(k==='neon')m.emissive.set(p.color);if(p.tr>0){m.transparent=true;m.opacity=(d.op||1)*(1-Math.min(1,p.tr))}if(p.shape==='union'&&p.un){m.vertexColors=true;if(p.un.pc!==p.color)m.color.set(p.color);else m.color.set(0xffffff)}
-  if(hasTex(p)){const t=imgTex(p.tex);if(t){m.map=t;m.bumpMap=null;m.color.set(0xffffff);m.vertexColors=false;if(texPng(p.tex)){m.transparent=true;m.alphaTest=.04}}}return m}
+  if(TX[k]){m.map=tex(k);if(!p.av){if(q[2]){m.bumpMap=texH(k);m.bumpScale=q[2]*1.3}if(q[0]<.8){m.roughnessMap=texR(k);m.roughness=Math.min(1,q[0]/.86)}}}
+  if(d.op){m.transparent=true;m.opacity=d.op}if(k==='neon')m.emissive.set(p.color);if(p.tr>0){m.transparent=true;m.opacity=(d.op||1)*(1-Math.min(1,p.tr))}if(p.shape==='union'&&p.un){m.vertexColors=true;if(p.un.pc!==p.color)m.color.set(p.color);else m.color.set(0xffffff)}
+  if(hasTex(p)){const t=imgTex(p.tex);if(t){m.map=t;m.bumpMap=null;m.roughnessMap=null;m.roughness=q[0];m.color.set(0xffffff);m.vertexColors=false;if(texPng(p.tex)){m.transparent=true;m.alphaTest=.04}}}
+  pbrPatch(m);return m}
 /* World-sized texture coordinates: each face is mapped by its dominant axis, so a tile always covers ts studs */
 function boxUV(g,ts){const ps=g.attributes.position,nm=g.attributes.normal,uv=g.attributes.uv;
   for(let i=0;i<ps.count;i++){const nx=nm.getX(i),ny=nm.getY(i),nz=nm.getZ(i),ax=Math.abs(nx),ay=Math.abs(ny),az=Math.abs(nz),x=ps.getX(i),y=ps.getY(i),z=ps.getZ(i);let u,v;
@@ -1868,14 +1895,14 @@ function accStatic(o){const sk=[];o.traverse(function(m){if(m.isSkinnedMesh)sk.p
 /* Depth nudge: pulls a surface toward the camera by a FIXED distance in the world (plus a tiny bit more the farther away it is).
    This replaces polygonOffset, whose pull grows with the square of the distance and made accessories (and the face) show through bodies when far away,
    and whose slope part made thin parts seen edge-on (hair strands, glasses arms) show through the head as lines. */
-function depthNudge(n,base,k){n.polygonOffset=false;n.polygonOffsetFactor=0;n.polygonOffsetUnits=0;
-  n.onBeforeCompile=function(sh){sh.vertexShader=sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\n{vec4 nv=mvPosition;nv.z+=0.02+(-mvPosition.z)*0.0004;gl_Position=projectionMatrix*nv;}')};
-  n.customProgramCacheKey=function(){return 'nudge0.02_0.0004'};n.needsUpdate=true;return n}
+function depthNudge(n,base,k){n.polygonOffset=false;n.polygonOffsetFactor=0;n.polygonOffsetUnits=0;const pb=n.userData&&n.userData.pbrFn||null;
+  n.onBeforeCompile=function(sh){if(pb)pb(sh);sh.vertexShader=sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\n{vec4 nv=mvPosition;nv.z+=0.02+(-mvPosition.z)*0.0004;gl_Position=projectionMatrix*nv;}')};
+  n.customProgramCacheKey=function(){return 'nudge0.02_0.0004'+(pb?'p2':'')};n.needsUpdate=true;return n}
 function accMat(n){n.side=THREE.DoubleSide;n.depthWrite=true;if('skinning' in n)n.skinning=false;return depthNudge(n,0.02,0.0004)}
 function accFreeze(c,w){c.traverse(function(o){o.updateMatrix();o.matrixAutoUpdate=false});w.updateMatrix();w.matrixAutoUpdate=false}
 function accTex(url,flip){const k=(flip?'f':'n')+url;if(ACCT[k])return ACCT[k];const t=new THREE.TextureLoader().load(url);t.flipY=!flip;t.wrapS=t.wrapT=THREE.RepeatWrapping;return ACCT[k]=t}
 function shineMat(mt,k){const n=mt.isMeshStandardMaterial?mt:new THREE.MeshStandardMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0});
-  n.roughness=Math.max(.1,.92-k*.8);n.metalness=0;n.userData.envB=.3+k*.9;n.envMapIntensity=n.userData.envB*ENVK;n.needsUpdate=true;return n}
+  n.roughness=Math.max(.1,.92-k*.8);n.metalness=0;n.userData.envB=.3+k*.9;n.envMapIntensity=n.userData.envB*ENVK;pbrPatch(n);n.needsUpdate=true;return n}
 function accMake(slot,id,hs){/* hs: head height scale, so items still fit a resized head */
   const e=ACCI[id];if(!e||!e.obj)return null;const it=e.it,sl=ACCS[slot];if(!sl)return null;
   const c=e.obj.clone(true);c.position.set(0,0,0);
@@ -3447,19 +3474,74 @@ function cNearL(s,z,ry,l){const hx=z[0]/2,hy=z[1]/2,hz=z[2]/2,cl=function(v,h){r
     for(let k=0;k<5;k++){p=[cl(p[0],W/2),cl(p[1],hy),cl(p[2],D/2)];const v=p[0]/W+p[1]/hy/2;if(v>0){const nn=1/(W*W)+1/(4*hy*hy);p=[p[0]-v/(W)/nn,p[1]-v/(2*hy)/nn,p[2]]}}
     ins=Math.abs(p[0]-q0[0])+Math.abs(p[1]-q0[1])+Math.abs(p[2]-q0[2])<1e-6;return {p:wedgeUn(-(ry||0),p),inside:ins}}
   const p=[cl(l[0],hx),cl(l[1],hy),cl(l[2],hz)];return {p:p,inside:p[0]===l[0]&&p[1]===l[1]&&p[2]===l[2]}}
+
+/* ===== Mesh hitboxes: an imported mesh collides as its real triangles (walls, ramps, arches, holes), not as a box around it ===== */
+function meshTris(E){if(E.tris!==undefined)return E.tris;const out=[];
+  try{E.obj.updateMatrixWorld(true);E.obj.traverse(function(m){if(!m.isMesh||!m.geometry||!m.geometry.attributes||!m.geometry.attributes.position)return;
+    const g=m.geometry,ps=g.attributes.position,ix=g.index,v=new THREE.Vector3(),gv=function(i){v.fromBufferAttribute(ps,i).applyMatrix4(m.matrixWorld);return [v.x,v.y,v.z]},n=ix?ix.count:ps.count;
+    for(let i=0;i+2<n;i+=3){const a=gv(ix?ix.getX(i):i),b=gv(ix?ix.getX(i+1):i+1),c=gv(ix?ix.getX(i+2):i+2);out.push(a[0],a[1],a[2],b[0],b[1],b[2],c[0],c[1],c[2])}})}catch(e){}
+  E.tris=(out.length&&out.length/9<=200000)?new Float32Array(out):null;return E.tris}
+let MCID=0;const MCC={};
+function meshColOf(q){const v=q.mesh&&(P.assets.meshes||{})[q.mesh];if(!v)return null;const E=MESHI[meshKey(v)];if(!E||!E.obj)return null;
+  const key=meshKey(v)+'|'+q.size.join();let c=MCC[q.id];if(c&&c.k===key)return c.m;
+  let m=null;try{m=meshColBuild(E,q.size)}catch(e){m=null}MCC[q.id]={k:key,m:m};return m}
+function meshColBuild(E,sz){const T=meshTris(E);if(!T)return null;const nz=E.obj.userData.nz||[1,1,1],k=[nz[0]>1e-6?sz[0]/nz[0]:1,nz[1]>1e-6?sz[1]/nz[1]:1,nz[2]>1e-6?sz[2]/nz[2]:1],V=new Float32Array(T.length),n=T.length/9;
+  for(let i=0;i<T.length;i+=3){V[i]=T[i]*k[0];V[i+1]=T[i+1]*k[1];V[i+2]=T[i+2]*k[2]}
+  const mn=[1e9,1e9,1e9],mx=[-1e9,-1e9,-1e9];for(let i=0;i<V.length;i+=3)for(let j=0;j<3;j++){if(V[i+j]<mn[j])mn[j]=V[i+j];if(V[i+j]>mx[j])mx[j]=V[i+j]}
+  const D=Math.max(4,Math.min(40,Math.round(Math.cbrt(n)))),ext=[Math.max(1e-4,mx[0]-mn[0]),Math.max(1e-4,mx[1]-mn[1]),Math.max(1e-4,mx[2]-mn[2])],s0=Math.max(ext[0],ext[1],ext[2])/D,
+    g=ext.map(function(e){return Math.max(1,Math.min(D,Math.ceil(e/s0)))}),cs=[ext[0]/g[0],ext[1]/g[1],ext[2]/g[2]],cells=new Array(g[0]*g[1]*g[2]);
+  for(let t=0;t<n;t++){const o=t*9;let lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];for(let p=0;p<3;p++)for(let j=0;j<3;j++){const x=V[o+p*3+j];if(x<lo[j])lo[j]=x;if(x>hi[j])hi[j]=x}
+    const a=[],b=[];for(let j=0;j<3;j++){a[j]=Math.max(0,Math.min(g[j]-1,Math.floor((lo[j]-mn[j])/cs[j])));b[j]=Math.max(0,Math.min(g[j]-1,Math.floor((hi[j]-mn[j])/cs[j])))}
+    for(let x=a[0];x<=b[0];x++)for(let y=a[1];y<=b[1];y++)for(let z=a[2];z<=b[2];z++){const ci=(x*g[1]+y)*g[2]+z;(cells[ci]||(cells[ci]=[])).push(t)}}
+  return {id:++MCID,V:V,n:n,min:mn,max:mx,cs:cs,g:g,cells:cells,st:new Uint32Array(n),sv:0}}
+/* Visit every grid cell that the segment o+d*t (t0..t1) passes through */
+function meshCells(mc,o,d,t0,t1,fn){const g=mc.g,cs=mc.cs,mn=mc.min,p=[o[0]+d[0]*t0,o[1]+d[1]*t0,o[2]+d[2]*t0],c=[0,0,0],st=[0,0,0],tm=[0,0,0],td=[0,0,0];
+  for(let j=0;j<3;j++){c[j]=Math.max(0,Math.min(g[j]-1,Math.floor((p[j]-mn[j])/cs[j])));st[j]=d[j]>0?1:-1;
+    if(Math.abs(d[j])<1e-12){tm[j]=Infinity;td[j]=Infinity}else{tm[j]=t0+((c[j]+(st[j]>0?1:0))*cs[j]+mn[j]-p[j])/d[j];td[j]=Math.abs(cs[j]/d[j])}}
+  for(let it=0,mxs=g[0]+g[1]+g[2]+4;it<mxs;it++){fn(c[0],c[1],c[2]);let j=0;if(tm[1]<tm[j])j=1;if(tm[2]<tm[j])j=2;if(tm[j]>t1)break;c[j]+=st[j];if(c[j]<0||c[j]>=g[j])break;tm[j]+=td[j]}}
+/* Where a straight line crosses the mesh: [lowest, highest] stretches that are inside (hits are paired up), or single surface points for open meshes */
+function meshSegs(mc,o,d,rv,out){let ta=-1e9,tb=1e9;
+  for(let j=0;j<3;j++){const lo=mc.min[j]-1e-3,hi=mc.max[j]+1e-3;if(Math.abs(d[j])<1e-12){if(o[j]<lo||o[j]>hi)return}else{let a=(lo-o[j])/d[j],b=(hi-o[j])/d[j];if(a>b){const x=a;a=b;b=x}if(a>ta)ta=a;if(b<tb)tb=b;if(ta>tb)return}}
+  const V=mc.V,hits=[],sv=++mc.sv;
+  meshCells(mc,o,d,ta,tb,function(x,y,z){const L=mc.cells[(x*mc.g[1]+y)*mc.g[2]+z];if(!L)return;
+    for(let i=0;i<L.length;i++){const t=L[i];if(mc.st[t]===sv)continue;mc.st[t]=sv;const k=t*9,
+      e1x=V[k+3]-V[k],e1y=V[k+4]-V[k+1],e1z=V[k+5]-V[k+2],e2x=V[k+6]-V[k],e2y=V[k+7]-V[k+1],e2z=V[k+8]-V[k+2],
+      px=d[1]*e2z-d[2]*e2y,py=d[2]*e2x-d[0]*e2z,pz=d[0]*e2y-d[1]*e2x,det=e1x*px+e1y*py+e1z*pz;if(Math.abs(det)<1e-12)continue;
+      const iv=1/det,tx=o[0]-V[k],ty=o[1]-V[k+1],tz=o[2]-V[k+2],u=(tx*px+ty*py+tz*pz)*iv;if(u<-1e-6||u>1+1e-6)continue;
+      const qx=ty*e1z-tz*e1y,qy=tz*e1x-tx*e1z,qz=tx*e1y-ty*e1x,w=(d[0]*qx+d[1]*qy+d[2]*qz)*iv;if(w<-1e-6||u+w>1+1e-6)continue;
+      const tt=(e2x*qx+e2y*qy+e2z*qz)*iv;if(tt>=ta-1e-4&&tt<=tb+1e-4)hits.push(tt)}});
+  if(!hits.length)return;hits.sort(function(a,b){return a-b});const h=[hits[0]];for(let i=1;i<hits.length;i++)if(hits[i]-h[h.length-1]>1e-4)h.push(hits[i]);
+  if(h.length%2===0){for(let i=0;i<h.length;i+=2)out.push([h[i]+rv,h[i+1]+rv])}else for(let i=0;i<h.length;i++)out.push([h[i]+rv,h[i]+rv])}
+/* Closest point of the mesh to a point (shape space), looking only at triangles within the player's ball */
+function triNear(p,V,k){const ax=V[k],ay=V[k+1],az=V[k+2],bx=V[k+3],by=V[k+4],bz=V[k+5],cx=V[k+6],cy=V[k+7],cz=V[k+8],
+  abx=bx-ax,aby=by-ay,abz=bz-az,acx=cx-ax,acy=cy-ay,acz=cz-az,apx=p[0]-ax,apy=p[1]-ay,apz=p[2]-az,d1=abx*apx+aby*apy+abz*apz,d2=acx*apx+acy*apy+acz*apz;
+  if(d1<=0&&d2<=0)return [ax,ay,az];
+  const bpx=p[0]-bx,bpy=p[1]-by,bpz=p[2]-bz,d3=abx*bpx+aby*bpy+abz*bpz,d4=acx*bpx+acy*bpy+acz*bpz;if(d3>=0&&d4<=d3)return [bx,by,bz];
+  const vc=d1*d4-d3*d2;if(vc<=0&&d1>=0&&d3<=0){const v=d1/(d1-d3);return [ax+abx*v,ay+aby*v,az+abz*v]}
+  const cpx=p[0]-cx,cpy=p[1]-cy,cpz=p[2]-cz,d5=abx*cpx+aby*cpy+abz*cpz,d6=acx*cpx+acy*cpy+acz*cpz;if(d6>=0&&d5<=d6)return [cx,cy,cz];
+  const vb=d5*d2-d1*d6;if(vb<=0&&d2>=0&&d6<=0){const w=d2/(d2-d6);return [ax+acx*w,ay+acy*w,az+acz*w]}
+  const va=d3*d6-d5*d4;if(va<=0&&(d4-d3)>=0&&(d5-d6)>=0){const w=(d4-d3)/((d4-d3)+(d5-d6));return [bx+(cx-bx)*w,by+(cy-by)*w,bz+(cz-bz)*w]}
+  const dn=1/(va+vb+vc),v=vb*dn,w=vc*dn;return [ax+abx*v+acx*w,ay+aby*v+acy*w,az+abz*v+acz*w]}
+function meshNear(mc,l){const R=1.25,V=mc.V,a=[],b=[];let best=null,bd=R*R;
+  for(let j=0;j<3;j++){if(l[j]+R<mc.min[j]||l[j]-R>mc.max[j])return {p:[l[0]+1e4,l[1],l[2]],inside:false};
+    a[j]=Math.max(0,Math.min(mc.g[j]-1,Math.floor((l[j]-R-mc.min[j])/mc.cs[j])));b[j]=Math.max(0,Math.min(mc.g[j]-1,Math.floor((l[j]+R-mc.min[j])/mc.cs[j])))}
+  const sv=++mc.sv;
+  for(let x=a[0];x<=b[0];x++)for(let y=a[1];y<=b[1];y++)for(let z=a[2];z<=b[2];z++){const L=mc.cells[(x*mc.g[1]+y)*mc.g[2]+z];if(!L)continue;
+    for(let i=0;i<L.length;i++){const t=L[i];if(mc.st[t]===sv)continue;mc.st[t]=sv;const c=triNear(l,V,t*9),dx=c[0]-l[0],dy=c[1]-l[1],dz=c[2]-l[2],dd=dx*dx+dy*dy+dz*dz;if(dd<bd){bd=dd;best=c}}}
+  return best?{p:best,inside:false}:{p:[l[0]+1e4,l[1],l[2]],inside:false}}
 /* Hitbox pieces of a part, in the part's own frame (before the object-move offsets): plain shapes are one piece, a union is one piece per merged shape. */
 const COLC={};
-function colsOf(q){const sh=q.shape,un=sh==='union'&&q.un;if(!(un||sh==='sphere'||sh==='cyl'||sh==='wedge'))return null;
-  const rot=hasRot(q),key=sh+'|'+q.size.join()+'|'+q.pos.join()+'|'+(rot?prot(q).join():'')+'|'+(q.ry||0)+(un?'|'+un.g.length+'|'+un.b.join():'');let c=COLC[q.id];if(c&&c.k===key)return c.l;
+function colsOf(q){const sh=q.shape,un=sh==='union'&&q.un,MC=sh==='mesh'?meshColOf(q):null;if(!(un||sh==='sphere'||sh==='cyl'||sh==='wedge'||MC))return null;
+  const rot=hasRot(q),key=sh+'|'+q.size.join()+'|'+q.pos.join()+'|'+(rot?prot(q).join():'')+'|'+(q.ry||0)+(un?'|'+un.g.length+'|'+un.b.join():'')+(MC?'|M'+MC.id:'');let c=COLC[q.id];if(c&&c.k===key)return c.l;
   const R=rot?rotM(q):[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],PM=R.slice();PM[12]=q.pos[0];PM[13]=q.pos[1];PM[14]=q.pos[2];PM[15]=1;let l=[];
   if(un){const b=un.b,k=[q.size[0]/(b[0]||1),q.size[1]/(b[1]||1),q.size[2]/(b[2]||1)],S=PM.slice();for(let j=0;j<3;j++)for(let r=0;r<3;r++)S[j*4+r]=PM[j*4+r]*k[j];
     un.g.forEach(function(g){const mm=m4mul(S,g.m),iv=m4inv(mm);if(iv)l.push({s:g.s||'box',z:g.z,ry:g.y||0,mm:mm,inv:iv})})}
-  else{const iv=m4inv(PM);if(iv)l.push({s:sh,z:q.size,ry:q.ry||0,mm:PM,inv:iv})}
+  else{const iv=m4inv(PM);if(iv)l.push({s:sh,z:q.size,ry:q.ry||0,mm:PM,inv:iv,mc:MC||null})}
   let rad=Math.hypot(q.size[0],q.size[1],q.size[2])/2+.01;l.rad=rad;COLC[q.id]={k:key,l:l};return l}
 /* Is the player's column (x,z) anywhere near this part? (cheap test before the real shape test) */
 function colNear(q,L,o,x,z,m){const dx=x-(q.pos[0]+o[0]),dz=z-(q.pos[2]+o[1]);return dx*dx+dz*dz<=(L.rad+m)*(L.rad+m)}
 /* The vertical line through (x,z): every [lowest y, highest y] stretch of it that is inside the part (world heights) */
-function colSegs(q,L,o,x,z,out){const rv=RY[rootOf(q).id]||0;L.forEach(function(cl){const lo=m4pt(cl.inv,x-o[0],0,z-o[1]),d=m4dir(cl.inv,0,1,0),r=cSeg(cl.s,cl.z,cl.ry,lo,d);if(r)out.push([r[0]+rv,r[1]+rv])});return out}
+function colSegs(q,L,o,x,z,out){const rv=RY[rootOf(q).id]||0;L.forEach(function(cl){const lo=m4pt(cl.inv,x-o[0],0,z-o[1]),d=m4dir(cl.inv,0,1,0);if(cl.mc){meshSegs(cl.mc,lo,d,rv,out);return}const r=cSeg(cl.s,cl.z,cl.ry,lo,d);if(r)out.push([r[0]+rv,r[1]+rv])});return out}
 const COLS=[[0,0],[.6,0],[-.6,0],[0,.6],[0,-.6]];
 /* Highest surface of the real shape under the feet that is no more than STEP above them */
 function colTop(q,L,o,cx,cz,fy){let best=null;COLS.forEach(function(a){colSegs(q,L,o,cx+a[0],cz+a[1],[]).forEach(function(sg){if(sg[1]<=fy+STEP&&(best===null||sg[1]>best))best=sg[1]})});return best}
@@ -3468,7 +3550,7 @@ function colUnder(q,L,o,cx,cz,head0){let bb=Infinity;[[0,0],[.7,0],[-.7,0],[0,.7
 /* Sideways push out of the real shape (the player is two stacked balls); the deepest piece wins for each ball so a union of many pieces does not push several times */
 function colPush(q,L,o,cx,fy,cz){const R=1.1,rv=RY[rootOf(q).id]||0;let px=0,pz=0;
   [fy+3,fy+4.6].forEach(function(sy){let bst=null;const w=[cx+px-o[0],sy-rv,cz+pz-o[1]];
-    L.forEach(function(cl){const l=m4pt(cl.inv,w[0],w[1],w[2]),nr=cNearL(cl.s,cl.z,cl.ry,l);let n,pen;
+    L.forEach(function(cl){const l=m4pt(cl.inv,w[0],w[1],w[2]),nr=cl.mc?meshNear(cl.mc,l):cNearL(cl.s,cl.z,cl.ry,l);let n,pen;
       if(nr.inside){const ct=[cl.mm[12],cl.mm[13],cl.mm[14]];n=[w[0]-ct[0],0,w[2]-ct[2]];const h=Math.hypot(n[0],n[2])||1;n=[n[0]/h,0,n[2]/h];pen=R+.3}
       else{const cw=m4pt(cl.mm,nr.p[0],nr.p[1],nr.p[2]),d=[w[0]-cw[0],w[1]-cw[1],w[2]-cw[2]],dist=Math.hypot(d[0],d[1],d[2]);if(dist>=R||dist<1e-6)return;n=[d[0]/dist,d[1]/dist,d[2]/dist];pen=R-dist}
       const nh=Math.hypot(n[0],n[2]);if(nh<.3)return;const k=Math.min(1.5,pen/nh);if(!bst||k>bst.k)bst={k:k,x:n[0]/nh,z:n[2]/nh}});
@@ -4376,7 +4458,7 @@ function lxEls(){if(lxT)return;const c=document.querySelector('.cvw');if(!c)retu
   [lxT,lxV].forEach(function(d){d.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:3;display:none';c.append(d)})}
 function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
   if(L){hemi.color.set(L.hs);hemi.groundColor.set(L.hg);hemi.intensity*=L.hk;sun.color.set(L.sc)}
-  else{hemi.color.set(0xffffff);hemi.groundColor.set(0x88aa88);sun.color.set(0xffffff)}
+  else{hemi.color.set(0xdfeaff);hemi.groundColor.set(0x7a7566);sun.color.set(0xfff1dc)}
   /* your own ambient / shadow colours (Atmosphere panel) sit on top of whatever lighting is active */
   const E=P.env||{};
   if(E.amb){hemi.color.set(E.amb);if(E.ambk!=null)hemi.intensity*=E.ambk}
@@ -4397,7 +4479,7 @@ function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
     if(g&&g.vig>0){lxV.style.display='block';lxV.style.background='radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(0,0,0,'+g.vig+') 100%)'}else lxV.style.display='none'}}
 let fogOn=false;
 function applyEnv(){updSkyTex();const e=lightEnv(),a=(e.tod-6)/12*Math.PI,day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),c=new THREE.Color(e.sky).multiplyScalar(k);
-  scene.background=c;hemi.intensity=(.2+.42*k)*e.bright;sun.intensity=.85*day*e.sun*e.bright;sunDir.set(Math.cos(a)*14,Math.max(2,Math.sin(a)*14),6);try{envK((.12+.88*Math.min(1,day*2.5))*Math.min(1.4,e.bright))}catch(_e){}
+  scene.background=c;hemi.intensity=(.14+.3*k)*e.bright;sun.intensity=1.3*day*e.sun*e.bright;sunDir.set(Math.cos(a)*14,Math.max(2,Math.sin(a)*14),6);try{envK((.12+.88*Math.min(1,day*2.5))*Math.min(1.4,e.bright))}catch(_e){}
   const on=e.fog>0,fh=skyFogHex();scene.fog=on?new THREE.Fog(fh!==null?fh:c.getHex(),12,Math.max(30,900-e.fog*8.5)):null;
   if(on!==fogOn){fogOn=on;if(PG)PG.traverse(function(o){if(o.material)o.material.needsUpdate=true})}
   lightX()}
