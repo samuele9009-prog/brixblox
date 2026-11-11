@@ -369,7 +369,24 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 .arow audio{width:100%;height:34px}
 
 /* ===== Explorer ===== */
-#p-list{display:flex;flex-direction:column;gap:1px;margin-top:6px}
+#p-list{display:flex;flex-direction:column;gap:1px;margin-top:6px;border:1px solid var(--line);border-radius:8px;padding:3px;max-height:44vh;overflow:auto;background:rgba(127,127,127,.04)}
+.exr::before{content:"";position:absolute;left:6px;top:0;bottom:0;width:calc(var(--d,0)*17px);pointer-events:none;background:repeating-linear-gradient(90deg,rgba(127,127,127,.28) 0 1px,transparent 1px 17px)}
+.tb{flex-direction:column;align-items:stretch;gap:4px;margin-bottom:4px}
+.tgrp{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.tgl{flex:none;width:58px;font-size:.66rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+#st-bar{margin:0 0 6px}
+.xhelp{margin:4px 0 8px;border:1px solid var(--line);border-radius:8px;background:rgba(127,127,127,.06)}
+.xhelp>summary{cursor:pointer;padding:6px 10px;font-weight:800;font-size:.8rem;list-style:none}
+.xhelp>summary::-webkit-details-marker{display:none}
+.xhelp>summary::before{content:"\25B8  ";color:var(--muted)}.xhelp[open]>summary::before{content:"\25BE  "}
+.xhelp .kl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;padding:2px 10px 9px;font-size:.76rem;color:var(--muted);align-items:baseline}
+.xhelp kbd{font:inherit;font-weight:800;color:var(--ink);background:rgba(127,127,127,.18);border-radius:5px;padding:0 6px;white-space:nowrap}
+.xbar{display:flex;gap:4px;margin-top:6px}.xbar input{flex:1;min-width:0}
+.psec{margin:8px 0;border:1px solid var(--line);border-radius:8px;padding:0 10px 6px;background:rgba(127,127,127,.05)}
+.psec>summary{cursor:pointer;margin:0 -10px 2px;padding:7px 10px;font-weight:800;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);list-style:none}
+.psec>summary::-webkit-details-marker{display:none}
+.psec>summary::before{content:"\25B8  "}.psec[open]>summary::before{content:"\25BE  "}
+.psec .shr{min-height:26px;padding:0 10px;font-size:.72rem;margin:2px 0 6px}
 .exr{position:relative;display:flex;align-items:center;gap:6px;min-height:31px;padding:2px 6px 2px calc(4px + var(--d,0)*17px);border-radius:8px;cursor:pointer;font-weight:700;font-size:.86rem;user-select:none;outline:none}
 .exr:hover{background:rgba(127,127,127,.15)}
 .exr:focus-visible{box-shadow:inset 0 0 0 2px var(--berry)}
@@ -583,13 +600,13 @@ html,body{overscroll-behavior:none;touch-action:manipulation}
     <section id="s-ws" class="ws" aria-label="Scripts"></section>
     <aside class="side">
       <div class="cvw"><canvas id="s-cv" width="480" height="360" aria-label="Stage"></canvas><span id="rz-l" class="rz l" title="Right-click and drag to resize"></span><span id="rz-r" class="rz r" title="Right-click and drag to resize"></span><div id="chat" hidden=""><button id="chat-tg" type="button" title="Show or hide chat" aria-label="Show or hide chat">💬</button><div id="chat-log"></div><input id="chat-in" maxlength="120" placeholder="Press / to chat" autocomplete="off" aria-label="Chat"></div></div>
-      <p class="note" style="margin:0">Hold right mouse and drag to look. Click and drag a part or model to move it around the map (press R while dragging to turn it 90 degrees, T to tilt it). W A S D to fly, Q down, E up, scroll to zoom. Click a part for move arrows, press R to switch tools (move, resize, rotate; Shift+R goes back) or press 2 / 3 / 4 to jump straight to move / resize / rotate. Rotate: drag a ring, hold Shift to snap. Right-click and drag a bottom corner of the stage to resize it. Press Play to walk around with WASD and Space.</p>
+      <details class="xhelp"><summary>Camera &amp; tool controls</summary><div class="kl"><kbd>Right mouse + drag</kbd><span>Look around</span><kbd>W A S D</kbd><span>Fly (Q down, E up)</span><kbd>Scroll</kbd><span>Zoom</span><kbd>Click + drag</kbd><span>Move a part or model (R turns it 90&deg; while dragging, T tilts it)</span><kbd>Click a part</kbd><span>Show its move arrows</span><kbd>R / Shift+R</kbd><span>Next / previous tool (move, resize, rotate)</span><kbd>2 / 3 / 4</kbd><span>Jump to move / resize / rotate</span><kbd>Rotate ring</kbd><span>Drag a ring (hold Shift to snap)</span><kbd>Right-drag a bottom corner</kbd><span>Resize the stage</span><kbd>Play</kbd><span>Walk around with WASD and Space</span></div></details>
       <div class="tabs"><button id="t-out" type="button" class="on">Output</button><button id="t-code" type="button">Code</button><button id="t-parts" type="button">Explorer</button><button id="t-anim" type="button">Animator</button></div>
       <pre id="s-out" class="pre"></pre><pre id="s-code" class="pre" hidden=""></pre>
       <div id="s-parts" class="pnl" hidden="">
-        <div class="tb"><button id="p-add" class="btn small" type="button">+ Part</button><select id="p-shape" class="btn ghost small" aria-label="Add a shape"><option value="">+ Shape</option><option value="cyl">Cylinder</option><option value="sphere">Sphere</option><option value="wedge">Triangle</option></select><select id="p-gui" class="btn ghost small" aria-label="Add a GUI element"><option value="">+ GUI</option><option value="text">Text</option><option value="button">Button</option><option value="frame">Frame</option><option value="image">Image</option></select><button id="p-weld" class="btn small" type="button">Weld</button><button id="p-unweld" class="btn ghost small" type="button">Unweld</button><button id="p-group" class="btn small" type="button">Group</button><button id="p-ungroup" class="btn ghost small" type="button">Ungroup</button><button id="p-union" class="btn small" type="button" title="Ctrl+Shift+G">Union</button><button id="p-split" class="btn ghost small" type="button" title="Ctrl+Alt+U">Split</button><button id="p-copy" class="btn ghost small" type="button">Copy</button><button id="p-paste" class="btn ghost small" type="button">Paste</button><button id="p-dup" class="btn ghost small" type="button">Duplicate</button><button id="p-del" class="btn ghost small" type="button">Delete</button><button id="p-rig" class="btn ghost small" type="button" aria-pressed="false">Rig editor</button></div>
+        <div class="tb"><div class="tgrp"><span class="tgl">Add</span><button id="p-add" class="btn small" type="button">+ Part</button><select id="p-shape" class="btn ghost small" aria-label="Add a shape"><option value="">+ Shape</option><option value="cyl">Cylinder</option><option value="sphere">Sphere</option><option value="wedge">Triangle</option></select><select id="p-gui" class="btn ghost small" aria-label="Add a GUI element"><option value="">+ GUI</option><option value="text">Text</option><option value="button">Button</option><option value="frame">Frame</option><option value="image">Image</option></select></div><div class="tgrp"><span class="tgl">Models</span><button id="p-group" class="btn small" type="button">Group</button><button id="p-ungroup" class="btn ghost small" type="button">Ungroup</button><button id="p-union" class="btn small" type="button" title="Ctrl+Shift+G">Union</button><button id="p-split" class="btn ghost small" type="button" title="Ctrl+Alt+U">Split</button></div><div class="tgrp"><span class="tgl">Edit</span><button id="p-copy" class="btn ghost small" type="button">Copy</button><button id="p-paste" class="btn ghost small" type="button">Paste</button><button id="p-dup" class="btn ghost small" type="button">Duplicate</button><button id="p-del" class="btn ghost small" type="button">Delete</button></div><div class="tgrp"><span class="tgl">Rig</span><button id="p-weld" class="btn small" type="button">Weld</button><button id="p-unweld" class="btn ghost small" type="button">Unweld</button><button id="p-rig" class="btn ghost small" type="button" aria-pressed="false">Rig editor</button></div></div>
         <p id="p-msg" class="hint">Weld: select the Torso first, then ctrl-click the parts to weld to it.</p>
-        <p class="note" style="margin:4px 0 8px"><b>P</b> adds a part in front of you &middot; <b>Ctrl+G</b> groups into a model &middot; <b>Ctrl+Shift+G</b> unions the selection into one single part (<b>Ctrl+Alt+U</b> splits it back) &middot; <b>Ctrl+Alt+G</b> ungroups &middot; <b>Backspace</b> deletes &middot; <b>Alt+click</b> (or double-click) a piece of a model to select just that piece. &middot; <b>L</b> locks or unlocks the selection. &middot; <b>Arrow keys</b> nudge the selection by the snap size, <b>PageUp/PageDown</b> move it up and down, <b>End</b> drops it onto whatever is under it, <b>Ctrl+A</b> selects everything. The snap size and Align buttons are just above this note.</p><div id="p-list"></div><div id="p-props"></div>
+        <details class="xhelp"><summary>Building shortcuts</summary><div class="kl"><kbd>P</kbd><span>Add a part in front of you</span><kbd>Ctrl+G</kbd><span>Group into a model</span><kbd>Ctrl+Alt+G</kbd><span>Ungroup</span><kbd>Ctrl+Shift+G</kbd><span>Union into one single part</span><kbd>Ctrl+Alt+U</kbd><span>Split a union back apart</span><kbd>Ctrl+R</kbd><span>Turn the selection 90&deg; (Ctrl+Shift+R the other way)</span><kbd>Ctrl+C / V / D</kbd><span>Copy / paste / duplicate</span><kbd>Backspace</kbd><span>Delete</span><kbd>Alt+click</kbd><span>Select just one piece of a model (double-click works too)</span><kbd>L</kbd><span>Lock or unlock the selection</span><kbd>Arrow keys</kbd><span>Nudge by the snap size (Shift = 4&times;)</span><kbd>PageUp / PageDown</kbd><span>Move up / down</span><kbd>End</kbd><span>Drop onto whatever is under it</span><kbd>Ctrl+A</kbd><span>Select everything</span></div></details><div class="xbar"><input id="p-find" type="search" placeholder="Search the explorer..." aria-label="Search the explorer" autocomplete="off"><button id="p-exp" class="btn ghost small" type="button" title="Open every folder and model">Expand</button><button id="p-col" class="btn ghost small" type="button" title="Close every folder and model">Collapse</button></div><div id="p-list"></div><div id="p-props"></div>
       </div>
       <div id="s-anim" class="pnl anim" hidden="">
         <div class="an-top">
@@ -1753,11 +1770,18 @@ function pbrPatch(m){const fn=function(sh){sh.fragmentShader=sh.fragmentShader
     .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\n totalEmissiveRadiance=pow(max(totalEmissiveRadiance,vec3(0.0)),vec3(2.2));')
     .replace('#include <encodings_fragment>','#ifndef TONE_MAPPING\n gl_FragColor.rgb=acesP(gl_FragColor.rgb);\n#endif\n gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.0)),vec3(0.4545));')};
   m.userData.pbr=1;m.userData.pbrFn=fn;m.onBeforeCompile=fn;m.customProgramCacheKey=function(){return 'pbr2'}}
+/* Shininess: 0 = dull / matte, 1 = mirror-like. Stored on the part as p.shine; a part without it keeps its material's normal look. */
+function shineDef(p){const q=PBR[MATS[p.mat]?p.mat:'plastic']||PBR.plastic;return Math.round(Math.max(0,Math.min(1,(1-q[0])/.95))*20)/20}
+function shineApply(m,v){v=Math.max(0,Math.min(1,+v||0));m.roughness=1-v*.95;
+  if(ENVOK)m.envMap=v>=.35?ENVT:null;
+  m.userData.envB=Math.max(.08,v*1.1);m.envMapIntensity=m.userData.envB*ENVK;m.needsUpdate=true}
+function setShine(p,v){const o=M[p.id];if(o&&o.material&&!p.av)shineApply(o.material,v)}
 function mkMat(p){const k=MATS[p.mat]?p.mat:'plastic',d=MATS[k],q=PBR[k]||PBR.plastic,m=new THREE.MeshStandardMaterial({color:p.color,roughness:p.av?.62:q[0],metalness:p.av?0:(ENVOK?q[1]:q[1]*.35)});
   m.userData.envB=p.av?.35:q[3];m.envMapIntensity=m.userData.envB*ENVK;if(ENVOK&&!p.av&&q[3]>=.5)m.envMap=ENVT;
   if(TX[k]){m.map=tex(k);if(!p.av){if(Math.abs(q[2])>=.035){m.bumpMap=texH(k);m.bumpScale=q[2]*1.3}}}
   if(d.op){m.transparent=true;m.opacity=d.op}if(k==='neon')m.emissive.set(p.color);if(p.tr>0){m.transparent=true;m.opacity=(d.op||1)*(1-Math.min(1,p.tr))}if(p.shape==='union'&&p.un){m.vertexColors=true;if(p.un.pc!==p.color)m.color.set(p.color);else m.color.set(0xffffff)}
   if(hasTex(p)){const t=imgTex(p.tex);if(t){m.map=t;m.bumpMap=null;m.color.set(0xffffff);m.vertexColors=false;if(texPng(p.tex)){m.transparent=true;m.alphaTest=.04}}}
+  if(p.shine!=null&&!p.av)shineApply(m,p.shine);
   pbrPatch(m);return m}
 /* World-sized texture coordinates: each face is mapped by its dominant axis, so a tile always covers ts studs */
 function boxUV(g,ts){const ps=g.attributes.position,nm=g.attributes.normal,uv=g.attributes.uv;
@@ -1812,6 +1836,15 @@ function hl(){P.parts.forEach(function(p){const m=M[p.id];if(!m)return;m.materia
 function setTr(p,v){const m=M[p.id];if(!m)return;const d=MATS[p.mat]||MATS.plastic;v=Math.max(0,Math.min(1,+v||0));
   m.material.transparent=!!(d.op||v>0);m.material.opacity=(d.op||1)*(1-v);m.material.needsUpdate=true;m.castShadow=!d.op&&!p.stab&&v<.3}
 function trAll(d,ps,title){const tv={v:ps[0].tr||0};slider(d,title,tv,'v',0,1,.05,function(v){return Math.round(v*100)+'%'},function(){ps.forEach(function(q){if(tv.v>0)q.tr=tv.v;else delete q.tr;setTr(q,tv.v)})})}
+/* Shininess slider for one or many parts (works inside any panel section) */
+function shineAll(d,ps,title){const t=ps.filter(function(q){return q&&!q.av&&!q.stab});if(!t.length)return;
+  const sv={v:t[0].shine!=null?t[0].shine:shineDef(t[0])};
+  slider(d,title||'Shininess',sv,'v',0,1,.05,function(v){return Math.round(v*100)+'%'},function(){t.forEach(function(q){q.shine=sv.v;setShine(q,sv.v)})});
+  const rb=el('button','btn ghost small shr','Reset shininess');rb.type='button';rb.title="Go back to this material's normal shininess";
+  rb.onclick=function(){t.forEach(function(q){delete q.shine});save();all()};d.append(rb)}
+/* Collapsible group in the properties panel (remembers whether you left it open) */
+const PSO={};
+function sect(d,t){const e=document.createElement('details'),k='ps:'+t;e.className='psec';e.open=PSO[k]!==false;e.append(el('summary','',t));e.ontoggle=function(){PSO[k]=e.open};d.append(e);return e}
 function matSel(cur,fn){const s=el('select');Object.keys(MATS).forEach(function(k){const o=el('option','',MATS[k].n);o.value=k;s.append(o)});s.value=MATS[cur]?cur:'plastic';s.onchange=function(){fn(s.value)};return s}
 function setMat(p,k){const old=MATS[p.mat]||MATS.plastic;if(!p.color||p.color.toLowerCase()===old.c.toLowerCase())p.color=MATS[k].c;p.mat=k}
 /* While dragging, only move the existing meshes (once per frame) instead of rebuilding every part, material and gizmo on each mouse event */
@@ -2372,23 +2405,27 @@ function vec(t,a,mv){const w=el('div','v3');a.forEach(function(v,i){const n=el('
 function modelProps(d,m){const ps=partsOf(m.id),nm=el('input');nm.value=m.name;nm.oninput=function(){m.name=nm.value;save()};nm.onchange=function(){renderParts()};
   const ms=matSel(ps[0]&&ps[0].mat,function(k){ps.forEach(function(q){setMat(q,k)});all()}),col=el('input');col.type='color';col.value=ps[0]?ps[0].color:'#ffffff';
   col.oninput=function(){avTouch(ps);ps.forEach(function(q){q.color=col.value;M[q.id].material.color.set(col.value)});hl();save()};
-  d.append(lab('Model name',nm),lab('Material (all pieces)',ms),lab('Color (all pieces)',col),el('p','note','Model with '+ps.length+' pieces. Drag the arrows to move all of it. To move one piece, Alt+click it, double-click it, or pick it in the list above.'));if(ps.length)trAll(d,ps,'Transparency (all pieces)');{const gr=ps.find(function(q){return !q.parent&&!q.av&&kids(q).length});if(gr)gearBox(d,gr)}contSel(d)}
+  d.append(lab('Model name',nm),el('p','note','Model with '+ps.length+' pieces. Drag the arrows to move all of it. To move one piece, Alt+click it, double-click it, or pick it in the list above.'));
+  {const sA=sect(d,'Appearance');sA.append(lab('Material (all pieces)',ms),lab('Color (all pieces)',col));if(ps.length){shineAll(sA,ps,'Shininess (all pieces)');trAll(sA,ps,'Transparency (all pieces)')}}{const gr=ps.find(function(q){return !q.parent&&!q.av&&kids(q).length});if(gr)gearBox(d,gr)}contSel(d)}
 /* Several parts picked at once (Shift/Ctrl-click or a Shift-drag box): material and colour apply to every one of them */
 function multiProps(d,ps){const ms=el('select'),ph=el('option','','Choose a material for all...');ph.value='';ms.append(ph);
   Object.keys(MATS).forEach(function(k){const o=el('option','',MATS[k].n);o.value=k;ms.append(o)});ms.value='';
   ms.onchange=function(){const k=ms.value;if(!k)return;ps.forEach(function(q){setMat(q,k)});msg('Set the material of '+ps.length+' parts to '+MATS[k].n+'.');all()};
   const col=el('input');col.type='color';col.value=ps[0].color;
   col.oninput=function(){avTouch(ps);ps.forEach(function(q){q.color=col.value;const m=M[q.id];if(m){m.material.color.set(col.value);if(q.mat==='neon')m.material.emissive.set(col.value)}});hl();save()};
-  d.append(el('p','note',ps.length+' parts selected. Material and colour below change all of them at once.'),lab('Material (all selected)',ms),lab('Color (all selected)',col));trAll(d,ps,'Transparency (all selected)');contSel(d)}
+  d.append(el('p','note',ps.length+' parts selected. Everything below changes all of them at once.'));
+  {const sA=sect(d,'Appearance');sA.append(lab('Material (all selected)',ms),lab('Color (all selected)',col));shineAll(sA,ps,'Shininess (all selected)');trAll(sA,ps,'Transparency (all selected)')}contSel(d)}
 function props(){props0();try{propsExtra()}catch(e){}}
 function props0(){const d=$('p-props');d.replaceChildren();if(selFold&&!sel.length&&!selModel&&!selGui){const ff=foldBy(selFold);if(ff){folderProps(d,ff);return}}{const gg=selGui&&!sel.length&&!selModel&&P.guis.find(function(x){return x.id===selGui});if(gg){guiProps(d,gg);return}}if(!selModel&&!sel.length&&selSvc){svcProps(d);return}if(selModel){const mm=byModel(selModel);if(mm){modelProps(d,mm);return}}{const mp=sel.map(function(id){return byId(id)}).filter(function(q){return q&&!q.stab});if(mp.length>1){multiProps(d,mp);return}}const p=byId(sel[0]);if(!p)return;
   const nm=el('input');nm.value=p.name;nm.oninput=function(){p.name=nm.value;save()};nm.onchange=function(){renderParts()};
   const col=el('input');col.type='color';col.value=p.color;col.oninput=function(){avTouch(p);p.color=col.value;M[p.id].material.color.set(col.value);hl();save()};
-  d.append(lab('Name (arms must be Rarm and Larm)',nm),lab('Material',matSel(p.mat,function(k){setMat(p,k);all()})),lab('Color',col),vec('Position',p.pos,true),vec('Size',p.size,false));
-  if(!p.stab)trAll(d,[p],'Transparency');
-  if(!p.parent){const c=el('input');c.type='checkbox';c.checked=!!p.movable;c.onchange=function(){p.movable=c.checked;save()};const l=el('label','','Movable (push it with your character)');l.append(c);d.append(l);
-    const c2=el('input');c2.type='checkbox';c2.checked=!p.nocol;c2.onchange=function(){if(c2.checked)delete p.nocol;else p.nocol=true;save()};const l2=el('label','','Collision (solid: blocks your character)');l2.append(c2);d.append(l2);{const px={get fr(){return p.fr==null?1:p.fr},set fr(v){if(v===1)delete p.fr;else p.fr=v}};slider(d,'Friction (0 ice, 1 normal, 3+ grippy)',px,'fr',0,5,.05,function(v){return (+v).toFixed(2)})}}
-  else d.append(el('p','note','Welded: moves with the part it is welded to.'));if((!p.av||p.acc)&&!p.sm&&!p.stab&&p.shape!=='mesh'&&p.shape!=='union'){const ss=el('select');[['box','Block'],['cyl','Cylinder'],['sphere','Sphere'],['wedge','Triangle']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ss.append(op)});ss.value=p.shape||'box';ss.onchange=function(){if(ss.value==='box')delete p.shape;else p.shape=ss.value;all()};d.append(lab('Shape',ss))}
+  d.append(lab('Name (arms must be Rarm and Larm)',nm));
+  {const sA=sect(d,'Appearance');sA.append(lab('Material',matSel(p.mat,function(k){setMat(p,k);all()})),lab('Color',col));if(!p.stab){shineAll(sA,[p]);trAll(sA,[p],'Transparency')}
+   const sT=sect(d,'Position & size');sT.append(vec('Position',p.pos,true),vec('Size',p.size,false))}
+  const sP=sect(d,'Physics');
+  if(!p.parent){const c=el('input');c.type='checkbox';c.checked=!!p.movable;c.onchange=function(){p.movable=c.checked;save()};const l=el('label','','Movable (push it with your character)');l.append(c);sP.append(l);
+    const c2=el('input');c2.type='checkbox';c2.checked=!p.nocol;c2.onchange=function(){if(c2.checked)delete p.nocol;else p.nocol=true;save()};const l2=el('label','','Collision (solid: blocks your character)');l2.append(c2);sP.append(l2);{const px={get fr(){return p.fr==null?1:p.fr},set fr(v){if(v===1)delete p.fr;else p.fr=v}};slider(sP,'Friction (0 ice, 1 normal, 3+ grippy)',px,'fr',0,5,.05,function(v){return (+v).toFixed(2)})}}
+  else sP.append(el('p','note','Welded: moves with the part it is welded to.'));if((!p.av||p.acc)&&!p.sm&&!p.stab&&p.shape!=='mesh'&&p.shape!=='union'){const ss=el('select');[['box','Block'],['cyl','Cylinder'],['sphere','Sphere'],['wedge','Triangle']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ss.append(op)});ss.value=p.shape||'box';ss.onchange=function(){if(ss.value==='box')delete p.shape;else p.shape=ss.value;all()};d.append(lab('Shape',ss))}
   if(p.shape==='mesh')meshProps(d,p);
   if(!p.stab&&(p.acc||(!p.av&&!p.parent&&!p.model))){const as=el('select');[['','Not an accessory'],['hat','Hat (top of the head)'],['face','Face accessory (front of the head)'],['neck','Neck (where the head meets the body)'],['back','Back (on the back)']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];as.append(op)});
     as.value=p.acc||'';
@@ -3343,7 +3380,7 @@ addEventListener('keydown',function(e){if(!stOk()||e.repeat&&e.code==='End')retu
   let v=[0,0];if(e.key==='ArrowUp')v=fw;else if(e.key==='ArrowDown')v=[-fw[0],-fw[1]];else if(e.key==='ArrowRight')v=rt;else v=[-rt[0],-rt[1]];
   e.preventDefault();nudgeSel(v[0]*st,0,v[1]*st)});
 (function(){const w=$('s-parts');
-  const bar=el('div');bar.id='st-bar';bar.style.cssText='display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin:4px 0 8px';
+  const bar=el('div');bar.id='st-bar';bar.className='tgrp';bar.append(el('span','tgl','Snap'));
   const sl=el('select','btn ghost small');sl.title='Snap size for moving parts (hold Alt while dragging to move freely)';
   [['0','Snap: Off'],['.1','Snap: 0.1'],['.25','Snap: 0.25'],['.5','Snap: 0.5'],['1','Snap: 1'],['2','Snap: 2'],['4','Snap: 4']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];sl.append(op)});
   sl.value=String(SNP);if(sl.value!==String(SNP)){const op=el('option','','Snap: '+SNP);op.value=String(SNP);sl.append(op);sl.value=String(SNP)}
@@ -3351,7 +3388,7 @@ addEventListener('keydown',function(e){if(!stOk()||e.repeat&&e.code==='End')retu
   [['Drop','Drop the selection onto whatever is under it (End)',dropSel],['Align X','Line selected parts up on X with the first one you selected',function(){alignSel(0)}],['Align Y','Line selected parts up on Y with the first one you selected',function(){alignSel(1)}],['Align Z','Line selected parts up on Z with the first one you selected',function(){alignSel(2)}]].forEach(function(b){
     const bt=el('button','btn ghost small',b[0]);bt.type='button';bt.title=b[1];bt.onclick=function(){if(stOk()||!playing&&!running&&!animOn()&&!rigOn)b[2]();this.blur()};bar.append(bt)});
   ['pointerdown','mousedown'].forEach(function(n){bar.addEventListener(n,function(e){e.stopPropagation()})});
-  const pm=$('p-msg');if(pm&&pm.parentNode===w)pm.after(bar);else w.prepend(bar)})();
+  const pm=$('p-msg');if(pm&&pm.parentNode===w)pm.before(bar);else w.prepend(bar)})();
 addEventListener('keydown',function(e){const a=document.activeElement;if(VIEWONLY||document.getElementById('shome')||!edArea||playing||running||animOn()||(a&&(/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a.isContentEditable)))return;
   const ctl=e.ctrlKey||e.metaKey;
   if(ctl&&e.code==='KeyG'){e.preventDefault();if(e.repeat)return;if(e.altKey)ungroup();else if(e.shiftKey)unionMake();else group();return}
@@ -5003,7 +5040,18 @@ function renderParts(){const l=$('p-list');l.replaceChildren();
     else if(s.k==='scripts'){P.scripts.forEach(function(sc){scrRow(sc,1,true)});if(!P.scripts.length)plain('(no scripts yet)',go)}
     else if(s.k==='itemservice'){itemsL().forEach(function(it){plain(it.name,go,'⚔','#e0a82e')});if(!itemsL().length)plain('(no items yet)',go)}
     else if(s.k==='assets'){const im=Object.keys(P.assets.images),au=Object.keys(P.assets.audio),ms=Object.keys(P.assets.meshes||{});im.forEach(function(n){plain(n,go,'\u25A7','#2f78d0')});au.forEach(function(n){plain(n,go,'\u266A','#a3a31c')});ms.forEach(function(n){plain(n,go,'\u25C8','#8a5cf6')});if(!im.length&&!au.length&&!ms.length)plain('(nothing uploaded yet)',go)}});
+  try{xFilter()}catch(e){}
   props();joints();try{renderGui()}catch(e){}}
+/* Explorer search: shows the rows whose name matches (and the folders / models they sit in) */
+let xFiltOn=false;
+function xOpenAll(v){P.models.forEach(function(m){openM[m.id]=v});(P.folders||[]).forEach(function(f){openF[f.id]=v});SV.forEach(function(z){if(EXP.indexOf(z.k)>=0)openS[z.k]=v||z.k==='world'})}
+function xFilter(){const f=$('p-find'),q=((f&&f.value)||'').trim().toLowerCase(),l=$('p-list');if(!l)return;const rows=Array.from(l.children);rows.forEach(function(r){r.hidden=false});if(!q)return;
+  const dp=function(r){return +r.style.getPropertyValue('--d')||0},keep=rows.map(function(){return false});
+  rows.forEach(function(r,i){const n=r.querySelector('.nm');if(r.classList.contains('svc')||!n||n.textContent.toLowerCase().indexOf(q)<0)return;keep[i]=true;let d=dp(r);for(let j=i-1;j>=0&&d>0;j--){if(dp(rows[j])<d){keep[j]=true;d=dp(rows[j])}}});
+  rows.forEach(function(r,i){if(!r.classList.contains('svc'))r.hidden=!keep[i]})}
+$('p-find').oninput=function(){const on=!!this.value.trim();if(on&&!xFiltOn)xOpenAll(true);xFiltOn=on;renderParts()};
+$('p-exp').onclick=function(){xOpenAll(true);renderParts()};$('p-col').onclick=function(){xOpenAll(false);renderParts()};
+
 
 /* Play camera: it never goes through solid parts (it slides in at once and eases back out), and zooming all the way in is first person */
 function camLimit(fx,fy,fz,f,want){
