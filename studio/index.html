@@ -773,6 +773,8 @@ const BD={
  setimage:{c:'lk',l:'set image of this object to _',a:['none'],dd:{0:'img'},tip:'Puts a picture from Assets on the object this script belongs to (pick the picture, or none to take it off). It goes back to the part setting when the game restarts. Put the script on an object with the + next to it in the Explorer.'},
  lighting:{c:'lk',l:'set lighting to _',a:['realistic'],dd:{0:'light'},tip:'Changes the lighting of the whole game. Pick one from the list: Realistic (soft blue haze, soft shadows, film-like colours), Cinematic, Sunny, Sunset, Night, Foggy, Spooky or Vivid colours. Default puts the normal lighting back. It changes the time of day, sky colour, fog, light colour, shadows and colour tint together. It also changes the sky: every lighting has its own built-in skybox (stars at night, a glowing horizon at sunset ...) and its own sun, moon and clouds (a big orange sun and glowing pink clouds at sunset, a huge purple moon and dark violet clouds when spooky ...). If you upload images ending in the lighting name (SkyboxLsunset, SkyboxRsunset ... plus SunSunset or MoonNight), those are used instead. It goes back to default when the game restarts.'},
  skybox:{c:'lk',l:'set skybox to _',a:['default'],dd:{0:'skybox'},tip:'Changes the sky. Upload images under Assets named SkyboxL (left), SkyboxR (right), SkyboxF (front), SkyboxBa (back), SkyboxT (top) and SkyboxBo (bottom): images with exactly these names are the default sky. Images with something after the letters (SkyboxL1, SkyboxR1 ...) are NOT used until a block picks them: pick 1 to switch every side ending in 1 at once, or pick one image to change just that side. default goes back to the plain names and none removes the skybox. It goes back to the default when the game restarts. Using this block turns off the built-in sky of the lighting until the next set lighting block.'},
+ visualize:{c:'lk',l:'visualize _ to _',a:['Part1','Part2'],dd:{0:'partn',1:'partn'},tip:'Turns the first part into a window (a portal) that shows the place where the second part is. Walk around the first part and the picture moves like a real window. You see what is behind the second part, so turn the second part to face the way you want to look. The second part itself is not drawn inside the picture. It only draws the part of the screen the window covers, only when it is on screen and within about 140 studs, and lowers its own quality if the game slows down. Up to 4 parts can do this at once. Press Stop and everything goes back.'},
+ unvisualize:{c:'lk',l:'stop visualizing _',a:['Part1'],dd:{0:'partn'},tip:'Turns a part that was set up with visualize back into a normal part.'},
  transparency:{c:'lk',l:'set transparency to _',a:['0.5'],tip:'Makes the object this script belongs to see-through: 0 is solid, 0.5 is half see-through, 1 is invisible. With no object it changes your own character. It goes back to the part setting when the game restarts.'},
  wait:{c:'ct',l:'wait _ secs',a:['1']},
  repeat:{c:'ct',l:'repeat _',a:['4'],k:1},
@@ -1028,7 +1030,7 @@ async function tpGame(id){if(TPBUSY)return;
 function ddSel(b,i,kind,ro){
   if(ro){const n=el('input');n.value=b.a[i];n.readOnly=true;fit(n);return n}
   const s=el('select','ddsel');s.title=kind==='var'?'Pick a variable, or make a new one':'';
-  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='img'?[['none','none']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})):kind==='guipart'?[['background','background'],['text','text'],['border','border']]:kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='ease'?EASEOPT.slice():kind==='tset'?TSETOPT.slice():kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='light'?LIGHTOPT.slice():kind==='skybox'?skyOpts():kind==='mygame'?myGames():kind==='bool'?[['true','true'],['false','false']]:kind==='spawn'?P.parts.filter(function(q){return q.spawn&&!q.parent}).map(function(q){return [q.name,q.name]}):kind==='gp'?gpList().map(function(g){return [g.name,g.name]}):kind==='item'?itemsL().map(function(i){return [i.name,i.name]}):varList().map(function(v){return [v,v]});
+  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='img'?[['none','none']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})):kind==='guipart'?[['background','background'],['text','text'],['border','border']]:kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='ease'?EASEOPT.slice():kind==='tset'?TSETOPT.slice():kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='light'?LIGHTOPT.slice():kind==='skybox'?skyOpts():kind==='mygame'?myGames():kind==='bool'?[['true','true'],['false','false']]:kind==='partn'?(function(){const seen={},r=[];P.parts.forEach(function(q){if(q.av||q.stab||seen[q.name])return;seen[q.name]=1;r.push([q.name,q.name])});return r})():kind==='spawn'?P.parts.filter(function(q){return q.spawn&&!q.parent}).map(function(q){return [q.name,q.name]}):kind==='gp'?gpList().map(function(g){return [g.name,g.name]}):kind==='item'?itemsL().map(function(i){return [i.name,i.name]}):varList().map(function(v){return [v,v]});
     if(kind==='item'&&o.length&&!o.some(function(q){return q[0]===String(b.a[i])})){b.a[i]=o[0][0];save()}
     if(kind==='item'&&!o.length)o=[[String(b.a[i]),'(make an item first)']];
     if(kind==='mygame'&&!o.length)o=[[String(b.a[i]),'(save a game of yours first)']];
@@ -1039,7 +1041,7 @@ function ddSel(b,i,kind,ro){
     if(kind==='var'){const nw=el('option','','\uFF0B New variable\u2026');nw.value='\u0001new';s.append(nw)}
     s.value=cur};
   fill();
-  s.onpointerdown=function(e){e.stopPropagation();if(kind==='mygame'||kind==='var'||kind==='gui'||kind==='guit'||kind==='img'||kind==='item'||kind==='spawn'||kind==='skybox'||kind==='gp')fill()};
+  s.onpointerdown=function(e){e.stopPropagation();if(kind==='partn'||kind==='mygame'||kind==='var'||kind==='gui'||kind==='guit'||kind==='img'||kind==='item'||kind==='spawn'||kind==='skybox'||kind==='gp')fill()};
   s.onchange=function(){
     if(s.value==='\u0001new'){newVarDlg(function(v){if(v){b.a[i]=v;save();rend();renderParts()}else fill()});return}
     b.a[i]=s.value;reser();save();view()};
@@ -1257,7 +1259,7 @@ function dEnd(e){removeEventListener('pointermove',dMoveRaf);dEv=null;if(dRaf){c
 
 
 /* BricBloc as text */
-const KW={tpgame:'teleport to game',playrig:'play animation on rig',riggear:'put item in hand of rig',rigungear:'take item out of rig hand',lighting:'set lighting',skybox:'set skybox to',spawnon:'turn on spawnpoint',spawnrep:'replace current spawnpoint with',spawnoff:'turn off spawnpoint',giveattr:'give attribute',pdset:'set player saved data',pdchange:'change player saved data',pdget:'get player saved data',pdadditem:'put in saved inventory',pdremitem:'take out of saved inventory',pdsave:'save player data',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',friction:'set friction',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',ragdollex:'set ragdoll exaggeration',playercolon:'enable player collision',playercoloff:'disable player collision',fov:'set camera fov',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',setrig:'set player to rig',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
+const KW={unvisualize:'stop visualizing',tpgame:'teleport to game',playrig:'play animation on rig',riggear:'put item in hand of rig',rigungear:'take item out of rig hand',lighting:'set lighting',skybox:'set skybox to',spawnon:'turn on spawnpoint',spawnrep:'replace current spawnpoint with',spawnoff:'turn off spawnpoint',giveattr:'give attribute',pdset:'set player saved data',pdchange:'change player saved data',pdget:'get player saved data',pdadditem:'put in saved inventory',pdremitem:'take out of saved inventory',pdsave:'save player data',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',friction:'set friction',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',ragdollex:'set ragdoll exaggeration',playercolon:'enable player collision',playercoloff:'disable player collision',fov:'set camera fov',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',setrig:'set player to rig',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){clearTimeout(view._t);view._t=setTimeout(view0,250)}
 function view0(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
@@ -1474,6 +1476,8 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
     case'voidh':{const v=Number(val(a[0],S));if(isFinite(v))S.voidY=Math.max(-1e6,Math.min(1e6,v));break}
     case'fov':S.fov=Math.max(30,Math.min(120,n(0)));break;
     case'skybox':skySet(String(a[0]).trim());break;
+    case'visualize':vzStart(a[0],a[1],S);break;
+    case'unvisualize':vzStop(a[0],S);break;
     case'lighting':lightSet(String(val(a[0],S)).trim());break;
     case'shiftlockon':S.sla=true;break;
     case'shiftlockoff':S.sla=false;S.sl=false;break;
@@ -5236,6 +5240,94 @@ function cullTick(){
     CUS.copy(g.boundingSphere).applyMatrix4(m.matrixWorld);CUS.radius+=4;/* extra room, because positions are from the last drawn frame */
     let hide=!CUF.intersectsSphere(CUS);if(hide&&m.castShadow&&CUS.center.distanceTo(cp)-CUS.radius<60)hide=false;
     if(hide){if(m.visible){m.visible=false;CULLED.add(m)}}else if(CULLED.has(m)){m.visible=true;CULLED.delete(m)}})}
+/* ===== Visualize: "visualize A to B" turns part A into a window (a portal) onto the place where part B is.
+   A second camera stands where the player would stand if A were at B's spot, and what it sees is painted onto A in screen space,
+   so the picture moves like a real window when you walk around. To keep it cheap: the second camera only draws the part of the screen
+   the window covers (a cut-out of the view, so most of the world is skipped), nothing is drawn when the window is off screen or far away,
+   and if the game slows down the picture is drawn smaller, then less often. At most VZMAX windows at once. ===== */
+let VZ={};const VZMAX=4,VZDIST=140,VZRTW=1280,VZRTH=1024;
+const vzGov={q:.75,skip:1,ema:16,t:0,n:0,f:0};
+const vzCam=new THREE.PerspectiveCamera(70,1,.5,1500),vzSz=new THREE.Vector2(),vzFr=new THREE.Frustum(),vzPM=new THREE.Matrix4(),vzSph=new THREE.Sphere(),
+  vzA=new THREE.Matrix4(),vzB=new THREE.Matrix4(),vzAi=new THREE.Matrix4(),vzX=new THREE.Matrix4(),vzP=new THREE.Vector3(),vzQ=new THREE.Quaternion(),vzS=new THREE.Vector3(),
+  vzOne=new THREE.Vector3(1,1,1),vzN=new THREE.Vector3(),vzC=new THREE.Vector3(),vzD=new THREE.Vector3(),vzV=new THREE.Vector3(),vzV2=new THREE.Vector3(),vzPlane=new THREE.Plane();
+function vzFind(a,S){const by=function(nm){nm=String(nm).trim().toLowerCase();return nm?(P.parts.find(function(p){return !p.av&&String(p.name).toLowerCase()===nm})||null):null},raw=String(a==null?'':a).trim();
+  return by(raw)||by(String(val(raw,S)))}
+function vzStart(n1,n2,S){const A=vzFind(n1,S),B=vzFind(n2,S);
+  if(!A){log('Error: visualize cannot find a part named "'+String(n1).trim()+'"');return}
+  if(!B){log('Error: visualize cannot find a part named "'+String(n2).trim()+'"');return}
+  if(A.id===B.id){log('Error: visualize needs two different parts');return}
+  if(VZ[A.id]){VZ[A.id].b=B.id;return}
+  if(Object.keys(VZ).length>=VZMAX){log('Error: only '+VZMAX+' parts can visualize at once (each one draws the world again)');return}
+  VZ[A.id]={a:A.id,b:B.id,rt:null,mat:null,ov:null}}
+function vzStop(n1,S){const A=vzFind(n1,S);if(!A||!VZ[A.id])return;vzFree(VZ[A.id]);delete VZ[A.id]}
+function vzFree(z){try{const m=M[z.a];if(m&&m.userData.vzOv){m.remove(m.userData.vzOv);delete m.userData.vzOv}}catch(e){}
+  try{if(z.rt)z.rt.dispose()}catch(e){}try{if(z.mat)z.mat.dispose()}catch(e){}z.rt=null;z.mat=null;z.ov=null}
+function vzClear(){Object.keys(VZ).forEach(function(k){vzFree(VZ[k])});VZ={}}
+/* One picture buffer per window, made once. Each frame only the corner of it that is needed gets drawn. */
+function vzTarget(z){if(!z.rt)z.rt=new THREE.WebGLRenderTarget(VZRTW,VZRTH,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat,depthBuffer:true,stencilBuffer:false,generateMipmaps:false});return z.rt}
+/* The picture sits on a slightly larger copy of the part, so the part itself is never changed (and nothing breaks when it is rebuilt: the copy is simply made again) */
+function vzSkin(z,m){
+  if(!z.mat){z.mat=new THREE.ShaderMaterial({uniforms:{tMap:{value:vzTarget(z).texture},uRect:{value:new THREE.Vector4(0,0,1,1)},uFill:{value:new THREE.Vector2(1,1)},uHalf:{value:new THREE.Vector2(0,0)}},
+    vertexShader:'void main(){gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+    fragmentShader:'uniform sampler2D tMap;uniform vec4 uRect;uniform vec2 uFill;uniform vec2 uHalf;void main(){vec2 uv=clamp((gl_FragCoord.xy-uRect.xy)/uRect.zw,0.0,1.0)*uFill;uv=clamp(uv,uHalf,uFill-uHalf);gl_FragColor=vec4(texture2D(tMap,uv).rgb,1.0);}',
+    polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+    z.mat.color=new THREE.Color(1,1,1);z.mat.emissive=new THREE.Color(0,0,0)/* so code that tints every part does not trip over it */}
+  let ov=m.userData.vzOv;
+  if(!ov||ov.parent!==m){ov=new THREE.Mesh(m.geometry,z.mat);ov.scale.setScalar(1.004);ov.castShadow=false;ov.receiveShadow=false;ov.renderOrder=1;m.add(ov);m.userData.vzOv=ov}
+  else if(ov.geometry!==m.geometry)ov.geometry=m.geometry;
+  z.ov=ov}
+/* The box of screen pixels (top-left origin) the part covers. If the camera is right up against it, that is the whole screen. */
+function vzRectOf(m,W,H){const g=m.geometry;if(!g.boundingBox)g.computeBoundingBox();const bb=g.boundingBox;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(let i=0;i<8;i++){vzV.set(i&1?bb.max.x:bb.min.x,i&2?bb.max.y:bb.min.y,i&4?bb.max.z:bb.min.z).multiplyScalar(1.01).applyMatrix4(m.matrixWorld);
+    vzV2.copy(vzV).applyMatrix4(camera.matrixWorldInverse);if(vzV2.z>-camera.near*1.5)return {x:0,y:0,w:W,h:H};
+    vzV.project(camera);x0=Math.min(x0,vzV.x);x1=Math.max(x1,vzV.x);y0=Math.min(y0,vzV.y);y1=Math.max(y1,vzV.y)}
+  const px0=Math.max(0,Math.floor((x0*.5+.5)*W-4)),px1=Math.min(W,Math.ceil((x1*.5+.5)*W+4)),py0=Math.max(0,Math.floor((1-(y1*.5+.5))*H-4)),py1=Math.min(H,Math.ceil((1-(y0*.5+.5))*H+4));
+  return {x:px0,y:py0,w:px1-px0,h:py1-py0}}
+/* Quality governor: if frames get slow, draw the pictures smaller first, then less often. It recovers by itself when the game speeds up again. */
+function vzGovern(){const t=performance.now(),d=t-vzGov.t;vzGov.t=t;if(d>0&&d<250)vzGov.ema=vzGov.ema*.95+d*.05;
+  if(++vzGov.f%20)return;const e=vzGov.ema;
+  if(e>22){if(vzGov.q>.3)vzGov.q=Math.max(.3,vzGov.q-.1);else if(vzGov.skip<3)vzGov.skip++}
+  else if(e<15){if(vzGov.skip>1)vzGov.skip--;else if(vzGov.q<.75)vzGov.q=Math.min(.75,vzGov.q+.05)}}
+function vzTick(){const ids=Object.keys(VZ);if(!ids.length)return;
+  if(!(playing||running)){vzClear();return}
+  renderer.getDrawingBufferSize(vzSz);const W=vzSz.x,H=vzSz.y;if(!W||!H)return;
+  vzGovern();vzGov.n++;
+  camera.updateMatrixWorld();vzPM.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);vzFr.setFromProjectionMatrix(vzPM);
+  ids.forEach(function(id,ix){const z=VZ[id],A=byId(z.a),B=byId(z.b),mA=M[z.a],mB=M[z.b];
+    if(!A||!B||!mA||!mB||!mA.geometry)return;
+    vzSkin(z,mA);
+    if(!mA.visible)return;
+    const g=mA.geometry;if(!g.boundingSphere)g.computeBoundingSphere();
+    mA.updateWorldMatrix(true,false);mB.updateWorldMatrix(true,false);
+    vzSph.copy(g.boundingSphere).applyMatrix4(mA.matrixWorld);
+    if(camera.position.distanceTo(vzSph.center)-vzSph.radius>VZDIST){z.ov.visible=false;return}/* too far to matter: show the plain part */
+    z.ov.visible=true;
+    if(!vzFr.intersectsSphere(vzSph))return;/* not on screen: keep the last picture */
+    if((vzGov.n+ix)%vzGov.skip)return;/* the game is slow: draw this one less often */
+    const rc=vzRectOf(mA,W,H);if(rc.w<8||rc.h<8)return;
+    const sc=Math.min(vzGov.q,VZRTW/rc.w,VZRTH/rc.h),rw=Math.max(8,Math.floor(rc.w*sc)),rh=Math.max(8,Math.floor(rc.h*sc));
+    mA.matrixWorld.decompose(vzP,vzQ,vzS);vzA.compose(vzP,vzQ,vzOne);
+    mB.matrixWorld.decompose(vzP,vzQ,vzS);vzB.compose(vzP,vzQ,vzOne);vzC.copy(vzP);
+    /* B's flat side: its thinnest direction is the plane of the window */
+    const sz=B.size,ax=(sz[0]<=sz[1]&&sz[0]<=sz[2])?0:(sz[1]<=sz[2]?1:2);
+    vzN.set(ax===0?1:0,ax===1?1:0,ax===2?1:0).applyQuaternion(vzQ);
+    /* the second camera: the player's camera, moved by the same amount that moves A onto B, and cut down to the window's box on screen */
+    vzX.copy(vzB).multiply(vzAi.copy(vzA).invert()).multiply(camera.matrixWorld);
+    vzX.decompose(vzCam.position,vzCam.quaternion,vzS);vzCam.scale.set(1,1,1);
+    vzCam.fov=camera.fov;vzCam.aspect=W/H;vzCam.near=camera.near;vzCam.far=Math.min(camera.far,500);
+    vzCam.setViewOffset(W,H,rc.x,rc.y,rc.w,rc.h);vzCam.updateProjectionMatrix();vzCam.updateMatrixWorld(true);
+    /* cut away everything between that camera and B, so only what is beyond B shows */
+    const side=vzN.dot(vzD.copy(vzCam.position).sub(vzC)),clip=Math.abs(side)>1e-4;
+    if(clip){vzN.multiplyScalar(side>0?-1:1);vzPlane.setFromNormalAndCoplanarPoint(vzN,vzC)}
+    const rt=vzTarget(z),hid=[],back=[];
+    rt.viewport.set(0,0,rw,rh);rt.scissor.set(0,0,rw,rh);rt.scissorTest=true;
+    const u=z.mat.uniforms;u.uRect.value.set(rc.x,H-(rc.y+rc.h),rc.w,rc.h);u.uFill.value.set(rw/VZRTW,rh/VZRTH);u.uHalf.value.set(.5/VZRTW,.5/VZRTH);
+    z.ov.visible=false;/* A does not draw itself into its own picture */
+    if(mB.visible){mB.visible=false;hid.push(mB)}/* B is only a marker */
+    CULLED.forEach(function(m){if(!m.visible&&m!==mB&&m!==mA){m.visible=true;back.push(m)}});/* things the main camera skipped may be in the other view */
+    const au=renderer.shadowMap.autoUpdate,pc=renderer.clippingPlanes,pr=renderer.getRenderTarget();
+    try{renderer.shadowMap.autoUpdate=false;renderer.clippingPlanes=clip?[vzPlane]:[];renderer.setRenderTarget(rt);renderer.render(scene,vzCam)}
+    finally{renderer.setRenderTarget(pr);renderer.clippingPlanes=pc;renderer.shadowMap.autoUpdate=au;z.ov.visible=true;hid.forEach(function(o){o.visible=true});back.forEach(function(m){m.visible=false})}})}
 function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const dt=Math.min(.1,(now-lt)/1000);qTune(dt*1000);lt=now;const f=fwd();
   if(!playing)FC=false;
   if(playing&&!FC)play(dt,f);
@@ -5261,12 +5353,12 @@ function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const
   const w=cv.clientWidth,h=fsOn?cv.clientHeight:Math.round(w*.75),pr=Math.min(window.devicePixelRatio||1,CROS?1.25:1.5)*QS;
   if(w&&h&&(cv.width!==Math.floor(w*pr)||cv.height!==Math.floor(h*pr))){renderer.setPixelRatio(pr);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
   {const fv=Math.max(30,Math.min(120,+(S.fov!=null?S.fov:P.rules.fov)||70));if(camera.fov!==fv){camera.fov=fv;camera.updateProjectionMatrix()}}
-  camera.position.set(cam.x,cam.y,cam.z);camera.lookAt(cam.x+f[0],cam.y+f[1],cam.z+f[2]);{const T=playing&&byId(P.avId);if(T)sunTick(T.pos[0]+S.x,T.pos[1]+S.h,T.pos[2]-S.y);else sunTick(cam.x+f[0]*22,Math.max(0,cam.y+f[1]*22),cam.z+f[2]*22)}skyTick(dt);try{cullTick()}catch(e){}renderer.render(scene,camera);outlinePass()}
+  camera.position.set(cam.x,cam.y,cam.z);camera.lookAt(cam.x+f[0],cam.y+f[1],cam.z+f[2]);{const T=playing&&byId(P.avId);if(T)sunTick(T.pos[0]+S.x,T.pos[1]+S.h,T.pos[2]-S.y);else sunTick(cam.x+f[0]*22,Math.max(0,cam.y+f[1]*22),cam.z+f[2]*22)}skyTick(dt);try{cullTick()}catch(e){}try{vzTick()}catch(e){console.warn('visualize',e)}renderer.render(scene,camera);outlinePass()}
 
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing);try{hotRender()}catch(e){}try{renderGui()}catch(e){}}
 function setRun(v){running=v;sync()}
-function resetWorld(){gpReset();Object.keys(GOVR).forEach(function(k){delete GOVR[k]});RUNC.clear();RUNW.clear();Object.keys(ATTR).forEach(function(k){delete ATTR[k]});Object.keys(PD).forEach(function(k){delete PD[k]});PDL=null;KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();SKYO=null;SKYAUTO=false;SKYGEN=null;LIGHTO=null;SPW={};RO={};RV={};RD={};RVY={};RY={};CO={};FRI={};TM=new Map();RAG={};RSZ={};SKIN={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts();lightStart();try{applyEnv()}catch(e){}}
+function resetWorld(){try{vzClear()}catch(e){}gpReset();Object.keys(GOVR).forEach(function(k){delete GOVR[k]});RUNC.clear();RUNW.clear();Object.keys(ATTR).forEach(function(k){delete ATTR[k]});Object.keys(PD).forEach(function(k){delete PD[k]});PDL=null;KH.clear();KP.clear();MR.clear();HL.forEach(function(st){st.down=false});HL.clear();S=fresh();SKYO=null;SKYAUTO=false;SKYGEN=null;LIGHTO=null;SPW={};RO={};RV={};RD={};RVY={};RY={};CO={};FRI={};TM=new Map();RAG={};RSZ={};SKIN={};GR={};RB={};RYAW={};for(const k in RR)delete RR[k];TW=[];for(const k in AVR)delete AVR[k];stopAudio();clearNP();aPlay=false;animPlayBtn();rebuildParts();renderParts();lightStart();try{applyEnv()}catch(e){}}
 function boot(my){reser();try{spawnHere()}catch(e){}const hs=P.scripts.filter(function(s){return BD[s[0].t].hat});
   hs.forEach(function(s){if(s[0].t==='def')my.fn[s[0].a[0].trim()]=s.slice(1)});
   setTimeout(function(){if(my===S&&(running||playing))firePJ('pjoin',P.player.name)},120);
@@ -5431,7 +5523,7 @@ function dropOn(d,t){if(!dropOK(d,t))return;const ps=dragParts(d);let msg0='';
    (only the position of the block is sent, never code, so nothing can be injected). "client side" blocks only ever run on the computer that reached them,
    and are skipped on the other players when they replay a server side block. */
 const LOCALH={gphas:1,standstill:1,landed:1,touched:1,clicked:1,key:1,keydrop:1,keyheld:1,keyrel:1,chat:1,guiclick:1,guithisclick:1,itemhold:1,itemunhold:1,screenclick:1};
-const RSKIP={move:1,turn:1,goto:1,jump:1,animate:1,say:1,color:1,walkanim:1,jumpanim:1,idleanim:1,fallanim:1,holdanim:1,holdwalkanim:1,fov:1,shiftlockon:1,shiftlockoff:1,pspeed:1,lighting:1,playercol:1,ragdollex:1,playercolon:1,playercoloff:1,tweenset:1,
+const RSKIP={visualize:1,unvisualize:1,move:1,turn:1,goto:1,jump:1,animate:1,say:1,color:1,walkanim:1,jumpanim:1,idleanim:1,fallanim:1,holdanim:1,holdwalkanim:1,fov:1,shiftlockon:1,shiftlockoff:1,pspeed:1,lighting:1,playercol:1,ragdollex:1,playercolon:1,playercoloff:1,tweenset:1,
   givebadge:1,awardbadge:1,giveattr:1,removeattr:1,giveitem:1,removeitem:1,accadd:1,accrem:1,accwear:1,accstrip:1,kick:1,ban:1,addplayer:1,randplayer:1,getcount:1,print:1,setvol:1};
 const RSELF={tweensize:1,tweentrans:1,tweencolor:1,transparency:1,kill:1,pushparent:1};
 const SSVARS=['toucher','clicker','speaker','message','joiner','leaver'];
