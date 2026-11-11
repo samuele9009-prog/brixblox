@@ -5257,10 +5257,12 @@ function vzStart(n1,n2,S){const A=vzFind(n1,S),B=vzFind(n2,S);
   if(!A){log('Error: visualize cannot find a part named "'+String(n1).trim()+'"');return}
   if(!B){log('Error: visualize cannot find a part named "'+String(n2).trim()+'"');return}
   if(A.id===B.id){log('Error: visualize needs two different parts');return}
-  if(VZ[A.id]){VZ[A.id].b=B.id;return}
-  if(Object.keys(VZ).length>=VZMAX){log('Error: only '+VZMAX+' parts can visualize at once (each one draws the world again)');return}
-  VZ[A.id]={a:A.id,b:B.id,rt:null,mat:null,ov:null}}
-function vzStop(n1,S){const A=vzFind(n1,S);if(!A||!VZ[A.id])return;vzFree(VZ[A.id]);delete VZ[A.id]}
+  if(VZ[A.id]){VZ[A.id].b=B.id;delete VZ[A.id].rev;return}
+  if(Object.keys(VZ).filter(function(k){return !VZ[k].rev}).length>=VZMAX){log('Error: only '+VZMAX+' parts can visualize at once (each one draws the world again)');return}
+  VZ[A.id]={a:A.id,b:B.id,rt:null,mat:null,ov:null};
+  /* two-way: the other part is a window back onto this one, so when you look behind you after stepping through, you see where you came from (not a world that suddenly changed) */
+  if(!VZ[B.id])VZ[B.id]={a:B.id,b:A.id,rt:null,mat:null,ov:null,rev:A.id}}
+function vzStop(n1,S){const A=vzFind(n1,S);if(!A||!VZ[A.id])return;vzFree(VZ[A.id]);delete VZ[A.id];Object.keys(VZ).forEach(function(k){if(VZ[k].rev===A.id){vzFree(VZ[k]);delete VZ[k]}})}
 function vzFree(z){try{const m=M[z.a];if(m&&m.userData.vzOv){m.remove(m.userData.vzOv);delete m.userData.vzOv}}catch(e){}
   try{if(z.rt)z.rt.dispose()}catch(e){}try{if(z.mat)z.mat.dispose()}catch(e){}z.rt=null;z.mat=null;z.ov=null}
 function vzClear(){VF=null;Object.keys(VZ).forEach(function(k){vzFree(VZ[k])});VZ={}}
