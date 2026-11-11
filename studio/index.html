@@ -1011,7 +1011,7 @@ async function tpGame(id){if(TPBUSY)return;
     let d=row.data;if(typeof d!=='string')d=JSON.stringify(d);const q=JSON.parse(d);if(!q||!Array.isArray(q.scripts))throw new Error('That game could not be opened.');
     bbLoad(row.name,row.thumb);
     try{await Promise.race([sb.rpc('record_play',{p_game:String(row.id)}),new Promise(function(z){setTimeout(z,1500)})])}catch(e){}
-    store.set('brixblox-play',JSON.stringify({id:row.id,data:d,owner:row.owner_name,ownerId:row.owner_id,name:row.name,thumb:row.thumb||'',fresh:1}));
+    store.set('brixblox-play',JSON.stringify({id:row.id,data:d,owner:row.owner_name,ownerId:row.owner_id,name:row.name,fresh:1}));
     skipUnload=true;location.reload()}
   catch(e){bbLoadHide(true);TPBUSY=false;log('Error: '+String((e&&e.message)||e))}}
 function ddSel(b,i,kind,ro){
@@ -1610,8 +1610,8 @@ const hemi=new THREE.HemisphereLight(0xffffff,0x88aa88,.72);scene.add(hemi);cons
 /* Realistic soft shadows: the sun's shadow box follows the camera (or the player) so shadows stay sharp up close */
 const sunDir=new THREE.Vector3(8,14,6);
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
-sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.0005;sun.shadow.normalBias=.06;sun.shadow.radius=3;
-{const sc=sun.shadow.camera,R=40;sc.left=-R;sc.right=R;sc.top=R;sc.bottom=-R;sc.near=1;sc.far=260;sc.updateProjectionMatrix()}
+sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.bias=-.0005;sun.shadow.normalBias=.06;sun.shadow.radius=3;
+{const sc=sun.shadow.camera,R=44;sc.left=-R;sc.right=R;sc.top=R;sc.bottom=-R;sc.near=1;sc.far=260;sc.updateProjectionMatrix()}
 
 /* Realistic reflections: a soft sky-and-ground environment lights every material (metal, glass, water and polished stone reflect it) */
 let ENVOK=false,ENVK=1,ENVT=null;
@@ -1834,7 +1834,7 @@ function mkMat(p){const k=MATS[p.mat]?p.mat:'plastic',d=MATS[k],q=PBR[k]||PBR.pl
   if(d.op){m.transparent=true;m.opacity=d.op}if(k==='neon')m.emissive.set(p.color);if(p.tr>0){m.transparent=true;m.opacity=(d.op||1)*(1-Math.min(1,p.tr))}if(p.shape==='union'&&p.un){m.vertexColors=true;if(p.un.pc!==p.color)m.color.set(p.color);else m.color.set(0xffffff)}
   if(hasTex(p)){const t=imgTex(p.tex);if(t){m.map=t;m.bumpMap=null;m.color.set(0xffffff);m.vertexColors=false;if(texPng(p.tex)){m.transparent=true;m.alphaTest=.04}}}
   if(p.shine!=null&&!p.av)shineApply(m,p.shine);
-  pbrPatch(m,p.av&&!p.acc?{k:.8}:null);return m}
+  pbrPatch(m,p.av&&!p.acc?{k:.9}:null);return m}
 /* World-sized texture coordinates: each face is mapped by its dominant axis, so a tile always covers ts studs */
 function boxUV(g,ts){const ps=g.attributes.position,nm=g.attributes.normal,uv=g.attributes.uv;
   for(let i=0;i<ps.count;i++){const nx=nm.getX(i),ny=nm.getY(i),nz=nm.getZ(i),ax=Math.abs(nx),ay=Math.abs(ny),az=Math.abs(nz),x=ps.getX(i),y=ps.getY(i),z=ps.getZ(i);let u,v;
@@ -1986,7 +1986,7 @@ function depthNudge(n,base,k){n.polygonOffset=false;n.polygonOffsetFactor=0;n.po
   n.customProgramCacheKey=function(){return 'nudge0.02_0.0004'+(pb?'p2':'')};n.needsUpdate=true;return n}
 function accMat(n){n.side=THREE.DoubleSide;n.depthWrite=true;if('skinning' in n)n.skinning=false;
   if(n.isMeshStandardMaterial&&!n.userData.pbr){/* these used to skip the world's colour and tone-mapping step, which made them look dark and flat */
-    if(n.color&&n.emissive&&n.emissive.getHex()===0){n.emissive.copy(n.color).multiplyScalar(.1);if(n.map)n.emissiveMap=n.map}
+    if(n.color&&n.emissive&&n.emissive.getHex()===0){n.emissive.copy(n.color).multiplyScalar(.05);if(n.map)n.emissiveMap=n.map}
     if(ENVOK&&!n.envMap){n.envMap=ENVT;n.userData.envB=Math.max(n.userData.envB||0,.55);n.envMapIntensity=n.userData.envB*ENVK}
     pbrPatch(n,{lin:!n.userData.rawTex})}
   return depthNudge(n,0.02,0.0004)}
@@ -4612,7 +4612,7 @@ function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
   if(sig!==lxSig){lxSig=sig;
     renderer.toneMapping=L&&L.tm?THREE.ACESFilmicToneMapping:THREE.NoToneMapping;renderer.toneMappingExposure=L?L.ex:1;
     const soft=!!(L&&L.soft);renderer.shadowMap.type=soft?THREE.PCFSoftShadowMap:THREE.PCFShadowMap;
-    const ms=2048;if(sun.shadow.mapSize.x!==ms){sun.shadow.mapSize.set(ms,ms);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
+    const ms=soft?2048:1024;if(sun.shadow.mapSize.x!==ms){sun.shadow.mapSize.set(ms,ms);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
     sun.shadow.radius=soft?5:3;renderer.shadowMap.needsUpdate=true;
     scene.traverse(function(o){if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(function(m){m.needsUpdate=true})}})}
   lxEls();const g=L&&L.g;cv.style.filter=g?g.f:'';
