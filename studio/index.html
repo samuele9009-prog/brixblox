@@ -1813,8 +1813,8 @@ function pbrPatch(m,o){o=o||{};const fn=function(sh){sh.fragmentShader=sh.fragme
     .replace(/void\s+main\s*\(\s*\)\s*\{/,function(){return 'vec3 acesP(vec3 x){return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0);}\nvoid main() {'})
     .replace('#include <color_fragment>',o.lin?'#include <color_fragment>':'#include <color_fragment>\n diffuseColor.rgb=pow(max(diffuseColor.rgb,vec3(0.0)),vec3(2.2));')
     .replace('#include <emissivemap_fragment>',o.lin?'#include <emissivemap_fragment>':'#include <emissivemap_fragment>\n totalEmissiveRadiance=pow(max(totalEmissiveRadiance,vec3(0.0)),vec3(2.2));')
-    .replace('#include <encodings_fragment>',(o.fill?'gl_FragColor.rgb+=diffuseColor.rgb*'+(+o.fill).toFixed(3)+';\n':'')+(o.k?'gl_FragColor.rgb*='+(+o.k).toFixed(3)+';\n':'')+'#ifndef TONE_MAPPING\n gl_FragColor.rgb=acesP(gl_FragColor.rgb);\n#endif\n gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.0)),vec3(0.4545));')};
-  m.userData.pbr=1;m.userData.pbrFn=fn;m.onBeforeCompile=fn;m.customProgramCacheKey=function(){return 'pbr2'+(o.lin?'L':'')+(o.k?'k'+o.k:'')+(o.fill?'f'+o.fill:'')}}
+    .replace('#include <encodings_fragment>',(o.k?'gl_FragColor.rgb*='+(+o.k).toFixed(3)+';\n':'')+'#ifndef TONE_MAPPING\n gl_FragColor.rgb=acesP(gl_FragColor.rgb);\n#endif\n gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.0)),vec3(0.4545));')};
+  m.userData.pbr=1;m.userData.pbrFn=fn;m.onBeforeCompile=fn;m.customProgramCacheKey=function(){return 'pbr2'+(o.lin?'L':'')+(o.k?'k'+o.k:'')}}
 /* Shininess: 0 = dull / matte, 1 = mirror-like. Stored on the part as p.shine; a part without it keeps its material's normal look. */
 function shineDef(p){if(p.shape==='mesh')return meshShineDef(p);const q=PBR[MATS[p.mat]?p.mat:'plastic']||PBR.plastic;return Math.round(Math.max(0,Math.min(1,(1-q[0])/.95))*20)/20}
 function shineApply(m,v){v=Math.max(0,Math.min(1,+v||0));m.roughness=1-v*.95;
@@ -1987,28 +1987,22 @@ function accStatic(o){const sk=[];o.traverse(function(m){if(m.isSkinnedMesh)sk.p
    and whose slope part made thin parts seen edge-on (hair strands, glasses arms) show through the head as lines. */
 function depthNudge(n,base,k){n.polygonOffset=false;n.polygonOffsetFactor=0;n.polygonOffsetUnits=0;const pb=n.userData&&n.userData.pbrFn||null;
   n.onBeforeCompile=function(sh){if(pb)pb(sh);sh.vertexShader=sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\n{vec4 nv=mvPosition;nv.z+=0.02+(-mvPosition.z)*0.0004;gl_Position=projectionMatrix*nv;}')};
-  const pk=n.customProgramCacheKey?String(n.customProgramCacheKey()):'';n.customProgramCacheKey=function(){return 'nudge0.02_0.0004'+(pb?'p2':'')+pk};n.needsUpdate=true;return n}
-function accLin(n){/* colours are sRGB numbers like on the rig, so they are decoded exactly the same way; only a map the loader already decodes is skipped */
-  return !n.userData.rawTex&&!!(n.map&&n.map.encoding===THREE.sRGBEncoding)}
-function accStd(mt){/* Phong / Lambert / Basic items skipped the world's tone-map + encode step, so their shadows stayed dark; as Standard they go through the same pipeline as the rig */
-  if(mt.isMeshStandardMaterial)return mt;
-  const n=new THREE.MeshStandardMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0,vertexColors:!!mt.vertexColors,emissive:mt.emissive?mt.emissive.clone():new THREE.Color(0x000000),emissiveMap:mt.emissiveMap||null,normalMap:mt.normalMap||null,aoMap:mt.aoMap||null});
-  n.name=mt.name;n.roughness=.62;n.metalness=0;n.userData.envB=.35;n.userData.noEnv=1;n.envMapIntensity=.35*ENVK;return n}
+  n.customProgramCacheKey=function(){return 'nudge0.02_0.0004'+(pb?'p2':'')};n.needsUpdate=true;return n}
 function accMat(n){n.side=THREE.DoubleSide;n.depthWrite=true;if('skinning' in n)n.skinning=false;
   if(n.isMeshStandardMaterial&&!n.userData.pbr){/* these used to skip the world's colour and tone-mapping step, which made them look dark and flat */
     if(n.color&&n.emissive&&n.emissive.getHex()===0){n.emissive.copy(n.color).multiplyScalar(.05);if(n.map)n.emissiveMap=n.map}
-    if(ENVOK&&!n.envMap&&!n.userData.noEnv){n.envMap=ENVT;n.userData.envB=Math.max(n.userData.envB||0,.55);n.envMapIntensity=n.userData.envB*ENVK}
-    pbrPatch(n,{lin:accLin(n),k:.9})}
+    if(ENVOK&&!n.envMap){n.envMap=ENVT;n.userData.envB=Math.max(n.userData.envB||0,.55);n.envMapIntensity=n.userData.envB*ENVK}
+    pbrPatch(n,{lin:!n.userData.rawTex})}
   return depthNudge(n,0.02,0.0004)}
 function accFreeze(c,w){c.traverse(function(o){o.updateMatrix();o.matrixAutoUpdate=false});w.updateMatrix();w.matrixAutoUpdate=false}
 function accTex(url,flip){const k=(flip?'f':'n')+url;if(ACCT[k])return ACCT[k];const t=new THREE.TextureLoader().load(url);t.flipY=!flip;t.wrapS=t.wrapT=THREE.RepeatWrapping;return ACCT[k]=t}
-function shineMat(mt,k,raw){const n=mt.isMeshStandardMaterial?mt:new THREE.MeshStandardMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0});
-  n.roughness=Math.max(.1,.92-k*.8);n.metalness=0;n.userData.envB=.3+k*.9;n.envMapIntensity=n.userData.envB*ENVK;n.envMap=(ENVOK&&k>.35)?ENVT:null;pbrPatch(n,{lin:accLin(n),k:.9});n.needsUpdate=true;return n}
+function shineMat(mt,k){const n=mt.isMeshStandardMaterial?mt:new THREE.MeshStandardMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0});
+  n.roughness=Math.max(.1,.92-k*.8);n.metalness=0;n.userData.envB=.3+k*.9;n.envMapIntensity=n.userData.envB*ENVK;n.envMap=(ENVOK&&k>.35)?ENVT:null;pbrPatch(n);n.needsUpdate=true;return n}
 function accMake(slot,id,hs){/* hs: head height scale, so items still fit a resized head */
   const e=ACCI[id];if(!e||!e.obj)return null;const it=e.it,sl=ACCS[slot];if(!sl)return null;
   const c=e.obj.clone(true);c.position.set(0,0,0);
   c.traverse(function(m){if(!m.isMesh)return;m.castShadow=false;m.frustumCulled=false;/* own copies of the materials: hiding your avatar in first person must not hide anyone else's item */
-    const ap=function(mt){let n=accStd(mt.clone());if(it.tex){n.userData.rawTex=true;n.map=accTex(it.tex,it.tf);if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true}if(it.sh!=null&&isFinite(it.sh))n=shineMat(n,Math.max(0,Math.min(100,+it.sh))/100,!!it.tex);return accMat(n)};
+    const ap=function(mt){let n=mt.clone();if(it.tex){n.userData.rawTex=true;n.map=accTex(it.tex,it.tf);if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true}if(it.sh!=null&&isFinite(it.sh))n=shineMat(n,Math.max(0,Math.min(100,+it.sh))/100);return accMat(n)};
     m.material=Array.isArray(m.material)?m.material.map(ap):ap(m.material);if([].concat(m.material).some(function(t){return t.transparent}))m.renderOrder=-1});
   c.updateMatrixWorld(true);
   const bx=new THREE.Box3().setFromObject(c),sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),mx=Math.max(sz.x,sz.y,sz.z);
@@ -4625,7 +4619,7 @@ function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
     const ms=soft?2048:1024;if(sun.shadow.mapSize.x!==ms){sun.shadow.mapSize.set(ms,ms);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
     sun.shadow.radius=soft?5:3;renderer.shadowMap.needsUpdate=true;
     scene.traverse(function(o){if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(function(m){m.needsUpdate=true})}})}
-  lxEls();const g=L&&L.g;cv.style.filter=g?g.f:'saturate(.88) brightness(.93)';
+  lxEls();const g=L&&L.g;cv.style.filter=g?g.f:'saturate(.8) brightness(.95)';
   if(lxT){
     if(E.haze){lxT.style.display='block';lxT.style.background=E.haze;lxT.style.opacity=E.hazek==null?.22:E.hazek;lxT.style.mixBlendMode='normal'}
     else if(g&&g.ta>0){lxT.style.display='block';lxT.style.background=g.tint;lxT.style.opacity=g.ta*3.2>1?1:g.ta*3.2;lxT.style.mixBlendMode=g.tb}else lxT.style.display='none';
