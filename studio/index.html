@@ -1838,7 +1838,7 @@ function mkMat(p){const k=MATS[p.mat]?p.mat:'plastic',d=MATS[k],q=PBR[k]||PBR.pl
   if(d.op){m.transparent=true;m.opacity=d.op}if(k==='neon')m.emissive.set(p.color);if(p.tr>0){m.transparent=true;m.opacity=(d.op||1)*(1-Math.min(1,p.tr))}if(p.shape==='union'&&p.un){m.vertexColors=true;if(p.un.pc!==p.color)m.color.set(p.color);else m.color.set(0xffffff)}
   if(hasTex(p)){const t=imgTex(p.tex);if(t){m.map=t;m.bumpMap=null;m.color.set(0xffffff);m.vertexColors=false;if(texPng(p.tex)){m.transparent=true;m.alphaTest=.04}}}
   if(p.shine!=null&&!p.av)shineApply(m,p.shine);
-  pbrPatch(m,p.av&&!p.acc?{k:.95}:null);return m}
+  pbrPatch(m,p.av&&!p.acc?{k:.86}:null);return m}
 /* World-sized texture coordinates: each face is mapped by its dominant axis, so a tile always covers ts studs */
 function boxUV(g,ts){const ps=g.attributes.position,nm=g.attributes.normal,uv=g.attributes.uv;
   for(let i=0;i<ps.count;i++){const nx=nm.getX(i),ny=nm.getY(i),nz=nm.getZ(i),ax=Math.abs(nx),ay=Math.abs(ny),az=Math.abs(nz),x=ps.getX(i),y=ps.getY(i),z=ps.getZ(i);let u,v;
@@ -2000,7 +2000,7 @@ function accMat(n){n=accStd(n);n.side=THREE.DoubleSide;n.depthWrite=true;if('ski
     /* The old code skipped the sRGB->linear step for every non-custom texture, so the colour and texture came out washed to white. Decode like the rig does:
        only a texture the loader already decoded (sRGB encoding) counts as linear, and then the colour is decoded here instead. */
     const dec=!!(n.map&&n.map.encoding===THREE.sRGBEncoding&&!n.userData.rawTex);if(dec&&n.color)n.color.convertSRGBToLinear();
-    pbrPatch(n,{lin:dec,k:.95})}
+    pbrPatch(n,{lin:dec,k:.86})}
   return depthNudge(n,0.02,0.0004)}
 function accFreeze(c,w){c.traverse(function(o){o.updateMatrix();o.matrixAutoUpdate=false});w.updateMatrix();w.matrixAutoUpdate=false}
 function accTex(url,flip){const k=(flip?'f':'n')+url;if(ACCT[k])return ACCT[k];const t=new THREE.TextureLoader().load(url);t.flipY=!flip;t.wrapS=t.wrapT=THREE.RepeatWrapping;return ACCT[k]=t}
@@ -4634,7 +4634,7 @@ function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
     if(g&&g.vig>0){lxV.style.display='block';lxV.style.background='radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(0,0,0,'+g.vig+') 100%)'}else lxV.style.display='none'}}
 let fogOn=false;
 function applyEnv(){updSkyTex();const e=lightEnv(),a=(e.tod-6)/12*Math.PI,day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),c=new THREE.Color(e.sky).multiplyScalar(k);
-  scene.background=c;hemi.intensity=(.2+.34*k)*e.bright;sun.intensity=1.3*day*e.sun*e.bright;sunDir.set(Math.cos(a)*14,Math.max(5,Math.sin(a)*14),6);try{envK((.12+.88*Math.min(1,day*2.5))*Math.min(1.4,e.bright))}catch(_e){}
+  scene.background=c;hemi.intensity=(.2+.34*k)*e.bright;sun.intensity=.98*day*e.sun*e.bright;sunDir.set(Math.cos(a)*14,Math.max(5,Math.sin(a)*14),6);try{envK((.12+.88*Math.min(1,day*2.5))*Math.min(1.4,e.bright))}catch(_e){}
   const on=e.fog>0,fh=skyFogHex();scene.fog=on?new THREE.Fog(fh!==null?fh:c.getHex(),12,Math.max(30,900-e.fog*8.5)):null;
   if(on!==fogOn){fogOn=on;if(PG)PG.traverse(function(o){if(o.material)o.material.needsUpdate=true})}
   lightX()}
