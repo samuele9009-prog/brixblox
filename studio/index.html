@@ -5899,7 +5899,7 @@ function coPump(){if(!COP.ch)return;let p=COP.cq.shift();
       its.push({k:k,t:o.t,v:o.v});ks.push(k);sz+=n+k.length+20;if(its.length>=600)break}
     if(!p&&its.length){ks.forEach(function(k){COP.out.delete(k)});p={e:'b',by:COP.id,items:its}}}
   if(p){try{COP.ch.send({type:'broadcast',event:'co',payload:p})}catch(e){}}}
-setInterval(coPump,40);
+(function(){let fb=0;const go=function(){if(!fb){fb=1;setInterval(coPump,40)}};try{const w=new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},40)'],{type:'text/javascript'})));w.onmessage=coPump;w.onerror=go}catch(e){go()}})();
 function coFixNid(){if(COP.on){COP.next=Math.max(COP.next||0,P.nid||0);if(!(P.nid>=COP.next))P.nid=COP.next}}
 /* Work out what this person changed since the last sync and queue it (newest value per piece only) */
 function coDiff(){COP.tm=0;if(!COP.on||COP.joining||running||playing)return;coFixNid();
@@ -5909,8 +5909,13 @@ function coDiff(){COP.tm=0;if(!COP.on||COP.joining||running||playing)return;coFi
 function coSchedule(){if(!COP.on||COP.joining||COP.tm)return;COP.tm=setTimeout(coDiff,80)}
 function coSnapshot(to){coDiff();const m=coMap(),ks=Object.keys(m);
   COP.cq.push({e:'ss',by:COP.id,to:to,n:ks.length,hn:COP.hostName||ME.username});
-  ks.forEach(function(k){const st=COP.stamp[k];COP.cq.push.apply(COP.cq,coPieces(k,m[k],st?st.t:0,{to:to,snap:1}))});
-  COP.cq.push({e:'se',by:COP.id,to:to})}
+  /* parts used to go out one message each, one every 40 ms, so a join took as many ticks as there are parts (and a tab in the background ticks once a second or slower). Now small pieces travel together in bundles. */
+  let its=[],sz=0;const fl=function(){if(its.length){COP.cq.push({e:'sb',by:COP.id,to:to,items:its});its=[];sz=0}};
+  ks.forEach(function(k){const st=COP.stamp[k],t=st?st.t:0,v=m[k],n=v.length;
+    if(n>8000){fl();COP.cq.push.apply(COP.cq,coPieces(k,v,t,{to:to,snap:1}));return}
+    if(its.length&&sz+n>60000)fl();its.push({k:k,t:t,v:v});sz+=n+k.length+20;if(its.length>=600)fl()});
+  fl();COP.cq.push({e:'se',by:COP.id,to:to});
+  for(let q=0;q<12&&COP.cq.length;q++)coPump()}
 
 /* ---- Meshes for everyone ----
    A big mesh lives in the browser it was imported in. If this browser is missing one (different browser, cleared site data...), ask the others
@@ -5955,6 +5960,7 @@ function coRecv(p){if(!p||typeof p!=='object'||p.by===COP.id)return;if(p.to&&p.t
   switch(p.e){
     case 'need':if(COP.on&&!COP.joining&&coLeader())coSnapshot(String(p.by));break;
     case 'ss':if(COP.joining&&p.to===COP.id)coBeginJoin(p);break;
+    case 'sb':if(Array.isArray(p.items))p.items.slice(0,1000).forEach(function(it){if(it&&typeof it.k==='string')coRecvD({k:it.k,t:it.t,by:p.by,to:p.to,n:1,del:0,snap:1,s:String(it.v)})});break;
     case 'se':if(COP.joining&&p.to===COP.id&&COP.gotSS)coEndJoin();break;
     case 'end':if(!COP.host&&(COP.on||COP.joining)){const h=coMembers().find(function(x){return x.id===p.by});if(!h||h.h)coEnded()}break;
     case 'c':coAvSet(p);break;
