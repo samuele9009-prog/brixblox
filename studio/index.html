@@ -987,7 +987,7 @@ function bbLoad(name,thumb){const o=document.createElement('div');o.id='bb-load'
   const fill=document.createElement('div');fill.style.cssText='position:absolute;top:0;left:-40%;width:40%;height:100%;border-radius:3px;background:#ffc233';bar.append(fill);
   try{fill.animate([{left:'-40%'},{left:'100%'}],{duration:1100,iterations:Infinity,easing:'ease-in-out'})}catch(e){}
   const sub=document.createElement('div');sub.textContent='Loading...';sub.style.cssText='opacity:.75;font-weight:700;font-size:.95rem';
-  o.append(card,nm,bar,sub);document.body.append(o);BBL=o;BBLT=Date.now();setTimeout(function(){if(BBL===o)bbLoadHide(true)},5000)}
+  o.append(card,nm,bar,sub);document.body.append(o);try{o.animate([{opacity:1,visibility:'visible'},{opacity:0,visibility:'hidden'}],{delay:5000,duration:300,fill:'forwards'})}catch(e){}setTimeout(function(){try{o.remove()}catch(e){}if(BBL===o)BBL=null},5500);BBL=o;BBLT=Date.now();setTimeout(function(){if(BBL===o)bbLoadHide(true)},5000)}
 function bbLoadHide(now){const o=BBL;if(!o)return;BBL=null;if(now){o.remove();return}
   const wait=Math.max(0,5000-(Date.now()-BBLT));setTimeout(function(){o.style.opacity='0';setTimeout(function(){o.remove()},200)},wait)}
 var BBREADY=false,BBCHK=false;
