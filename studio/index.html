@@ -1990,14 +1990,17 @@ function depthNudge(n,base,k){n.polygonOffset=false;n.polygonOffsetFactor=0;n.po
   n.customProgramCacheKey=function(){return 'nudge0.02_0.0004'+(pb?'p2':'')};n.needsUpdate=true;return n}
 function accStd(n){/* FBX accessories arrive as Phong/Lambert; the rig uses Standard + the shared colour pipeline, so convert (keeps colour, texture, opacity) */
   if(!n||n.isMeshStandardMaterial||!(n.isMeshPhongMaterial||n.isMeshLambertMaterial))return n;
-  const s=new THREE.MeshStandardMaterial({color:n.color?n.color.clone():new THREE.Color(0xffffff),map:n.map||null,alphaMap:n.alphaMap||null,transparent:!!n.transparent,opacity:n.opacity==null?1:n.opacity,side:n.side,alphaTest:n.alphaTest||0,vertexColors:!!n.vertexColors,roughness:.5,metalness:0});
+  const s=new THREE.MeshStandardMaterial({color:n.color?n.color.clone():new THREE.Color(0xffffff),map:n.map||null,alphaMap:n.alphaMap||null,transparent:!!n.transparent,opacity:n.opacity==null?1:n.opacity,side:n.side,alphaTest:n.alphaTest||0,vertexColors:!!n.vertexColors,roughness:.42,metalness:0});
   if(n.emissive){s.emissive.copy(n.emissive);s.emissiveMap=n.emissiveMap||null}
   s.name=n.name;s.userData=Object.assign({},n.userData);return s}
 function accMat(n){n=accStd(n);n.side=THREE.DoubleSide;n.depthWrite=true;if('skinning' in n)n.skinning=false;
   if(n.isMeshStandardMaterial&&!n.userData.pbr){/* these used to skip the world's colour and tone-mapping step, which made them look dark and flat */
     if(n.color&&n.emissive&&n.emissive.getHex()===0){n.emissive.copy(n.color).multiplyScalar(0)}
-    if(ENVOK&&!n.envMap){n.envMap=ENVT;n.userData.envB=Math.max(n.userData.envB||0,.3);n.envMapIntensity=n.userData.envB*ENVK}
-    pbrPatch(n,{lin:!n.userData.rawTex})}
+    if(ENVOK&&!n.envMap){n.envMap=ENVT;n.userData.envB=.4;n.envMapIntensity=n.userData.envB*ENVK}
+    /* The old code skipped the sRGB->linear step for every non-custom texture, so the colour and texture came out washed to white. Decode like the rig does:
+       only a texture the loader already decoded (sRGB encoding) counts as linear, and then the colour is decoded here instead. */
+    const dec=!!(n.map&&n.map.encoding===THREE.sRGBEncoding&&!n.userData.rawTex);if(dec&&n.color)n.color.convertSRGBToLinear();
+    pbrPatch(n,{lin:dec,k:.95})}
   return depthNudge(n,0.02,0.0004)}
 function accFreeze(c,w){c.traverse(function(o){o.updateMatrix();o.matrixAutoUpdate=false});w.updateMatrix();w.matrixAutoUpdate=false}
 function accTex(url,flip){const k=(flip?'f':'n')+url;if(ACCT[k])return ACCT[k];const t=new THREE.TextureLoader().load(url);t.flipY=!flip;t.wrapS=t.wrapT=THREE.RepeatWrapping;return ACCT[k]=t}
