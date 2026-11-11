@@ -4613,7 +4613,7 @@ function lxEls(){if(lxT)return;const c=document.querySelector('.cvw');if(!c)retu
   [lxT,lxV].forEach(function(d){d.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:3;display:none';c.append(d)})}
 function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
   if(L){hemi.color.set(L.hs);hemi.groundColor.set(L.hg);hemi.intensity*=L.hk;sun.color.set(L.sc)}
-  else{hemi.color.set(0xffffff);hemi.groundColor.set(0x8899aa);sun.color.set(0xfff3df)}
+  else{hemi.color.set(0xffffff);hemi.groundColor.set(0x5a6878);sun.color.set(0xfff3df)}
   /* your own ambient / shadow colours (Atmosphere panel) sit on top of whatever lighting is active */
   const E=P.env||{};
   if(E.amb){hemi.color.set(E.amb);if(E.ambk!=null)hemi.intensity*=E.ambk}
@@ -4636,7 +4636,7 @@ let fogOn=false;
 function applyEnv(){updSkyTex();const e=lightEnv(),a=(e.tod-6)/12*Math.PI,day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),c=new THREE.Color(e.sky).multiplyScalar(k);
   scene.background=c;hemi.intensity=(.2+.34*k)*e.bright;sun.intensity=.98*day*e.sun*e.bright;sunDir.set(Math.cos(a)*14,Math.max(5,Math.sin(a)*14),6);
   /* default look = the lighting from the inventory avatar page (hemisphere 1.0 + sun 0.8 from the (2,4,3) direction); presets still use their own */
-  if(!(LIGHTO&&LPRE[LIGHTO])){hemi.intensity=(.2+.34*k)/.54*e.bright;sun.intensity=.8*Math.min(1,day/.866)*e.sun*e.bright;if(Math.abs(e.tod-14)<.01)sunDir.set(2,4,3)}
+  if(!(LIGHTO&&LPRE[LIGHTO])){hemi.intensity=(.2+.34*k)/.69*e.bright;sun.intensity=.74*Math.min(1,day/.866)*e.sun*e.bright;if(Math.abs(e.tod-14)<.01)sunDir.set(2,4,3)}
   try{envK((.12+.88*Math.min(1,day*2.5))*Math.min(1.4,e.bright))}catch(_e){}
   const on=e.fog>0,fh=skyFogHex();scene.fog=on?new THREE.Fog(fh!==null?fh:c.getHex(),12,Math.max(30,900-e.fog*8.5)):null;
   if(on!==fogOn){fogOn=on;if(PG)PG.traverse(function(o){if(o.material)o.material.needsUpdate=true})}
