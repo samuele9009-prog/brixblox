@@ -978,7 +978,7 @@ function newVarDlg(done){mdl('New variable',function(c,close){const n=el('input'
 
 /* ===== Loading screen (thumbnail + name) used when joining a game and by the "teleport to game" block ===== */
 var BBL=null,BBLT=0;
-function bbLoad(name,thumb){return;/* loading screen disabled */const o=document.createElement('div');o.id='bb-load';
+function bbLoad(name,thumb){const o=document.createElement('div');o.id='bb-load';
   o.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:linear-gradient(160deg,#1d2147,#3a2f7a);color:#fff;font-family:Montserrat,system-ui,sans-serif;transition:opacity .2s';
   const card=document.createElement('div');card.style.cssText='width:min(420px,78vw);aspect-ratio:16/10;border-radius:18px;box-shadow:0 14px 40px rgba(0,0,0,.45);background:#2b2f66;overflow:hidden;display:flex;align-items:center;justify-content:center;font:800 4rem sans-serif';
   const t=String(thumb||'');if(/^(data:image\/|https?:\/\/|\/)/.test(t))card.style.background='center/cover no-repeat url("'+t.replace(/["\\\s]/g,'')+'")';else{const h=Array.from(String(name||'?')).reduce(function(a,c){return (a*31+c.charCodeAt(0))%360},7);card.style.background='hsl('+h+',55%,42%)';card.textContent=(String(name||'?').trim().charAt(0)||'?').toUpperCase()}
@@ -987,9 +987,9 @@ function bbLoad(name,thumb){return;/* loading screen disabled */const o=document
   const fill=document.createElement('div');fill.style.cssText='position:absolute;top:0;left:-40%;width:40%;height:100%;border-radius:3px;background:#ffc233';bar.append(fill);
   try{fill.animate([{left:'-40%'},{left:'100%'}],{duration:1100,iterations:Infinity,easing:'ease-in-out'})}catch(e){}
   const sub=document.createElement('div');sub.textContent='Loading...';sub.style.cssText='opacity:.75;font-weight:700;font-size:.95rem';
-  o.append(card,nm,bar,sub);document.body.append(o);BBL=o;BBLT=Date.now()}
+  o.append(card,nm,bar,sub);document.body.append(o);BBL=o;BBLT=Date.now();setTimeout(function(){if(BBL===o)bbLoadHide(true)},5000)}
 function bbLoadHide(now){const o=BBL;if(!o)return;BBL=null;if(now){o.remove();return}
-  const wait=Math.max(0,250-(Date.now()-BBLT));setTimeout(function(){o.style.opacity='0';setTimeout(function(){o.remove()},200)},wait)}
+  const wait=Math.max(0,5000-(Date.now()-BBLT));setTimeout(function(){o.style.opacity='0';setTimeout(function(){o.remove()},200)},wait)}
 var BBREADY=false,BBCHK=false;
 function bbReadyTry(){if(!BBREADY)return;bbLoadHide();try{parent.postMessage({bb:'ready'},location.origin)}catch(e){}}
 /* the games you made yourself (what the teleport block can pick from) */
@@ -4581,14 +4581,14 @@ addEventListener('keydown',function(e){if(e.code!=='KeyF'||e.ctrlKey||e.metaKey|
   e.preventDefault();focusSel()});
 /* ===== Lighting presets (the "set lighting to" block). Each one changes the time of day, sky colour, fog, light colours and strength, tone mapping, shadow softness and a colour grade (tint, contrast, vignette). ===== */
 const LPRE={
-  realistic:{env:{tod:15.5,sky:'#4f8fd8',bright:1,sun:1.3,fog:52},hs:'#bcd6ff',hg:'#2f3b33',hk:1.05,sc:'#ffeccc',tm:1,ex:1.15,soft:1,g:{f:'contrast(1.1) saturate(1.1) brightness(1.03)',vig:.42,tint:'#1b4dff',ta:.1,tb:'soft-light'}},
-  cinematic:{env:{tod:16.5,sky:'#2f6fe0',bright:.95,sun:1.2,fog:68},hs:'#9fc4ff',hg:'#1f2c3a',hk:1.05,sc:'#ffd9a8',tm:1,ex:1.2,soft:1,g:{f:'contrast(1.18) saturate(.95) brightness(1.02)',vig:.55,tint:'#1646ff',ta:.18,tb:'soft-light'}},
-  sunny:{env:{tod:12.5,sky:'#7fc8ff',bright:1.1,sun:1.2,fog:0},hs:'#ffffff',hg:'#9ab87a',hk:1,sc:'#fff6e0',tm:0,ex:1,soft:1,g:{f:'saturate(1.12) contrast(1.04)',vig:0,tint:'#ffd27a',ta:.05,tb:'soft-light'}},
-  sunset:{env:{tod:18.2,sky:'#ff9a5a',bright:.95,sun:1,fog:35},hs:'#ffc89a',hg:'#4a3a46',hk:1,sc:'#ff9a4d',tm:1,ex:1.15,soft:1,g:{f:'contrast(1.08) saturate(1.2)',vig:.35,tint:'#ff6a1f',ta:.14,tb:'soft-light'}},
-  night:{env:{tod:23,sky:'#0b1030',bright:.95,sun:.4,fog:40},hs:'#5f78c8',hg:'#0d1126',hk:1.1,sc:'#9fb4ff',tm:1,ex:1.25,soft:1,g:{f:'contrast(1.1) saturate(.9)',vig:.5,tint:'#1a2a7a',ta:.2,tb:'soft-light'}},
-  foggy:{env:{tod:11,sky:'#aab4bd',bright:.95,sun:.6,fog:92},hs:'#dfe6ec',hg:'#7a8288',hk:1,sc:'#f2f4f6',tm:0,ex:1,soft:1,g:{f:'saturate(.75) contrast(.96)',vig:.25,tint:'#cfd8e0',ta:.12,tb:'soft-light'}},
-  spooky:{env:{tod:21.5,sky:'#1c1030',bright:.85,sun:.3,fog:62},hs:'#7a5fb0',hg:'#120a1e',hk:1,sc:'#8a6fd0',tm:1,ex:1.2,soft:1,g:{f:'contrast(1.15) saturate(.85)',vig:.65,tint:'#5a1a8a',ta:.16,tb:'soft-light'}},
-  vivid:{env:{tod:13,sky:'#6ec6ff',bright:1.1,sun:1.1,fog:0},hs:'#ffffff',hg:'#8fc27a',hk:1,sc:'#ffffff',tm:0,ex:1,soft:0,g:{f:'saturate(1.4) contrast(1.06)',vig:0,tint:'#ffffff',ta:0,tb:'normal'}}
+  realistic:{env:{tod:15.5,sky:'#4f8fd8',bright:1,sun:1.3,fog:52},hs:'#bcd6ff',hg:'#2f3b33',hk:1.05,sc:'#ffeccc',tm:1,ex:1.15,soft:1,g:{f:'contrast(1.1) saturate(.8) brightness(1.03)',vig:.42,tint:'#1b4dff',ta:.1,tb:'soft-light'}},
+  cinematic:{env:{tod:16.5,sky:'#2f6fe0',bright:.95,sun:1.2,fog:68},hs:'#9fc4ff',hg:'#1f2c3a',hk:1.05,sc:'#ffd9a8',tm:1,ex:1.2,soft:1,g:{f:'contrast(1.18) saturate(.75) brightness(1.02)',vig:.55,tint:'#1646ff',ta:.18,tb:'soft-light'}},
+  sunny:{env:{tod:12.5,sky:'#7fc8ff',bright:1.1,sun:1.2,fog:0},hs:'#ffffff',hg:'#9ab87a',hk:1,sc:'#fff6e0',tm:0,ex:1,soft:1,g:{f:'saturate(.82) contrast(1.04)',vig:0,tint:'#ffd27a',ta:.05,tb:'soft-light'}},
+  sunset:{env:{tod:18.2,sky:'#ff9a5a',bright:.95,sun:1,fog:35},hs:'#ffc89a',hg:'#4a3a46',hk:1,sc:'#ff9a4d',tm:1,ex:1.15,soft:1,g:{f:'contrast(1.08) saturate(.85)',vig:.35,tint:'#ff6a1f',ta:.14,tb:'soft-light'}},
+  night:{env:{tod:23,sky:'#0b1030',bright:.95,sun:.4,fog:40},hs:'#5f78c8',hg:'#0d1126',hk:1.1,sc:'#9fb4ff',tm:1,ex:1.25,soft:1,g:{f:'contrast(1.1) saturate(.72)',vig:.5,tint:'#1a2a7a',ta:.2,tb:'soft-light'}},
+  foggy:{env:{tod:11,sky:'#aab4bd',bright:.95,sun:.6,fog:92},hs:'#dfe6ec',hg:'#7a8288',hk:1,sc:'#f2f4f6',tm:0,ex:1,soft:1,g:{f:'saturate(.6) contrast(.96)',vig:.25,tint:'#cfd8e0',ta:.12,tb:'soft-light'}},
+  spooky:{env:{tod:21.5,sky:'#1c1030',bright:.85,sun:.3,fog:62},hs:'#7a5fb0',hg:'#120a1e',hk:1,sc:'#8a6fd0',tm:1,ex:1.2,soft:1,g:{f:'contrast(1.15) saturate(.7)',vig:.65,tint:'#5a1a8a',ta:.16,tb:'soft-light'}},
+  vivid:{env:{tod:13,sky:'#6ec6ff',bright:1.1,sun:1.1,fog:0},hs:'#ffffff',hg:'#8fc27a',hk:1,sc:'#ffffff',tm:0,ex:1,soft:0,g:{f:'saturate(.9) contrast(1.06)',vig:0,tint:'#ffffff',ta:0,tb:'normal'}}
 };
 const LIGHTOPT=[['default','Default'],['realistic','Realistic (blue haze, soft shadows)'],['cinematic','Cinematic (strong blue, dark edges)'],['sunny','Sunny'],['sunset','Sunset'],['night','Night'],['foggy','Foggy'],['spooky','Spooky'],['vivid','Vivid colours']];
 let LIGHTO=null,lxSig='',lxT=null,lxV=null;
@@ -4615,7 +4615,7 @@ function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
     const ms=soft?2048:1024;if(sun.shadow.mapSize.x!==ms){sun.shadow.mapSize.set(ms,ms);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
     sun.shadow.radius=soft?5:3;renderer.shadowMap.needsUpdate=true;
     scene.traverse(function(o){if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(function(m){m.needsUpdate=true})}})}
-  lxEls();const g=L&&L.g;cv.style.filter=g?g.f:'';
+  lxEls();const g=L&&L.g;cv.style.filter=g?g.f:'saturate(.8)';
   if(lxT){
     if(E.haze){lxT.style.display='block';lxT.style.background=E.haze;lxT.style.opacity=E.hazek==null?.22:E.hazek;lxT.style.mixBlendMode='normal'}
     else if(g&&g.ta>0){lxT.style.display='block';lxT.style.background=g.tint;lxT.style.opacity=g.ta*3.2>1?1:g.ta*3.2;lxT.style.mixBlendMode=g.tb}else lxT.style.display='none';
