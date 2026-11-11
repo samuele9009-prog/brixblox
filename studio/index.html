@@ -5265,7 +5265,7 @@ function vzFree(z){try{const m=M[z.a];if(m&&m.userData.vzOv){m.remove(m.userData
   try{if(z.rt)z.rt.dispose()}catch(e){}try{if(z.mat)z.mat.dispose()}catch(e){}z.rt=null;z.mat=null;z.ov=null}
 function vzClear(){Object.keys(VZ).forEach(function(k){vzFree(VZ[k])});VZ={};vzUnhold()}
 /* One picture buffer per window, made once. Each frame only the corner of it that is needed gets drawn. */
-function vzTarget(z,W,H){const tw=Math.max(16,Math.min(W,VZCAP)),th=Math.max(16,Math.min(H,VZCAP));
+function vzTarget(z,W,H){if(!(W>0&&H>0))return z.rt;const tw=Math.max(16,Math.min(W,VZCAP)),th=Math.max(16,Math.min(H,VZCAP));
   if(z.rt&&(z.rt.width!==tw||z.rt.height!==th)){try{z.rt.dispose()}catch(e){}z.rt=null}
   if(!z.rt){z.rt=new THREE.WebGLRenderTarget(tw,th,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat,depthBuffer:true,stencilBuffer:false,generateMipmaps:false});z.force=true;z.sgOk=false}
   if(z.mat)z.mat.uniforms.tMap.value=z.rt.texture;return z.rt}
@@ -5330,7 +5330,7 @@ function vzTick(){const ids=Object.keys(VZ);if(!ids.length)return;
     /* cut away everything between that camera and B, so only what is beyond B shows */
     const side=vzN.dot(vzD.copy(vzCam.position).sub(vzC)),clip=Math.abs(side)>1e-4;
     if(clip){vzN.multiplyScalar(side>0?-1:1);vzPlane.setFromNormalAndCoplanarPoint(vzN,vzC)}
-    const rt=vzTarget(z),hid=[],back=[];
+    const rt=z.rt,hid=[],back=[];
     rt.viewport.set(0,0,rw,rh);rt.scissor.set(0,0,rw,rh);rt.scissorTest=true;
     const u=z.mat.uniforms;u.uRect.value.set(rc.x,H-(rc.y+rc.h),rc.w,rc.h);u.uFill.value.set(rw/RTW,rh/RTH);u.uHalf.value.set(.5/RTW,.5/RTH);
     z.ov.visible=false;/* A does not draw itself into its own picture */
