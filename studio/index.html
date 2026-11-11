@@ -1991,7 +1991,7 @@ function depthNudge(n,base,k){n.polygonOffset=false;n.polygonOffsetFactor=0;n.po
 function accStd(n){/* FBX accessories arrive as Phong/Lambert; the rig uses Standard + the shared colour pipeline, so convert (keeps colour, texture, opacity) */
   if(!n||n.isMeshStandardMaterial||!(n.isMeshPhongMaterial||n.isMeshLambertMaterial))return n;
   const s=new THREE.MeshStandardMaterial({color:n.color?n.color.clone():new THREE.Color(0xffffff),map:n.map||null,alphaMap:n.alphaMap||null,transparent:!!n.transparent,opacity:n.opacity==null?1:n.opacity,side:n.side,alphaTest:n.alphaTest||0,vertexColors:!!n.vertexColors,roughness:.42,metalness:0});
-  if(n.emissive){s.emissive.copy(n.emissive);s.emissiveMap=n.emissiveMap||null}
+  if(n.emissive){const e=n.emissive,wh=e.r>.6&&e.g>.6&&e.b>.6&&!n.emissiveMap;/* a white emissive colour on an FBX paints the whole item white no matter the light */if(!wh){s.emissive.copy(e);s.emissiveMap=n.emissiveMap||null}}
   s.name=n.name;s.userData=Object.assign({},n.userData);return s}
 function accMat(n){n=accStd(n);n.side=THREE.DoubleSide;n.depthWrite=true;if('skinning' in n)n.skinning=false;
   if(n.isMeshStandardMaterial&&!n.userData.pbr){/* these used to skip the world's colour and tone-mapping step, which made them look dark and flat */
@@ -4613,7 +4613,7 @@ function lxEls(){if(lxT)return;const c=document.querySelector('.cvw');if(!c)retu
   [lxT,lxV].forEach(function(d){d.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:3;display:none';c.append(d)})}
 function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
   if(L){hemi.color.set(L.hs);hemi.groundColor.set(L.hg);hemi.intensity*=L.hk;sun.color.set(L.sc)}
-  else{hemi.color.set(0xeaf2ff);hemi.groundColor.set(0x4f5548);sun.color.set(0xfff1dc)}
+  else{hemi.color.set(0xffffff);hemi.groundColor.set(0x8899aa);sun.color.set(0xfff3df)}
   /* your own ambient / shadow colours (Atmosphere panel) sit on top of whatever lighting is active */
   const E=P.env||{};
   if(E.amb){hemi.color.set(E.amb);if(E.ambk!=null)hemi.intensity*=E.ambk}
@@ -4627,14 +4627,17 @@ function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
     const ms=soft?2048:1024;if(sun.shadow.mapSize.x!==ms){sun.shadow.mapSize.set(ms,ms);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
     sun.shadow.radius=soft?5:3;renderer.shadowMap.needsUpdate=true;
     scene.traverse(function(o){if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(function(m){m.needsUpdate=true})}})}
-  lxEls();const g=L&&L.g;cv.style.filter=g?g.f:'saturate(.9) contrast(1.04)';
+  lxEls();const g=L&&L.g;cv.style.filter=g?g.f:'none';
   if(lxT){
     if(E.haze){lxT.style.display='block';lxT.style.background=E.haze;lxT.style.opacity=E.hazek==null?.22:E.hazek;lxT.style.mixBlendMode='normal'}
     else if(g&&g.ta>0){lxT.style.display='block';lxT.style.background=g.tint;lxT.style.opacity=g.ta*3.2>1?1:g.ta*3.2;lxT.style.mixBlendMode=g.tb}else lxT.style.display='none';
     if(g&&g.vig>0){lxV.style.display='block';lxV.style.background='radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(0,0,0,'+g.vig+') 100%)'}else lxV.style.display='none'}}
 let fogOn=false;
 function applyEnv(){updSkyTex();const e=lightEnv(),a=(e.tod-6)/12*Math.PI,day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),c=new THREE.Color(e.sky).multiplyScalar(k);
-  scene.background=c;hemi.intensity=(.2+.34*k)*e.bright;sun.intensity=.98*day*e.sun*e.bright;sunDir.set(Math.cos(a)*14,Math.max(5,Math.sin(a)*14),6);try{envK((.12+.88*Math.min(1,day*2.5))*Math.min(1.4,e.bright))}catch(_e){}
+  scene.background=c;hemi.intensity=(.2+.34*k)*e.bright;sun.intensity=.98*day*e.sun*e.bright;sunDir.set(Math.cos(a)*14,Math.max(5,Math.sin(a)*14),6);
+  /* default look = the lighting from the inventory avatar page (hemisphere 1.0 + sun 0.8 from the (2,4,3) direction); presets still use their own */
+  if(!(LIGHTO&&LPRE[LIGHTO])){hemi.intensity=(.2+.34*k)/.54*e.bright;sun.intensity=.8*Math.min(1,day/.866)*e.sun*e.bright;if(Math.abs(e.tod-14)<.01)sunDir.set(2,4,3)}
+  try{envK((.12+.88*Math.min(1,day*2.5))*Math.min(1.4,e.bright))}catch(_e){}
   const on=e.fog>0,fh=skyFogHex();scene.fog=on?new THREE.Fog(fh!==null?fh:c.getHex(),12,Math.max(30,900-e.fog*8.5)):null;
   if(on!==fogOn){fogOn=on;if(PG)PG.traverse(function(o){if(o.material)o.material.needsUpdate=true})}
   lightX()}
