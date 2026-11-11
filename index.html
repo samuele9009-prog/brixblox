@@ -455,6 +455,8 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .it-recs{display:grid;grid-auto-flow:column;grid-auto-columns:150px;gap:12px;overflow-x:auto;padding-bottom:8px}
 .pf-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .gm-info .btn.fav-on{background:#fff6dc}
+#pol-link{position:fixed;right:12px;bottom:10px;z-index:15;padding:6px 12px;border-radius:99px;background:var(--paper);color:var(--ink);border:1px solid var(--line);font-size:.8rem;font-weight:700;text-decoration:none;opacity:.9}
+#pol-link:hover{opacity:1;border-color:#00b06f}
 /* compact item page */
 .it-hero{grid-template-columns:minmax(240px,340px) minmax(0,1fr);gap:22px}
 @media(max-width:760px){.it-hero{grid-template-columns:minmax(0,1fr)}.it-left{max-width:340px}}
@@ -473,6 +475,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 </head>
 <body>
 <canvas id="gl" aria-label="Game view"></canvas>
+<a id="pol-link" href="policies.html" target="_blank" rel="noopener">Our Policies</a>
 
 <main id="auth" class="screen" hidden="">
   <section class="card auth-card">
@@ -1432,7 +1435,8 @@ async function checkNotices(){if(!me||api.demo||$('ntc'))return;let n;try{n=awai
   const ov=mkx('div','evo');ov.id='ntc';const card=mkx('div','evc'),body=mkx('div','evb');card.style.maxWidth='460px';
   body.append(mkx('h2','','Warning from BrixBlox'));w.forEach(function(x){const p=mkx('p','',x.message);p.style.whiteSpace='pre-wrap';body.append(p)});
   body.append(mkx('p','sub','Keep breaking the rules and your account can be banned.'));
-  const ok=mkx('button','btn','I understand');ok.type='button';ok.onclick=async function(){try{await api.ackNotices()}catch(e){}ov.remove()};body.append(ok);card.append(body);ov.append(card);document.body.append(ov)}
+  const ok=mkx('button','btn','I understand');ok.type='button';ok.onclick=async function(){try{await api.ackNotices()}catch(e){}ov.remove()};body.append(ok);
+  const pol=mkx('a','btn ghost','View our policies');pol.href='policies.html';pol.target='_blank';pol.rel='noopener';pol.style.cssText='display:flex;align-items:center;justify-content:center;text-decoration:none;margin-top:8px;color:inherit';body.append(pol);card.append(body);ov.append(card);document.body.append(ov)}
 setInterval(function(){if(me&&!document.hidden)checkNotices()},15000);
 function closeEvent(){const o=$('evo');if(o)o.remove()}
 addEventListener('keydown',function(e){if(e.key==='Escape')closeEvent()});
