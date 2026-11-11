@@ -1771,11 +1771,22 @@ function pbrPatch(m){const fn=function(sh){sh.fragmentShader=sh.fragmentShader
     .replace('#include <encodings_fragment>','#ifndef TONE_MAPPING\n gl_FragColor.rgb=acesP(gl_FragColor.rgb);\n#endif\n gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.0)),vec3(0.4545));')};
   m.userData.pbr=1;m.userData.pbrFn=fn;m.onBeforeCompile=fn;m.customProgramCacheKey=function(){return 'pbr2'}}
 /* Shininess: 0 = dull / matte, 1 = mirror-like. Stored on the part as p.shine; a part without it keeps its material's normal look. */
-function shineDef(p){const q=PBR[MATS[p.mat]?p.mat:'plastic']||PBR.plastic;return Math.round(Math.max(0,Math.min(1,(1-q[0])/.95))*20)/20}
+function shineDef(p){if(p.shape==='mesh')return meshShineDef(p);const q=PBR[MATS[p.mat]?p.mat:'plastic']||PBR.plastic;return Math.round(Math.max(0,Math.min(1,(1-q[0])/.95))*20)/20}
 function shineApply(m,v){v=Math.max(0,Math.min(1,+v||0));m.roughness=1-v*.95;
   if(ENVOK)m.envMap=v>=.35?ENVT:null;
   m.userData.envB=Math.max(.08,v*1.1);m.envMapIntensity=m.userData.envB*ENVK;m.needsUpdate=true}
-function setShine(p,v){const o=M[p.id];if(o&&o.material&&!p.av)shineApply(o.material,v)}
+function setShine(p,v){const o=M[p.id];if(!o||p.av)return;if(p.shape==='mesh'){meshShine(o,v);return}if(o.material)shineApply(o.material,v)}
+/* Imported meshes draw their own materials (from the .obj / .fbx / .glb file) and the part's own material is hidden, so shininess has to be set on those.
+   .glb gives Standard materials (roughness), .obj / .fbx give Phong ones (shininess + specular), and flat Lambert / Basic ones have no highlight at all, so they are swapped for Phong keeping their colour and texture. */
+function meshShineMat(mt,v){if(!mt)return mt;v=Math.max(0,Math.min(1,+v||0));
+  if(mt.isMeshStandardMaterial){mt.roughness=1-v*.95;if(ENVOK){mt.envMap=v>=.35?ENVT:null;mt.envMapIntensity=Math.max(.08,v*1.1)*ENVK}mt.needsUpdate=true;return mt}
+  if(mt.isMeshPhongMaterial){mt.shininess=Math.max(1,v*220);mt.specular.setScalar(v*.55);if(ENVOK){mt.envMap=v>=.35?ENVT:null;mt.reflectivity=v*.45}mt.needsUpdate=true;return mt}
+  if(mt.isMeshLambertMaterial||mt.isMeshBasicMaterial){const n=new THREE.MeshPhongMaterial({color:mt.color,map:mt.map,transparent:mt.transparent,opacity:mt.opacity,side:mt.side,alphaTest:mt.alphaTest,vertexColors:mt.vertexColors,emissive:mt.emissive||0x000000,emissiveMap:mt.emissiveMap||null});n.name=mt.name;return meshShineMat(n,v)}
+  return mt}
+function meshShine(o,v){const g=o&&o.userData.mi;if(!g)return;g.traverse(function(x){if(!x.isMesh)return;x.material=Array.isArray(x.material)?x.material.map(function(mt){return meshShineMat(mt,v)}):meshShineMat(x.material,v)})}
+function meshShineDef(p){const o=M[p.id],g=o&&o.userData.mi;let r=null;
+  if(g)g.traverse(function(x){if(r!==null||!x.isMesh)return;const mt=Array.isArray(x.material)?x.material[0]:x.material;if(!mt)return;r=mt.isMeshStandardMaterial?(1-mt.roughness)/.95:mt.isMeshPhongMaterial?(mt.shininess||0)/220:.2});
+  return Math.round(Math.max(0,Math.min(1,r===null?.2:r))*20)/20}
 function mkMat(p){const k=MATS[p.mat]?p.mat:'plastic',d=MATS[k],q=PBR[k]||PBR.plastic,m=new THREE.MeshStandardMaterial({color:p.color,roughness:p.av?.62:q[0],metalness:p.av?0:(ENVOK?q[1]:q[1]*.35)});
   m.userData.envB=p.av?.35:q[3];m.envMapIntensity=m.userData.envB*ENVK;if(ENVOK&&!p.av&&q[3]>=.5)m.envMap=ENVT;
   if(TX[k]){m.map=tex(k);if(!p.av){if(Math.abs(q[2])>=.035){m.bumpMap=texH(k);m.bumpScale=q[2]*1.3}}}
@@ -2420,7 +2431,7 @@ function props0(){const d=$('p-props');d.replaceChildren();if(selFold&&!sel.leng
   const nm=el('input');nm.value=p.name;nm.oninput=function(){p.name=nm.value;save()};nm.onchange=function(){renderParts()};
   const col=el('input');col.type='color';col.value=p.color;col.oninput=function(){avTouch(p);p.color=col.value;M[p.id].material.color.set(col.value);hl();save()};
   d.append(lab('Name (arms must be Rarm and Larm)',nm));
-  {const sA=sect(d,'Appearance');sA.append(lab('Material',matSel(p.mat,function(k){setMat(p,k);all()})),lab('Color',col));if(!p.stab){shineAll(sA,[p]);trAll(sA,[p],'Transparency')}
+  {const sA=sect(d,'Appearance');sA.append(lab('Material',matSel(p.mat,function(k){setMat(p,k);all()})),lab('Color',col));if(!p.stab){shineAll(sA,[p],p.shape==='mesh'?'Shininess (mesh & texture)':undefined);trAll(sA,[p],'Transparency')}
    const sT=sect(d,'Position & size');sT.append(vec('Position',p.pos,true),vec('Size',p.size,false))}
   const sP=sect(d,'Physics');
   if(!p.parent){const c=el('input');c.type='checkbox';c.checked=!!p.movable;c.onchange=function(){p.movable=c.checked;save()};const l=el('label','','Movable (push it with your character)');l.append(c);sP.append(l);
@@ -2700,7 +2711,7 @@ function meshAll(){P.parts.forEach(function(q){const m=q.shape==='mesh'&&M[q.id]
 /* A copy of the mesh scaled to the part's size. Own copies of the materials, so a texture picked for one part does not change another. */
 function meshInst(E,p){const w=E.obj.clone(true),nz=E.obj.userData.nz||[1,1,1],sz=p.size,g=new THREE.Group(),src=p.mtex&&P.assets.images[p.mtex];
   w.traverse(function(m){if(!m.isMesh)return;m.castShadow=!p.stab;m.receiveShadow=true;m.frustumCulled=true;
-    const f=function(mt){const n=mt.clone();n.side=THREE.DoubleSide;if(src){n.map=accTex(src,E.fmt==='glb');if(n.color)n.color.set(0xffffff)}n.needsUpdate=true;return n};
+    const f=function(mt){const n=mt.clone();n.side=THREE.DoubleSide;if(src){n.map=accTex(src,E.fmt==='glb');if(n.color)n.color.set(0xffffff)}n.needsUpdate=true;return p.shine!=null?meshShineMat(n,p.shine):n};
     m.material=Array.isArray(m.material)?m.material.map(f):f(m.material)});
   g.add(w);g.scale.set(nz[0]>1e-6?sz[0]/nz[0]:1,nz[1]>1e-6?sz[1]/nz[1]:1,nz[2]>1e-6?sz[2]/nz[2]:1);g.userData.mesh=1;return g}
 function meshHook(m,p){if(m.userData.mi)return;const v=p.mesh&&(P.assets.meshes||{})[p.mesh];if(!v)return;const E=MESHI[meshKey(v)];
