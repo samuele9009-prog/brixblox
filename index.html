@@ -475,7 +475,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 </head>
 <body>
 <canvas id="gl" aria-label="Game view"></canvas>
-<a id="pol-link" href="policies.html" target="_blank" rel="noopener">Our Policies</a>
+<a id="pol-link" href="policies.html">Our Policies</a>
 
 <main id="auth" class="screen" hidden="">
   <section class="card auth-card">
@@ -1436,7 +1436,7 @@ async function checkNotices(){if(!me||api.demo||$('ntc'))return;let n;try{n=awai
   body.append(mkx('h2','','Warning from BrixBlox'));w.forEach(function(x){const p=mkx('p','',x.message);p.style.whiteSpace='pre-wrap';body.append(p)});
   body.append(mkx('p','sub','Keep breaking the rules and your account can be banned.'));
   const ok=mkx('button','btn','I understand');ok.type='button';ok.onclick=async function(){try{await api.ackNotices()}catch(e){}ov.remove()};body.append(ok);
-  const pol=mkx('a','btn ghost','View our policies');pol.href='policies.html';pol.target='_blank';pol.rel='noopener';pol.style.cssText='display:flex;align-items:center;justify-content:center;text-decoration:none;margin-top:8px;color:inherit';body.append(pol);card.append(body);ov.append(card);document.body.append(ov)}
+  const pol=mkx('a','btn ghost','View our policies');pol.href='policies.html';pol.style.cssText='display:flex;align-items:center;justify-content:center;text-decoration:none;margin-top:8px;color:inherit';body.append(pol);card.append(body);ov.append(card);document.body.append(ov)}
 setInterval(function(){if(me&&!document.hidden)checkNotices()},15000);
 function closeEvent(){const o=$('evo');if(o)o.remove()}
 addEventListener('keydown',function(e){if(e.key==='Escape')closeEvent()});
