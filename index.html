@@ -1253,7 +1253,7 @@ function gfill(box,list,empty,disc){box.replaceChildren();if(!list.length){box.c
 async function gameData(g){if(g.data)return g.data;try{return await api.gameData(g.id)}catch(e){return null}}
 /* ===== Loading screen with the game's picture and name (shown while a game opens) ===== */
 var BBL=null,BBLT=0,BBLK=0;
-function bbLoad(name,thumb){return;/* loading screen disabled */const o=document.createElement('div');o.id='bb-load';
+function bbLoad(name,thumb){const o=document.createElement('div');o.id='bb-load';
   o.style.cssText='position:fixed;inset:0;z-index:70;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:linear-gradient(160deg,#1d2147,#3a2f7a);color:#fff;font-family:Montserrat,system-ui,sans-serif;transition:opacity .2s';
   const card=document.createElement('div');card.style.cssText='width:min(420px,78vw);aspect-ratio:16/10;border-radius:18px;box-shadow:0 14px 40px rgba(0,0,0,.45);background:#2b2f66;overflow:hidden;display:flex;align-items:center;justify-content:center;font:800 4rem sans-serif';
   const t=String(thumb||'');if(/^(data:image\/|https?:\/\/|\/)/.test(t))card.style.background='center/cover no-repeat url("'+t.replace(/["\\\s]/g,'')+'")';else{const h=Array.from(String(name||'?')).reduce(function(a,c){return (a*31+c.charCodeAt(0))%360},7);card.style.background='hsl('+h+',55%,42%)';card.textContent=(String(name||'?').trim().charAt(0)||'?').toUpperCase()}
@@ -1262,9 +1262,9 @@ function bbLoad(name,thumb){return;/* loading screen disabled */const o=document
   const fill=document.createElement('div');fill.style.cssText='position:absolute;top:0;left:-40%;width:40%;height:100%;border-radius:3px;background:#ffc233';bar.append(fill);
   try{fill.animate([{left:'-40%'},{left:'100%'}],{duration:1100,iterations:Infinity,easing:'ease-in-out'})}catch(e){}
   const sub=document.createElement('div');sub.textContent='Loading...';sub.style.cssText='opacity:.75;font-weight:700;font-size:.95rem';
-  o.append(card,nm,bar,sub);document.body.append(o);BBL=o;BBLT=Date.now();clearTimeout(BBLK);BBLK=setTimeout(function(){bbLoadHide(true)},3000)}
+  o.append(card,nm,bar,sub);document.body.append(o);BBL=o;BBLT=Date.now();clearTimeout(BBLK);BBLK=setTimeout(function(){bbLoadHide(true)},5000)}
 function bbLoadHide(now){const o=BBL;if(!o)return;BBL=null;clearTimeout(BBLK);if(now){o.remove();return}
-  const wait=Math.max(0,900-(Date.now()-BBLT));setTimeout(function(){o.style.opacity='0';setTimeout(function(){o.remove()},200)},wait)}
+  const wait=Math.max(0,5000-(Date.now()-BBLT));setTimeout(function(){o.style.opacity='0';setTimeout(function(){o.remove()},200)},wait)}
 async function playGame(g){if(/^(acc_|avatar_|sys_)/.test(String(g&&g.id))){toast('That cannot be opened.');return}
   if(joining||$('pl-frame'))return;
   if(lockHeld()){lockPaint();toast(LOCK_MSG);return}
