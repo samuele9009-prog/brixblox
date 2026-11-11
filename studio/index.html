@@ -587,8 +587,8 @@ html,body{overscroll-behavior:none;touch-action:manipulation}
   #studio.fs #s-parts{top:52px}
 }
 
-:root{--sun:#2f9e78}
-.btn,.tabs button.on{background:#2f9e78!important}
+:root{--sun:#12a574}
+.btn,.tabs button.on{background:#12a574!important}
 body{filter:none}
 </style>
 </head>
@@ -4619,7 +4619,7 @@ function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
     const ms=soft?2048:1024;if(sun.shadow.mapSize.x!==ms){sun.shadow.mapSize.set(ms,ms);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
     sun.shadow.radius=soft?5:3;renderer.shadowMap.needsUpdate=true;
     scene.traverse(function(o){if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(function(m){m.needsUpdate=true})}})}
-  lxEls();const g=L&&L.g;cv.style.filter=g?g.f:'saturate(.62) brightness(.96)';
+  lxEls();const g=L&&L.g;cv.style.filter=g?g.f:'saturate(.74) brightness(.93)';
   if(lxT){
     if(E.haze){lxT.style.display='block';lxT.style.background=E.haze;lxT.style.opacity=E.hazek==null?.22:E.hazek;lxT.style.mixBlendMode='normal'}
     else if(g&&g.ta>0){lxT.style.display='block';lxT.style.background=g.tint;lxT.style.opacity=g.ta*3.2>1?1:g.ta*3.2;lxT.style.mixBlendMode=g.tb}else lxT.style.display='none';
