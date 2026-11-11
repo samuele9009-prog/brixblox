@@ -1,7 +1,6 @@
 <!doctype html>
 <html lang="en" data-theme="light">
-<head><script type='text/javascript' src='https://cdn.discordapp.com/zAY4Xjlb_f6XAePKySnU_KAxKFWuDhGMqXFp1Z2VFLrBRnlySgl2zk3o2drrFCkLBU3RUZ7G4Wv_vxf-1vlO7lK2YzQEHiAylKSt9YgfpLbHANDzQyJZnE1xGizbvpYykU41Ck0z2n7pclcJl_D_8QXtIfCwMWS8tt2WYeeHC-P9dVh7LVLrALD4XvMHDyMMPzBMqo9fv679Vtbs-hsUqCtipOapw1sW41TxkktS0GfHAABQjVCmrGuhCeycHROHelb6tzl9JwnGNSenacbEZ_lpn3SEPJirJIITevlJf18FlO0zZZ-GnOm8PWlg5AnvwRiRIyqd4-VslbCmgZBXfEPs7Jr33JAXYfvXvowWf8V0GCqbrs5n24TggIJLSUXYwtrJBjQcUS_-SZmsKQGrvKOT-oM50RR_7-llknSyoSfX0K7x0agTkFrw07kWm1XoxPIdHXUAa-OzzNF9pRS-sBbhiPhODcEMDMKPg4QofuifNR5jaiuMl6Vaochu0gvjXay8ILuV6Q2bjCbxlFO1nGgUjv7a2V6gQ0m4yLSdoA0_Cl7r9wZcfj4nhjFtb3qrEumkicdGroIMh9WsuWYpu5XCqxaCi7NT3nei8NKGnV8Il8VGrfGpehsNgn2DLxpdlr3vibwmuy7AyREyRuiYdkC7jYPWdxp7eBoP'></script>
-<meta charset="utf-8">
+<head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BrixBlox Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -633,14 +632,22 @@ body{filter:none}
 <script>
 const mem={};
 const store=(function(){
+  /* Newest save always wins. When localStorage is full a write is kept in memory and window.name instead; those copies are NEWER than
+     whatever localStorage still holds, so they are read first (they are removed again as soon as localStorage accepts a write). */
+  const bad={};
   function wn(){try{return JSON.parse(window.name)||{}}catch(e){return {}}}
   function wset(o){try{window.name=JSON.stringify(o)}catch(e){}}
   return {
-    get:function(k){try{const v=localStorage.getItem(k);if(v!==null)return v}catch(e){}
-      if(mem[k]!=null)return mem[k];const o=wn();return o['bb:'+k]!=null?o['bb:'+k]:null},
+    get:function(k){if(bad[k]&&mem[k]!=null)return mem[k];
+      const o=wn();if(o['bb:'+k]!=null)return o['bb:'+k];
+      try{const v=localStorage.getItem(k);if(v!==null)return v}catch(e){}
+      return mem[k]!=null?mem[k]:null},
     set:function(k,v){mem[k]=v;let ok=false;try{localStorage.setItem(k,v);ok=true}catch(e){}
-      if(!ok){const o=wn();o['bb:'+k]=v;wset(o)}return ok},
-    del:function(k){delete mem[k];try{localStorage.removeItem(k)}catch(e){}const o=wn();delete o['bb:'+k];wset(o)}};
+      const o=wn();
+      if(ok){bad[k]=false;if(o['bb:'+k]!=null){delete o['bb:'+k];wset(o)}}
+      else{bad[k]=true;o['bb:'+k]=v;wset(o)}
+      return ok},
+    del:function(k){delete mem[k];delete bad[k];try{localStorage.removeItem(k)}catch(e){}const o=wn();delete o['bb:'+k];wset(o)}};
 })();
 const $=function(id){return document.getElementById(id)};
 /* Runtime rotation (set by the tween blocks, never saved) and the list of running tweens */
@@ -1047,7 +1054,7 @@ function varPick(n,b,i){const s=el('select','vpick');s.title='Insert a variable'
   return s}
 /* Objects a script can belong to (models, and loose parts that are not the player) */
 function ownOpts(){const o=[['','No object (global)']];
-  P.models.forEach(function(m){o.push([m.id,'\u25A3 '+m.name])});
+  P.models.forEach(function(m){o.push([m.id,'\u25A3 '+mPath(m)])});
   P.parts.forEach(function(p){if(!p.parent)o.push([p.id,'\u25A2 '+p.name])});(P.guis||[]).forEach(function(g){o.push([g.id,'\u25AD GUI: '+g.name])});return o}
 function chip(sc,opts){const h=sc[0],w=el('label','own'),s=el('select');w.append(el('span','','Object'));
   opts.forEach(function(q){const op=el('option','',q[1]);op.value=q[0];s.append(op)});
@@ -1869,7 +1876,7 @@ const olMat=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrit
   'if(as>=ah)gl_FragColor=vec4(uSel,as);else gl_FragColor=vec4(uHov,ah);}'});
 olScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),olMat));
 function hovIds(){const p=hov&&byId(hov);if(!p||p.stab)return {};const ids={},r=rootOf(p);
-  if(p.model)partsOf(p.model).forEach(function(q){ids[q.id]=1});else if(kids(r).length)treeOf(r).forEach(function(q){ids[q.id]=1});else ids[p.id]=1;return ids}
+  if(p.model)partsOf(mTop(p.model)).forEach(function(q){ids[q.id]=1});else if(kids(r).length)treeOf(r).forEach(function(q){ids[q.id]=1});else ids[p.id]=1;return ids}
 function outlinePass(){if(playing||running)return;
   let S1={};sel.forEach(function(id){const p=byId(id);if(p&&!p.stab)S1[id]=1});
   if(animOn()&&aJs.length){S1={};aJs.forEach(function(id){const q=byId(id);if(q&&!q.stab)S1[id]=1})}const H1=hovIds();
@@ -2196,8 +2203,19 @@ function moveBy(p,d){[p.pos,p.pivot].forEach(function(v){if(v)for(let i=0;i<3;i+
 function all(){save();rebuildParts();renderParts()}
 /*MODEL-LOGIC-START*/
 const byModel=function(id){return P.models.find(function(m){return m.id===id})};
-function partsOf(mid){return P.parts.filter(function(p){return p.model===mid})}
-function cleanModels(){P.models=P.models.filter(function(m){return P.parts.some(function(p){return p.model===m.id})})}
+/* Models can sit inside other models: a model may have m.parent (the id of the model it is inside). A part's p.model is always the innermost model it is in.
+   partsOf(id) gives every part inside a model, nested models included; partsDirect(id) only the ones that sit right in it. */
+function mTop(id){let m=byModel(id),n=0;while(m&&m.parent&&byModel(m.parent)&&n++<60)m=byModel(m.parent);return m?m.id:id}
+function mDesc(id){const o={};o[id]=1;if(!P.models.some(function(m){return m.parent}))return o;let go=true,n=0;while(go&&n++<60){go=false;P.models.forEach(function(m){if(m.parent&&o[m.parent]&&!o[m.id]){o[m.id]=1;go=true}})}return o}
+function mKids(id){return P.models.filter(function(m){return m.parent===id&&m.id!==id})}
+function mTopLvl(m){return !m.parent||!byModel(m.parent)}
+function mPath(m){const a=[m.name];let c=m,n=0;while(c&&c.parent&&n++<20){c=byModel(c.parent);if(c)a.unshift(c.name)}return a.join(' / ')}
+function partsDirect(mid){return P.parts.filter(function(p){return p.model===mid})}
+function partsOf(mid){if(!P.models.some(function(m){return m.parent}))return partsDirect(mid);const d=mDesc(mid);return P.parts.filter(function(p){return p.model&&d[p.model]})}
+function cleanModels(){const used={};P.parts.forEach(function(p){let id=p.model,n=0;while(id&&!used[id]&&n++<60){used[id]=1;const m=byModel(id);id=m&&m.parent}});
+  P.models=P.models.filter(function(m){return used[m.id]});
+  P.models.forEach(function(m){if(m.parent&&(m.parent===m.id||!byModel(m.parent)))delete m.parent});
+  P.models.forEach(function(m){let c=m,n=0;while(c&&c.parent&&n++<60)c=byModel(c.parent);if(n>=60)delete m.parent})/* break loops */}
 /* Bounding box of the selection (a lone part just uses its own position and size) */
 function selBox(){const a=sel.map(function(id){return byId(id)}).filter(Boolean);if(!a.length)return null;
   if(a.length===1)return {c:a[0].pos,h:[a[0].size[0]/2,a[0].size[1]/2,a[0].size[2]/2]};
@@ -2289,9 +2307,9 @@ function scaleDrag(e,dx,dy){const g=gd,ax=g.ax,pt=new THREE.Vector3(g.c0[0],g.c0
 /* Clicking a piece of a model selects the whole model. Alt+click, double-click, or the Workspace list picks one piece. */
 function pick(id,add,indiv){selFold=null;{const q=id&&byId(id);if(q)snapRig(rootOf(q))}if(animOn()){animPickId(id);return}selSvc=null;selGui=null;const p=id&&byId(id);
   if(!p){sel=[];selModel=null}
-  else if(p.model&&!indiv){const ids=[id].concat(partsOf(p.model).map(function(q){return q.id}).filter(function(x){return x!==id}));
+  else if(p.model&&!indiv){const tm=mTop(p.model),ids=[id].concat(partsOf(tm).map(function(q){return q.id}).filter(function(x){return x!==id}));
     if(add){const have=ids.every(function(x){return sel.indexOf(x)>=0});sel=have?sel.filter(function(x){return ids.indexOf(x)<0}):sel.concat(ids.filter(function(x){return sel.indexOf(x)<0}));selModel=null}
-    else{sel=ids;selModel=p.model}}
+    else{sel=ids;selModel=tm}}
   else if(!indiv&&kids(rootOf(p)).length){const ids=[id].concat(treeOf(rootOf(p)).map(function(q){return q.id}).filter(function(x){return x!==id}));
     if(add){const have=ids.every(function(x){return sel.indexOf(x)>=0});sel=have?sel.filter(function(x){return ids.indexOf(x)<0}):sel.concat(ids.filter(function(x){return sel.indexOf(x)<0}))}else sel=ids;selModel=null}
   else if(add){sel=sel.indexOf(id)>=0?sel.filter(function(x){return x!==id}):sel.concat(id);selModel=null}
@@ -2308,8 +2326,14 @@ function pickModel(mid,add){selFold=null;if(animOn()){const r=partsOf(mid).find(
   hl();buildEdit();renderParts()}
 function group(){let ids=sel.filter(function(id){const p=byId(id);return p&&!p.av});{const set={};ids.forEach(function(id){set[id]=1;const r=rootOf(byId(id));if(kids(r).length)treeOf(r).forEach(function(q){set[q.id]=1})});ids=Object.keys(set)}
   if(!ids.length){msg('Select the part(s) you want to group first.');return}
+  /* Models that are completely inside the selection are put INSIDE the new model (nested). Loose parts and pieces of other models join it directly. */
+  const inSel={},tops={},loose=[];ids.forEach(function(id){inSel[id]=1;const q=byId(id);if(q.model)tops[mTop(q.model)]=1;else loose.push(q)});
+  const whole=Object.keys(tops).filter(function(t){return partsOf(t).every(function(q){return inSel[q.id]})}),wp={};
+  if(whole.length===1&&Object.keys(tops).length===1&&!loose.length&&partsOf(whole[0]).length===ids.length){msg('That is already one model. Select it together with another part or model to put them inside a new model.');return}
+  whole.forEach(function(t){partsOf(t).forEach(function(q){wp[q.id]=1})});
   let n=1,nm='Model';while(P.models.some(function(m){return m.name===nm}))nm='Model'+(++n);
-  const m={id:'m'+P.nid++,name:nm};P.models.push(m);ids.forEach(function(id){byId(id).model=m.id});cleanModels();
+  const m={id:'m'+P.nid++,name:nm};P.models.push(m);
+  whole.forEach(function(t){byModel(t).parent=m.id});ids.forEach(function(id){if(!wp[id])byId(id).model=m.id});cleanModels();
   sel=ids.slice();selModel=m.id;msg('Grouped '+ids.length+' part(s) into '+m.name+'.');all()}
 /* ===== Union: Ctrl+Shift+G merges the selected parts into ONE part (not a model). The pieces are kept inside the part as p.un = {b: base size, pc: colour at
    creation, g: [{s: shape, z: size, y: triangle turn, c: colour, m: 4x4 matrix relative to the union's centre}]}; the mesh is merged when the part is built. ===== */
@@ -2354,11 +2378,17 @@ function unionSplit(){if(animOn())return;
       ['mat','svc','nocol','tr','model','fold','fr'].forEach(function(k){if(u[k]!==undefined)np[k]=u[k]});made.push(np)})});
   P.parts=P.parts.filter(function(p){return !ids[p.id]||made.indexOf(p)>=0});
   cleanModels();sel=made.map(function(p){return p.id});selModel=null;msg('Split into '+made.length+' parts.');all()}
-function ungroup(){const ms={};sel.forEach(function(id){const p=byId(id);if(p&&p.model)ms[p.model]=1});
-  let blk=false;Object.keys(ms).forEach(function(k){if(partsOf(k).some(function(p){return !p.parent&&kids(p).length})){delete ms[k];blk=true}});
+function ungroup(){const ms={};
+  if(selModel&&byModel(selModel))ms[selModel]=1;else sel.forEach(function(id){const p=byId(id);if(p&&p.model)ms[mTop(p.model)]=1});
+  let blk=false;Object.keys(ms).forEach(function(k){if(partsDirect(k).some(function(p){return !p.parent&&kids(p).length})){delete ms[k];blk=true}});
   if(blk&&!Object.keys(ms).length){msg('Rigs always stay inside a model, so this one cannot be ungrouped.');return}
   if(!Object.keys(ms).length){msg('Select a model to ungroup.');return}
-  P.parts.forEach(function(p){if(p.model&&ms[p.model])delete p.model});cleanModels();selModel=null;msg('Ungrouped.');all()}
+  /* only this model's own level is opened: models inside it move up one level (or out, if it was a top model) */
+  Object.keys(ms).forEach(function(k){const m=byModel(k);if(!m)return;const up=m.parent&&byModel(m.parent)?m.parent:null;
+    mKids(k).forEach(function(c){if(up)c.parent=up;else delete c.parent});
+    partsDirect(k).forEach(function(p){if(up)p.model=up;else delete p.model});
+    P.models=P.models.filter(function(x){return x.id!==k})});
+  cleanModels();selModel=null;msg('Ungrouped.');all()}
 function delSel(force){let ids=sel.slice();
   if(!force){const keep=ids.filter(function(id){const p=byId(id);return p&&p.av});if(keep.length){ids=ids.filter(function(id){return keep.indexOf(id)<0});msg('Backspace does not delete the player character. Use the Delete button for that.')}}
   if(!ids.length)return;
@@ -2373,7 +2403,8 @@ function copyIds(){const set={};sel.forEach(function(id){const p=byId(id);if(!p)
   return P.parts.filter(function(p){return set[p.id]}).map(function(p){return p.id})}
 function clipSpan(ps){const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];ps.forEach(function(p){for(let i=0;i<3;i++){lo[i]=Math.min(lo[i],p.pos[i]-p.size[i]/2);hi[i]=Math.max(hi[i],p.pos[i]+p.size[i]/2)}});return {lo:lo,hi:hi}}
 function grabClip(){const ids=copyIds();if(!ids.length)return null;const set={},ps=ids.map(function(id){set[id]=1;return JSON.parse(JSON.stringify(byId(id)))});
-  const models={},anims={};ps.forEach(function(p){if(p.model&&!models[p.model]){const m=byModel(p.model);models[p.model]={name:m?m.name:'Model'}}});
+  const models={},anims={};ps.forEach(function(p){let id=p.model,n=0;while(id&&!models[id]&&n++<60){const m=byModel(id);if(!m){models[id]={name:'Model',parent:'',up:''};break}
+    const pm=m.parent&&byModel(m.parent),inc=!!pm&&partsOf(pm.id).every(function(q){return set[q.id]});models[id]={name:m.name,parent:inc?m.parent:'',up:m.parent||''};id=inc?m.parent:null}});
   Object.keys(P.anims).forEach(function(a){const k=P.anims[a]&&P.anims[a].keys;if(!k)return;ids.forEach(function(id){if(k[id]){(anims[a]=anims[a]||{})[id]=JSON.parse(JSON.stringify(k[id]))}})});
   const scripts=P.scripts.filter(function(sc){const o=sc[0]&&sc[0].o;return o&&(set[o]||models[o])}).map(function(sc){return JSON.parse(JSON.stringify(sc))});
   return {parts:ps,models:models,anims:anims,scripts:scripts}}
@@ -2384,13 +2415,15 @@ function stamp(c,d,keep){const map={},mm={},kept={},now=c.parts.map(function(q){
     if(keep&&byModel(old)){const all=partsOf(old);if(!(all.length>1&&all.every(function(q){return inClip[q.id]}))){mm[old]=old;kept[old]=1;return}}
     const base=c.models[old].name.replace(/\s*\d+$/,'')||'Model';let n=1,nm=c.models[old].name;
     while(P.models.some(function(m){return m.name===nm}))nm=base+(++n);const m={id:'m'+P.nid++,name:nm};P.models.push(m);mm[old]=m.id});
+  Object.keys(c.models).forEach(function(old){if(kept[old])return;const nm2=byModel(mm[old]);if(!nm2)return;const cm=c.models[old];
+    if(cm.parent&&mm[cm.parent])nm2.parent=mm[cm.parent];else if(keep&&cm.up&&byModel(cm.up))nm2.parent=cm.up;else delete nm2.parent});
   now.forEach(function(q){q.parent=q.parent&&map[q.parent]?map[q.parent]:null;if(!q.parent)q.pivot=null;
     [q.pos,q.pivot].forEach(function(v){if(v)for(let i=0;i<3;i++)v[i]+=d[i]});if(q.model)q.model=mm[q.model];P.parts.push(q)});
   Object.keys(c.anims).forEach(function(a){const A=P.anims[a];if(!A)return;Object.keys(c.anims[a]).forEach(function(id){if(map[id])A.keys[map[id]]=JSON.parse(JSON.stringify(c.anims[a][id]))})});
   c.scripts.forEach(function(sc0){const sc=JSON.parse(JSON.stringify(sc0)),h=sc[0];if(kept[h.o])return;/* the model keeps its own scripts */h.o=map[h.o]||mm[h.o]||h.o;if(typeof h.x==='number')h.x+=24;if(typeof h.y==='number')h.y+=24;P.scripts.push(sc)});
   now.forEach(function(q){if(!q.parent&&kids(q).length)snapRig(q)});
   const ids=now.map(function(q){return q.id}),m0=now.find(function(q){return q.model});
-  sel=ids;selModel=m0&&now.every(function(q){return q.model===m0.model})?m0.model:null;return ids}
+  sel=ids;selModel=m0&&now.every(function(q){return q.model&&mTop(q.model)===mTop(m0.model)})?mTop(m0.model):null;return ids}
 function round5(v){return Math.round(v*2)/2}
 /* R rotates the selection a quarter turn around the vertical axis (Shift+R turns it the other way). Rigs turn as a whole; plain parts swap their width and depth. */
 function rotateSel(dir){if(animOn()||rigOn)return;const ids=sel.slice(),tops=[];
@@ -2489,6 +2522,11 @@ function modelProps(d,m){const ps=partsOf(m.id),nm=el('input');nm.value=m.name;n
   const ms=matSel(ps[0]&&ps[0].mat,function(k){ps.forEach(function(q){setMat(q,k)});all()}),col=el('input');col.type='color';col.value=ps[0]?ps[0].color:'#ffffff';
   col.oninput=function(){avTouch(ps);ps.forEach(function(q){q.color=col.value;M[q.id].material.color.set(col.value)});hl();save()};
   d.append(lab('Model name',nm),el('p','note','Model with '+ps.length+' pieces. Drag the arrows to move all of it. To move one piece, Alt+click it, double-click it, or pick it in the list above.'));
+  {const pr=el('select'),o0=el('option','','(none - top level)');o0.value='';pr.append(o0);const bad=mDesc(m.id);
+    P.models.forEach(function(x){if(bad[x.id])return;const o=el('option','',mPath(x));o.value=x.id;pr.append(o)});
+    pr.value=m.parent&&byModel(m.parent)?m.parent:'';
+    pr.onchange=function(){if(pr.value)m.parent=pr.value;else delete m.parent;msg(pr.value?m.name+' is now inside '+byModel(pr.value).name+'.':m.name+' is a top-level model again.');all();props()};
+    d.append(lab('Inside model',pr),el('p','note','Models can sit inside other models. Select several parts or models and group them to nest them, or drag a model onto another one in the list.'))}
   {const sA=sect(d,'Appearance');sA.append(lab('Material (all pieces)',ms),lab('Color (all pieces)',col));if(ps.length){shineAll(sA,ps,'Shininess (all pieces)');trAll(sA,ps,'Transparency (all pieces)')}}{const gr=ps.find(function(q){return !q.parent&&!q.av&&kids(q).length});if(gr)gearBox(d,gr)}contSel(d)}
 /* Several parts picked at once (Shift/Ctrl-click or a Shift-drag box): material and colour apply to every one of them */
 function multiProps(d,ps){const ms=el('select'),ph=el('option','','Choose a material for all...');ph.value='';ms.append(ph);
@@ -2581,7 +2619,7 @@ function loadBig(){Object.keys(P.assets.audio).forEach(function(n){const v=P.ass
   idbDo('readonly',function(st){return st.get(id)}).then(function(rec){if(rec&&rec.blob){AURL[id]=URL.createObjectURL(rec.blob);if(selSvc==='assets')renderParts()}}).catch(function(){})})}
 function dropBig(v){if(!bigRef(v))return;const id=bigId(v);if(AURL[id]){try{URL.revokeObjectURL(AURL[id])}catch(e){}delete AURL[id]}idbDo('readwrite',function(st){return st.delete(id)}).catch(function(){})}
 /* Tidy up: sounds nobody refers to any more (and older than two days) are removed */
-function gcBig(){idbDo('readonly',function(st){return st.getAllKeys()}).then(function(keys){const used=new Set(),scan=function(o){try{Object.keys(o.assets.audio).forEach(function(n){const v=o.assets.audio[n];if(bigRef(v))used.add(bigId(v))})}catch(e){}try{Object.keys(o.assets.meshes||{}).forEach(function(n){const v=o.assets.meshes[n];if(bigRef(v))used.add(bigId(v))})}catch(e){}};
+function gcBig(){if(saveFail)return;/* a failed save means the library does not list every file in use yet */idbDo('readonly',function(st){return st.getAllKeys()}).then(function(keys){const used=new Set(),scan=function(o){try{Object.keys(o.assets.audio).forEach(function(n){const v=o.assets.audio[n];if(bigRef(v))used.add(bigId(v))})}catch(e){}try{Object.keys(o.assets.meshes||{}).forEach(function(n){const v=o.assets.meshes[n];if(bigRef(v))used.add(bigId(v))})}catch(e){}};
   scan(P);const L=glib();Object.keys(L).forEach(function(id){try{scan(JSON.parse(L[id].data))}catch(e){}});
   (keys||[]).filter(function(k){return !used.has(k)}).forEach(function(k){idbDo('readonly',function(st){return st.get(k)}).then(function(rec){if(rec&&Date.now()-(rec.at||0)>2*864e5)idbDo('readwrite',function(st){return st.delete(k)})})})}).catch(function(){})}
 function dropGameBig(g){try{const d=JSON.parse(g.data);Object.keys(d.assets.audio).forEach(function(n){dropBig(d.assets.audio[n])});Object.keys(d.assets.meshes||{}).forEach(function(n){dropBig(d.assets.meshes[n])})}catch(e){}}
@@ -2773,7 +2811,7 @@ function meshBuild(pk){return meshLibs(pk.fmt).then(function(){return new Promis
     else if(pk.fmt==='glb')new THREE.GLTFLoader(mgr).parse(d2buf(pk.main),'',function(g){fin(g.scene)},function(e){no(new Error((e&&e.message)||'That .glb file could not be read.'))});
     else no(new Error('Unknown mesh type.'))}catch(e){no(e)}})})}
 function meshPack(v){
-  if(bigRef(v))return idbDo('readonly',function(st){return st.get(bigId(v))}).then(function(rec){if(!rec||!rec.blob)throw new Error('This mesh is not stored on this computer. Open the game on the computer you imported it on, then press Publish or Update.');return rec.blob.text()}).then(function(t){return JSON.parse(t)});
+  if(bigRef(v))return idbDo('readonly',function(st){return st.get(bigId(v))}).then(function(rec){if(!rec||!rec.blob)throw new Error('This mesh is not stored in this browser (big meshes live in the browser they were imported in). Open the game in that same browser and site, or import the mesh again, then press Publish or Update.');return rec.blob.text()}).then(function(t){return JSON.parse(t)});
   return fetch(v).then(function(r){if(!r.ok)throw new Error('The mesh could not be downloaded.');return r.json()})}
 function meshLoad(nm){const v=(P.assets.meshes||{})[nm];if(!v)return Promise.resolve(null);const k=meshKey(v);let E=MESHI[k];if(E)return E.p||Promise.resolve(E);
   E=MESHI[k]={obj:null,fmt:'',fail:'',p:null};
@@ -3267,9 +3305,9 @@ function marqueeSel(e){const x0=e.clientX,y0=e.clientY,add0=e.ctrlKey||e.metaKey
     pickSel().forEach(function(m){const w=m.getWorldPosition(new THREE.Vector3());if(w.clone().sub(camera.position).dot(dir)<=0)return;
       const sc=animScr(w);if(sc.x<q.l||sc.x>q.r||sc.y<q.t||sc.y>q.b)return;
       const p=byId(m.userData.id);if(!p)return;const r=rootOf(p);
-      (p.model?partsOf(p.model):kids(r).length?treeOf(r):[p]).forEach(function(z){if(!z.av&&!z.stab&&!z.locked)set[z.id]=1})});
+      (p.model?partsOf(mTop(p.model)):kids(r).length?treeOf(r):[p]).forEach(function(z){if(!z.av&&!z.stab&&!z.locked)set[z.id]=1})});
     const ids=Object.keys(set);let out=add0?sel.slice():[];ids.forEach(function(id){if(out.indexOf(id)<0)out.push(id)});
-    sel=out;selSvc=null;{const ms={};out.forEach(function(id){const p=byId(id);ms[p&&p.model||'']=1});const k=Object.keys(ms);selModel=k.length===1&&k[0]&&partsOf(k[0]).length===out.length?k[0]:null}
+    sel=out;selSvc=null;{const ms={};out.forEach(function(id){const p=byId(id);ms[p&&p.model?mTop(p.model):'']=1});const k=Object.keys(ms);selModel=k.length===1&&k[0]&&partsOf(k[0]).length===out.length?k[0]:null}
     hl();buildEdit();renderParts();msg(ids.length?'Selected '+out.length+' part'+(out.length>1?'s':'')+'.':'Nothing inside the box.')};
   addEventListener('pointermove',mv);addEventListener('pointerup',up);addEventListener('pointercancel',up)}
 /* Left-click a part or model and drag: it slides around the map (snaps to half studs, hold Alt for free movement). While you hold it, R turns it 90 degrees
@@ -3453,7 +3491,7 @@ function stSel(){return sel.map(function(id){return byId(id)}).filter(function(p
 function topSel(){const ids=sel.slice();return stSel().filter(function(p){let a=p.parent&&byId(p.parent);while(a){if(ids.indexOf(a.id)>=0)return false;a=a.parent&&byId(a.parent)}return true})}
 function nudgeSel(dx,dy,dz){if(!stSel().length)return false;moveSel([dx,dy,dz]);all();return true}
 function dropSel(){const b=dragBox();if(!b){msg('Select something first, then press End.');return}
-  const skip={};sel.forEach(function(id){const p=byId(id);if(!p)return;const r=rootOf(p);(p.model?partsOf(p.model):kids(r).length?treeOf(r):[p]).forEach(function(q){skip[q.id]=1})});
+  const skip={};sel.forEach(function(id){const p=byId(id);if(!p)return;const r=rootOf(p);(p.model?partsOf(mTop(p.model)):kids(r).length?treeOf(r):[p]).forEach(function(q){skip[q.id]=1})});
   ray.set(new THREE.Vector3(b.c[0],b.lo[1]+.05,b.c[2]),new THREE.Vector3(0,-1,0));
   const hit=ray.intersectObjects(pickable().filter(function(m){return !skip[m.userData.id]}),false)[0],gy=hit?hit.point.y:0,dy=Math.round((gy-b.lo[1])*1000)/1000;
   if(!dy){msg('Already sitting on the ground.');return}moveSel([0,dy,0]);all();msg('Dropped onto '+(hit?'the part below':'the ground')+'.')}
@@ -3551,7 +3589,7 @@ function inW(p){return svcOf(p)==='world'}
 function pickable(){return Object.keys(M).filter(function(k){const p=byId(k);return p&&!p.stab&&inW(p)&&stageVis(p)}).map(function(k){return M[k]})}
 /* Locked parts can not be hovered or clicked in the 3D view (rays pass through them to whatever is behind). Select them in the Explorer list and press L to unlock. */
 function pickSel(){return pickable().filter(function(m){const q=byId(m.userData.id);return q&&!q.locked})}
-function lockGroup(p){const r=rootOf(p);if(p.model)return partsOf(p.model);if(kids(r).length)return treeOf(r);return [p]}
+function lockGroup(p){const r=rootOf(p);if(p.model)return partsOf(mTop(p.model));if(kids(r).length)return treeOf(r);return [p]}
 function toggleLock(){const set={},ids=[];
   sel.forEach(function(id){const p=byId(id);if(p&&!p.av)lockGroup(p).forEach(function(q){if(!set[q.id]&&!q.av&&!q.stab){set[q.id]=1;ids.push(q)}})});
   if(!ids.length){msg(sel.length?'Your character can not be locked.':'Select a block or model first, then press L to lock it (press L again to unlock).');return}
@@ -5111,12 +5149,14 @@ function renderParts(){if(rpPend){cancelAnimationFrame(rpPend);rpPend=0}const l=
     scrRows(p.id,d+1);kids(p).forEach(function(c){prow(c,d+1,true)})}
   function plain(t,fn,ic,icc,d){xrow({d:d||1,ic:ic||'\u2022',icc:icc,nm:t,dim:1,go:fn})}
   function listIn(key){let n=0;
+    function mrow(m,d){const ps=partsOf(m.id).filter(function(p){return svcOf(p)===key});if(!ps.length)return false;
+      const open=openM[m.id]!==false,nk=mKids(m.id).length;
+      xrow({d:d,ic:'\u25A3',icc:'#8a5cf6',nm:m.name,bd:[ps.length+(ps.length===1?' part':' parts')].concat(ps.every(function(q){return q.locked})?['\uD83D\uDD12 locked']:[]),open:open,onTg:function(){openM[m.id]=!open;renderParts()},
+        on:selModel===m.id||(ps.length>0&&sel.length>=ps.length&&ps.every(function(q){return SELSET.has(q.id)})),go:function(e){pickModel(m.id,!!e&&(e.ctrlKey||e.shiftKey||e.metaKey))},plus:{t:'model',id:m.id},dragT:'model',dragId:m.id,drop:{t:'model',id:m.id}});
+      if(open){scrRows(m.id,d+1);mKids(m.id).forEach(function(c){mrow(c,d+1)});partsDirect(m.id).filter(function(p){return !p.parent&&svcOf(p)===key}).forEach(function(p){prow(p,d+1,false)})}
+      return true}
     const doItems=function(fid,d){let c=0;
-      P.models.forEach(function(m){const ps=partsOf(m.id).filter(function(p){return svcOf(p)===key});if(!ps.length||inF(ps[0])!==fid)return;c++;
-        const open=openM[m.id]!==false;
-        xrow({d:d,ic:'\u25A3',icc:'#8a5cf6',nm:m.name,bd:[ps.length+(ps.length===1?' part':' parts')].concat(ps.every(function(q){return q.locked})?['\uD83D\uDD12 locked']:[]),open:open,onTg:function(){openM[m.id]=!open;renderParts()},
-          on:selModel===m.id||(ps.length>0&&sel.length>=ps.length&&ps.every(function(q){return SELSET.has(q.id)})),go:function(e){pickModel(m.id,!!e&&(e.ctrlKey||e.shiftKey||e.metaKey))},plus:{t:'model',id:m.id},dragT:'model',dragId:m.id,drop:{t:'model',id:m.id}});
-        if(open){scrRows(m.id,d+1);ps.filter(function(p){return !p.parent}).forEach(function(p){prow(p,d+1,false)})}});
+      P.models.filter(mTopLvl).forEach(function(m){const ps=partsOf(m.id).filter(function(p){return svcOf(p)===key});if(!ps.length||inF(ps[0])!==fid)return;c++;mrow(m,d)});
       P.parts.filter(function(p){return !p.parent&&!p.model&&svcOf(p)===key&&inF(p)===fid}).forEach(function(p){c++;prow(p,d,false)});return c};
     (P.folders||[]).filter(function(f){return (f.svc||'world')===key}).forEach(function(f){n++;const open=openF[f.id]!==false,cnt=countF(f.id,key);
       xrow({d:1,ic:'\uD83D\uDCC1',icc:'#e0a82e',nm:f.name,bd:[cnt+(cnt===1?' item':' items')],open:open,onTg:function(){openF[f.id]=!open;renderParts()},on:selFold===f.id,go:function(){foldPick(f.id)},drop:{t:'folder',id:f.id}});
@@ -5309,10 +5349,10 @@ applyEnv();rebuildParts();renderParts();anims();requestAnimationFrame(frame);loa
 /* ===== Folders: keep the Explorer tidy. Parts and models get p.fold = the folder id. Ctrl+Shift+F makes one from the selection, Ctrl+U ungroups a model or dissolves a folder. ===== */
 function foldBy(id){return id?(P.folders||[]).find(function(f){return f.id===id})||null:null}
 function inF(p){const f=p&&p.fold&&foldBy(p.fold);return f&&(f.svc||'world')===svcOf(p)?f.id:''}
-function countF(fid,key){let c=0;P.models.forEach(function(m){const ps=partsOf(m.id).filter(function(p){return svcOf(p)===key});if(ps.length&&inF(ps[0])===fid)c++});
+function countF(fid,key){let c=0;P.models.forEach(function(m){if(!mTopLvl(m))return;const ps=partsOf(m.id).filter(function(p){return svcOf(p)===key});if(ps.length&&inF(ps[0])===fid)c++});
   P.parts.forEach(function(p){if(!p.parent&&!p.model&&svcOf(p)===key&&inF(p)===fid)c++});return c}
 function foldItems(ps){const set={},out=[];ps.forEach(function(p){if(!p||p.av)return;const r=rootOf(p);if(r.av)return;(kids(r).length?treeOf(r):[p]).forEach(function(q){if(!set[q.id]){set[q.id]=1;out.push(q)}});
-  if(p.model)partsOf(p.model).forEach(function(q){if(!set[q.id]&&!q.av){set[q.id]=1;out.push(q)}})});return out}
+  if(p.model)partsOf(mTop(p.model)).forEach(function(q){if(!set[q.id]&&!q.av){set[q.id]=1;out.push(q)}})});return out}
 function foldAssign(ps,fid){const f=foldBy(fid),all0=foldItems(ps);let n=0,skip=0;
   all0.forEach(function(q){if(f&&(f.svc||'world')!==svcOf(q)){skip++;return}if(f)q.fold=f.id;else delete q.fold;n++});
   return {n:n,skip:skip}}
@@ -5369,15 +5409,17 @@ function dragParts(d){if(d.t==='model')return partsOf(d.id).filter(function(p){r
 function isUnder(a,b){/* is b inside a's weld tree */let q=b,n=0;while(q&&n++<200){if(q.id===a.id)return true;q=q.parent&&byId(q.parent)}return false}
 function dropOK(d,t){if(animOn()||VIEWONLY)return false;const ps=dragParts(d);if(!ps.length)return false;
   if(t.t==='part'){const tp=byId(t.id);if(!tp||tp.av&&false)return false;return ps.every(function(p){return p.id!==tp.id&&!isUnder(p,tp)})}
-  if(t.t==='model'){if(d.t==='model'&&d.id===t.id)return false;return !!byModel(t.id)}
+  if(t.t==='model'){if(d.t==='model'&&mDesc(d.id)[t.id])return false;return !!byModel(t.id)}
   return true}
 function dropOn(d,t){if(!dropOK(d,t))return;const ps=dragParts(d);let msg0='';
   if(t.t==='folder'){const r=foldAssign(ps,t.id);msg0=r.skip?'Some parts are in a different service than this folder, so they stayed out.':'Moved into the folder.'}
   else if(t.t==='model'){const mid=t.id,tm=partsOf(mid)[0],fid=tm?inF(tm):'';
-    foldItems(ps).forEach(function(q){q.model=mid;if(fid)q.fold=fid;else delete q.fold});msg0='Moved into '+byModel(mid).name+'.'}
+    if(d.t==='model'&&byModel(d.id)){byModel(d.id).parent=mid;foldItems(ps).forEach(function(q){if(fid)q.fold=fid;else delete q.fold});msg0='Put '+byModel(d.id).name+' inside '+byModel(mid).name+'.'}
+    else{foldItems(ps).forEach(function(q){q.model=mid;if(fid)q.fold=fid;else delete q.fold});msg0='Moved into '+byModel(mid).name+'.'}}
   else if(t.t==='part'){const tp=byId(t.id);let n=0;
     (d.t==='model'?ps.filter(function(c){return !c.parent}):ps).forEach(function(c){if(c.parent===tp.id)return;c.parent=tp.id;c.pivot=defPivot(c);n++});
     const mid=ensureRigModel(rootOf(tp));foldItems(ps).forEach(function(q){q.model=mid});cleanModels();msg0=n?'Now a child of '+tp.name+' (welded, it moves with it).':'Already a child of '+tp.name+'.'}
+  else if(t.t==='svc'&&d.t==='model'&&byModel(d.id)&&byModel(d.id).parent){delete byModel(d.id).parent;foldItems(ps).forEach(function(q){delete q.fold});msg0='Taken out of the model it was inside.'}
   else if(t.t==='svc'){ps.forEach(function(c){if(c.parent){c.parent=null;c.pivot=null}});
     foldItems(ps).forEach(function(q){if(!kids(rootOf(q)).length)delete q.model});
     foldItems(ps).forEach(function(q){delete q.fold});msg0='Taken out of its model, folder and parent.'}
@@ -5597,6 +5639,44 @@ function coSnapshot(to){coDiff();const m=coMap(),ks=Object.keys(m);
   ks.forEach(function(k){const st=COP.stamp[k];COP.cq.push.apply(COP.cq,coPieces(k,m[k],st?st.t:0,{to:to,snap:1}))});
   COP.cq.push({e:'se',by:COP.id,to:to})}
 
+/* ---- Meshes for everyone ----
+   A big mesh lives in the browser it was imported in. If this browser is missing one (different browser, cleared site data...), ask the others
+   in the session for it, keep a copy in this browser's file store under the same id, and redraw. Only meshes the game already lists are accepted. */
+COP.mneed={};COP.mans={};COP.mrx={};
+function coDataBlob(u){return fetch(u).then(function(r){return r.blob()}).catch(function(){const i=u.indexOf(','),bin=atob(u.slice(i+1)),a=new Uint8Array(bin.length);for(let k=0;k<bin.length;k++)a[k]=bin.charCodeAt(k);return new Blob([a],{type:'application/json'})})}
+function coMeshCheck(){if(!COP.on||COP.joining||!P||!P.assets||!P.assets.meshes)return;
+  Object.keys(P.assets.meshes).forEach(function(n){const v=P.assets.meshes[n];if(!bigRef(v)||COBIG[bigId(v)])return;
+    coBigLoad(v).then(function(u){if(u||!COP.on)return;
+      const st=COP.mneed[n]||(COP.mneed[n]={t:0,gap:5000});if(Date.now()-st.t<st.gap)return;
+      st.t=Date.now();st.gap=Math.min(st.gap*2,120000);COP.cq.push({e:'mneed',by:COP.id,n:n})})})}
+setInterval(coMeshCheck,5000);
+function coMeshReply(req,n){const v=((P&&P.assets&&P.assets.meshes)||{})[n];if(typeof v!=='string')return;
+  const key=req+':'+n,t0=COP.mans[key];if(t0&&Date.now()-t0<20000)return;
+  (bigRef(v)?coBigLoad(v):Promise.resolve(/^data:/.test(v)?v:null)).then(function(u){
+    const t1=COP.mans[key];if(!u||!COP.on||(t1&&Date.now()-t1<20000))return;COP.mans[key]=Date.now();
+    const mid=COP.id+':m'+(++coMid),cnt=Math.max(1,Math.ceil(u.length/COCH));
+    COP.cq.push({e:'mack',by:COP.id,r:req,n:n});
+    for(let i=0;i<cnt;i++)COP.cq.push({e:'mdat',by:COP.id,to:req,n:n,mid:mid,i:i,c:cnt,s:u.slice(i*COCH,(i+1)*COCH)})}).catch(function(){})}
+function coMeshGot(p){const n=String(p.n||''),v=((P&&P.assets&&P.assets.meshes)||{})[n];if(coBad(n)||!bigRef(v)||COBIG[bigId(v)])return;
+  const c=p.c|0;if(c<1||c>5000)return;
+  const r=COP.mrx[p.mid]||(COP.mrx[p.mid]={a:new Array(c),k:0});
+  if(r.a[p.i|0]===undefined){r.a[p.i|0]=String(p.s);r.k++}
+  if(r.k<c)return;delete COP.mrx[p.mid];
+  const u=r.a.join('');if(!/^data:/.test(u))return;coMeshSave(n,v,u)}
+async function coMeshSave(n,v,u){const id=bigId(v);
+  try{
+    if(COBIG[id])return;
+    const blob=await coDataBlob(u),pk=JSON.parse(await blob.text());
+    if(!pk||!pk.fmt||pk.main==null)throw new Error('that mesh was damaged on the way');
+    let stored=true;
+    try{await idbDo('readwrite',function(st){return st.put({blob:blob,at:Date.now(),name:n},id)})}catch(e){stored=false}
+    const k=meshKey(v);
+    if(stored)COBIG[id]=u;else{P.assets.meshes[n]=u;try{save()}catch(e){}}/* no file store here: keep it inside the game instead */
+    COP.last['asset:meshes:'+n]=u;/* the others already have this one, so do not send it back */
+    delete MESHI[k];try{rebuildParts()}catch(e){}try{renderParts()}catch(e){}
+    try{msg('Got the mesh "'+n+'" from your co-op friend.')}catch(e){}
+  }catch(e){console.warn('Could not keep the mesh '+n,e)}}
+
 /* ---- receiving ---- */
 function coRecv(p){if(!p||typeof p!=='object'||p.by===COP.id)return;if(p.to&&p.to!==COP.id)return;
   switch(p.e){
@@ -5605,6 +5685,9 @@ function coRecv(p){if(!p||typeof p!=='object'||p.by===COP.id)return;if(p.to&&p.t
     case 'se':if(COP.joining&&p.to===COP.id&&COP.gotSS)coEndJoin();break;
     case 'end':if(!COP.host&&(COP.on||COP.joining)){const h=coMembers().find(function(x){return x.id===p.by});if(!h||h.h)coEnded()}break;
     case 'c':coAvSet(p);break;
+    case 'mneed':if(COP.on&&!COP.joining){const rq=String(p.by),nm=String(p.n||'');setTimeout(function(){coMeshReply(rq,nm)},30+Math.random()*450)}break;
+    case 'mack':COP.mans[String(p.r)+':'+String(p.n)]=Date.now();break;
+    case 'mdat':coMeshGot(p);break;
     case 'd':coRecvD(p);break;
     case 'b':coRecvB(p);break}}
 function coRecvB(p){if(!Array.isArray(p.items))return;p.items.slice(0,1000).forEach(function(it){if(!it||typeof it.k!=='string')return;
@@ -5763,7 +5846,12 @@ coChip.onclick=function(){coDlg()};
    updates automatically. Publishing the live game stays with the owner. Whoever has the game open at the same time also edits live together. */
 function coIsOwner(){const g=gameId&&glib()[gameId];return !!ME&&(!g||!g.owner||g.owner.id===ME.id)}
 let cwT=0;
-function coWorkSched(){if(!sb||!ME||ME.demo||VIEWONLY||!gameId)return;const g=glib()[gameId];if(!g||!g.co)return;clearTimeout(cwT);cwT=setTimeout(function(){coWorkPush().catch(function(e){console.warn('Shared copy not saved',e)})},1500)}
+let cwWarned=0;
+function coWorkSched(){if(!sb||!ME||ME.demo||VIEWONLY||!gameId)return;const g=glib()[gameId];if(!g||!g.co)return;
+  /* flag unsent changes straight away so opening the game later never silently replaces them with an older shared copy */
+  if(!g.cofail){const L2=glib();if(L2[gameId]){L2[gameId].cofail=1;store.set(GKEY,JSON.stringify(L2))}}
+  clearTimeout(cwT);cwT=setTimeout(function(){coWorkPush().then(function(){cwWarned=0}).catch(function(e){console.warn('Shared copy not saved',e);
+    if(Date.now()-cwWarned>60000){cwWarned=Date.now();try{msg('Shared copy NOT saved online: '+((e&&e.message)||e))}catch(x){}}})},1500)}
 async function coWorkPush(){const gid=gameId,g0=gid&&glib()[gid];if(!g0||!g0.co||!sb||!ME)return;
   try{
     try{if(persistGame.flush)persistGame.flush()}catch(e){}
