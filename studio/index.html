@@ -5245,11 +5245,11 @@ function cullTick(){
    so the picture moves like a real window when you walk around. To keep it cheap: the second camera only draws the part of the screen
    the window covers (a cut-out of the view, so most of the world is skipped), nothing is drawn when the window is off screen or far away,
    and if the game slows down the picture is drawn smaller, then less often. At most VZMAX windows at once. ===== */
-let VZ={};const VZMAX=4,VZDIST=140,VZCAP=2048,VZQMIN=.5;
+let VZ={};const VZMAX=4,VZDIST=140,VZRTW=2048,VZRTH=1536;
 const vzGov={q:1,skip:1,ema:16.7,base:16.7,t:0,n:0,f:0,up:0};
 const vzCam=new THREE.PerspectiveCamera(70,1,.5,1500),vzSz=new THREE.Vector2(),vzFr=new THREE.Frustum(),vzPM=new THREE.Matrix4(),vzSph=new THREE.Sphere(),
   vzA=new THREE.Matrix4(),vzB=new THREE.Matrix4(),vzAi=new THREE.Matrix4(),vzX=new THREE.Matrix4(),vzP=new THREE.Vector3(),vzQ=new THREE.Quaternion(),vzS=new THREE.Vector3(),
-  vzOne=new THREE.Vector3(1,1,1),vzN=new THREE.Vector3(),vzC=new THREE.Vector3(),vzD=new THREE.Vector3(),vzV=new THREE.Vector3(),vzV2=new THREE.Vector3(),vzPlane=new THREE.Plane(),vzDummy=new THREE.Plane(new THREE.Vector3(0,1,0),1e7),vzHold=[vzDummy],vzClipOn=[vzPlane];
+  vzOne=new THREE.Vector3(1,1,1),vzN=new THREE.Vector3(),vzC=new THREE.Vector3(),vzD=new THREE.Vector3(),vzV=new THREE.Vector3(),vzV2=new THREE.Vector3(),vzPlane=new THREE.Plane();
 function vzFind(a,S){const by=function(nm){nm=String(nm).trim().toLowerCase();return nm?(P.parts.find(function(p){return !p.av&&String(p.name).toLowerCase()===nm})||null):null},raw=String(a==null?'':a).trim();
   return by(raw)||by(String(val(raw,S)))}
 function vzStart(n1,n2,S){const A=vzFind(n1,S),B=vzFind(n2,S);
@@ -5259,19 +5259,15 @@ function vzStart(n1,n2,S){const A=vzFind(n1,S),B=vzFind(n2,S);
   if(VZ[A.id]){VZ[A.id].b=B.id;return}
   if(Object.keys(VZ).length>=VZMAX){log('Error: only '+VZMAX+' parts can visualize at once (each one draws the world again)');return}
   VZ[A.id]={a:A.id,b:B.id,rt:null,mat:null,ov:null}}
-function vzStop(n1,S){const A=vzFind(n1,S);if(!A||!VZ[A.id])return;vzFree(VZ[A.id]);delete VZ[A.id];if(!Object.keys(VZ).length)vzUnhold()}
-function vzUnhold(){try{if(renderer.clippingPlanes===vzHold||renderer.clippingPlanes===vzClipOn)renderer.clippingPlanes=[]}catch(e){}}
+function vzStop(n1,S){const A=vzFind(n1,S);if(!A||!VZ[A.id])return;vzFree(VZ[A.id]);delete VZ[A.id]}
 function vzFree(z){try{const m=M[z.a];if(m&&m.userData.vzOv){m.remove(m.userData.vzOv);delete m.userData.vzOv}}catch(e){}
   try{if(z.rt)z.rt.dispose()}catch(e){}try{if(z.mat)z.mat.dispose()}catch(e){}z.rt=null;z.mat=null;z.ov=null}
-function vzClear(){Object.keys(VZ).forEach(function(k){vzFree(VZ[k])});VZ={};vzUnhold()}
+function vzClear(){Object.keys(VZ).forEach(function(k){vzFree(VZ[k])});VZ={}}
 /* One picture buffer per window, made once. Each frame only the corner of it that is needed gets drawn. */
-function vzTarget(z,W,H){if(!(W>0&&H>0))return z.rt;const tw=Math.max(16,Math.min(W,VZCAP)),th=Math.max(16,Math.min(H,VZCAP));
-  if(z.rt&&(z.rt.width!==tw||z.rt.height!==th)){try{z.rt.dispose()}catch(e){}z.rt=null}
-  if(!z.rt){z.rt=new THREE.WebGLRenderTarget(tw,th,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat,depthBuffer:true,stencilBuffer:false,generateMipmaps:false});z.force=true;z.sgOk=false}
-  if(z.mat)z.mat.uniforms.tMap.value=z.rt.texture;return z.rt}
+function vzTarget(z){if(!z.rt)z.rt=new THREE.WebGLRenderTarget(VZRTW,VZRTH,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat,depthBuffer:true,stencilBuffer:false,generateMipmaps:false});return z.rt}
 /* The picture sits on a slightly larger copy of the part, so the part itself is never changed (and nothing breaks when it is rebuilt: the copy is simply made again) */
 function vzSkin(z,m){
-  if(!z.mat){z.mat=new THREE.ShaderMaterial({uniforms:{tMap:{value:z.rt?z.rt.texture:null},uRect:{value:new THREE.Vector4(0,0,1,1)},uFill:{value:new THREE.Vector2(1,1)},uHalf:{value:new THREE.Vector2(0,0)}},
+  if(!z.mat){z.mat=new THREE.ShaderMaterial({uniforms:{tMap:{value:vzTarget(z).texture},uRect:{value:new THREE.Vector4(0,0,1,1)},uFill:{value:new THREE.Vector2(1,1)},uHalf:{value:new THREE.Vector2(0,0)}},
     vertexShader:'void main(){gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
     fragmentShader:'uniform sampler2D tMap;uniform vec4 uRect;uniform vec2 uFill;uniform vec2 uHalf;void main(){vec2 uv=clamp((gl_FragCoord.xy-uRect.xy)/uRect.zw,0.0,1.0)*uFill;uv=clamp(uv,uHalf,uFill-uHalf);gl_FragColor=vec4(texture2D(tMap,uv).rgb,1.0);}',
     polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
@@ -5291,18 +5287,17 @@ function vzRectOf(m,W,H){const g=m.geometry;if(!g.boundingBox)g.computeBoundingB
 function vzGovern(){const t=performance.now(),d=t-vzGov.t;vzGov.t=t;
   if(d>0&&d<250){vzGov.ema+=(d-vzGov.ema)*.08;vzGov.base=Math.min(18,Math.max(4,Math.min(vzGov.base*1.0004,vzGov.ema)))}
   if(++vzGov.f%20)return;const e=vzGov.ema,hi=Math.max(vzGov.base*1.4,16),lo=Math.max(vzGov.base*1.15,hi*.82);
-  if(e>hi){vzGov.up=0;if(vzGov.q>VZQMIN+.001)vzGov.q=Math.max(VZQMIN,Math.round((vzGov.q-.1)*100)/100);else if(vzGov.skip<3)vzGov.skip++}
+  if(e>hi){vzGov.up=0;if(vzGov.q>.501)vzGov.q=Math.max(.5,Math.round((vzGov.q-.1)*100)/100);else if(vzGov.skip<3)vzGov.skip++}
   else if(e<lo){if(++vzGov.up>=3){vzGov.up=0;if(vzGov.skip>1)vzGov.skip--;else if(vzGov.q<1)vzGov.q=Math.min(1,Math.round((vzGov.q+.05)*100)/100)}}
   else vzGov.up=0}
 function vzTick(){const ids=Object.keys(VZ);if(!ids.length)return;
   if(!(playing||running)){vzClear();return}
   renderer.getDrawingBufferSize(vzSz);const W=vzSz.x,H=vzSz.y;if(!W||!H)return;
   vzGovern();vzGov.n++;
-  renderer.clippingPlanes=vzHold;/* one (harmless) clip plane is always set, so materials are not re-checked every time the portal pass starts and ends */
   camera.updateMatrixWorld();vzPM.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);vzFr.setFromProjectionMatrix(vzPM);
   ids.forEach(function(id,ix){const z=VZ[id],A=byId(z.a),B=byId(z.b),mA=M[z.a],mB=M[z.b];
     if(!A||!B||!mA||!mB||!mA.geometry)return;
-    vzTarget(z,W,H);vzSkin(z,mA);z.mat.uniforms.tMap.value=z.rt.texture;
+    vzSkin(z,mA);
     if(!mA.visible)return;
     const g=mA.geometry;if(!g.boundingSphere)g.computeBoundingSphere();
     mA.updateWorldMatrix(true,false);mB.updateWorldMatrix(true,false);
@@ -5310,9 +5305,9 @@ function vzTick(){const ids=Object.keys(VZ);if(!ids.length)return;
     if(camera.position.distanceTo(vzSph.center)-vzSph.radius>VZDIST){z.ov.visible=false;return}/* too far to matter: show the plain part */
     z.ov.visible=true;
     if(!vzFr.intersectsSphere(vzSph))return;/* not on screen: keep the last picture */
-    if(!z.force&&(vzGov.n+ix)%vzGov.skip)return;/* the game is slow: draw this one less often */
+    if((vzGov.n+ix)%vzGov.skip)return;/* the game is slow: draw this one less often */
     const rc=vzRectOf(mA,W,H);if(rc.w<8||rc.h<8)return;
-    const RTW=z.rt.width,RTH=z.rt.height,sc=Math.min(vzGov.q,RTW/rc.w,RTH/rc.h),rw=Math.max(8,Math.floor(rc.w*sc)),rh=Math.max(8,Math.floor(rc.h*sc));
+    const sc=Math.min(vzGov.q,VZRTW/rc.w,VZRTH/rc.h),rw=Math.max(8,Math.floor(rc.w*sc)),rh=Math.max(8,Math.floor(rc.h*sc));
     mA.matrixWorld.decompose(vzP,vzQ,vzS);vzA.compose(vzP,vzQ,vzOne);
     mB.matrixWorld.decompose(vzP,vzQ,vzS);vzB.compose(vzP,vzQ,vzOne);vzC.copy(vzP);
     /* B's flat side: its thinnest direction is the plane of the window */
@@ -5320,25 +5315,25 @@ function vzTick(){const ids=Object.keys(VZ);if(!ids.length)return;
     vzN.set(ax===0?1:0,ax===1?1:0,ax===2?1:0).applyQuaternion(vzQ);
     /* the second camera: the player's camera, moved by the same amount that moves A onto B, and cut down to the window's box on screen */
     vzX.copy(vzB).multiply(vzAi.copy(vzA).invert()).multiply(camera.matrixWorld);
-    {const e=vzX.elements,sg=z.sg||(z.sg=new Float64Array(22));let same=!z.force&&z.sgOk&&sg[16]===rc.x&&sg[17]===rc.y&&sg[18]===rc.w&&sg[19]===rc.h&&sg[20]===rw&&sg[21]===rh;
+    {const e=vzX.elements,sg=z.sg||(z.sg=new Float64Array(22));let same=z.sgOk===true&&sg[16]===rc.x&&sg[17]===rc.y&&sg[18]===rc.w&&sg[19]===rc.h&&sg[20]===rw&&sg[21]===rh;
       if(same)for(let k=0;k<16;k++)if(Math.abs(e[k]-sg[k])>1e-5){same=false;break}
-      if(same&&((z.idle=(z.idle||0)+1)%2))return;/* nothing about the view changed: only redraw every other frame (things moving in the picture still move) */
-      z.idle=0;for(let k=0;k<16;k++)sg[k]=e[k];sg[16]=rc.x;sg[17]=rc.y;sg[18]=rc.w;sg[19]=rc.h;sg[20]=rw;sg[21]=rh;z.sgOk=true;z.force=false}
+      if(same&&((z.idle=(z.idle||0)+1)%2))return;
+      z.idle=0;for(let k=0;k<16;k++)sg[k]=e[k];sg[16]=rc.x;sg[17]=rc.y;sg[18]=rc.w;sg[19]=rc.h;sg[20]=rw;sg[21]=rh;z.sgOk=true}
     vzX.decompose(vzCam.position,vzCam.quaternion,vzS);vzCam.scale.set(1,1,1);
     vzCam.fov=camera.fov;vzCam.aspect=W/H;vzCam.near=camera.near;vzCam.far=Math.min(camera.far,500);
     vzCam.setViewOffset(W,H,rc.x,rc.y,rc.w,rc.h);vzCam.updateProjectionMatrix();vzCam.updateMatrixWorld(true);
     /* cut away everything between that camera and B, so only what is beyond B shows */
     const side=vzN.dot(vzD.copy(vzCam.position).sub(vzC)),clip=Math.abs(side)>1e-4;
     if(clip){vzN.multiplyScalar(side>0?-1:1);vzPlane.setFromNormalAndCoplanarPoint(vzN,vzC)}
-    const rt=z.rt,hid=[],back=[];
+    const rt=vzTarget(z),hid=[],back=[];
     rt.viewport.set(0,0,rw,rh);rt.scissor.set(0,0,rw,rh);rt.scissorTest=true;
-    const u=z.mat.uniforms;u.uRect.value.set(rc.x,H-(rc.y+rc.h),rc.w,rc.h);u.uFill.value.set(rw/RTW,rh/RTH);u.uHalf.value.set(.5/RTW,.5/RTH);
+    const u=z.mat.uniforms;u.uRect.value.set(rc.x,H-(rc.y+rc.h),rc.w,rc.h);u.uFill.value.set(rw/VZRTW,rh/VZRTH);u.uHalf.value.set(.5/VZRTW,.5/VZRTH);
     z.ov.visible=false;/* A does not draw itself into its own picture */
     if(mB.visible){mB.visible=false;hid.push(mB)}/* B is only a marker */
     CULLED.forEach(function(m){if(!m.visible&&m!==mB&&m!==mA){m.visible=true;back.push(m)}});/* things the main camera skipped may be in the other view */
-    const au=renderer.shadowMap.autoUpdate,pr=renderer.getRenderTarget();
-    try{renderer.shadowMap.autoUpdate=false;renderer.clippingPlanes=clip?vzClipOn:vzHold;renderer.setRenderTarget(rt);renderer.render(scene,vzCam)}
-    finally{renderer.setRenderTarget(pr);renderer.clippingPlanes=vzHold;renderer.shadowMap.autoUpdate=au;z.ov.visible=true;hid.forEach(function(o){o.visible=true});back.forEach(function(m){m.visible=false})}})}
+    const au=renderer.shadowMap.autoUpdate,pc=renderer.clippingPlanes,pr=renderer.getRenderTarget();
+    try{renderer.shadowMap.autoUpdate=false;renderer.clippingPlanes=clip?[vzPlane]:[];renderer.setRenderTarget(rt);renderer.render(scene,vzCam)}
+    finally{renderer.setRenderTarget(pr);renderer.clippingPlanes=pc;renderer.shadowMap.autoUpdate=au;z.ov.visible=true;hid.forEach(function(o){o.visible=true});back.forEach(function(m){m.visible=false})}})}
 function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const dt=Math.min(.1,(now-lt)/1000);qTune(dt*1000);lt=now;const f=fwd();
   if(!playing)FC=false;
   if(playing&&!FC)play(dt,f);
