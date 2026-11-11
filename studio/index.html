@@ -5809,487 +5809,146 @@ function gamesDlg(){mdl('My games',function(c,close){const L=glib(),ids=Object.k
   c.append(mb('New game (Shift+N, G)','',function(){close();newGame()}),mb('Close','ghost',close))})}
 {const bk=$('s-back'),pb=mb('Publish','',publishDlg),gb=mb('My games','ghost',gamesDlg);upBtn=mb('Update','',updateLive);upBtn.title='Send your latest changes to normal BrixBlox. Until you press this, changes only save here in BrixBlox Studio.';upBtn.hidden=true;$('s-name').insertAdjacentElement('afterend',statEl);bk.parentNode.insertBefore(pb,bk);bk.parentNode.insertBefore(upBtn,bk);bk.parentNode.insertBefore(gb,bk)}
 updateStat();
-/* ===== Co-op editing =====
-   One person hosts a session and shares a code; friends join and everyone edits the same game at once.
-   The game is split into small pieces (each part, model, animation, script, image...). When you change a piece it is sent to everyone
-   over Supabase Realtime, and the newest change to a piece wins. Joining copies the host's game into the guest's Studio (the guest's own
-   saved games are never touched and guests cannot publish). */
-const COP={on:false,joining:false,starting:false,detached:false,host:false,code:'',ch:null,id:Math.random().toString(36).slice(2,10),at:0,last:{},stamp:{},clock:0,
-  out:new Map(),cq:[],rx:{},inq:[],pre:[],tm:0,kick:0,qs:0,mk:{},base:1e7+Math.floor(Math.random()*9e4)*1e4,next:0,prevGid:null,hostName:'',ui:null,joinDone:null,gotSS:false};
-let coPtr=false,coMid=0,coSidN=0;
-/* While a join is in progress (or failed halfway) the game in memory is wiped/partial. It must never be saved over the real game or sent to the shared copy. */
-function coNoSave(){try{return !!(COP&&(COP.joining||COP.dirtyJoin))}catch(e){return false}}
-function coTryEnd(){if(!COP.joining||!COP.gotSS||!COP.seDone)return;if(COP.snapN&&Object.keys(COP.snapSeen||{}).length<COP.snapN)return;coEndJoin()}
-const COCH=40000,COSKIP=/^(parts|models|anims|scripts|assets|nid)$/;
+/* ===== Co-op editing (rewritten) =====
+   Host starts a session and shares a code. A joiner asks for the game; it arrives into a staging area and ONLY when every piece has arrived
+   is the joiner's Studio switched over, so a failed join can never wipe or save a half-empty game. After that every change to a piece
+   (part, model, script, animation, setting) is sent to everyone and the newest change wins (logical clock, so wrong PC clocks do not matter). */
+const COP={on:false,joining:false,starting:false,detached:false,host:false,code:'',ch:null,id:Math.random().toString(36).slice(2,10),at:0,stamp:{},last:{},clk:0,out:new Map(),q:[],inq:[],pre:[],rx:{},stg:null,hostName:'',prevGid:null,persist:null,done:null,ui:null,mk:{},base:1e7+Math.floor(Math.random()*9e4)*1e4};
+const COCH=40000,COSKIP=/^(parts|models|anims|scripts|assets|nid)$/;let coMid=0,coSidN=0,coT=0;
+function coNoSave(){return false}/* nothing is wiped before a join is complete, so saving is always safe */
 const coBad=function(x){return x==='__proto__'||x==='constructor'||x==='prototype'};
 const coSid=function(){return COP.id+Math.random().toString(36).slice(2,6)+(coSidN++)};
-function coHash(s){let h=2166136261;s=String(s).toLowerCase();for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
-const coHueDeg=function(n){return coHash(n)%360};
-const coHue=function(n){return 'hsl('+coHueDeg(n)+',75%,55%)'};
-function coTime(){const t=Math.max(Date.now(),COP.clock+1);COP.clock=t;return t}
-function coMembers(){const o=[];try{const s=COP.ch.presenceState();Object.keys(s).forEach(function(k){const m=(s[k]||[])[0];if(m)o.push({id:k,n:String(m.n||'?').slice(0,24),at:+m.at||0,h:!!m.h})})}catch(e){}return o}
-function coLeader(){const m=coMembers().filter(function(x){return x.id!==COP.id||COP.on});if(!m.length)return true;const h=m.find(function(x){return x.h});if(h)return h.id===COP.id;
-  m.sort(function(a,b){return a.at-b.at||(a.id<b.id?-1:1)});return m[0].id===COP.id}
+const coWait=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
+const coHue=function(n){let h=0;String(n).toLowerCase().split('').forEach(function(ch){h=(h*31+ch.charCodeAt(0))%360});return 'hsl('+h+',75%,55%)'};
 function coNorm(){P.parts=P.parts||[];P.models=P.models||[];P.anims=P.anims||{};P.scripts=P.scripts||[];P.vars=Array.isArray(P.vars)?P.vars:[];P.assets=P.assets||{};
-  ['images','audio','meshes','avol'].forEach(function(c){P.assets[c]=P.assets[c]||{}});P.badges=Array.isArray(P.badges)?P.badges:[];P.guis=Array.isArray(P.guis)?P.guis:[];P.bans=Array.isArray(P.bans)?P.bans:[];P.gamepasses=Array.isArray(P.gamepasses)?P.gamepasses:[];
+  ['images','audio','meshes','avol'].forEach(function(c){P.assets[c]=P.assets[c]||{}});['badges','guis','bans','gamepasses'].forEach(function(k){P[k]=Array.isArray(P[k])?P[k]:[]});
   P.env=Object.assign({sky:'#8fd3ff',tod:14,bright:1,sun:1,fog:0},P.env||{});P.rules=Object.assign({grav:190,jump:48,speed:16,cam:14,fov:70},P.rules||{});P.audio=Object.assign({vol:.5,mute:false},P.audio||{});
   P.squads=P.squads||[{id:'q1',name:'Red Squad',color:'#e5484d'},{id:'q2',name:'Blue Squad',color:'#3b82f6'}];P.player=P.player||{name:'Player1',squad:''}}
-
-/* The game as a flat list of pieces: key -> text. Two pieces with the same key are the same thing. */
-/* Big meshes live in this browser's file store, so they are read out once and sent to everyone in the session as data. */
-const COBIG={},COBIGP={};
-function coBigUrl(v){const id=bigId(v);if(COBIG[id])return COBIG[id];coBigLoad(v);return null}
-function coBigLoad(v){const id=bigId(v);if(COBIG[id])return Promise.resolve(COBIG[id]);if(COBIGP[id])return COBIGP[id];
-  return COBIGP[id]=idbDo('readonly',function(st){return st.get(id)}).then(function(rec){return rec&&rec.blob?blobUrl(rec.blob):null}).then(function(u){delete COBIGP[id];if(u){COBIG[id]=u;try{coSchedule()}catch(e){}}return u}).catch(function(){delete COBIGP[id];return null})}
+/* the game as a flat list of pieces: key -> text */
 function coMap(){const m={},seen={};
-  P.parts.forEach(function(p){m['part:'+p.id]=JSON.stringify(p)});
-  P.models.forEach(function(p){m['model:'+p.id]=JSON.stringify(p)});
+  P.parts.forEach(function(p){m['part:'+p.id]=JSON.stringify(p)});P.models.forEach(function(p){m['model:'+p.id]=JSON.stringify(p)});
   Object.keys(P.anims).forEach(function(k){m['anim:'+k]=JSON.stringify(P.anims[k])});
-  P.scripts.forEach(function(sc){if(!sc||!sc.length)return;const h=sc[0];if(!h||typeof h!=='object')return;if(!h.sid||seen[h.sid])h.sid=coSid();seen[h.sid]=1;m['script:'+h.sid]=JSON.stringify(sc)});
-  ['images','audio','meshes'].forEach(function(c){const o=P.assets[c]||{};Object.keys(o).forEach(function(n){const v=o[n];if(typeof v!=='string')return;if(!bigRef(v)){m['asset:'+c+':'+n]=v;return}
-    if(c==='meshes'){const u=coBigUrl(v);if(u)m['asset:'+c+':'+n]=u}})});
+  P.scripts.forEach(function(sc){if(!sc||!sc.length||!sc[0]||typeof sc[0]!=='object')return;const h=sc[0];if(!h.sid||seen[h.sid])h.sid=coSid();seen[h.sid]=1;m['script:'+h.sid]=JSON.stringify(sc)});
+  ['images','audio','meshes'].forEach(function(c){const o=P.assets[c]||{};Object.keys(o).forEach(function(n){const v=o[n];if(typeof v==='string'&&!bigRef(v))m['asset:'+c+':'+n]=v})});
   const av=P.assets.avol||{};Object.keys(av).forEach(function(n){m['asset:avol:'+n]=String(av[n])});
-  Object.keys(P).forEach(function(k){if(!COSKIP.test(k)&&P[k]!==undefined)m['meta:'+k]=JSON.stringify(P[k])});
-  return m}
-
-/* Put one received piece into the game. Returns what kind of thing changed. */
-function coApplyKV(k,v){const i=k.indexOf(':'),kind=k.slice(0,i),id=k.slice(i+1);
-  if(kind==='part'||kind==='model'){const arr=kind==='part'?P.parts:P.models,ix=arr.findIndex(function(x){return x&&x.id===id});
-    if(v===null){coCheap=false;if(ix>=0)arr.splice(ix,1);return 'p'}
-    const o=JSON.parse(v);if(!o||typeof o!=='object'||o.id!==id)return null;
-    if(ix>=0){const t=arr[ix];if(coCheap&&(kind!=='part'||!coPosOnly(t,o)))coCheap=false;Object.keys(t).forEach(function(x){delete t[x]});Object.assign(t,o)}else{coCheap=false;arr.push(o)}return 'p'}
-  if(kind==='anim'){if(coBad(id)||!id)return null;if(v===null)delete P.anims[id];else P.anims[id]=JSON.parse(v);return 'a'}
-  if(kind==='script'){const ix=P.scripts.findIndex(function(s){return s&&s.length&&s[0]&&s[0].sid===id});
-    if(v===null){if(ix>=0)P.scripts.splice(ix,1);return 's'}
-    const o=JSON.parse(v);if(!Array.isArray(o)||!o.length)return null;
-    if(ix>=0){const t=P.scripts[ix];t.length=0;o.forEach(function(b){t.push(b)})}else P.scripts.push(o);return 's'}
-  if(kind==='asset'){const j=id.indexOf(':'),c=id.slice(0,j),n=id.slice(j+1);if(!/^(images|audio|meshes|avol)$/.test(c)||!n||coBad(n))return null;
-    const o=P.assets[c]=P.assets[c]||{};if(v===null){delete o[n];if(c==='audio'){try{stopAudio(n)}catch(e){}}}else o[n]=c==='avol'?(+v||0):v;return 'i'}
-  if(kind==='meta'){if(COSKIP.test(id)||coBad(id)||!id)return null;if(v===null)delete P[id];else P[id]=JSON.parse(v);COP.mk[id]=1;return 'm'}
-  return null}
-
-/* Redraw whatever the incoming changes touched (same steps Undo uses) */
+  Object.keys(P).forEach(function(k){if(!COSKIP.test(k)&&P[k]!==undefined)m['meta:'+k]=JSON.stringify(P[k])});return m}
+function coApply(k,v){const i=k.indexOf(':'),kd=k.slice(0,i),id=k.slice(i+1);
+  if(kd==='part'||kd==='model'){const a=kd==='part'?P.parts:P.models,ix=a.findIndex(function(x){return x&&x.id===id});
+    if(v===null){if(ix>=0)a.splice(ix,1);return 'p'}const o=JSON.parse(v);if(!o||typeof o!=='object'||o.id!==id)return null;
+    if(ix>=0){const t=a[ix];Object.keys(t).forEach(function(x){delete t[x]});Object.assign(t,o)}else a.push(o);return 'p'}
+  if(kd==='anim'){if(!id||coBad(id))return null;if(v===null)delete P.anims[id];else P.anims[id]=JSON.parse(v);return 'a'}
+  if(kd==='script'){const ix=P.scripts.findIndex(function(s){return s&&s.length&&s[0]&&s[0].sid===id});if(v===null){if(ix>=0)P.scripts.splice(ix,1);return 's'}
+    const o=JSON.parse(v);if(!Array.isArray(o)||!o.length)return null;if(ix>=0){const t=P.scripts[ix];t.length=0;o.forEach(function(b){t.push(b)})}else P.scripts.push(o);return 's'}
+  if(kd==='asset'){const j=id.indexOf(':'),c=id.slice(0,j),n=id.slice(j+1);if(!/^(images|audio|meshes|avol)$/.test(c)||!n||coBad(n))return null;
+    const o=P.assets[c]=P.assets[c]||{};if(v===null)delete o[n];else o[n]=c==='avol'?(+v||0):v;return 'i'}
+  if(kd==='meta'){if(COSKIP.test(id)||coBad(id)||!id)return null;if(v===null)delete P[id];else P[id]=JSON.parse(v);COP.mk[id]=1;return 'm'}return null}
 function coRefresh(f){
-  const cheap=coCheap&&f.p&&!f.a&&!f.i&&!f.s&&!f.m;coCheap=false;
-  if(cheap){/* only positions changed (a friend moved something): just move the meshes instead of rebuilding the whole scene */
-    try{syncPos();buildEdit();if(rigOn)applyPose({});else preview()}catch(e){try{rebuildParts()}catch(x){}}
-    try{if(!animOn())props()}catch(e){}
-    try{histLast=snapState();coSaveSoon()}catch(e){}
-    COP.mk={};coUi();return}
   try{if(f.p||f.a){sel=sel.filter(function(id){return byId(id)});if(selModel&&!byModel(selModel))selModel=null;if(selJ&&!byId(selJ))selJ=null;fixA();aJFix()}}catch(e){}
-  try{if(f.p||f.a||f.i)rebuildParts()}catch(e){}
-  try{if(f.i)updSkyTex()}catch(e){}
-  try{if(f.s)rend()}catch(e){}
+  try{if(f.p||f.a||f.i)rebuildParts()}catch(e){}try{if(f.i)updSkyTex()}catch(e){}try{if(f.s)rend()}catch(e){}
   try{if(f.m){if(COP.mk.env)applyEnv();if(COP.mk.guis)renderGui();if(COP.mk.name){const n=$('s-name');if(n&&document.activeElement!==n)n.value=P.name}}}catch(e){}
-  try{renderParts()}catch(e){}
-  try{if(animOn())animUI();else if(f.p||f.a||f.m)props()}catch(e){}
-  try{histLast=snapState();saveRaw()}catch(e){}
-  COP.mk={};coUi()}
-
+  try{renderParts()}catch(e){}try{if(animOn())animUI();else props()}catch(e){}try{histLast=snapState();saveRaw()}catch(e){}COP.mk={};coUi()}
+const coOlder=function(x){const s=COP.stamp[x.k];return !!s&&(x.c<s.c||(x.c===s.c&&x.by<s.by))};
 /* ---- sending ---- */
-function coPieces(k,v,t,extra){const base=Object.assign({e:'d',by:COP.id,k:k,t:t},extra||{});
-  if(v===null)return [Object.assign(base,{del:1})];
-  const n=Math.max(1,Math.ceil(v.length/COCH)),mid=COP.id+':'+(++coMid),a=[];
-  for(let i=0;i<n;i++)a.push(Object.assign({},base,{mid:mid,i:i,n:n,s:v.slice(i*COCH,(i+1)*COCH)}));return a}
-function coPump(){if(!COP.ch)return;let p=COP.cq.shift();
-  if(!p&&COP.on&&!COP.joining&&COP.out.size){
-    /* Send many changed pieces in ONE message (a bundle), so all the parts of a model arrive together and are applied together.
-       (Before, it sent one piece every 40 ms, so a big model arrived in slices and showed up half-moved.) Big pieces still go out in chunks. */
-    const its=[],ks=[];let sz=0;
-    for(const e of COP.out){const k=e[0],o=e[1],n=o.v===null?0:o.v.length;
-      if(n>8000){if(!its.length){COP.out.delete(k);const a=coPieces(k,o.v,o.t);p=a.shift();COP.cq.push.apply(COP.cq,a)}break}
-      if(its.length&&sz+n>60000)break;
-      its.push({k:k,t:o.t,v:o.v});ks.push(k);sz+=n+k.length+20;if(its.length>=600)break}
-    if(!p&&its.length){ks.forEach(function(k){COP.out.delete(k)});p={e:'b',by:COP.id,items:its}}}
-  if(p){try{COP.ch.send({type:'broadcast',event:'co',payload:p})}catch(e){}}}
-(function(){let fb=0;const go=function(){if(!fb){fb=1;setInterval(coPump,40)}};try{const w=new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},40)'],{type:'text/javascript'})));w.onmessage=coPump;w.onerror=go}catch(e){go()}})();
-function coFixNid(){if(COP.on){COP.next=Math.max(COP.next||0,P.nid||0);if(!(P.nid>=COP.next))P.nid=COP.next}}
-/* Work out what this person changed since the last sync and queue it (newest value per piece only) */
-function coDiff(){COP.tm=0;if(!COP.on||COP.joining||running||playing)return;coFixNid();
-  const m=coMap(),now=coTime();
-  Object.keys(m).forEach(function(k){if(COP.last[k]!==m[k]){COP.last[k]=m[k];COP.stamp[k]={t:now,by:COP.id};COP.out.set(k,{v:m[k],t:now})}});
-  Object.keys(COP.last).forEach(function(k){if(!(k in m)){delete COP.last[k];COP.stamp[k]={t:now,by:COP.id};COP.out.set(k,{v:null,t:now})}})}
-function coSchedule(){if(!COP.on||COP.joining||COP.tm)return;COP.tm=setTimeout(coDiff,80)}
-function coSnapshot(to){coDiff();const m=coMap(),ks=Object.keys(m);
-  COP.cq.push({e:'ss',by:COP.id,to:to,n:ks.length,hn:COP.hostName||ME.username});
-  /* parts used to go out one message each, one every 40 ms, so a join took as many ticks as there are parts (and a tab in the background ticks once a second or slower). Now small pieces travel together in bundles. */
-  let its=[],sz=0;const fl=function(){if(its.length){COP.cq.push({e:'sb',by:COP.id,to:to,items:its});its=[];sz=0}};
-  ks.forEach(function(k){const st=COP.stamp[k],t=st?st.t:0,v=m[k],n=v.length;
-    if(n>8000){fl();COP.cq.push.apply(COP.cq,coPieces(k,v,t,{to:to,snap:1}));return}
-    if(its.length&&sz+n>60000)fl();its.push({k:k,t:t,v:v});sz+=n+k.length+20;if(its.length>=600)fl()});
-  fl();COP.cq.push({e:'se',by:COP.id,to:to});
-  for(let q=0;q<12&&COP.cq.length;q++)coPump()}
-
-/* ---- Meshes for everyone ----
-   A big mesh lives in the browser it was imported in. If this browser is missing one (different browser, cleared site data...), ask the others
-   in the session for it, keep a copy in this browser's file store under the same id, and redraw. Only meshes the game already lists are accepted. */
-COP.mneed={};COP.mans={};COP.mrx={};
-function coDataBlob(u){return fetch(u).then(function(r){return r.blob()}).catch(function(){const i=u.indexOf(','),bin=atob(u.slice(i+1)),a=new Uint8Array(bin.length);for(let k=0;k<bin.length;k++)a[k]=bin.charCodeAt(k);return new Blob([a],{type:'application/json'})})}
-function coMeshCheck(){if(!COP.on||COP.joining||!P||!P.assets||!P.assets.meshes)return;
-  Object.keys(P.assets.meshes).forEach(function(n){const v=P.assets.meshes[n];if(!bigRef(v)||COBIG[bigId(v)])return;
-    coBigLoad(v).then(function(u){if(u||!COP.on)return;
-      const st=COP.mneed[n]||(COP.mneed[n]={t:0,gap:5000});if(Date.now()-st.t<st.gap)return;
-      st.t=Date.now();st.gap=Math.min(st.gap*2,120000);COP.cq.push({e:'mneed',by:COP.id,n:n})})})}
-setInterval(coMeshCheck,5000);
-function coMeshReply(req,n){const v=((P&&P.assets&&P.assets.meshes)||{})[n];if(typeof v!=='string')return;
-  const key=req+':'+n,t0=COP.mans[key];if(t0&&Date.now()-t0<20000)return;
-  (bigRef(v)?coBigLoad(v):Promise.resolve(/^data:/.test(v)?v:null)).then(function(u){
-    const t1=COP.mans[key];if(!u||!COP.on||(t1&&Date.now()-t1<20000))return;COP.mans[key]=Date.now();
-    const mid=COP.id+':m'+(++coMid),cnt=Math.max(1,Math.ceil(u.length/COCH));
-    COP.cq.push({e:'mack',by:COP.id,r:req,n:n});
-    for(let i=0;i<cnt;i++)COP.cq.push({e:'mdat',by:COP.id,to:req,n:n,mid:mid,i:i,c:cnt,s:u.slice(i*COCH,(i+1)*COCH)})}).catch(function(){})}
-function coMeshGot(p){const n=String(p.n||''),v=((P&&P.assets&&P.assets.meshes)||{})[n];if(coBad(n)||!bigRef(v)||COBIG[bigId(v)])return;
-  const c=p.c|0;if(c<1||c>5000)return;
-  const r=COP.mrx[p.mid]||(COP.mrx[p.mid]={a:new Array(c),k:0});
-  if(r.a[p.i|0]===undefined){r.a[p.i|0]=String(p.s);r.k++}
-  if(r.k<c)return;delete COP.mrx[p.mid];
-  const u=r.a.join('');if(!/^data:/.test(u))return;coMeshSave(n,v,u)}
-async function coMeshSave(n,v,u){const id=bigId(v);
-  try{
-    if(COBIG[id])return;
-    const blob=await coDataBlob(u),pk=JSON.parse(await blob.text());
-    if(!pk||!pk.fmt||pk.main==null)throw new Error('that mesh was damaged on the way');
-    let stored=true;
-    try{await idbDo('readwrite',function(st){return st.put({blob:blob,at:Date.now(),name:n},id)})}catch(e){stored=false}
-    const k=meshKey(v);
-    if(stored)COBIG[id]=u;else{P.assets.meshes[n]=u;try{save()}catch(e){}}/* no file store here: keep it inside the game instead */
-    COP.last['asset:meshes:'+n]=u;/* the others already have this one, so do not send it back */
-    delete MESHI[k];try{rebuildParts()}catch(e){}try{renderParts()}catch(e){}
-    try{msg('Got the mesh "'+n+'" from your co-op friend.')}catch(e){}
-  }catch(e){console.warn('Could not keep the mesh '+n,e)}}
-
+function coSend(p){try{COP.ch.send({type:'broadcast',event:'co',payload:p})}catch(e){}}
+function coPieces(k,v,c){if(v===null)return [{k:k,c:c,d:1}];const n=Math.max(1,Math.ceil(v.length/COCH)),mid=COP.id+':'+(++coMid),a=[];
+  for(let i=0;i<n;i++)a.push({k:k,c:c,mid:mid,i:i,n:n,s:v.slice(i*COCH,(i+1)*COCH)});return a}
+function coDiff(){if(!COP.on||COP.joining||running||playing)return;const m=coMap();
+  Object.keys(m).forEach(function(k){if(COP.last[k]!==m[k]){COP.last[k]=m[k];const c=++COP.clk;COP.stamp[k]={c:c,by:COP.id};COP.out.set(k,{v:m[k],c:c})}});
+  Object.keys(COP.last).forEach(function(k){if(!(k in m)){delete COP.last[k];const c=++COP.clk;COP.stamp[k]={c:c,by:COP.id};COP.out.set(k,{v:null,c:c})}})}
+function coPump(){if(!COP.ch)return;
+  if(!COP.q.length&&COP.on&&!COP.joining&&COP.out.size){COP.out.forEach(function(o,k){COP.q.push.apply(COP.q,coPieces(k,o.v,o.c))});COP.out.clear()}
+  for(let n=0;n<3&&COP.q.length;n++){const its=[];let sz=0;while(COP.q.length&&(!its.length||sz+(COP.q[0].s||'').length<60000)){const it=COP.q.shift();its.push(it);sz+=(it.s||'').length+60}coSend({e:'b',by:COP.id,items:its})}}
+setInterval(function(){try{coDiff()}catch(e){}coPump()},60);
+function coSnap(to,sid){coDiff();const m=coMap(),ks=Object.keys(m);coSend({e:'head',by:COP.id,to:to,sid:sid,total:ks.length,hn:COP.hostName||ME.username});
+  ks.forEach(function(k){const st=COP.stamp[k];coPieces(k,m[k],st?st.c:0).forEach(function(p){p.to=to;p.snap=1;p.sid=sid;COP.q.push(p)})})}
 /* ---- receiving ---- */
-function coRecv(p){if(!p||typeof p!=='object'||p.by===COP.id)return;if(p.to&&p.to!==COP.id)return;
-  switch(p.e){
-    case 'need':if(COP.on&&!COP.joining&&coLeader())coSnapshot(String(p.by));break;
-    case 'ss':if(COP.joining&&p.to===COP.id)coBeginJoin(p);break;
-    case 'sb':if(Array.isArray(p.items))p.items.slice(0,1000).forEach(function(it){if(it&&typeof it.k==='string')coRecvD({k:it.k,t:it.t,by:p.by,to:p.to,n:1,del:0,snap:1,s:String(it.v)})});break;
-    case 'se':if(COP.joining&&p.to===COP.id&&COP.gotSS){COP.seDone=true;coTryEnd()}break;
-    case 'end':if(!COP.host&&(COP.on||COP.joining)){const h=coMembers().find(function(x){return x.id===p.by});if(!h||h.h)coEnded()}break;
-    case 'c':coAvSet(p);break;
-    case 'mneed':if(COP.on&&!COP.joining){const rq=String(p.by),nm=String(p.n||'');setTimeout(function(){coMeshReply(rq,nm)},30+Math.random()*450)}break;
-    case 'mack':COP.mans[String(p.r)+':'+String(p.n)]=Date.now();break;
-    case 'mdat':coMeshGot(p);break;
-    case 'd':coRecvD(p);break;
-    case 'b':coRecvB(p);break}}
-function coRecvB(p){if(!Array.isArray(p.items))return;p.items.slice(0,1000).forEach(function(it){if(!it||typeof it.k!=='string')return;
-  coRecvD({k:it.k,t:it.t,by:p.by,n:1,del:it.v===null?1:0,s:it.v===null?'':String(it.v)})})}
-function coRecvD(p){const k=String(p.k||'');if(!/^(part|model|anim|script|asset|meta):/.test(k))return;let v=null;
-  if(!p.del){const n=p.n|0;if(n>1){const r=COP.rx[p.mid]||(COP.rx[p.mid]={a:new Array(n),c:0});if(r.a[p.i|0]===undefined){r.a[p.i|0]=String(p.s);r.c++}if(r.c<n)return;v=r.a.join('');delete COP.rx[p.mid]}else v=String(p.s)}
-  COP.rxAt=Date.now();const it={k:k,v:v,t:+p.t||0,by:String(p.by),snap:!!p.snap};COP.clock=Math.max(COP.clock,it.t);
-  if(COP.joining){if(it.snap){if(COP.gotSS){try{coApplyKV(it.k,it.v)}catch(e){}COP.stamp[it.k]={t:it.t,by:it.by};COP.snapSeen[it.k]=1;coTryEnd()}}else COP.pre.push(it);return}
-  if(it.snap||!COP.on)return;if(!COP.inq.length)COP.qs=Date.now();COP.inq.push(it);coKick()}
-function coKick(){if(COP.kick)return;COP.kick=setTimeout(coFlush,60)}
-let coCheap=false;
-function coPosOnly(t,o){const ks={};Object.keys(t).forEach(function(k){ks[k]=1});Object.keys(o).forEach(function(k){ks[k]=1});
-  for(const k in ks){if(k==='pos'||k==='pivot')continue;if(JSON.stringify(t[k])!==JSON.stringify(o[k]))return false}return true}
-/* text of just these pieces (cheaper than rebuilding the whole map when only parts / models changed) */
-function coOneMap(keys){let full=false;keys.forEach(function(k){const kd=k.slice(0,k.indexOf(':'));if(kd!=='part'&&kd!=='model')full=true});if(full)return coMap();
-  const out={},pi={},mi={};P.parts.forEach(function(p){pi[p.id]=p});P.models.forEach(function(p){mi[p.id]=p});
-  keys.forEach(function(k){const i=k.indexOf(':'),kd=k.slice(0,i),id=k.slice(i+1),o=(kd==='part'?pi:mi)[id];if(o)out[k]=JSON.stringify(o)});return out}
-function coSaveSoon(){clearTimeout(coSaveSoon.t);coSaveSoon.t=setTimeout(function(){try{saveRaw()}catch(e){}},700)}
-const coOlder=function(it){const st=COP.stamp[it.k];return !!st&&(it.t<st.t||(it.t===st.t&&it.by<st.by))};
-function coFlush(){COP.kick=0;if(!COP.on||COP.joining||!COP.inq.length)return;
-  const a=document.activeElement,typing=!!a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName);
-  if(running||playing||coPtr||(typing&&Date.now()-COP.qs<2500)){COP.kick=setTimeout(coFlush,250);return}
-  /* a burst of changes from a friend is still arriving: wait for it to finish so it lands in one go */
-  if(Date.now()-COP.rxAt<70&&Date.now()-COP.qs<500){COP.kick=setTimeout(coFlush,50);return}
-  if(COP.tm){clearTimeout(COP.tm);coDiff()}/* our own unsent edits go out first */
-  const q=COP.inq.splice(0),f={},done=[];COP.mk={};coCheap=true;
-  q.forEach(function(it){if(coOlder(it))return;let r=null;try{r=coApplyKV(it.k,it.v)}catch(e){}if(r){f[r]=1;done.push(it)}COP.stamp[it.k]={t:it.t,by:it.by}});
-  const m=coOneMap(done.map(function(it){return it.k}));done.forEach(function(it){if(m[it.k]===undefined)delete COP.last[it.k];else COP.last[it.k]=m[it.k]});
-  if(Object.keys(f).join()!=='p')coCheap=false;
-  coRefresh(f)}
-
-/* ---- joining ---- */
-function coBeginJoin(p){COP.dirtyJoin=true;COP.snapN=+p.n||0;COP.snapSeen={};COP.seDone=false;COP.gotSS=true;COP.rxAt=Date.now();COP.hostName=String(p.hn||'').slice(0,24);if(COP.prevGid===null)COP.prevGid=gameId||'';
-  if(!COP.persist){gameId=null;gameVis=null}/* a one-time guest's copy is never saved over one of the guest's own games; a shared game keeps its own place */
-  P.parts=[];P.models=[];P.anims={};P.scripts=[];P.assets.images={};P.assets.audio={};P.assets.meshes={};P.assets.avol={};
-  ['avId','init','avCustom'].forEach(function(k){delete P[k]});sel=[];selModel=null;selJ=null;
-  const h=document.getElementById('shome');if(h)h.remove()}
-function coEndJoin(){COP.joining=false;COP.dirtyJoin=false;COP.snapSeen={};COP.mk={};
-  COP.pre.splice(0).forEach(function(it){if(coOlder(it))return;try{coApplyKV(it.k,it.v)}catch(e){}COP.stamp[it.k]={t:it.t,by:it.by}});
-  coNorm();P.nid=COP.base;COP.next=P.nid;COP.on=true;COP.last=coMap();Object.keys(P.env||{});COP.mk={env:1,guis:1,name:1};
-  coRefresh({p:1,s:1,a:1,i:1,m:1});try{updateStat()}catch(e){}
-  if(COP.joinDone){const d=COP.joinDone;COP.joinDone=null;d()}}
+function coMembers(){const o=[];try{const s=COP.ch.presenceState();Object.keys(s).forEach(function(k){const m=(s[k]||[])[0];if(m)o.push({id:k,n:String(m.n||'?').slice(0,24),at:+m.at||0,h:!!m.h,on:!!m.on})})}catch(e){}return o}
+function coLeader(){const m=coMembers().filter(function(x){return x.on});if(!m.length)return true;const h=m.find(function(x){return x.h});if(h)return h.id===COP.id;m.sort(function(a,b){return a.at-b.at||(a.id<b.id?-1:1)});return m[0].id===COP.id}
+function coRecv(p){if(!p||typeof p!=='object'||p.by===COP.id)return;
+  if(p.e==='need'){if(COP.on&&!COP.joining&&coLeader())coSnap(String(p.by),String(p.sid))}
+  else if(p.e==='head'){if(COP.joining&&p.to===COP.id&&!COP.stg)COP.stg={sid:p.sid,total:+p.total||0,m:{},hn:p.hn,t:Date.now()}}
+  else if(p.e==='end'){if(!COP.host&&(COP.on||COP.joining)){const h=coMembers().find(function(x){return x.id===p.by});if(!h||h.h)coEnded()}}
+  else if(p.e==='b'&&Array.isArray(p.items))p.items.slice(0,1000).forEach(function(it){coItem(it,String(p.by))})}
+function coItem(it,by){if(!it||typeof it.k!=='string'||!/^(part|model|anim|script|asset|meta):/.test(it.k))return;if(it.to&&it.to!==COP.id)return;let v=null;
+  if(!it.d){const n=it.n|0;if(n>1){const r=COP.rx[it.mid]||(COP.rx[it.mid]={a:new Array(n),c:0});if(r.a[it.i|0]===undefined){r.a[it.i|0]=String(it.s);r.c++}if(r.c<n)return;v=r.a.join('');delete COP.rx[it.mid]}else v=String(it.s)}
+  const x={k:it.k,v:v,c:+it.c||0,by:by};COP.clk=Math.max(COP.clk,x.c);
+  if(it.snap){if(COP.joining&&COP.stg&&it.sid===COP.stg.sid){COP.stg.m[x.k]=x;COP.stg.t=Date.now();coTryCommit()}return}
+  if(COP.joining){COP.pre.push(x);return}if(!COP.on)return;COP.inq.push(x);if(!coT)coT=setTimeout(coFlush,60)}
+function coFlush(){coT=0;if(!COP.on||COP.joining||!COP.inq.length)return;const a=document.activeElement;
+  if(running||playing||(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))){coT=setTimeout(coFlush,300);return}
+  coDiff();const q=COP.inq.splice(0),f={},ks=[];COP.mk={};
+  q.forEach(function(x){if(coOlder(x))return;let r=null;try{r=coApply(x.k,x.v)}catch(e){}if(r){f[r]=1;ks.push(x.k)}COP.stamp[x.k]={c:x.c,by:x.by}});
+  const m=coMap();ks.forEach(function(k){if(k in m)COP.last[k]=m[k];else delete COP.last[k]});coRefresh(f)}
+/* ---- joining: the Studio is only switched over once the WHOLE game is here ---- */
+function coTryCommit(){const s=COP.stg;if(!s||!s.total||Object.keys(s.m).length<s.total)return;COP.stg=null;
+  COP.hostName=String(s.hn||'').slice(0,24);if(COP.prevGid===null)COP.prevGid=gameId||'';gameId=null;gameVis=null;/* a guest copy is never saved over the guest's own games */
+  P.parts=[];P.models=[];P.anims={};P.scripts=[];P.assets.images={};P.assets.audio={};P.assets.meshes={};P.assets.avol={};['avId','init','avCustom'].forEach(function(k){delete P[k]});sel=[];selModel=null;selJ=null;
+  const h=document.getElementById('shome');if(h)h.remove();
+  Object.keys(s.m).forEach(function(k){const x=s.m[k];try{coApply(x.k,x.v)}catch(e){}COP.stamp[x.k]={c:x.c,by:x.by}});
+  coNorm();P.nid=COP.base;COP.pre.splice(0).forEach(function(x){if(coOlder(x))return;try{coApply(x.k,x.v)}catch(e){}COP.stamp[x.k]={c:x.c,by:x.by}});
+  COP.joining=false;COP.on=true;COP.last=coMap();COP.mk={env:1,guis:1,name:1};coRefresh({p:1,s:1,a:1,i:1,m:1});
+  try{COP.ch.track({n:ME.username,at:COP.at,h:0,on:1})}catch(e){}try{updateStat()}catch(e){}coUi();if(COP.done){const d=COP.done;COP.done=null;d()}}
 function coStart(code,host){return new Promise(function(res,rej){
   if(!sb||!ME||ME.demo){rej(new Error('Co-op needs a signed-in online account (not demo mode).'));return}
   const ch=sb.channel('bbco:'+code,{config:{presence:{key:COP.id},broadcast:{self:false}}});let done=0;
   COP.ch=ch;COP.code=code;COP.host=host;COP.at=Date.now();COP.starting=true;
-  ch.on('broadcast',{event:'co'},function(m){coRecv(m&&m.payload)});
-  ch.on('presence',{event:'sync'},function(){coUi()});
+  ch.on('broadcast',{event:'co'},function(m){coRecv(m&&m.payload)});ch.on('presence',{event:'sync'},function(){coUi()});
   ch.subscribe(function(st){if(done)return;
-    if(st==='SUBSCRIBED'){done=1;Promise.resolve(ch.track({n:ME.username,at:COP.at,h:host?1:0})).then(function(){COP.starting=false;res()},function(){COP.starting=false;res()})}
+    if(st==='SUBSCRIBED'){done=1;Promise.resolve(ch.track({n:ME.username,at:COP.at,h:host?1:0,on:host?1:0})).then(function(){COP.starting=false;res()},function(){COP.starting=false;res()})}
     else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED'){done=1;COP.starting=false;rej(new Error('Could not connect to the co-op server.'))}});
   setTimeout(function(){if(!done){done=1;COP.starting=false;rej(new Error('The connection timed out.'))}},9000)})}
-function coStop(){const ch=COP.ch;COP.ch=null;COP.persist=null;COP.on=false;COP.joining=false;COP.starting=false;COP.gotSS=false;COP.out.clear();COP.cq.length=0;COP.inq.length=0;COP.pre.length=0;COP.rx={};COP.joinDone=null;
+function coStop(){const ch=COP.ch;COP.ch=null;COP.on=false;COP.joining=false;COP.starting=false;COP.stg=null;COP.out.clear();COP.q.length=0;COP.inq.length=0;COP.pre.length=0;COP.rx={};COP.done=null;
   try{if(ch)sb.removeChannel(ch)}catch(e){}coUi()}
-const coWait=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
 async function coCheck(){if(!sb||!ME||ME.demo)throw new Error('Co-op needs a signed-in online account (not demo mode).');if(VIEWONLY)throw new Error('Co-op is for the editor, not for playing.');
   if(COP.ch||COP.on||COP.joining)throw new Error('You are already in a co-op session.');if(running||playing)throw new Error('Stop the game test first.');if(animOn())throw new Error('Close the animator first.')}
-async function coHostStart(){await coCheck();try{const ms=P.assets.meshes||{};await Promise.all(Object.keys(ms).filter(function(n){return bigRef(ms[n])}).map(function(n){return coBigLoad(ms[n])}))}catch(e){}const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let code='';for(let i=0;i<8;i++)code+=A[Math.floor(Math.random()*A.length)];
-  COP.hostName=ME.username;COP.detached=false;COP.prevGid=null;
-  try{await coStart(code,true)}catch(e){coStop();throw e}
-  P.nid=Math.max(P.nid||1,COP.base);COP.next=P.nid;COP.last=coMap();COP.stamp={};COP.on=true;coUi()}
-async function coJoin(code){code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length<6)throw new Error('That code is too short.');await coCheck();
-  COP.detached=false;COP.prevGid=null;COP.gotSS=false;
-  try{await coStart(code,false)}catch(e){coStop();throw e}
-  await coWait(1400);
+async function coHostStart(){await coCheck();const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let code='';for(let i=0;i<8;i++)code+=A[Math.floor(Math.random()*A.length)];
+  COP.hostName=ME.username;COP.detached=false;COP.prevGid=null;try{await coStart(code,true)}catch(e){coStop();throw e}
+  coNorm();P.nid=Math.max(P.nid||1,COP.base);COP.last=coMap();COP.stamp={};COP.on=true;coUi()}
+async function coJoin(code){code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length<6)throw new Error('That code is too short.');await coCheck();COP.detached=false;COP.prevGid=null;
+  try{await coStart(code,false)}catch(e){coStop();throw e}await coWait(1400);
   if(!coMembers().some(function(m){return m.id!==COP.id})){coStop();throw new Error('Nobody is in that session. Check the code and make sure the host has started it.')}
-  COP.joining=true;COP.pre=[];COP.cq.push({e:'need',by:COP.id});
-  try{await new Promise(function(ok,bad){COP.joinDone=ok;
-    setTimeout(function(){if(COP.joining&&!COP.gotSS)bad(new Error('The host did not send the game. Try again.'))},9000);
-    const w=setInterval(function(){if(!COP.joining){clearInterval(w);return}if(COP.gotSS&&Date.now()-(COP.rxAt||0)>25000){clearInterval(w);bad(new Error('The game stopped arriving. Try again.'))}},2000)})}
-  catch(e){const was=COP.gotSS;COP.joining=false;coStop();if(was){reloadInto(COP.prevGid||'__new__')}throw e}}
-function coEnded(){const wasOn=COP.on||COP.joining;COP.detached=true;coStop();if(!wasOn)return;
-  mdl('The session ended',function(c,close){c.append(el('p','','The host ended the co-op session. The copy in your Studio is no longer connected, so changes you make now stay only on your screen.'));
+  COP.joining=true;COP.pre=[];COP.stg=null;const sid=COP.id+Date.now().toString(36);coSend({e:'need',by:COP.id,sid:sid});
+  try{await new Promise(function(ok,bad){COP.done=ok;const t0=Date.now();let tries=1;const w=setInterval(function(){if(!COP.joining){clearInterval(w);return}
+    if(!COP.stg){if(Date.now()-t0>tries*4000){if(tries>=3){clearInterval(w);bad(new Error('The host did not send the game. Try again.'))}else{tries++;coSend({e:'need',by:COP.id,sid:sid})}}}
+    else if(Date.now()-COP.stg.t>15000){clearInterval(w);bad(new Error('The game stopped arriving. Your own game was not touched. Try again.'))}},500)})}
+  catch(e){coStop();throw e}}/* nothing was replaced yet, so a failed join leaves the joiner's game exactly as it was */
+function coEnded(){const was=COP.on||COP.joining;COP.detached=true;coStop();if(!was)return;
+  mdl('The session ended',function(c,close){c.append(el('p','','The host ended the co-op session. This copy is no longer connected, so changes now stay only on your screen.'));
     const r=el('div','tb');r.append(mb('Leave (back to my games)','',function(){close();coLeave()}),mb('Keep looking','ghost',close));c.append(r)})}
 function coLeave(){const g=COP.prevGid;try{if(COP.ch&&COP.on)COP.ch.untrack()}catch(e){}coStop();COP.detached=false;if(g!==null)reloadInto(g||'__new__');else coUi()}
-function coEndHost(){try{COP.ch.send({type:'broadcast',event:'co',payload:{e:'end',by:COP.id}})}catch(e){}setTimeout(coStop,500)}
-
-/* ---- buttons and windows ---- */
+function coEndHost(){coSend({e:'end',by:COP.id});setTimeout(coStop,500)}
+addEventListener('pagehide',function(){try{if(COP.ch)sb.removeChannel(COP.ch)}catch(e){}});
+/* ---- button, chip, window ---- */
 const coBtn=mb('Co-op','ghost',function(){coDlg()});coBtn.title='Edit this game together with friends, live';
 const coChip=el('div');coChip.style.cssText='position:fixed;left:12px;bottom:12px;z-index:250;display:none;align-items:center;gap:8px;max-width:70vw;flex-wrap:wrap;padding:6px 12px;border-radius:12px;background:#232527;color:#fff;font:700 .78rem Montserrat,system-ui,sans-serif;cursor:pointer;border:1px solid rgba(255,255,255,.2)';
 coChip.onclick=function(){coDlg()};document.body.append(coChip);
 {const bk=$('s-back');if(bk&&!VIEWONLY)bk.parentNode.insertBefore(coBtn,bk)}
-function coUi(){const mem=COP.ch?coMembers():[];coBtn.textContent=COP.on?'Co-op ('+Math.max(1,mem.length)+')':'Co-op';
-  coChip.style.display=(COP.on||COP.detached)?'flex':'none';coChip.replaceChildren();
-  if(COP.detached&&!COP.on){coChip.append(el('span','','Session ended - this copy is not synced. Click to leave.'))}
-  else{const code=el('span','',COP.persist?'Shared game':'Co-op '+COP.code);coChip.append(code);mem.forEach(function(m){const d=el('span','',(m.h?'\u2605 ':'')+m.n+(m.id===COP.id?' (you)':''));d.style.cssText='display:inline-flex;align-items:center;gap:5px';
-      const dot=el('i');dot.style.cssText='width:9px;height:9px;border-radius:50%;background:'+coHue(m.n);d.prepend(dot);coChip.append(d)});
-    if(!COP.host&&!COP.persist&&COP.on&&mem.length&&!mem.some(function(m){return m.h}))coChip.append(el('span','','(host left)'))}
-  try{coAvSync(mem)}catch(e){}
+function coUi(){const mem=COP.ch?coMembers().filter(function(m){return m.on}):[];coBtn.textContent=COP.on?'Co-op ('+Math.max(1,mem.length)+')':'Co-op';
+  coChip.style.display=(COP.on||COP.joining||COP.detached)?'flex':'none';coChip.replaceChildren();
+  if(COP.detached&&!COP.on)coChip.append(el('span','','Session ended - this copy is not synced. Click to leave.'));
+  else if(COP.joining)coChip.append(el('span','','Joining... getting the game'));
+  else{coChip.append(el('span','','Co-op '+COP.code));mem.forEach(function(m){const d=el('span','',(m.h?'\u2605 ':'')+m.n+(m.id===COP.id?' (you)':''));d.style.cssText='display:inline-flex;align-items:center;gap:5px';
+    const dot=el('i');dot.style.cssText='width:9px;height:9px;border-radius:50%;background:'+coHue(m.n);d.prepend(dot);coChip.append(d)});
+    if(!COP.host&&COP.on&&mem.length&&!mem.some(function(m){return m.h}))coChip.append(el('span','','(host left)'))}
   if(COP.ui)try{COP.ui()}catch(e){}}
-/* ---- invites: send a friend a pop-up instead of a code. Everyone who has the Studio open and is signed in listens on their own name. ---- */
-function coInvKey(n){return 'bbinv:'+String(n).trim().toLowerCase().replace(/[^a-z0-9_]/g,'_')}
-function coRecent(){try{return JSON.parse(store.get('brixblox-coinv'))||[]}catch(e){return []}}
-function coRecentAdd(n){const a=coRecent().filter(function(x){return x.toLowerCase()!==n.toLowerCase()});a.unshift(n);try{store.set('brixblox-coinv',JSON.stringify(a.slice(0,12)))}catch(e){}}
-async function coInvite(name){name=String(name||'').trim();if(!name)throw new Error('Type a username.');if(!COP.on||!COP.code)throw new Error('Start a session first.');
-  if(name.toLowerCase()===String(ME.username).toLowerCase())throw new Error('That is you.');
-  const ch=sb.channel(coInvKey(name),{config:{broadcast:{self:false}}});
-  await new Promise(function(ok,bad){let d=0;ch.subscribe(function(st){if(d)return;if(st==='SUBSCRIBED'){d=1;ok()}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED'){d=1;bad(new Error('Could not reach the server.'))}});setTimeout(function(){if(!d){d=1;bad(new Error('The connection timed out.'))}},8000)}).catch(function(e){try{sb.removeChannel(ch)}catch(x){}throw e});
-  try{await ch.send({type:'broadcast',event:'inv',payload:{from:ME.username,code:COP.code,game:String(P.name||'').slice(0,40),at:Date.now()}})}finally{setTimeout(function(){try{sb.removeChannel(ch)}catch(x){}},600)}
-  coRecentAdd(name)}
-let coInvCh=null,coInvShown=0;
-function coInvListen(){if(coInvCh||!sb||!ME||ME.demo||VIEWONLY)return;
-  try{coInvCh=sb.channel(coInvKey(ME.username),{config:{broadcast:{self:false}}});
-    coInvCh.on('broadcast',{event:'inv'},function(m){const p=m&&m.payload;if(!p||!p.code||!p.from||Date.now()-coInvShown<1500)return;coInvShown=Date.now();
-      const code=String(p.code).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,14),from=String(p.from).slice(0,24);
-      if(COP.on||COP.joining||COP.ch||running||playing)return;
-      mdl('Co-op invite',function(c,close){const er=el('p','');er.style.cssText='color:#c2321f;min-height:1.2em;margin:0;font-size:.85rem';
-        c.append(el('p','',from+' invited you to edit '+(p.game?'"'+p.game+'"':'their game')+' together, live.'),el('p','note','Joining opens their game in your Studio. Your own games are not touched.'),er);
-        const r=el('div','tb'),jb=mb('Join','',async function(){jb.disabled=true;er.textContent='Joining...';try{await coJoin(code);close()}catch(e){er.textContent=(e&&e.message)||String(e);jb.disabled=false}});
-        r.append(jb,mb('No thanks','ghost',close));c.append(r)})});
-    coInvCh.subscribe()}catch(e){coInvCh=null}}
-setTimeout(coInvListen,1500);
 function coDlg(pre){mdl('Co-op editing',function(c,close){
-  const body=el('div'),err=el('p','');err.style.cssText='color:#c2321f;min-height:1.2em;margin:0;font-size:.85rem';body.style.cssText='display:flex;flex-direction:column;gap:10px';c.append(body,err);
-  const inp=function(){const i=el('input');i.type='text';i.style.cssText='min-height:34px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);width:100%';return i};
-  let shown=false;const draw=function(){if(shown&&!body.isConnected)return;shown=true;body.replaceChildren();
-    if(COP.persist&&(COP.on||COP.joining||COP.starting)){coPersistView(body,draw,err,close);return}
-    if(!COP.on&&!COP.joining&&!COP.starting&&!COP.detached){
-      if(!sb||!ME||ME.demo||VIEWONLY){body.append(el('p','note','Co-op needs a signed-in online account, in the editor.'));return}
-      body.append(el('p','note','Edit a game with friends at the same time and see each other\'s changes live. One person hosts and shares a code.'));
-      const hb=mb('Start a session (I am the host)','',async function(){hb.disabled=true;err.textContent='Starting...';try{await coHostStart();err.textContent='';draw()}catch(e){err.textContent=(e&&e.message)||String(e);hb.disabled=false}});
-      const t=el('p','note','Or join a friend\'s session. Joining opens their game in your Studio; your own games are not touched and you cannot publish theirs.');
-      const ci=inp();ci.placeholder='Session code';ci.maxLength=14;ci.value=pre||'';ci.style.textTransform='uppercase';
-      const jb=mb('Join','',async function(){jb.disabled=true;err.textContent='Joining...';try{await coJoin(ci.value);err.textContent='';close()}catch(e){err.textContent=(e&&e.message)||String(e);jb.disabled=false}});
-      const row=el('div');row.style.cssText='display:flex;gap:6px';row.append(ci,jb);body.append(hb,t,row);coFriendsUi(body,draw,err);return}
-    if(COP.detached&&!COP.on){body.append(el('p','note','The session ended. This copy is no longer synced.'));const lb=mb('Leave (back to my games)','',function(){close();coLeave()});body.append(lb);return}
-    const big=el('div','',COP.code);big.style.cssText='font:800 1.8rem Montserrat,system-ui,sans-serif;letter-spacing:.12em';
-    const link=location.origin+location.pathname+'?coop='+COP.code,li=inp();li.readOnly=true;li.value=link;
-    const cp=mb('Copy link','ghost',function(){try{navigator.clipboard.writeText(link).then(function(){cp.textContent='Copied'},function(){li.select()})}catch(e){li.select()}});
-    const cc=mb('Copy code','ghost',function(){try{navigator.clipboard.writeText(COP.code).then(function(){cc.textContent='Copied'},function(){})}catch(e){}});
-    const lr=el('div');lr.style.cssText='display:flex;gap:6px';lr.append(li,cp,cc);
-    const ls=el('div');ls.style.cssText='display:flex;flex-direction:column;gap:4px';coMembers().forEach(function(m){const d=el('div','',(m.h?'\u2605 ':'')+m.n+(m.id===COP.id?' (you)':'')+(m.h?'  host':''));d.style.cssText='display:flex;align-items:center;gap:8px';
-      const dot=el('i');dot.style.cssText='width:10px;height:10px;border-radius:50%;background:'+coHue(m.n);d.prepend(dot);ls.append(d)});
-    body.append(el('p','note',COP.host?'Share this code or link with friends who are signed in to BrixBlox. Anyone with it can join and edit, so only share it with people you trust.':'You are editing '+(COP.hostName||'the host')+'\'s game.'),big);
-    if(COP.host)body.append(lr);
-    {const iv=el('div');iv.style.cssText='display:flex;flex-direction:column;gap:6px';const ie=el('p','');ie.style.cssText='margin:0;font-size:.82rem;min-height:1.1em';
-      const ii=inp();ii.placeholder='Friend\'s username';ii.maxLength=24;
-      const send=async function(n,b){if(b)b.disabled=true;ie.style.color='';ie.textContent='Sending...';try{await coInvite(n);ie.textContent='Invite sent to '+n+'. They need BrixBlox Studio open.';ie.style.color='#1c8a4c';draw()}catch(e){ie.textContent=(e&&e.message)||String(e);ie.style.color='#c2321f';if(b)b.disabled=false}};
-      const ib=mb('Invite','',function(){send(ii.value,ib)});ii.onkeydown=function(e){if(e.key==='Enter')ib.click()};
-      const ir=el('div');ir.style.cssText='display:flex;gap:6px';ir.append(ii,ib);
-      const rc=coRecent().filter(function(n){return !coMembers().some(function(m){return String(m.n).toLowerCase()===n.toLowerCase()})});
-      iv.append(el('p','note','Invite a friend (no code needed):'),ir);
-      if(rc.length){const rw=el('div');rw.style.cssText='display:flex;gap:6px;flex-wrap:wrap';rc.forEach(function(n){const b=mb(n,'ghost',function(){send(n,b)});rw.append(b)});iv.append(rw)}
-      iv.append(ie);body.append(iv)}
-    body.append(el('p','note','In this session:'),ls,
-      el('p','note','Everything syncs live: parts, models, animations, scripts, images, settings. Sounds and meshes that are too big to send stay on the computer they were uploaded on. Undo (Ctrl+Z) can also undo a friend\'s change made after yours. Only the host can publish.'));
-    const r=el('div','tb');
-    if(COP.host)r.append(mb('End session','',function(){ask('End the session for everyone? Your game stays as it is on your screen.','End session',function(){coEndHost();close()})}));
-    else r.append(mb('Leave session','',function(){ask('Leave the session? The copy in your Studio is closed and your own games come back.','Leave',function(){close();coLeave()})}));
-    r.append(mb('Close','ghost',close));body.append(r)};
-  COP.ui=draw;draw()})}
-coChip.onclick=function(){coDlg()};
-
-/* ===== Shared games: friends you add can open the game in the Studio any time, without anyone starting Co-op =====
-   Needs coop-setup.sql (run once in Supabase). The game keeps a private working copy online (games row sys_co_<id>) that every collaborator
-   updates automatically. Publishing the live game stays with the owner. Whoever has the game open at the same time also edits live together. */
-function coIsOwner(){const g=gameId&&glib()[gameId];return !!ME&&(!g||!g.owner||g.owner.id===ME.id)}
-let cwT=0;
-let cwWarned=0;
-function coWorkSched(){if(coNoSave())return;if(!sb||!ME||ME.demo||VIEWONLY||!gameId)return;const g=glib()[gameId];if(!g||!g.co)return;
-  /* flag unsent changes straight away so opening the game later never silently replaces them with an older shared copy */
-  if(!g.cofail){const L2=glib();if(L2[gameId]){L2[gameId].cofail=1;store.set(GKEY,JSON.stringify(L2))}}
-  clearTimeout(cwT);cwT=setTimeout(function(){coWorkPush().then(function(){cwWarned=0}).catch(function(e){console.warn('Shared copy not saved',e);
-    if(Date.now()-cwWarned>60000){cwWarned=Date.now();try{msg('Shared copy NOT saved online: '+((e&&e.message)||e))}catch(x){}}})},1500)}
-async function coWorkPush(){if(coNoSave())return;const gid=gameId,g0=gid&&glib()[gid];if(!g0||!g0.co||!sb||!ME)return;
-  try{
-    try{if(persistGame.flush)persistGame.flush()}catch(e){}
-    const data=await withTimeout(cloudData(gid),90000,'sending took too long');
-    if(!data)throw new Error('could not read the game');if(data.length>6e6)throw new Error('The game is too big to share (limit 6 MB).');
-    const g=glib()[gid]||g0,own=!g.owner||g.owner.id===ME.id,wid='sys_co_'+gid,now=new Date().toISOString();let r;
-    if(own)r=await sb.from('games').upsert({id:wid,owner_id:(g.owner&&g.owner.id)||ME.id,owner_name:(g.owner&&g.owner.name)||ME.username,name:g.name||P.name,vis:'private',data:data,updated_at:now}).select('updated_at').maybeSingle();
-    else r=await sb.from('games').update({data:data,name:P.name,updated_at:now}).eq('id',wid).select('updated_at').maybeSingle();
-    if(r.error)throw r.error;if(!r.data)throw new Error('The server did not keep the change (are you still allowed to edit this game?)');
-    const L2=glib();if(L2[gid]){L2[gid].cot=r.data.updated_at;delete L2[gid].cofail;store.set(GKEY,JSON.stringify(L2))}
-  }catch(e){const L2=glib();if(L2[gid]){L2[gid].cofail=1;store.set(GKEY,JSON.stringify(L2))}throw e}}
-/* On opening: take friends' newer changes from the shared copy (unless this computer has changes that could not be sent) */
-async function coPull(){const g=glib()[gameId];if(!g||!g.co||!sb)return false;
-  const r=await withTimeout(sb.from('games').select('data,updated_at,name').eq('id','sys_co_'+gameId).maybeSingle(),8000,'slow');
-  if(r.error||!r.data)return false;let cd=r.data.data;if(typeof cd!=='string')cd=JSON.stringify(cd);
-  if(r.data.updated_at===g.cot)return false;
-  try{const a=JSON.parse(cd),b=JSON.parse(g.data);if(a&&b&&Array.isArray(a.parts)&&Array.isArray(b.parts)&&!a.parts.length&&!(a.models||[]).length&&(b.parts.length||(b.models||[]).length)){console.warn('Ignored an empty shared copy');return false}}catch(e){}
-  const take=function(){const L2=glib();L2[gameId]=Object.assign({},L2[gameId],{data:cd,name:r.data.name||L2[gameId].name,at:Date.now(),cot:r.data.updated_at,cofail:undefined});store.set(GKEY,JSON.stringify(L2));reloadInto(gameId)};
-  if(!g.cofail){take();return true}
-  mdl('Two versions of this game',function(c,close){c.append(el('p','','Your friends changed the shared game, and this computer also has changes that could not be sent yet.'),el('p','note','Pick the one to keep. The other one is replaced.'));
-    const row=el('div','tb');row.append(mb('Use my version','',function(){close();coWorkPush().then(function(){msg('Your version is now the shared one.');return coAuto(gameId)}).catch(function(e){msg('Could not send: '+((e&&e.message)||e))})}),mb('Use the shared version','ghost',function(){close();take()}));c.append(row)});
-  return true}
-const coCode=function(chan){return ('G'+String(chan)).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,40)};
-async function coAuto(gid,chan){
-  try{await coCheck()}catch(e){return}
-  if(!chan){try{const q=await sb.from('game_collabs').select('chan').eq('game_id',gid).limit(1);chan=q.data&&q.data[0]&&q.data[0].chan}catch(e){}}
-  if(!chan)return;
-  COP.persist=gid;COP.detached=false;COP.prevGid=gid;COP.gotSS=false;COP.hostName='';
-  try{await coStart(coCode(chan),false)}catch(e){coStop();return}
-  const asPeer=function(){COP.joining=false;P.nid=Math.max(P.nid||1,COP.base);COP.next=P.nid;COP.last=coMap();COP.stamp={};COP.on=true;coUi()};
-  await coWait(1400);
-  if(COP.persist!==gid||!COP.ch)return;
-  if(!coMembers().some(function(m){return m.id!==COP.id})){asPeer();return}
-  COP.joining=true;COP.pre=[];COP.cq.push({e:'need',by:COP.id});
-  try{await new Promise(function(ok,bad){COP.joinDone=ok;
-    setTimeout(function(){if(COP.joining&&!COP.gotSS)bad(new Error('x'))},9000);
-    const w=setInterval(function(){if(!COP.joining){clearInterval(w);return}if(COP.gotSS&&Date.now()-(COP.rxAt||0)>25000){clearInterval(w);bad(new Error('x'))}},2000)})}
-  catch(e){if(COP.gotSS){COP.joining=false;coStop();reloadInto(gid)}else asPeer()}}
-async function coBoot(){
-  if(VIEWONLY||!sb||!ME||ME.demo||!gameId||document.getElementById('shome'))return;
-  const g=glib()[gameId];if(!g)return;
-  let q;try{q=await sb.from('game_collabs').select('chan').eq('game_id',gameId).limit(1)}catch(e){return}
-  if(!q||q.error||!q.data||!q.data.length)return;
-  if(!g.co){const L2=glib();if(L2[gameId]){L2[gameId].co=1;store.set(GKEY,JSON.stringify(L2))}}
-  if(await coPull())return;
-  await coAuto(gameId,q.data[0].chan)}
-/* Studio home: games friends shared with you */
-async function coSharedSection(pg){
-  const r=await sb.from('game_collabs').select('game_id').eq('user_id',ME.id);
-  if(r.error||!r.data||!r.data.length)return;
-  const q=await sb.from('games').select('id,name,owner_id,owner_name,updated_at').in('id',r.data.map(function(x){return 'sys_co_'+x.game_id}));
-  if(q.error||!q.data||!q.data.length)return;
-  const h=el('h2','big','Shared with you'),box=el('div');h.style.marginTop='28px';box.className='gcards';pg.append(h,box);
-  q.data.forEach(function(x){const gid=String(x.id).slice(7);let hh=0;for(let i=0;i<gid.length;i++)hh=(hh*31+gid.charCodeAt(i))>>>0;
-    const c=el('div','gc'),th=el('div','th',((x.name||'?').trim().charAt(0)||'?').toUpperCase()),bd=el('div','bd');th.style.background='hsl('+(hh%360)+',55%,42%)';
-    bd.append(el('b','',x.name||'Untitled'),el('small','','by '+(x.owner_name||'?')+' \u00b7 you can edit'));
-    const row=el('div','row');
-    row.append(mb('Edit','',async function(){
-      if(!glib()[gid]){try{const d=await sb.from('games').select('data,updated_at').eq('id',x.id).single();if(d.error)throw d.error;let cd=d.data.data;if(typeof cd!=='string')cd=JSON.stringify(cd);
-        const L2=glib();L2[gid]={id:gid,name:x.name||'Untitled',vis:'private',at:Date.now(),owner:{id:x.owner_id,name:x.owner_name},data:cd,co:1,cot:d.data.updated_at};store.set(GKEY,JSON.stringify(L2))}catch(e){try{msg('Could not open it: '+((e&&e.message)||e))}catch(z){}return}}
-      reloadInto(gid)}));
-    bd.append(row);c.append(th,bd);box.append(c)})}
-/* Co-op window: add friends and see who is in */
-function coFriendsUi(body,redraw,err){
-  if(!sb||!ME||ME.demo||VIEWONLY||!coIsOwner())return;
-  const box=el('div');box.style.cssText='display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px';
-  box.append(el('p','note','Friends who can edit this game any time (you do not have to start Co-op, they open it from their Studio):'));
-  const list=el('div');list.style.cssText='display:flex;flex-direction:column;gap:6px';box.append(list);body.append(box);
-  const say=function(t,bad){err.style.color=bad?'#c2321f':'#1c8a4c';err.textContent=t};
-  const why=function(e){const m=String((e&&e.message)||e);return /game_collabs|schema cache|does not exist/i.test(m)?'The sharing setup is missing. Run coop-setup.sql in Supabase once. ('+m+')':m};
-  list.append(el('p','note','Loading...'));
-  (async function(){
-    let cur=[],fr=[];
-    try{if(gameId){const r=await sb.from('game_collabs').select('user_id,username').eq('game_id',gameId);if(r.error)throw r.error;cur=r.data||[]}
-      const f=await sb.rpc('list_friends');if(f.error)throw f.error;fr=(f.data||[]).filter(function(x){return x.status==='accepted'}).map(function(x){return x.username})}
-    catch(e){list.replaceChildren(el('p','note',why(e)));return}
-    list.replaceChildren();
-    cur.forEach(function(x){const d=el('div','',x.username+'  (can edit)');d.style.cssText='display:flex;align-items:center;gap:8px;justify-content:space-between';
-      d.append(mb('Remove','ghost',async function(){try{
-        const r=await sb.from('game_collabs').delete().eq('game_id',gameId).eq('user_id',x.user_id);if(r.error)throw r.error;
-        const left=cur.filter(function(y){return y.user_id!==x.user_id});
-        if(left.length){let ch='';const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';for(let i=0;i<20;i++)ch+=A[Math.floor(Math.random()*A.length)];await sb.from('game_collabs').update({chan:ch}).eq('game_id',gameId);
-          if(COP.persist===gameId){coStop();coAuto(gameId,ch)}}
-        else{const L2=glib();if(L2[gameId]){delete L2[gameId].co;store.set(GKEY,JSON.stringify(L2))}if(COP.persist)coStop()}
-        say(x.username+' can no longer edit this game.');redraw()}catch(e){say(why(e),true)}}));list.append(d)});
-    const names=cur.map(function(x){return String(x.username).toLowerCase()});
-    const free=fr.filter(function(n){return names.indexOf(String(n).toLowerCase())<0});
-    if(!fr.length)list.append(el('p','note','You have no friends on BrixBlox yet. Add some on the Friends page first.'));
-    else if(!free.length)list.append(el('p','note','All your friends can already edit this game.'));
-    free.forEach(function(n){const d=el('div','',n);d.style.cssText='display:flex;align-items:center;gap:8px;justify-content:space-between';
-      const b=mb('Add','',async function(){b.disabled=true;say('Adding '+n+'...');try{await coAddCollab(n);say(n+' can now open this game from their Studio.');redraw()}catch(e){say(why(e),true);b.disabled=false}});d.append(b);list.append(d)})
-  })()}
-async function coAddCollab(name){
-  if(!gameId&&!draftNow())throw new Error('Make a change to the game first, then try again.');
-  const gid=gameId,q=await sb.from('profiles').select('id,username').eq('username',name).maybeSingle();
-  if(q.error||!q.data)throw new Error('Could not find that player.');
-  let chan=null;const ex=await sb.from('game_collabs').select('chan').eq('game_id',gid).limit(1);if(ex.error)throw ex.error;if(ex.data&&ex.data[0])chan=ex.data[0].chan;
-  if(!chan){chan='';const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';for(let i=0;i<20;i++)chan+=A[Math.floor(Math.random()*A.length)]}
-  try{persistGame();if(persistGame.flush)persistGame.flush()}catch(e){}
-  const L=glib();if(L[gid]){L[gid].co=1;store.set(GKEY,JSON.stringify(L))}
-  await coWorkPush();
-  const r=await sb.from('game_collabs').insert({game_id:gid,user_id:q.data.id,username:q.data.username,owner_id:ME.id,chan:chan});
-  if(r.error&&String(r.error.code)!=='23505')throw r.error;
-  if(!COP.ch&&!COP.on&&!COP.joining)coAuto(gid,chan)}
-function coPersistView(body,draw,err,close){
-  body.append(el('p','note','This game is shared. Friends you add can open it from BrixBlox Studio whenever they want (under "Shared with you"), and everyone who has it open edits together live. Changes are saved to the shared copy automatically. Only the owner can publish.'),el('p','note','Editing now:'));
-  const ls=el('div');ls.style.cssText='display:flex;flex-direction:column;gap:4px';
-  coMembers().forEach(function(m){const d=el('div','',m.n+(m.id===COP.id?' (you)':''));d.style.cssText='display:flex;align-items:center;gap:8px';const dot=el('i');dot.style.cssText='width:10px;height:10px;border-radius:50%;background:'+coHue(m.n);d.prepend(dot);ls.append(d)});
-  body.append(ls);coFriendsUi(body,draw,err);const r=el('div','tb');r.append(mb('Close','ghost',close));body.append(r)}
-
-/* ---- seeing each other: an orb with an arrow at every friend's camera, in their own colour (picked from their username) ---- */
-COP.av={};
-function coAvMake(name){const g=new THREE.Group(),col=new THREE.Color().setHSL(coHueDeg(name)/360,.75,.55);
-  const mat=function(){return new THREE.MeshBasicMaterial({color:col,depthTest:false,transparent:true,opacity:.92})};
-  const orb=new THREE.Mesh(new THREE.SphereGeometry(.55,20,14),mat()),arrow=new THREE.Group();
-  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,1.6,10),mat()),head=new THREE.Mesh(new THREE.ConeGeometry(.34,.7,14),mat());
-  shaft.position.y=.55+.8;head.position.y=.55+1.6+.35;arrow.add(shaft,head);[orb,shaft,head].forEach(function(m){m.renderOrder=998});
-  const c=document.createElement('canvas');c.width=256;c.height=64;const x=c.getContext('2d');x.font='700 30px Montserrat,system-ui,sans-serif';x.textAlign='center';x.textBaseline='middle';
-  x.lineWidth=6;x.strokeStyle='rgba(0,0,0,.75)';x.strokeText(name,128,32);x.fillStyle='#fff';x.fillText(name,128,32);
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true}));sp.scale.set(4,1,1);sp.position.y=1.6;sp.renderOrder=999;
-  g.add(orb,arrow,sp);g.userData.arrow=arrow;g.visible=false;scene.add(g);return g}
-function coAvDrop(id){const a=COP.av[id];delete COP.av[id];if(!a||!a.g)return;try{scene.remove(a.g);a.g.traverse(function(o){try{if(o.geometry)o.geometry.dispose();if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose()}}catch(e){}})}catch(e){}}
-function coAvSync(mem){const ids=COP.on?mem.map(function(m){return m.id}):[];Object.keys(COP.av).forEach(function(id){if(ids.indexOf(id)<0||id===COP.id)coAvDrop(id)})}
-function coAvSet(p){if(!COP.on)return;const id=String(p.by),m=coMembers().find(function(x){return x.id===id});if(!m)return;
-  const x=+p.x,y=+p.y,z=+p.z,w=+p.w,pi=+p.p;if(![x,y,z,w,pi].every(isFinite))return;
-  let a=COP.av[id];if(!a){a={g:null,px:x,py:y,pz:z,dx:0,dy:0,dz:-1};try{a.g=coAvMake(m.n)}catch(e){}COP.av[id]=a}
-  a.tx=x;a.ty=y;a.tz=z;a.tdx=Math.sin(w)*Math.cos(pi);a.tdy=Math.sin(pi);a.tdz=-Math.cos(w)*Math.cos(pi);a.seen=Date.now()}
-function coAvTick(){const ids=Object.keys(COP.av);if(!ids.length)return;const now=Date.now(),up=new THREE.Vector3(0,1,0);
-  ids.forEach(function(id){const a=COP.av[id];if(!a||!a.g||a.tx===undefined)return;
-    if(now-a.seen>9000||playing||running||!COP.on){a.g.visible=false;return}
-    a.px+=(a.tx-a.px)*.35;a.py+=(a.ty-a.py)*.35;a.pz+=(a.tz-a.pz)*.35;a.dx+=(a.tdx-a.dx)*.35;a.dy+=(a.tdy-a.dy)*.35;a.dz+=(a.tdz-a.dz)*.35;
-    const d=new THREE.Vector3(a.dx,a.dy,a.dz);if(d.lengthSq()<1e-6)d.set(0,0,-1);d.normalize();
-    a.g.position.set(a.px,a.py,a.pz);a.g.userData.arrow.quaternion.setFromUnitVectors(up,d);
-    const dist=Math.hypot(a.px-cam.x,a.py-cam.y,a.pz-cam.z);a.g.scale.setScalar(Math.max(1,Math.min(6,dist/30)));a.g.visible=true})}
-(function l(){try{coAvTick()}catch(e){}requestAnimationFrame(l)})();
-let coCamSent={x:1e9,y:0,z:0,w:0,p:0,t:0};
-setInterval(function(){if(!COP.on||!COP.ch||COP.joining||VIEWONLY)return;const n=Date.now(),s=coCamSent;
-  const moved=Math.abs(cam.x-s.x)+Math.abs(cam.y-s.y)+Math.abs(cam.z-s.z)>.02||Math.abs(cam.yaw-s.w)>.004||Math.abs(cam.pit-s.p)>.004;
-  if(!moved&&n-s.t<2000)return;coCamSent={x:cam.x,y:cam.y,z:cam.z,w:cam.yaw,p:cam.pit,t:n};
-  try{COP.ch.send({type:'broadcast',event:'co',payload:{e:'c',by:COP.id,x:+cam.x.toFixed(2),y:+cam.y.toFixed(2),z:+cam.z.toFixed(2),w:+cam.yaw.toFixed(3),p:+cam.pit.toFixed(3)}})}catch(e){}},140);
-
-/* ---- hooks into the Studio ---- */
-{const saveUndo=save;save=function(){saveUndo();coSchedule();try{coWorkSched()}catch(e){}}}
-{const ur=undoRedo;undoRedo=function(r){ur(r);try{coFixNid();coSchedule()}catch(e){}}}
-{const us=updateStat;updateStat=function(){us();if(COP.on&&!COP.host&&!COP.persist){statEl.textContent='Co-op: editing '+(COP.hostName||'host')+'\'s game (not saved to your games)';statEl.style.color='#4be3a0'}}}
-{const pu=publish;publish=function(v){if(((COP.on||COP.joining||COP.detached)&&!COP.host&&!(COP.persist&&coIsOwner()))||(gameId&&coGuestG(glib()[gameId]))){msg('Only the owner can publish a shared game.');return}pu(v)}}
-addEventListener('pointerdown',function(){coPtr=true},true);
-addEventListener('pointerup',function(){coPtr=false;coSchedule();if(COP.inq.length)coKick()},true);
-addEventListener('pointercancel',function(){coPtr=false},true);addEventListener('blur',function(){coPtr=false});
-addEventListener('pagehide',function(){try{if(COP.ch)sb.removeChannel(COP.ch)}catch(e){}});
-setTimeout(function(){coBoot().catch(function(){})},1800);
-try{const u=new URL(location.href),cd=u.searchParams.get('coop');if(cd&&!VIEWONLY&&ME&&!ME.demo){u.searchParams.delete('coop');history.replaceState(null,'',u.pathname+u.search+u.hash);setTimeout(function(){coDlg(cd)},700)}}catch(e){}
-if(VIEWONLY){$('studio').classList.add('vo');setFs(true,true);
-  document.querySelector('#studio .logo h1').textContent=P.name+(PLAYINFO&&PLAYINFO.owner?'  -  by '+PLAYINFO.owner:'');
-  $('s-fs').onclick=function(){try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen()}catch(x){}};
-  $('s-fs').textContent='Fullscreen';setTimeout(function(){$('s-play').click();netJoin()},60);bbHud()}
+  const err=el('p','');err.style.cssText='color:#c2321f;min-height:1.2em;margin:0;font-size:.85rem';
+  const run=function(fn){err.textContent='';Promise.resolve().then(fn).then(function(){draw()},function(e){err.textContent=String((e&&e.message)||e);draw()})};
+  function draw(){c.replaceChildren();
+    if(!sb||!ME||ME.demo||VIEWONLY){c.append(el('p','note','Co-op needs a signed-in online account, in the editor.'));return}
+    if(COP.detached&&!COP.on){c.append(el('p','note','The session ended. This copy is no longer synced.'),mb('Leave (back to my games)','',function(){close();coLeave()}));return}
+    if(COP.on||COP.joining||COP.starting){const link=location.origin+location.pathname+'?coop='+COP.code,li=el('input','');li.readOnly=true;li.value=link;li.style.cssText='width:100%;padding:8px;border-radius:8px;border:1px solid #888';
+      c.append(el('p','',COP.joining?'Joining... getting the game from the host.':'You are in a co-op session. Code: '+COP.code),li);
+      coMembers().filter(function(m){return m.on}).forEach(function(m){c.append(el('p','note',(m.h?'\u2605 ':'')+m.n+(m.id===COP.id?' (you)':'')))});
+      const r=el('div','tb');r.append(mb('Copy invite link','ghost',function(){try{navigator.clipboard.writeText(link);msg('Invite link copied.')}catch(e){li.select()}}));
+      if(COP.host)r.append(mb('End session','',function(){coEndHost();close()}));else r.append(mb('Leave','',function(){close();coLeave()}));c.append(r,err);return}
+    c.append(el('p','note','Edit this game together, live. The host shares a code; friends join and everyone edits the same game. Guests get a copy and never touch their own games.'));
+    const r=el('div','tb');r.append(mb('Start a session (host)','',function(){run(coHostStart)}));c.append(r);
+    const ji=el('input','');ji.placeholder='Friend\u2019s code';ji.value=pre||'';ji.style.cssText='width:100%;padding:8px;border-radius:8px;border:1px solid #888;margin-top:10px';
+    const r2=el('div','tb');r2.append(mb('Join','ghost',function(){run(function(){return coJoin(ji.value)})}));c.append(ji,r2,err)}
+  draw();COP.ui=draw})}
+async function coSharedSection(pg){}/* the old "shared games" saving was removed with the rewrite */
+try{const u=new URL(location.href),cd=u.searchParams.get('coop');if(cd&&!VIEWONLY&&ME&&!ME.demo){u.searchParams.delete('coop');history.replaceState(null,'',u.pathname+u.search+u.hash);setTimeout(function(){coDlg(cd)},1200)}}catch(e){}
 /* ===== Items: made from a mesh in the item room, given with the "give item" block, held from the hotbar ===== */
 function itemsL(){return P.items=Array.isArray(P.items)?P.items:[]}
 function itemBy(n){const k=String(n).trim().toLowerCase();return itemsL().find(function(i){return String(i.name).toLowerCase()===k})||null}
