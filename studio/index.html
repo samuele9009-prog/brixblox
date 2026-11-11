@@ -5817,6 +5817,9 @@ updateStat();
 const COP={on:false,joining:false,starting:false,detached:false,host:false,code:'',ch:null,id:Math.random().toString(36).slice(2,10),at:0,last:{},stamp:{},clock:0,
   out:new Map(),cq:[],rx:{},inq:[],pre:[],tm:0,kick:0,qs:0,mk:{},base:1e7+Math.floor(Math.random()*9e4)*1e4,next:0,prevGid:null,hostName:'',ui:null,joinDone:null,gotSS:false};
 let coPtr=false,coMid=0,coSidN=0;
+/* While a join is in progress (or failed halfway) the game in memory is wiped/partial. It must never be saved over the real game or sent to the shared copy. */
+function coNoSave(){try{return !!(COP&&(COP.joining||COP.dirtyJoin))}catch(e){return false}}
+function coTryEnd(){if(!COP.joining||!COP.gotSS||!COP.seDone)return;if(COP.snapN&&Object.keys(COP.snapSeen||{}).length<COP.snapN)return;coEndJoin()}
 const COCH=40000,COSKIP=/^(parts|models|anims|scripts|assets|nid)$/;
 const coBad=function(x){return x==='__proto__'||x==='constructor'||x==='prototype'};
 const coSid=function(){return COP.id+Math.random().toString(36).slice(2,6)+(coSidN++)};
@@ -5961,7 +5964,7 @@ function coRecv(p){if(!p||typeof p!=='object'||p.by===COP.id)return;if(p.to&&p.t
     case 'need':if(COP.on&&!COP.joining&&coLeader())coSnapshot(String(p.by));break;
     case 'ss':if(COP.joining&&p.to===COP.id)coBeginJoin(p);break;
     case 'sb':if(Array.isArray(p.items))p.items.slice(0,1000).forEach(function(it){if(it&&typeof it.k==='string')coRecvD({k:it.k,t:it.t,by:p.by,to:p.to,n:1,del:0,snap:1,s:String(it.v)})});break;
-    case 'se':if(COP.joining&&p.to===COP.id&&COP.gotSS)coEndJoin();break;
+    case 'se':if(COP.joining&&p.to===COP.id&&COP.gotSS){COP.seDone=true;coTryEnd()}break;
     case 'end':if(!COP.host&&(COP.on||COP.joining)){const h=coMembers().find(function(x){return x.id===p.by});if(!h||h.h)coEnded()}break;
     case 'c':coAvSet(p);break;
     case 'mneed':if(COP.on&&!COP.joining){const rq=String(p.by),nm=String(p.n||'');setTimeout(function(){coMeshReply(rq,nm)},30+Math.random()*450)}break;
@@ -5974,7 +5977,7 @@ function coRecvB(p){if(!Array.isArray(p.items))return;p.items.slice(0,1000).forE
 function coRecvD(p){const k=String(p.k||'');if(!/^(part|model|anim|script|asset|meta):/.test(k))return;let v=null;
   if(!p.del){const n=p.n|0;if(n>1){const r=COP.rx[p.mid]||(COP.rx[p.mid]={a:new Array(n),c:0});if(r.a[p.i|0]===undefined){r.a[p.i|0]=String(p.s);r.c++}if(r.c<n)return;v=r.a.join('');delete COP.rx[p.mid]}else v=String(p.s)}
   COP.rxAt=Date.now();const it={k:k,v:v,t:+p.t||0,by:String(p.by),snap:!!p.snap};COP.clock=Math.max(COP.clock,it.t);
-  if(COP.joining){if(it.snap){if(COP.gotSS){try{coApplyKV(it.k,it.v)}catch(e){}COP.stamp[it.k]={t:it.t,by:it.by}}}else COP.pre.push(it);return}
+  if(COP.joining){if(it.snap){if(COP.gotSS){try{coApplyKV(it.k,it.v)}catch(e){}COP.stamp[it.k]={t:it.t,by:it.by};COP.snapSeen[it.k]=1;coTryEnd()}}else COP.pre.push(it);return}
   if(it.snap||!COP.on)return;if(!COP.inq.length)COP.qs=Date.now();COP.inq.push(it);coKick()}
 function coKick(){if(COP.kick)return;COP.kick=setTimeout(coFlush,60)}
 let coCheap=false;
@@ -5999,12 +6002,12 @@ function coFlush(){COP.kick=0;if(!COP.on||COP.joining||!COP.inq.length)return;
   coRefresh(f)}
 
 /* ---- joining ---- */
-function coBeginJoin(p){COP.gotSS=true;COP.rxAt=Date.now();COP.hostName=String(p.hn||'').slice(0,24);if(COP.prevGid===null)COP.prevGid=gameId||'';
+function coBeginJoin(p){COP.dirtyJoin=true;COP.snapN=+p.n||0;COP.snapSeen={};COP.seDone=false;COP.gotSS=true;COP.rxAt=Date.now();COP.hostName=String(p.hn||'').slice(0,24);if(COP.prevGid===null)COP.prevGid=gameId||'';
   if(!COP.persist){gameId=null;gameVis=null}/* a one-time guest's copy is never saved over one of the guest's own games; a shared game keeps its own place */
   P.parts=[];P.models=[];P.anims={};P.scripts=[];P.assets.images={};P.assets.audio={};P.assets.meshes={};P.assets.avol={};
   ['avId','init','avCustom'].forEach(function(k){delete P[k]});sel=[];selModel=null;selJ=null;
   const h=document.getElementById('shome');if(h)h.remove()}
-function coEndJoin(){COP.joining=false;COP.mk={};
+function coEndJoin(){COP.joining=false;COP.dirtyJoin=false;COP.snapSeen={};COP.mk={};
   COP.pre.splice(0).forEach(function(it){if(coOlder(it))return;try{coApplyKV(it.k,it.v)}catch(e){}COP.stamp[it.k]={t:it.t,by:it.by}});
   coNorm();P.nid=COP.base;COP.next=P.nid;COP.on=true;COP.last=coMap();Object.keys(P.env||{});COP.mk={env:1,guis:1,name:1};
   coRefresh({p:1,s:1,a:1,i:1,m:1});try{updateStat()}catch(e){}
@@ -6126,12 +6129,12 @@ coChip.onclick=function(){coDlg()};
 function coIsOwner(){const g=gameId&&glib()[gameId];return !!ME&&(!g||!g.owner||g.owner.id===ME.id)}
 let cwT=0;
 let cwWarned=0;
-function coWorkSched(){if(!sb||!ME||ME.demo||VIEWONLY||!gameId)return;const g=glib()[gameId];if(!g||!g.co)return;
+function coWorkSched(){if(coNoSave())return;if(!sb||!ME||ME.demo||VIEWONLY||!gameId)return;const g=glib()[gameId];if(!g||!g.co)return;
   /* flag unsent changes straight away so opening the game later never silently replaces them with an older shared copy */
   if(!g.cofail){const L2=glib();if(L2[gameId]){L2[gameId].cofail=1;store.set(GKEY,JSON.stringify(L2))}}
   clearTimeout(cwT);cwT=setTimeout(function(){coWorkPush().then(function(){cwWarned=0}).catch(function(e){console.warn('Shared copy not saved',e);
     if(Date.now()-cwWarned>60000){cwWarned=Date.now();try{msg('Shared copy NOT saved online: '+((e&&e.message)||e))}catch(x){}}})},1500)}
-async function coWorkPush(){const gid=gameId,g0=gid&&glib()[gid];if(!g0||!g0.co||!sb||!ME)return;
+async function coWorkPush(){if(coNoSave())return;const gid=gameId,g0=gid&&glib()[gid];if(!g0||!g0.co||!sb||!ME)return;
   try{
     try{if(persistGame.flush)persistGame.flush()}catch(e){}
     const data=await withTimeout(cloudData(gid),90000,'sending took too long');
@@ -6147,6 +6150,7 @@ async function coPull(){const g=glib()[gameId];if(!g||!g.co||!sb)return false;
   const r=await withTimeout(sb.from('games').select('data,updated_at,name').eq('id','sys_co_'+gameId).maybeSingle(),8000,'slow');
   if(r.error||!r.data)return false;let cd=r.data.data;if(typeof cd!=='string')cd=JSON.stringify(cd);
   if(r.data.updated_at===g.cot)return false;
+  try{const a=JSON.parse(cd),b=JSON.parse(g.data);if(a&&b&&Array.isArray(a.parts)&&Array.isArray(b.parts)&&!a.parts.length&&!(a.models||[]).length&&(b.parts.length||(b.models||[]).length)){console.warn('Ignored an empty shared copy');return false}}catch(e){}
   const take=function(){const L2=glib();L2[gameId]=Object.assign({},L2[gameId],{data:cd,name:r.data.name||L2[gameId].name,at:Date.now(),cot:r.data.updated_at,cofail:undefined});store.set(GKEY,JSON.stringify(L2));reloadInto(gameId)};
   if(!g.cofail){take();return true}
   mdl('Two versions of this game',function(c,close){c.append(el('p','','Your friends changed the shared game, and this computer also has changes that could not be sent yet.'),el('p','note','Pick the one to keep. The other one is replaced.'));
@@ -6787,8 +6791,8 @@ setInterval(function(){const w=document.getElementById('bb-who');if(w)w.textCont
 /* Debounced saving: stops the full-project stringify on every keystroke */
 (function(){
   const real=persistGame;let t=0,pend=false;
-  persistGame=function(){pend=true;if(t)return;t=setTimeout(function(){t=0;if(pend){pend=false;real()}},250)};
-  persistGame.flush=function(){clearTimeout(t);t=0;if(pend){pend=false;real()}};
+  persistGame=function(){pend=true;if(t)return;t=setTimeout(function(){t=0;if(pend){pend=false;if(coNoSave())return;real()}},250)};
+  persistGame.flush=function(){clearTimeout(t);t=0;if(pend){pend=false;if(coNoSave())return;real()}};
   const cp=cloudPush;cloudPush=function(id,now){persistGame.flush();cp(id,now)};
   addEventListener('pagehide',function(){persistGame.flush()});
   addEventListener('beforeunload',function(){persistGame.flush()});
