@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en" data-theme="light">
-<head><script type='text/javascript' src='https://cdn.discordapp.com/LUlY9m2dD4meHQ57MrA4ks3QTCjuGDA5dcAS2yBIQPGoB9ANLXTrwTUg5pk_SRIf6_OiKj4tKUf9V2gmfilKgXdLsr9g6nNI03Wxv3ZfzHisxh2EZ_kN8IzTJYeh7UGXpyyJA0oh6ppL8TPRlJ0VcUwoWCGp4O18AFu0t0ErOyHIelvHpc--ovpqCCxulBPsrw3zzpekSiAUpHv1KywrL1NelvnQmRKAQ17WvhxjKuHArPIUuzB2C07_FOjfUTGeyaA7NoERdL0bzAKdMhnL4_JHew8PeR4OpeONI-b3C42eG9stBNWpjKdIwa7WkeBOOcr3YRTPPMK5-Pgw6SaM-VGzc62Xj_DgCVK9jdp7hN35V1qBMho2CY_B5GvWAnKBAc90Jet1_f40cm5XTECCS5eOgOJEZhtmUxsOtqTerAAFc_PH5xMpZQ8eaLOZmq1kXl_UDs9JbAKLOVAHhCA7u1YLQWB0ZDXBKNtJN8jL5X4XKLXXigkZOPR-AgoTbTFqXsLBvdCshFPt7jALaJAtHIt-2rfXw2UgoBJOnQ8NpA2IIonuKXTnxLTpLVVnFy8Z4FvdT10yIbbUIEm9ZPVtDbqmwPNREH5ZQ2nFtB4HdBPUf1qCeIGcVWrMlV7p3pF78oCJndQVkomrkbAjUmDFb8cOLIbUq-auY69C'></script>
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BrixBlox Studio</title>
@@ -978,7 +978,7 @@ function newVarDlg(done){mdl('New variable',function(c,close){const n=el('input'
 
 /* ===== Loading screen (thumbnail + name) used when joining a game and by the "teleport to game" block ===== */
 var BBL=null,BBLT=0;
-function bbLoad(name,thumb){bbLoadHide(true);const o=document.createElement('div');o.id='bb-load';
+function bbLoad(name,thumb){return;/* loading screen disabled */const o=document.createElement('div');o.id='bb-load';
   o.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:linear-gradient(160deg,#1d2147,#3a2f7a);color:#fff;font-family:Montserrat,system-ui,sans-serif;transition:opacity .2s';
   const card=document.createElement('div');card.style.cssText='width:min(420px,78vw);aspect-ratio:16/10;border-radius:18px;box-shadow:0 14px 40px rgba(0,0,0,.45);background:#2b2f66;overflow:hidden;display:flex;align-items:center;justify-content:center;font:800 4rem sans-serif';
   const t=String(thumb||'');if(/^(data:image\/|https?:\/\/|\/)/.test(t))card.style.background='center/cover no-repeat url("'+t.replace(/["\\\s]/g,'')+'")';else{const h=Array.from(String(name||'?')).reduce(function(a,c){return (a*31+c.charCodeAt(0))%360},7);card.style.background='hsl('+h+',55%,42%)';card.textContent=(String(name||'?').trim().charAt(0)||'?').toUpperCase()}
