@@ -5304,7 +5304,11 @@ function vzGovern(){const t=performance.now(),d=t-vzGov.t;vzGov.t=t;
 function vzNoCol(id){for(const k in VZ){if(VZ[k].a===id||VZ[k].b===id)return true}return false}
 const vzPrev=new THREE.Vector3(),vzCur=new THREE.Vector3(),vzL0=new THREE.Vector3(),vzL1=new THREE.Vector3(),vzLc=new THREE.Vector3(),
   vzTA=new THREE.Matrix4(),vzTB=new THREE.Matrix4(),vzTX=new THREE.Matrix4(),vzQA=new THREE.Quaternion(),vzQB=new THREE.Quaternion(),vzQD=new THREE.Quaternion(),
-  vzTP=new THREE.Vector3(),vzTS=new THREE.Vector3(),vzTV=new THREE.Vector3(),vzBB=new THREE.Vector3(),vzBC=new THREE.Vector3();let vzHave=false,VF=null;const vzFm=new THREE.Matrix4(),vzFs=new THREE.Vector3(),vzFt=new THREE.Vector3(),vzFp=new THREE.Vector3(),vzFq=new THREE.Quaternion();
+  vzTP=new THREE.Vector3(),vzTS=new THREE.Vector3(),vzTV=new THREE.Vector3(),vzBB=new THREE.Vector3(),vzBC=new THREE.Vector3();const vzEu=new THREE.Euler(),vzBx=new THREE.Box3(),vzQL1=new THREE.Quaternion(),vzQL2=new THREE.Quaternion();
+/* Portals only turn you left/right (never tilt the camera) and line up the BOTTOM of one window with the bottom of the other, so you keep your height above the ground. */
+function vzLvl(q){const y=vzEu.setFromQuaternion(q,'YXZ').y;return q.setFromEuler(vzEu.set(0,y,0,'YXZ'))}
+function vzAnc(m,out){const g=m.geometry;if(!g.boundingBox)g.computeBoundingBox();vzBx.copy(g.boundingBox).applyMatrix4(m.matrixWorld);vzBx.getCenter(out);out.y=vzBx.min.y;return out}
+let vzHave=false,VF=null;const vzFm=new THREE.Matrix4(),vzFs=new THREE.Vector3(),vzFt=new THREE.Vector3(),vzFp=new THREE.Vector3(),vzFq=new THREE.Quaternion();
 /* Third person: your body crosses first, the camera (behind you) crosses later. Until the camera reaches the window it is drawn on the OLD side of the window, so the world never jumps. */
 function vzFold(){if(!VF)return;const mA=M[VF.a];if(!mA||!playing||!VZ[VF.a]){VF=null;return}
   camera.updateMatrixWorld();vzFm.multiplyMatrices(VF.inv,camera.matrixWorld);vzFm.decompose(vzFp,vzFq,vzFs);
@@ -5330,11 +5334,11 @@ function vzWalk(){
     const a0=vzL0[ks[ax]]-vzBC[ks[ax]],a1=vzL1[ks[ax]]-vzBC[ks[ax]];
     if(!((a0>0&&a1<=0)||(a0<0&&a1>=0)))continue;/* did not cross the face */
     const t=a0/(a0-a1);vzLc.copy(vzL0).lerp(vzL1,t);
-    const m1=.3/Math.max(1e-3,Math.abs(vzTS[ks[k1]])),m2=.3/Math.max(1e-3,Math.abs(vzTS[ks[k2]]));
+    const m1=.8/Math.max(1e-3,Math.abs(vzTS[ks[k1]])),m2=.8/Math.max(1e-3,Math.abs(vzTS[ks[k2]]));
     if(Math.abs(vzLc[ks[k1]]-vzBC[ks[k1]])>vzBB[ks[k1]]/2+m1||Math.abs(vzLc[ks[k2]]-vzBC[ks[k2]])>vzBB[ks[k2]]/2+m2)continue;/* crossed the plane but outside the window */
     /* same shift as the second camera: B * A^-1, without any scaling */
-    vzTA.compose(vzTP,vzQA,vzOne);mB.matrixWorld.decompose(vzTP,vzQB,vzTS);vzTB.compose(vzTP,vzQB,vzOne);
-    vzTX.copy(vzTB).multiply(vzTA.invert());vzQD.copy(vzQB).multiply(vzQA.invert());
+    vzAnc(mA,vzTP);vzQL1.copy(vzQA);vzLvl(vzQL1);vzTA.compose(vzTP,vzQL1,vzOne);mB.matrixWorld.decompose(vzTP,vzQB,vzTS);vzAnc(mB,vzTP);vzQL2.copy(vzQB);vzLvl(vzQL2);vzTB.compose(vzTP,vzQL2,vzOne);
+    vzTX.copy(vzTB).multiply(vzTA.invert());vzQD.copy(vzQL2).multiply(vzQL1.invert());
     const np=vzCur.clone().applyMatrix4(vzTX);
     S.x=np.x-T.pos[0];S.y=T.pos[2]-np.z;S.h=np.y-CH-feet0();S.ch=S.h;S.fp=null;
     vzTV.set(S.pvx||0,S.vy||0,S.pvz||0).applyQuaternion(vzQD);S.pvx=vzTV.x;S.pvz=vzTV.z;S.vy=vzTV.y;
@@ -5363,8 +5367,8 @@ function vzTick(){const ids=Object.keys(VZ);if(!ids.length)return;
     if((vzGov.n+ix)%vzGov.skip)return;/* the game is slow: draw this one less often */
     const rc=vzRectOf(mA,W,H);if(rc.w<8||rc.h<8)return;
     const sc=Math.min(vzGov.q,VZRTW/rc.w,VZRTH/rc.h),rw=Math.max(8,Math.floor(rc.w*sc)),rh=Math.max(8,Math.floor(rc.h*sc));
-    mA.matrixWorld.decompose(vzP,vzQ,vzS);vzA.compose(vzP,vzQ,vzOne);
-    mB.matrixWorld.decompose(vzP,vzQ,vzS);vzB.compose(vzP,vzQ,vzOne);vzC.copy(vzP);
+    mA.matrixWorld.decompose(vzP,vzQ,vzS);vzQL1.copy(vzQ);vzLvl(vzQL1);vzAnc(mA,vzP);vzA.compose(vzP,vzQL1,vzOne);
+    mB.matrixWorld.decompose(vzP,vzQ,vzS);vzC.copy(vzP);vzQL1.copy(vzQ);vzLvl(vzQL1);vzAnc(mB,vzP);vzB.compose(vzP,vzQL1,vzOne);
     /* B's flat side: its thinnest direction is the plane of the window */
     const sz=B.size,ax=(sz[0]<=sz[1]&&sz[0]<=sz[2])?0:(sz[1]<=sz[2]?1:2);
     vzN.set(ax===0?1:0,ax===1?1:0,ax===2?1:0).applyQuaternion(vzQ);
