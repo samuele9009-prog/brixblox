@@ -773,7 +773,7 @@ const BD={
  setimage:{c:'lk',l:'set image of this object to _',a:['none'],dd:{0:'img'},tip:'Puts a picture from Assets on the object this script belongs to (pick the picture, or none to take it off). It goes back to the part setting when the game restarts. Put the script on an object with the + next to it in the Explorer.'},
  lighting:{c:'lk',l:'set lighting to _',a:['realistic'],dd:{0:'light'},tip:'Changes the lighting of the whole game. Pick one from the list: Realistic (soft blue haze, soft shadows, film-like colours), Cinematic, Sunny, Sunset, Night, Foggy, Spooky or Vivid colours. Default puts the normal lighting back. It changes the time of day, sky colour, fog, light colour, shadows and colour tint together. It also changes the sky: every lighting has its own built-in skybox (stars at night, a glowing horizon at sunset ...) and its own sun, moon and clouds (a big orange sun and glowing pink clouds at sunset, a huge purple moon and dark violet clouds when spooky ...). If you upload images ending in the lighting name (SkyboxLsunset, SkyboxRsunset ... plus SunSunset or MoonNight), those are used instead. It goes back to default when the game restarts.'},
  skybox:{c:'lk',l:'set skybox to _',a:['default'],dd:{0:'skybox'},tip:'Changes the sky. Upload images under Assets named SkyboxL (left), SkyboxR (right), SkyboxF (front), SkyboxBa (back), SkyboxT (top) and SkyboxBo (bottom): images with exactly these names are the default sky. Images with something after the letters (SkyboxL1, SkyboxR1 ...) are NOT used until a block picks them: pick 1 to switch every side ending in 1 at once, or pick one image to change just that side. default goes back to the plain names and none removes the skybox. It goes back to the default when the game restarts. Using this block turns off the built-in sky of the lighting until the next set lighting block.'},
- visualize:{c:'lk',l:'visualize _ to _',a:['Part1','Part2'],dd:{0:'partn',1:'partn'},tip:'Turns the first part into a window (a portal) that shows the place where the second part is. Walk around the first part and the picture moves like a real window. You see what is behind the second part, so turn the second part to face the way you want to look. The second part itself is not drawn inside the picture. It only draws the part of the screen the window covers, only when it is on screen and within about 140 studs, and lowers its own quality if the game slows down. Up to 4 parts can do this at once. Press Stop and everything goes back.'},
+ visualize:{c:'lk',l:'visualize _ to _',a:['Part1','Part2'],dd:{0:'partn',1:'partn'},tip:'Turns the first part into a window (a portal) that shows the place where the second part is. Walk around the first part and the picture moves like a real window. You see what is behind the second part, so turn the second part to face the way you want to look. The second part itself is not drawn inside the picture. It only draws the part of the screen the window covers, only when it is on screen and within about 140 studs, and lowers its own quality if the game slows down. Up to 4 parts can do this at once. Walk into the window and you step through to the other side, facing the same way you saw. Press Stop and everything goes back.'},
  unvisualize:{c:'lk',l:'stop visualizing _',a:['Part1'],dd:{0:'partn'},tip:'Turns a part that was set up with visualize back into a normal part.'},
  transparency:{c:'lk',l:'set transparency to _',a:['0.5'],tip:'Makes the object this script belongs to see-through: 0 is solid, 0.5 is half see-through, 1 is invisible. With no object it changes your own character. It goes back to the part setting when the game restarts.'},
  wait:{c:'ct',l:'wait _ secs',a:['1']},
@@ -3562,6 +3562,7 @@ function play(dt,f){const SP=(S.fly&&amAdmin()?2.2:1)*(S.speed!=null?S.speed:P.r
 function solid(r){return CO[r.id]!==undefined?CO[r.id]:!r.nocol}
 function collide(){const T=byId(P.avId);if(!T)return;const R=1.1,fy=feet0()+S.h;
   for(let it=0;it<2;it++)P.parts.forEach(function(q){if(q.av)return;
+    if(vzNoCol(q.id))return;/* visualize windows and their target spots can be walked through */
     const r=rootOf(q);if((r.svc||'world')!=='world'||!solid(r)||gone(q))return;
     /* far-away parts are skipped before any of the expensive work (the part's size box always contains the whole shape) */
     {const o0=RO[r.id]||[0,0],sz=q.size,rad=Math.abs(sz[0])+Math.abs(sz[1])+Math.abs(sz[2])+R+3;if(Math.abs(T.pos[0]+S.x-(q.pos[0]+o0[0]))>rad||Math.abs(T.pos[2]-S.y-(q.pos[2]+o0[1]))>rad)return}
@@ -5249,7 +5250,7 @@ let VZ={};const VZMAX=4,VZDIST=140,VZRTW=2048,VZRTH=1536;
 const vzGov={q:1,skip:1,ema:16.7,base:16.7,t:0,n:0,f:0,up:0};
 const vzCam=new THREE.PerspectiveCamera(70,1,.5,1500),vzSz=new THREE.Vector2(),vzFr=new THREE.Frustum(),vzPM=new THREE.Matrix4(),vzSph=new THREE.Sphere(),
   vzA=new THREE.Matrix4(),vzB=new THREE.Matrix4(),vzAi=new THREE.Matrix4(),vzX=new THREE.Matrix4(),vzP=new THREE.Vector3(),vzQ=new THREE.Quaternion(),vzS=new THREE.Vector3(),
-  vzOne=new THREE.Vector3(1,1,1),vzN=new THREE.Vector3(),vzC=new THREE.Vector3(),vzD=new THREE.Vector3(),vzV=new THREE.Vector3(),vzV2=new THREE.Vector3(),vzPlane=new THREE.Plane();
+  vzOne=new THREE.Vector3(1,1,1),vzN=new THREE.Vector3(),vzC=new THREE.Vector3(),vzD=new THREE.Vector3(),vzV=new THREE.Vector3(),vzV2=new THREE.Vector3(),vzPlane=new THREE.Plane(),vzSbP=new THREE.Vector3();
 function vzFind(a,S){const by=function(nm){nm=String(nm).trim().toLowerCase();return nm?(P.parts.find(function(p){return !p.av&&String(p.name).toLowerCase()===nm})||null):null},raw=String(a==null?'':a).trim();
   return by(raw)||by(String(val(raw,S)))}
 function vzStart(n1,n2,S){const A=vzFind(n1,S),B=vzFind(n2,S);
@@ -5290,6 +5291,45 @@ function vzGovern(){const t=performance.now(),d=t-vzGov.t;vzGov.t=t;
   if(e>hi){vzGov.up=0;if(vzGov.q>.501)vzGov.q=Math.max(.5,Math.round((vzGov.q-.1)*100)/100);else if(vzGov.skip<3)vzGov.skip++}
   else if(e<lo){if(++vzGov.up>=3){vzGov.up=0;if(vzGov.skip>1)vzGov.skip--;else if(vzGov.q<1)vzGov.q=Math.min(1,Math.round((vzGov.q+.05)*100)/100)}}
   else vzGov.up=0}
+/* Walking through a window: when the player's body crosses the flat face of part A, they are moved by the same shift the second camera uses
+   (A onto B), and turned by the same amount, so the other side looks exactly like what the window showed. Works both ways. */
+function vzNoCol(id){for(const k in VZ){if(VZ[k].a===id||VZ[k].b===id)return true}return false}
+const vzPrev=new THREE.Vector3(),vzCur=new THREE.Vector3(),vzL0=new THREE.Vector3(),vzL1=new THREE.Vector3(),vzLc=new THREE.Vector3(),
+  vzTA=new THREE.Matrix4(),vzTB=new THREE.Matrix4(),vzTX=new THREE.Matrix4(),vzQA=new THREE.Quaternion(),vzQB=new THREE.Quaternion(),vzQD=new THREE.Quaternion(),
+  vzTP=new THREE.Vector3(),vzTS=new THREE.Vector3(),vzTV=new THREE.Vector3(),vzBB=new THREE.Vector3(),vzBC=new THREE.Vector3();let vzHave=false;
+function vzWalk(){
+  if(!playing||FC||!Object.keys(VZ).length){vzHave=false;return}
+  const T=byId(P.avId);if(!T){vzHave=false;return}
+  const CH=2.5;/* the point on the body that has to cross the window: about chest height */
+  vzCur.set(T.pos[0]+S.x,feet0()+S.h+CH,T.pos[2]-S.y);
+  if(!vzHave){vzPrev.copy(vzCur);vzHave=true;return}
+  if(vzPrev.distanceToSquared(vzCur)>225){vzPrev.copy(vzCur);return}/* a big jump (respawn, teleport block): not walking */
+  const ids=Object.keys(VZ);
+  for(let i=0;i<ids.length;i++){const z=VZ[ids[i]],mA=M[z.a],mB=M[z.b];
+    if(!mA||!mB||!mA.geometry||z.a===z.b)continue;
+    const g=mA.geometry;if(!g.boundingBox)g.computeBoundingBox();const bb=g.boundingBox;
+    mA.updateWorldMatrix(true,false);mB.updateWorldMatrix(true,false);
+    mA.matrixWorld.decompose(vzTP,vzQA,vzTS);
+    bb.getSize(vzBB);bb.getCenter(vzBC);
+    const sz=[vzBB.x*Math.abs(vzTS.x),vzBB.y*Math.abs(vzTS.y),vzBB.z*Math.abs(vzTS.z)],ax=(sz[0]<=sz[1]&&sz[0]<=sz[2])?0:(sz[1]<=sz[2]?1:2),k1=(ax+1)%3,k2=(ax+2)%3,ks='xyz';
+    vzL0.copy(vzPrev);mA.worldToLocal(vzL0);vzL1.copy(vzCur);mA.worldToLocal(vzL1);
+    const a0=vzL0[ks[ax]]-vzBC[ks[ax]],a1=vzL1[ks[ax]]-vzBC[ks[ax]];
+    if(!((a0>0&&a1<=0)||(a0<0&&a1>=0)))continue;/* did not cross the face */
+    const t=a0/(a0-a1);vzLc.copy(vzL0).lerp(vzL1,t);
+    const m1=.3/Math.max(1e-3,Math.abs(vzTS[ks[k1]])),m2=.3/Math.max(1e-3,Math.abs(vzTS[ks[k2]]));
+    if(Math.abs(vzLc[ks[k1]]-vzBC[ks[k1]])>vzBB[ks[k1]]/2+m1||Math.abs(vzLc[ks[k2]]-vzBC[ks[k2]])>vzBB[ks[k2]]/2+m2)continue;/* crossed the plane but outside the window */
+    /* same shift as the second camera: B * A^-1, without any scaling */
+    vzTA.compose(vzTP,vzQA,vzOne);mB.matrixWorld.decompose(vzTP,vzQB,vzTS);vzTB.compose(vzTP,vzQB,vzOne);
+    vzTX.copy(vzTB).multiply(vzTA.invert());vzQD.copy(vzQB).multiply(vzQA.invert());
+    const np=vzCur.clone().applyMatrix4(vzTX);
+    S.x=np.x-T.pos[0];S.y=T.pos[2]-np.z;S.h=np.y-CH-feet0();S.ch=S.h;S.fp=null;
+    vzTV.set(S.pvx||0,S.vy||0,S.pvz||0).applyQuaternion(vzQD);S.pvx=vzTV.x;S.pvz=vzTV.z;S.vy=vzTV.y;
+    vzTV.set(Math.sin(cam.yaw)*Math.cos(cam.pit),Math.sin(cam.pit),-Math.cos(cam.yaw)*Math.cos(cam.pit)).applyQuaternion(vzQD);
+    cam.yaw=Math.atan2(vzTV.x,-vzTV.z);cam.pit=Math.asin(Math.max(-1,Math.min(1,vzTV.y)));
+    const dr=S.dir*Math.PI/180;vzTV.set(Math.cos(dr),0,-Math.sin(dr)).applyQuaternion(vzQD);S.dir=Math.atan2(-vzTV.z,vzTV.x)*180/Math.PI;
+    vzHave=false;z.force=true;
+    return}
+  vzPrev.copy(vzCur)}
 function vzTick(){const ids=Object.keys(VZ);if(!ids.length)return;
   if(!(playing||running)){vzClear();return}
   renderer.getDrawingBufferSize(vzSz);const W=vzSz.x,H=vzSz.y;if(!W||!H)return;
@@ -5331,15 +5371,16 @@ function vzTick(){const ids=Object.keys(VZ);if(!ids.length)return;
     z.ov.visible=false;/* A does not draw itself into its own picture */
     if(mB.visible){mB.visible=false;hid.push(mB)}/* B is only a marker */
     CULLED.forEach(function(m){if(!m.visible&&m!==mB&&m!==mA){m.visible=true;back.push(m)}});/* things the main camera skipped may be in the other view */
-    const au=renderer.shadowMap.autoUpdate,pc=renderer.clippingPlanes,pr=renderer.getRenderTarget();
+    const au=renderer.shadowMap.autoUpdate,pc=renderer.clippingPlanes,pr=renderer.getRenderTarget(),sbP=vzSbP.copy(skyBox.position),sbS=skyBox.scale.x;
+    skyBox.position.copy(vzCam.position);skyBox.scale.setScalar(.5);/* the sky box follows the player's camera, so for this picture it is centred on the second camera and made small enough to stay inside its draw distance */
     try{renderer.shadowMap.autoUpdate=false;renderer.clippingPlanes=clip?[vzPlane]:[];renderer.setRenderTarget(rt);renderer.render(scene,vzCam)}
-    finally{renderer.setRenderTarget(pr);renderer.clippingPlanes=pc;renderer.shadowMap.autoUpdate=au;z.ov.visible=true;hid.forEach(function(o){o.visible=true});back.forEach(function(m){m.visible=false})}})}
+    finally{skyBox.position.copy(sbP);skyBox.scale.setScalar(sbS);renderer.setRenderTarget(pr);renderer.clippingPlanes=pc;renderer.shadowMap.autoUpdate=au;z.ov.visible=true;hid.forEach(function(o){o.visible=true});back.forEach(function(m){m.visible=false})}})}
 function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const dt=Math.min(.1,(now-lt)/1000);qTune(dt*1000);lt=now;const f=fwd();
   if(!playing)FC=false;
   if(playing&&!FC)play(dt,f);
   else{const sp=(keys.ShiftLeft?36:12)*dt,r=[Math.cos(cam.yaw),0,Math.sin(cam.yaw)],go=function(v,k){cam.x+=v[0]*k;cam.y+=v[1]*k;cam.z+=v[2]*k};
     if(keys.KeyW)go(f,sp);if(keys.KeyS)go(f,-sp);if(keys.KeyD)go(r,sp);if(keys.KeyA)go(r,-sp);if(keys.KeyQ)cam.y-=sp;if(keys.KeyE)cam.y+=sp;if(Math.abs(zq)>.001){const zs=zq*(1-Math.exp(-dt*12));zq-=zs;go(f,zs)}else zq=0}
-  if(playing||running){twTick(dt);collide();pcollide();physics(dt);objMove(dt);rigAI(dt);npPhys(dt);touchTick()}npTick(dt);
+  if(playing||running){twTick(dt);collide();pcollide();physics(dt);objMove(dt);rigAI(dt);npPhys(dt);touchTick()}try{vzWalk()}catch(e){console.warn('visualize walk',e)}npTick(dt);
   try{gearSync();gearTick()}catch(e){}
   draw();entTick(dt);
   if(playing&&!FC){const T=byId(P.avId);if(T){S.ch=S.ch===undefined?S.h:S.ch+(S.h-S.ch)*(1-Math.exp(-dt*9));
