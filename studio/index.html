@@ -980,7 +980,7 @@ function newVarDlg(done){mdl('New variable',function(c,close){const n=el('input'
 /* ===== Loading screen (thumbnail + name) used when joining a game and by the "teleport to game" block ===== */
 var BBL=null,BBLT=0;
 function bbLoad(name,thumb){bbLoadHide(true);const o=document.createElement('div');o.id='bb-load';
-  o.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:linear-gradient(160deg,#1d2147,#3a2f7a);color:#fff;font-family:Montserrat,system-ui,sans-serif;transition:opacity .35s';
+  o.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:linear-gradient(160deg,#1d2147,#3a2f7a);color:#fff;font-family:Montserrat,system-ui,sans-serif;transition:opacity .2s';
   const card=document.createElement('div');card.style.cssText='width:min(420px,78vw);aspect-ratio:16/10;border-radius:18px;box-shadow:0 14px 40px rgba(0,0,0,.45);background:#2b2f66;overflow:hidden;display:flex;align-items:center;justify-content:center;font:800 4rem sans-serif';
   const t=String(thumb||'');if(/^(data:image\/|https:\/\/)/.test(t))card.style.background='center/cover no-repeat url("'+t.replace(/["\\\s]/g,'')+'")';else{const h=Array.from(String(name||'?')).reduce(function(a,c){return (a*31+c.charCodeAt(0))%360},7);card.style.background='hsl('+h+',55%,42%)';card.textContent=(String(name||'?').trim().charAt(0)||'?').toUpperCase()}
   const nm=document.createElement('div');nm.textContent=String(name||'Loading...');nm.style.cssText='font-weight:800;font-size:1.6rem;text-align:center;max-width:80vw;text-shadow:0 2px 8px rgba(0,0,0,.4)';
@@ -990,7 +990,7 @@ function bbLoad(name,thumb){bbLoadHide(true);const o=document.createElement('div
   const sub=document.createElement('div');sub.textContent='Loading...';sub.style.cssText='opacity:.75;font-weight:700;font-size:.95rem';
   o.append(card,nm,bar,sub);document.body.append(o);BBL=o;BBLT=Date.now()}
 function bbLoadHide(now){const o=BBL;if(!o)return;BBL=null;if(now){o.remove();return}
-  const wait=Math.max(0,700-(Date.now()-BBLT));setTimeout(function(){o.style.opacity='0';setTimeout(function(){o.remove()},380)},wait)}
+  const wait=Math.max(0,250-(Date.now()-BBLT));setTimeout(function(){o.style.opacity='0';setTimeout(function(){o.remove()},200)},wait)}
 var BBREADY=false,BBCHK=false;
 function bbReadyTry(){if(!BBREADY||BBCHK)return;bbLoadHide();try{parent.postMessage({bb:'ready'},location.origin)}catch(e){}}
 /* the games you made yourself (what the teleport block can pick from) */
@@ -1000,7 +1000,7 @@ var TPBUSY=false;
 async function tpGame(id){if(TPBUSY)return;
   if(!id||/^(acc_|avatar_|sys_)/.test(id)){log('Error: teleport to game needs one of your games picked.');return}
   if(!VIEWONLY){const g=glib()[id];if(!g||!ownG(g)){log('Error: teleport to game can only go to games you made.');return}
-    TPBUSY=true;bbLoad(g.name,g.thumb);setTimeout(function(){bbLoadHide();TPBUSY=false},2300);
+    TPBUSY=true;bbLoad(g.name,g.thumb);setTimeout(function(){bbLoadHide();TPBUSY=false},1200);
     log('Teleport to "'+g.name+'": in the editor this only shows the loading screen. When the game is played from the site, the player really goes there.');return}
   if(!sb||!ME){log('Error: teleport to game needs you to be online.');return}
   TPBUSY=true;bbLoad('Teleporting...','');
@@ -1611,8 +1611,8 @@ const hemi=new THREE.HemisphereLight(0xffffff,0x88aa88,.72);scene.add(hemi);cons
 /* Realistic soft shadows: the sun's shadow box follows the camera (or the player) so shadows stay sharp up close */
 const sunDir=new THREE.Vector3(8,14,6);
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
-sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.bias=-.0004;sun.shadow.normalBias=.04;sun.shadow.radius=3;
-{const sc=sun.shadow.camera,R=48;sc.left=-R;sc.right=R;sc.top=R;sc.bottom=-R;sc.near=1;sc.far=260;sc.updateProjectionMatrix()}
+sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.0005;sun.shadow.normalBias=.06;sun.shadow.radius=3;
+{const sc=sun.shadow.camera,R=40;sc.left=-R;sc.right=R;sc.top=R;sc.bottom=-R;sc.near=1;sc.far=260;sc.updateProjectionMatrix()}
 
 /* Realistic reflections: a soft sky-and-ground environment lights every material (metal, glass, water and polished stone reflect it) */
 let ENVOK=false,ENVK=1,ENVT=null;
@@ -1623,7 +1623,7 @@ try{const es=new THREE.Scene(),sg=new THREE.SphereGeometry(50,48,24),pa=sg.attri
   const sb=new THREE.Mesh(new THREE.SphereGeometry(5,16,12),new THREE.MeshBasicMaterial({color:new THREE.Color(14,13,11)}));sb.position.set(8,14,6).normalize().multiplyScalar(45);es.add(sb);
   const pm=new THREE.PMREMGenerator(renderer);ENVT=pm.fromScene(es,.03).texture;pm.dispose();ENVOK=true}catch(e){ENVOK=false}
 function envK(v){v=Math.max(0,v);if(Math.abs(v-ENVK)<.01)return;ENVK=v;scene.traverse(function(o){const ms=o.material;if(!ms)return;(Array.isArray(ms)?ms:[ms]).forEach(function(m){if(m.isMeshStandardMaterial&&m.userData&&m.userData.envB!=null)m.envMapIntensity=m.userData.envB*ENVK})})}
-function sunTick(cx,cy,cz){const g=1;sun.target.position.set(Math.round(cx/g)*g,Math.round(cy/g)*g,Math.round(cz/g)*g);
+function sunTick(cx,cy,cz){const sc=sun.shadow.camera,tx=(sc.right-sc.left)/sun.shadow.mapSize.x,g=tx*Math.max(1,Math.round(.5/tx));/* snap to whole shadow pixels so shadows do not shimmer as you move */sun.target.position.set(Math.round(cx/g)*g,Math.round(cy/g)*g,Math.round(cz/g)*g);
   sun.position.copy(sun.target.position).addScaledVector(sunDir.clone().normalize(),120);sun.target.updateMatrixWorld()}
 
 const bc=document.createElement('canvas');bc.width=1024;bc.height=384;const bx=bc.getContext('2d'),bt=(bx.scale(2,2),new THREE.CanvasTexture(bc)),bub=new THREE.Sprite(new THREE.SpriteMaterial({map:bt,transparent:true,depthTest:false}));
@@ -1806,12 +1806,12 @@ function imgApply(q,key){const m=M[q.id];if(!m||!texOK(q))return;const old=m.mat
   if(key){const t=imgTex(key);if(t){const mt=m.material;mt.map=t;mt.bumpMap=null;mt.roughnessMap=null;mt.color.set(0xffffff);mt.vertexColors=false;if(texPng(key)){mt.transparent=true;mt.alphaTest=.04}mt.needsUpdate=true}}
   try{old.dispose()}catch(e){}hl()}
 /* Real-life lighting maths for part materials: colours are read as sRGB and lit in linear light, then filmic-mapped and encoded back. Everything else in the scene is untouched. */
-function pbrPatch(m){const fn=function(sh){sh.fragmentShader=sh.fragmentShader
+function pbrPatch(m,o){o=o||{};const fn=function(sh){sh.fragmentShader=sh.fragmentShader
     .replace(/void\s+main\s*\(\s*\)\s*\{/,function(){return 'vec3 acesP(vec3 x){return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0);}\nvoid main() {'})
-    .replace('#include <color_fragment>','#include <color_fragment>\n diffuseColor.rgb=pow(max(diffuseColor.rgb,vec3(0.0)),vec3(2.2));')
-    .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\n totalEmissiveRadiance=pow(max(totalEmissiveRadiance,vec3(0.0)),vec3(2.2));')
-    .replace('#include <encodings_fragment>','#ifndef TONE_MAPPING\n gl_FragColor.rgb=acesP(gl_FragColor.rgb);\n#endif\n gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.0)),vec3(0.4545));')};
-  m.userData.pbr=1;m.userData.pbrFn=fn;m.onBeforeCompile=fn;m.customProgramCacheKey=function(){return 'pbr2'}}
+    .replace('#include <color_fragment>',o.lin?'#include <color_fragment>':'#include <color_fragment>\n diffuseColor.rgb=pow(max(diffuseColor.rgb,vec3(0.0)),vec3(2.2));')
+    .replace('#include <emissivemap_fragment>',o.lin?'#include <emissivemap_fragment>':'#include <emissivemap_fragment>\n totalEmissiveRadiance=pow(max(totalEmissiveRadiance,vec3(0.0)),vec3(2.2));')
+    .replace('#include <encodings_fragment>',(o.k?'gl_FragColor.rgb*='+(+o.k).toFixed(3)+';\n':'')+'#ifndef TONE_MAPPING\n gl_FragColor.rgb=acesP(gl_FragColor.rgb);\n#endif\n gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.0)),vec3(0.4545));')};
+  m.userData.pbr=1;m.userData.pbrFn=fn;m.onBeforeCompile=fn;m.customProgramCacheKey=function(){return 'pbr2'+(o.lin?'L':'')+(o.k?'k'+o.k:'')}}
 /* Shininess: 0 = dull / matte, 1 = mirror-like. Stored on the part as p.shine; a part without it keeps its material's normal look. */
 function shineDef(p){if(p.shape==='mesh')return meshShineDef(p);const q=PBR[MATS[p.mat]?p.mat:'plastic']||PBR.plastic;return Math.round(Math.max(0,Math.min(1,(1-q[0])/.95))*20)/20}
 function shineApply(m,v){v=Math.max(0,Math.min(1,+v||0));m.roughness=1-v*.95;
@@ -1835,7 +1835,7 @@ function mkMat(p){const k=MATS[p.mat]?p.mat:'plastic',d=MATS[k],q=PBR[k]||PBR.pl
   if(d.op){m.transparent=true;m.opacity=d.op}if(k==='neon')m.emissive.set(p.color);if(p.tr>0){m.transparent=true;m.opacity=(d.op||1)*(1-Math.min(1,p.tr))}if(p.shape==='union'&&p.un){m.vertexColors=true;if(p.un.pc!==p.color)m.color.set(p.color);else m.color.set(0xffffff)}
   if(hasTex(p)){const t=imgTex(p.tex);if(t){m.map=t;m.bumpMap=null;m.color.set(0xffffff);m.vertexColors=false;if(texPng(p.tex)){m.transparent=true;m.alphaTest=.04}}}
   if(p.shine!=null&&!p.av)shineApply(m,p.shine);
-  pbrPatch(m);return m}
+  pbrPatch(m,p.av&&!p.acc?{k:.8}:null);return m}
 /* World-sized texture coordinates: each face is mapped by its dominant axis, so a tile always covers ts studs */
 function boxUV(g,ts){const ps=g.attributes.position,nm=g.attributes.normal,uv=g.attributes.uv;
   for(let i=0;i<ps.count;i++){const nx=nm.getX(i),ny=nm.getY(i),nz=nm.getZ(i),ax=Math.abs(nx),ay=Math.abs(ny),az=Math.abs(nz),x=ps.getX(i),y=ps.getY(i),z=ps.getZ(i);let u,v;
@@ -1985,7 +1985,12 @@ function accStatic(o){const sk=[];o.traverse(function(m){if(m.isSkinnedMesh)sk.p
 function depthNudge(n,base,k){n.polygonOffset=false;n.polygonOffsetFactor=0;n.polygonOffsetUnits=0;const pb=n.userData&&n.userData.pbrFn||null;
   n.onBeforeCompile=function(sh){if(pb)pb(sh);sh.vertexShader=sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\n{vec4 nv=mvPosition;nv.z+=0.02+(-mvPosition.z)*0.0004;gl_Position=projectionMatrix*nv;}')};
   n.customProgramCacheKey=function(){return 'nudge0.02_0.0004'+(pb?'p2':'')};n.needsUpdate=true;return n}
-function accMat(n){n.side=THREE.DoubleSide;n.depthWrite=true;if('skinning' in n)n.skinning=false;return depthNudge(n,0.02,0.0004)}
+function accMat(n){n.side=THREE.DoubleSide;n.depthWrite=true;if('skinning' in n)n.skinning=false;
+  if(n.isMeshStandardMaterial&&!n.userData.pbr){/* these used to skip the world's colour and tone-mapping step, which made them look dark and flat */
+    if(n.color&&n.emissive&&n.emissive.getHex()===0){n.emissive.copy(n.color).multiplyScalar(.1);if(n.map)n.emissiveMap=n.map}
+    if(ENVOK&&!n.envMap){n.envMap=ENVT;n.userData.envB=Math.max(n.userData.envB||0,.55);n.envMapIntensity=n.userData.envB*ENVK}
+    pbrPatch(n,{lin:!n.userData.rawTex})}
+  return depthNudge(n,0.02,0.0004)}
 function accFreeze(c,w){c.traverse(function(o){o.updateMatrix();o.matrixAutoUpdate=false});w.updateMatrix();w.matrixAutoUpdate=false}
 function accTex(url,flip){const k=(flip?'f':'n')+url;if(ACCT[k])return ACCT[k];const t=new THREE.TextureLoader().load(url);t.flipY=!flip;t.wrapS=t.wrapT=THREE.RepeatWrapping;return ACCT[k]=t}
 function shineMat(mt,k){const n=mt.isMeshStandardMaterial?mt:new THREE.MeshStandardMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0});
@@ -1994,7 +1999,7 @@ function accMake(slot,id,hs){/* hs: head height scale, so items still fit a resi
   const e=ACCI[id];if(!e||!e.obj)return null;const it=e.it,sl=ACCS[slot];if(!sl)return null;
   const c=e.obj.clone(true);c.position.set(0,0,0);
   c.traverse(function(m){if(!m.isMesh)return;m.castShadow=false;m.frustumCulled=false;/* own copies of the materials: hiding your avatar in first person must not hide anyone else's item */
-    const ap=function(mt){let n=mt.clone();if(it.tex){n.map=accTex(it.tex,it.tf);if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true}if(it.sh!=null&&isFinite(it.sh))n=shineMat(n,Math.max(0,Math.min(100,+it.sh))/100);return accMat(n)};
+    const ap=function(mt){let n=mt.clone();if(it.tex){n.userData.rawTex=true;n.map=accTex(it.tex,it.tf);if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true}if(it.sh!=null&&isFinite(it.sh))n=shineMat(n,Math.max(0,Math.min(100,+it.sh))/100);return accMat(n)};
     m.material=Array.isArray(m.material)?m.material.map(ap):ap(m.material);if([].concat(m.material).some(function(t){return t.transparent}))m.renderOrder=-1});
   c.updateMatrixWorld(true);
   const bx=new THREE.Box3().setFromObject(c),sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),mx=Math.max(sz.x,sz.y,sz.z);
@@ -4608,7 +4613,7 @@ function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
   if(sig!==lxSig){lxSig=sig;
     renderer.toneMapping=L&&L.tm?THREE.ACESFilmicToneMapping:THREE.NoToneMapping;renderer.toneMappingExposure=L?L.ex:1;
     const soft=!!(L&&L.soft);renderer.shadowMap.type=soft?THREE.PCFSoftShadowMap:THREE.PCFShadowMap;
-    const ms=soft?2048:1024;if(sun.shadow.mapSize.x!==ms){sun.shadow.mapSize.set(ms,ms);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
+    const ms=2048;if(sun.shadow.mapSize.x!==ms){sun.shadow.mapSize.set(ms,ms);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
     sun.shadow.radius=soft?5:3;renderer.shadowMap.needsUpdate=true;
     scene.traverse(function(o){if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(function(m){m.needsUpdate=true})}})}
   lxEls();const g=L&&L.g;cv.style.filter=g?g.f:'';
@@ -4618,7 +4623,7 @@ function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
     if(g&&g.vig>0){lxV.style.display='block';lxV.style.background='radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(0,0,0,'+g.vig+') 100%)'}else lxV.style.display='none'}}
 let fogOn=false;
 function applyEnv(){updSkyTex();const e=lightEnv(),a=(e.tod-6)/12*Math.PI,day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),c=new THREE.Color(e.sky).multiplyScalar(k);
-  scene.background=c;hemi.intensity=(.22+.36*k)*e.bright;sun.intensity=1.3*day*e.sun*e.bright;sunDir.set(Math.cos(a)*14,Math.max(2,Math.sin(a)*14),6);try{envK((.12+.88*Math.min(1,day*2.5))*Math.min(1.4,e.bright))}catch(_e){}
+  scene.background=c;hemi.intensity=(.22+.36*k)*e.bright;sun.intensity=1.3*day*e.sun*e.bright;sunDir.set(Math.cos(a)*14,Math.max(5,Math.sin(a)*14),6);try{envK((.12+.88*Math.min(1,day*2.5))*Math.min(1.4,e.bright))}catch(_e){}
   const on=e.fog>0,fh=skyFogHex();scene.fog=on?new THREE.Fog(fh!==null?fh:c.getHex(),12,Math.max(30,900-e.fog*8.5)):null;
   if(on!==fogOn){fogOn=on;if(PG)PG.traverse(function(o){if(o.material)o.material.needsUpdate=true})}
   lightX()}
@@ -5899,7 +5904,7 @@ try{const u=new URL(location.href),cd=u.searchParams.get('coop');if(cd&&!VIEWONL
 if(VIEWONLY){$('studio').classList.add('vo');setFs(true,true);
   document.querySelector('#studio .logo h1').textContent=P.name+(PLAYINFO&&PLAYINFO.owner?'  -  by '+PLAYINFO.owner:'');
   $('s-fs').onclick=function(){try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen()}catch(x){}};
-  $('s-fs').textContent='Fullscreen';setTimeout(function(){$('s-play').click();netJoin()},60);bbHud();setTimeout(function(){BBREADY=true;bbReadyTry()},900)}
+  $('s-fs').textContent='Fullscreen';setTimeout(function(){$('s-play').click();netJoin()},60);bbHud();setTimeout(function(){BBREADY=true;bbReadyTry()},250);setTimeout(function(){BBCHK=false;bbReadyTry()},1200)}
 /* ===== Items: made from a mesh in the item room, given with the "give item" block, held from the hotbar ===== */
 function itemsL(){return P.items=Array.isArray(P.items)?P.items:[]}
 function itemBy(n){const k=String(n).trim().toLowerCase();return itemsL().find(function(i){return String(i.name).toLowerCase()===k})||null}
