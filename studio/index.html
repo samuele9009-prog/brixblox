@@ -4343,6 +4343,11 @@ addEventListener('keydown',function(e){if(!playing||e.repeat||!PPS.size||menuEl|
   const n=keyNames(e);let hit=false;PPS.forEach(function(st){if(st.vis&&!st.down&&(st.key===n[0]||st.key===n[1])){hit=true;ppDown(st.sc,st)}});if(hit)e.preventDefault()});
 addEventListener('keyup',function(e){if(!PPS.size)return;const n=keyNames(e);PPS.forEach(function(st){if(st.down&&(st.key===n[0]||st.key===n[1]))ppUp(st)})});
 addEventListener('blur',function(){PPS.forEach(ppUp)});
+/* Diagnostic: press F12, open Console, type __bbDiag() when blocks are missing, and send the output. */
+window.__bbDiag=function(){const r={parts:P.parts.length,meshes:Object.keys(M).length,culled:CULLED.size,stab:0,notInWorld:0,noMesh:0,hiddenNotCulled:0,playing:!!playing,running:!!running,env:JSON.stringify(P.env),coop:{on:COP.on,joining:COP.joining,detached:COP.detached,host:COP.host},promptScripts:P.scripts.filter(function(s){return s[0].t==='prompt'}).length,sample:[]};
+  P.parts.forEach(function(p){if(p.av)return;const m=M[p.id],g=J[p.id];if(p.stab){r.stab++;return}if(!inW(p)){r.notInWorld++;return}if(!m){r.noMesh++;return}if(!m.visible&&!CULLED.has(m))r.hiddenNotCulled++;
+    if(r.sample.length<8)r.sample.push({name:p.name,pos:p.pos,size:p.size,tr:p.tr,meshVisible:m.visible,culled:CULLED.has(m),groupVisible:g&&g.visible})});
+  console.log('[BB DIAG]',JSON.stringify(r,null,1));return r};
 /* Chat */
 function nameCol(n){if(n===P.player.name){const q=P.squads.find(function(z){return z.id===P.player.squad});if(q)return q.color}let h=0;for(let i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))>>>0;return 'hsl('+(h%360)+',75%,72%)'}
 /* chatLine(name,message) shows "Name: message" with a coloured name; chatLine(text,null,true) is a system line. Lines fade after 12 s unless you are typing. */
@@ -5845,7 +5850,6 @@ function coMap(){const m={},seen={};
   return m}
 
 /* Put one received piece into the game. Returns what kind of thing changed. */
-function coKnown(sc){return Array.isArray(sc)&&sc.every(function(b){return !!b&&typeof b==='object'&&!!BD[b.t]&&(!b.k||coKnown(b.k))})}
 function coApplyKV(k,v){const i=k.indexOf(':'),kind=k.slice(0,i),id=k.slice(i+1);
   if(kind==='part'||kind==='model'){const arr=kind==='part'?P.parts:P.models,ix=arr.findIndex(function(x){return x&&x.id===id});
     if(v===null){coCheap=false;if(ix>=0)arr.splice(ix,1);return 'p'}
@@ -5855,7 +5859,6 @@ function coApplyKV(k,v){const i=k.indexOf(':'),kind=k.slice(0,i),id=k.slice(i+1)
   if(kind==='script'){const ix=P.scripts.findIndex(function(s){return s&&s.length&&s[0]&&s[0].sid===id});
     if(v===null){if(ix>=0)P.scripts.splice(ix,1);return 's'}
     const o=JSON.parse(v);if(!Array.isArray(o)||!o.length)return null;
-    if(!coKnown(o)){try{msg('A friend used blocks this version does not have yet. Refresh the page to update.')}catch(e){}return null}
     if(ix>=0){const t=P.scripts[ix];t.length=0;o.forEach(function(b){t.push(b)})}else P.scripts.push(o);return 's'}
   if(kind==='asset'){const j=id.indexOf(':'),c=id.slice(0,j),n=id.slice(j+1);if(!/^(images|audio|meshes|avol)$/.test(c)||!n||coBad(n))return null;
     const o=P.assets[c]=P.assets[c]||{};if(v===null){delete o[n];if(c==='audio'){try{stopAudio(n)}catch(e){}}}else o[n]=c==='avol'?(+v||0):v;return 'i'}
@@ -5952,7 +5955,7 @@ function coRecv(p){if(!p||typeof p!=='object'||p.by===COP.id)return;if(p.to&&p.t
   switch(p.e){
     case 'need':if(COP.on&&!COP.joining&&coLeader())coSnapshot(String(p.by));break;
     case 'ss':if(COP.joining&&p.to===COP.id)coBeginJoin(p);break;
-    case 'se':if(COP.joining&&p.to===COP.id&&COP.gotSS){const miss=(COP.expect||0)-Object.keys(COP.got||{}).length;if(miss>0&&(COP.retry=(COP.retry||0)+1)<=3){COP.cq.push({e:'need',by:COP.id});break}COP.retry=0;coEndJoin()}break;
+    case 'se':if(COP.joining&&p.to===COP.id&&COP.gotSS)coEndJoin();break;
     case 'end':if(!COP.host&&(COP.on||COP.joining)){const h=coMembers().find(function(x){return x.id===p.by});if(!h||h.h)coEnded()}break;
     case 'c':coAvSet(p);break;
     case 'mneed':if(COP.on&&!COP.joining){const rq=String(p.by),nm=String(p.n||'');setTimeout(function(){coMeshReply(rq,nm)},30+Math.random()*450)}break;
@@ -5965,7 +5968,7 @@ function coRecvB(p){if(!Array.isArray(p.items))return;p.items.slice(0,1000).forE
 function coRecvD(p){const k=String(p.k||'');if(!/^(part|model|anim|script|asset|meta):/.test(k))return;let v=null;
   if(!p.del){const n=p.n|0;if(n>1){const r=COP.rx[p.mid]||(COP.rx[p.mid]={a:new Array(n),c:0});if(r.a[p.i|0]===undefined){r.a[p.i|0]=String(p.s);r.c++}if(r.c<n)return;v=r.a.join('');delete COP.rx[p.mid]}else v=String(p.s)}
   COP.rxAt=Date.now();const it={k:k,v:v,t:+p.t||0,by:String(p.by),snap:!!p.snap};COP.clock=Math.max(COP.clock,it.t);
-  if(COP.joining){if(it.snap){if(COP.gotSS){try{coApplyKV(it.k,it.v)}catch(e){}COP.stamp[it.k]={t:it.t,by:it.by};if(COP.got)COP.got[it.k]=1}}else COP.pre.push(it);return}
+  if(COP.joining){if(it.snap){if(COP.gotSS){try{coApplyKV(it.k,it.v)}catch(e){}COP.stamp[it.k]={t:it.t,by:it.by}}}else COP.pre.push(it);return}
   if(it.snap||!COP.on)return;if(!COP.inq.length)COP.qs=Date.now();COP.inq.push(it);coKick()}
 function coKick(){if(COP.kick)return;COP.kick=setTimeout(coFlush,60)}
 let coCheap=false;
@@ -5990,7 +5993,7 @@ function coFlush(){COP.kick=0;if(!COP.on||COP.joining||!COP.inq.length)return;
   coRefresh(f)}
 
 /* ---- joining ---- */
-function coBeginJoin(p){COP.gotSS=true;COP.expect=+p.n||0;COP.got={};COP.rxAt=Date.now();COP.hostName=String(p.hn||'').slice(0,24);if(COP.prevGid===null)COP.prevGid=gameId||'';
+function coBeginJoin(p){COP.gotSS=true;COP.rxAt=Date.now();COP.hostName=String(p.hn||'').slice(0,24);if(COP.prevGid===null)COP.prevGid=gameId||'';
   if(!COP.persist){gameId=null;gameVis=null}/* a one-time guest's copy is never saved over one of the guest's own games; a shared game keeps its own place */
   P.parts=[];P.models=[];P.anims={};P.scripts=[];P.assets.images={};P.assets.audio={};P.assets.meshes={};P.assets.avol={};
   ['avId','init','avCustom'].forEach(function(k){delete P[k]});sel=[];selModel=null;selJ=null;
@@ -6020,7 +6023,7 @@ async function coHostStart(){await coCheck();try{const ms=P.assets.meshes||{};aw
   try{await coStart(code,true)}catch(e){coStop();throw e}
   P.nid=Math.max(P.nid||1,COP.base);COP.next=P.nid;COP.last=coMap();COP.stamp={};COP.on=true;coUi()}
 async function coJoin(code){code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length<6)throw new Error('That code is too short.');await coCheck();
-  COP.detached=false;COP.prevGid=null;COP.gotSS=false;COP.retry=0;
+  COP.detached=false;COP.prevGid=null;COP.gotSS=false;
   try{await coStart(code,false)}catch(e){coStop();throw e}
   await coWait(1400);
   if(!coMembers().some(function(m){return m.id!==COP.id})){coStop();throw new Error('Nobody is in that session. Check the code and make sure the host has started it.')}
