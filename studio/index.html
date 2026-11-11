@@ -4636,8 +4636,8 @@ let fogOn=false;
 function applyEnv(){updSkyTex();const e=lightEnv(),a=(e.tod-6)/12*Math.PI,day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),c=new THREE.Color(e.sky).multiplyScalar(k);
   scene.background=c;hemi.intensity=(.2+.34*k)*e.bright;sun.intensity=.98*day*e.sun*e.bright;sunDir.set(Math.cos(a)*14,Math.max(5,Math.sin(a)*14),6);
   /* default look = the lighting from the inventory avatar page (hemisphere 1.0 + sun 0.8 from the (2,4,3) direction); presets still use their own */
-  if(!(LIGHTO&&LPRE[LIGHTO])){hemi.intensity=(.2+.34*k)/.69*e.bright;sun.intensity=.74*Math.min(1,day/.866)*e.sun*e.bright;if(Math.abs(e.tod-14)<.01)sunDir.set(2,4,3)}
-  try{envK((.12+.88*Math.min(1,day*2.5))*Math.min(1.4,e.bright))}catch(_e){}
+  if(!(LIGHTO&&LPRE[LIGHTO])){hemi.intensity=(.2+.34*k)/.87*e.bright;sun.intensity=.74*Math.min(1,day/.866)*e.sun*e.bright;if(Math.abs(e.tod-14)<.01)sunDir.set(2,4,3)}
+  try{/* the bright sky-reflection light fills in every shadow (and lights the player from all sides), so the default look uses much less of it */envK((.12+.88*Math.min(1,day*2.5))*Math.min(1.4,e.bright)*((LIGHTO&&LPRE[LIGHTO])?1:.4))}catch(_e){}
   const on=e.fog>0,fh=skyFogHex();scene.fog=on?new THREE.Fog(fh!==null?fh:c.getHex(),12,Math.max(30,900-e.fog*8.5)):null;
   if(on!==fogOn){fogOn=on;if(PG)PG.traverse(function(o){if(o.material)o.material.needsUpdate=true})}
   lightX()}
