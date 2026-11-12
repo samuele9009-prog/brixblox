@@ -2,7 +2,7 @@
 <html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>BrixBlox</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
@@ -2378,6 +2378,14 @@ if(!useSupa&&SUPABASE_URL&&SUPABASE_ANON_KEY)toast('Supabase did not load, so th
 
 /* Coming back to this page with the Back button restores an old copy of it (old inventory). Load a fresh one instead. */
 addEventListener('pageshow',function(e){if(e.persisted)location.reload()});
+</script>
+<script>
+/* No page zoom on phones (pinch or double-tap). Zooming in used to push the Leave button off screen. */
+(function(){const no=function(e){e.preventDefault()};
+  ['gesturestart','gesturechange','gestureend'].forEach(function(n){document.addEventListener(n,no,{passive:false})});
+  document.addEventListener('touchmove',function(e){if(e.touches&&e.touches.length>1||(e.scale&&e.scale!==1))e.preventDefault()},{passive:false});
+  let lt=0;document.addEventListener('touchend',function(e){const n=Date.now();if(n-lt<300&&!/^(INPUT|TEXTAREA|SELECT)$/.test((e.target&&e.target.tagName)||''))e.preventDefault();lt=n},{passive:false});
+  document.addEventListener('wheel',function(e){if(e.ctrlKey)e.preventDefault()},{passive:false})})();
 </script>
 </body>
 </html>
