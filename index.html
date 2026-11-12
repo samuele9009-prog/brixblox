@@ -127,6 +127,9 @@ ol#lb{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .overlay .row .btn{flex:1;margin:0;padding:0 8px}
 #toast{position:fixed;left:50%;top:max(14px,env(safe-area-inset-top,0px));transform:translate(-50%,-30px);opacity:0;pointer-events:none;background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;max-width:90vw;transition:transform .25s,opacity .25s;z-index:20;font-size:.9rem}
 #toast.on{transform:translate(-50%,0);opacity:1}
+#msgpop{position:fixed;left:50%;top:max(14px,env(safe-area-inset-top,0px));transform:translate(-50%,-140%);opacity:0;pointer-events:none;width:min(360px,calc(100vw - 24px));background:var(--paper,#fff);color:var(--ink,#1d2147);border:1px solid var(--line,#ddd);border-left:5px solid #4c8dff;border-radius:14px;padding:10px 14px;box-shadow:0 8px 28px rgba(0,0,0,.35);cursor:pointer;z-index:200;transition:transform .3s,opacity .3s;text-align:left;font:inherit}
+#msgpop.on{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+#msgpop b{display:block;font-size:.85rem}#msgpop span{display:block;font-size:.9rem;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 /* BrixBlox dark theme */
@@ -1308,14 +1311,24 @@ async function dmOpen(name){const k=name.toLowerCase();DM.with=k;DM.names[k]=nam
   try{const rows=await api.dmThread(me.id,name);if(tok!==DM.tok)return;DM.msgs=rows;dmDraw()}catch(e){if(tok!==DM.tok)return;$('dm-log').replaceChildren(mkx('p','empty',dmErr(e)))}
   $('dm-in').focus()}
 function dmClose(){DM.with=null;DM.tok++;const b=$('dm');if(b)b.hidden=true}
-function dmPing(to){if(PRES.ch){try{PRES.ch.send({type:'broadcast',event:'dm',payload:{to:String(to).toLowerCase(),from:me.username}})}catch(e){}}}
+function dmPing(to,body){if(PRES.ch){try{PRES.ch.send({type:'broadcast',event:'dm',payload:{to:String(to).toLowerCase(),from:me.username,body:String(body||'').slice(0,120)}})}catch(e){}}}
+var msgPopT=0,msgPopEl=null;
+function msgPop(k,name,body){
+  body=body||'Sent you a message';
+  const pf=$('pl-frame');
+  if(pf){try{pf.contentWindow.postMessage({bbMsgPop:{name:name,body:body}},location.origin)}catch(e){}return}
+  if(!msgPopEl){msgPopEl=document.createElement('button');msgPopEl.type='button';msgPopEl.id='msgpop';document.body.append(msgPopEl)}
+  const el=msgPopEl;
+  el.replaceChildren(mkx('b','','New message from '+name),mkx('span','',body));
+  el.onclick=function(){el.classList.remove('on');dmOpen(name)};
+  el.classList.add('on');clearTimeout(msgPopT);msgPopT=setTimeout(function(){el.classList.remove('on')},6000)}
 async function dmIncoming(p){if(!p||!me||String(p.to)!==me.username.toLowerCase())return;const k=String(p.from||'').toLowerCase().slice(0,16);if(!k)return;DM.names[k]=String(p.from).slice(0,16);
   if(DM.with===k&&!$('dm').hidden){try{const rows=await api.dmThread(me.id,DM.names[k]);if(DM.with===k){DM.msgs=rows;dmDraw()}}catch(e){}return}
-  DM.unread[k]=(DM.unread[k]||0)+1;badgePaint();toast('New message from '+DM.names[k])}
+  DM.unread[k]=(DM.unread[k]||0)+1;badgePaint();msgPop(k,DM.names[k],String(p.body||'').slice(0,120))}
 $('dm-x').onclick=dmClose;
 $('dm-f').addEventListener('submit',async function(e){e.preventDefault();const inp=$('dm-in'),t=inp.value.trim();if(!t||!DM.with)return;const to=DM.names[DM.with]||DM.with;inp.value='';
   const mine={mine:true,body:t,at:new Date().toISOString()};DM.msgs.push(mine);dmDraw();
-  try{await api.dmSend(me.id,to,t);dmPing(to)}catch(er){const x=DM.msgs.indexOf(mine);if(x>=0)DM.msgs.splice(x,1);dmDraw();inp.value=t;toast(dmErr(er))}});
+  try{await api.dmSend(me.id,to,t);dmPing(to,t)}catch(er){const x=DM.msgs.indexOf(mine);if(x>=0)DM.msgs.splice(x,1);dmDraw();inp.value=t;toast(dmErr(er))}});
 
 /* ===== Friend profile page ===== */
 let pfTok=0;
