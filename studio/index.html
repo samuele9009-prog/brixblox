@@ -5857,22 +5857,24 @@ function coDiff(){if(!COP.on||COP.joining||running||playing)return;const m=coMap
   Object.keys(COP.last).forEach(function(k){if(!(k in m)){delete COP.last[k];const c=++COP.clk;COP.stamp[k]={c:c,by:COP.id};COP.out.set(k,{v:null,c:c})}})}
 function coPump(){if(!COP.ch)return;
   if(!COP.q.length&&COP.on&&!COP.joining&&COP.out.size){COP.out.forEach(function(o,k){COP.q.push.apply(COP.q,coPieces(k,o.v,o.c))});COP.out.clear()}
-  for(let n=0;n<3&&COP.q.length;n++){const its=[];let sz=0;while(COP.q.length&&(!its.length||sz+(COP.q[0].s||'').length<60000)){const it=COP.q.shift();its.push(it);sz+=(it.s||'').length+60}coSend({e:'b',by:COP.id,items:its})}}
+  for(let n=0;n<1&&COP.q.length;n++){const its=[];let sz=0;while(COP.q.length&&(!its.length||sz+(COP.q[0].s||'').length<60000)){const it=COP.q.shift();its.push(it);sz+=(it.s||'').length+60}coSend({e:'b',by:COP.id,items:its})}}
 setInterval(function(){try{coDiff()}catch(e){}coPump()},60);
-function coSnap(to,sid){coDiff();const m=coMap(),ks=Object.keys(m);coSend({e:'head',by:COP.id,to:to,sid:sid,total:ks.length,hn:COP.hostName||ME.username});
+function coSnap(to,sid){coDiff();if(!P.parts.length&&!P.models.length){coSend({e:'empty',by:COP.id,to:to});try{msg('Someone tried to join but your game has no parts right now, so nothing was sent.')}catch(e){}return}
+  const m=coMap(),ks=Object.keys(m);coSend({e:'head',by:COP.id,to:to,sid:sid,total:ks.length,hn:COP.hostName||ME.username});
   ks.forEach(function(k){const st=COP.stamp[k];coPieces(k,m[k],st?st.c:0).forEach(function(p){p.to=to;p.snap=1;p.sid=sid;COP.q.push(p)})})}
 /* ---- receiving ---- */
 function coMembers(){const o=[];try{const s=COP.ch.presenceState();Object.keys(s).forEach(function(k){const m=(s[k]||[])[0];if(m)o.push({id:k,n:String(m.n||'?').slice(0,24),at:+m.at||0,h:!!m.h,on:!!m.on})})}catch(e){}return o}
 function coLeader(){const m=coMembers().filter(function(x){return x.on});if(!m.length)return true;const h=m.find(function(x){return x.h});if(h)return h.id===COP.id;m.sort(function(a,b){return a.at-b.at||(a.id<b.id?-1:1)});return m[0].id===COP.id}
 function coRecv(p){if(!p||typeof p!=='object'||p.by===COP.id)return;
   if(p.e==='need'){if(COP.on&&!COP.joining&&coLeader())coSnap(String(p.by),String(p.sid))}
-  else if(p.e==='head'){if(COP.joining&&p.to===COP.id&&!COP.stg)COP.stg={sid:p.sid,total:+p.total||0,m:{},hn:p.hn,t:Date.now()}}
+  else if(p.e==='head'){if(COP.joining&&p.to===COP.id){if(!COP.stg)COP.stg={sid:p.sid,total:0,m:{},hn:'',t:Date.now()};if(COP.stg.sid===p.sid){COP.stg.total=+p.total||0;COP.stg.hn=p.hn;COP.stg.t=Date.now();coTryCommit()}}}
+  else if(p.e==='empty'){if(COP.joining&&p.to===COP.id)COP.fail='The host\u2019s game has no parts right now, so there is nothing to copy. Ask the host to check their game.'}
   else if(p.e==='end'){if(!COP.host&&(COP.on||COP.joining)){const h=coMembers().find(function(x){return x.id===p.by});if(!h||h.h)coEnded()}}
   else if(p.e==='b'&&Array.isArray(p.items))p.items.slice(0,1000).forEach(function(it){coItem(it,String(p.by))})}
 function coItem(it,by){if(!it||typeof it.k!=='string'||!/^(part|model|anim|script|asset|meta):/.test(it.k))return;if(it.to&&it.to!==COP.id)return;let v=null;
   if(!it.d){const n=it.n|0;if(n>1){const r=COP.rx[it.mid]||(COP.rx[it.mid]={a:new Array(n),c:0});if(r.a[it.i|0]===undefined){r.a[it.i|0]=String(it.s);r.c++}if(r.c<n)return;v=r.a.join('');delete COP.rx[it.mid]}else v=String(it.s)}
   const x={k:it.k,v:v,c:+it.c||0,by:by};COP.clk=Math.max(COP.clk,x.c);
-  if(it.snap){if(COP.joining&&COP.stg&&it.sid===COP.stg.sid){COP.stg.m[x.k]=x;COP.stg.t=Date.now();coTryCommit()}return}
+  if(it.snap){if(COP.joining){if(!COP.stg)COP.stg={sid:it.sid,total:0,m:{},hn:'',t:Date.now()};if(it.sid===COP.stg.sid){COP.stg.m[x.k]=x;COP.stg.t=Date.now();coTryCommit()}}return}
   if(COP.joining){COP.pre.push(x);return}if(!COP.on)return;COP.inq.push(x);if(!coT)coT=setTimeout(coFlush,60)}
 function coFlush(){coT=0;if(!COP.on||COP.joining||!COP.inq.length)return;const a=document.activeElement;
   if(running||playing||(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))){coT=setTimeout(coFlush,300);return}
@@ -5880,14 +5882,15 @@ function coFlush(){coT=0;if(!COP.on||COP.joining||!COP.inq.length)return;const a
   q.forEach(function(x){if(coOlder(x))return;let r=null;try{r=coApply(x.k,x.v)}catch(e){}if(r){f[r]=1;ks.push(x.k)}COP.stamp[x.k]={c:x.c,by:x.by}});
   const m=coMap();ks.forEach(function(k){if(k in m)COP.last[k]=m[k];else delete COP.last[k]});coRefresh(f)}
 /* ---- joining: the Studio is only switched over once the WHOLE game is here ---- */
-function coTryCommit(){const s=COP.stg;if(!s||!s.total||Object.keys(s.m).length<s.total)return;COP.stg=null;
+function coTryCommit(){const s=COP.stg;if(!s||!s.total||Object.keys(s.m).length<s.total)return;const K=Object.keys(s.m),np=K.filter(function(k){return k.indexOf('part:')===0}).length,nm=K.filter(function(k){return k.indexOf('model:')===0}).length;
+  if(!np&&!nm){COP.fail='The game that arrived had no parts in it, so it was not used. Your own game was not touched.';return}COP.stg=null;
   COP.hostName=String(s.hn||'').slice(0,24);if(COP.prevGid===null)COP.prevGid=gameId||'';gameId=null;gameVis=null;/* a guest copy is never saved over the guest's own games */
   P.parts=[];P.models=[];P.anims={};P.scripts=[];P.assets.images={};P.assets.audio={};P.assets.meshes={};P.assets.avol={};['avId','init','avCustom'].forEach(function(k){delete P[k]});sel=[];selModel=null;selJ=null;
   const h=document.getElementById('shome');if(h)h.remove();
   Object.keys(s.m).forEach(function(k){const x=s.m[k];try{coApply(x.k,x.v)}catch(e){}COP.stamp[x.k]={c:x.c,by:x.by}});
   coNorm();P.nid=COP.base;COP.pre.splice(0).forEach(function(x){if(coOlder(x))return;try{coApply(x.k,x.v)}catch(e){}COP.stamp[x.k]={c:x.c,by:x.by}});
   COP.joining=false;COP.on=true;COP.last=coMap();COP.mk={env:1,guis:1,name:1};coRefresh({p:1,s:1,a:1,i:1,m:1});
-  try{COP.ch.track({n:ME.username,at:COP.at,h:0,on:1})}catch(e){}try{updateStat()}catch(e){}coUi();if(COP.done){const d=COP.done;COP.done=null;d()}}
+  try{COP.ch.track({n:ME.username,at:COP.at,h:0,on:1})}catch(e){}try{updateStat()}catch(e){}coUi();try{msg('Joined '+(COP.hostName||'the host')+'\u2019s game: '+np+' parts, '+nm+' models.')}catch(e){}if(COP.done){const d=COP.done;COP.done=null;d()}}
 function coStart(code,host){return new Promise(function(res,rej){
   if(!sb||!ME||ME.demo){rej(new Error('Co-op needs a signed-in online account (not demo mode).'));return}
   const ch=sb.channel('bbco:'+code,{config:{presence:{key:COP.id},broadcast:{self:false}}});let done=0;
@@ -5907,8 +5910,8 @@ async function coHostStart(){await coCheck();const A='ABCDEFGHJKLMNPQRSTUVWXYZ23
 async function coJoin(code){code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length<6)throw new Error('That code is too short.');await coCheck();COP.detached=false;COP.prevGid=null;
   try{await coStart(code,false)}catch(e){coStop();throw e}await coWait(1400);
   if(!coMembers().some(function(m){return m.id!==COP.id})){coStop();throw new Error('Nobody is in that session. Check the code and make sure the host has started it.')}
-  COP.joining=true;COP.pre=[];COP.stg=null;const sid=COP.id+Date.now().toString(36);coSend({e:'need',by:COP.id,sid:sid});
-  try{await new Promise(function(ok,bad){COP.done=ok;const t0=Date.now();let tries=1;const w=setInterval(function(){if(!COP.joining){clearInterval(w);return}
+  COP.joining=true;COP.pre=[];COP.stg=null;COP.fail='';const sid=COP.id+Date.now().toString(36);coSend({e:'need',by:COP.id,sid:sid});
+  try{await new Promise(function(ok,bad){COP.done=ok;const t0=Date.now();let tries=1;const w=setInterval(function(){if(!COP.joining){clearInterval(w);return}if(COP.fail){clearInterval(w);const fm=COP.fail;COP.fail='';bad(new Error(fm));return}
     if(!COP.stg){if(Date.now()-t0>tries*4000){if(tries>=3){clearInterval(w);bad(new Error('The host did not send the game. Try again.'))}else{tries++;coSend({e:'need',by:COP.id,sid:sid})}}}
     else if(Date.now()-COP.stg.t>15000){clearInterval(w);bad(new Error('The game stopped arriving. Your own game was not touched. Try again.'))}},500)})}
   catch(e){coStop();throw e}}/* nothing was replaced yet, so a failed join leaves the joiner's game exactly as it was */
@@ -5916,6 +5919,7 @@ function coEnded(){const was=COP.on||COP.joining;COP.detached=true;coStop();if(!
   mdl('The session ended',function(c,close){c.append(el('p','','The host ended the co-op session. This copy is no longer connected, so changes now stay only on your screen.'));
     const r=el('div','tb');r.append(mb('Leave (back to my games)','',function(){close();coLeave()}),mb('Keep looking','ghost',close));c.append(r)})}
 function coLeave(){const g=COP.prevGid;try{if(COP.ch&&COP.on)COP.ch.untrack()}catch(e){}coStop();COP.detached=false;if(g!==null)reloadInto(g||'__new__');else coUi()}
+window.__bbCoop=function(){return {on:COP.on,joining:COP.joining,host:COP.host,code:COP.code,staged:COP.stg?Object.keys(COP.stg.m).length+'/'+COP.stg.total:null,fail:COP.fail||null,parts:P.parts.length,models:P.models.length,members:coMembers()}};
 function coEndHost(){coSend({e:'end',by:COP.id});setTimeout(coStop,500)}
 addEventListener('pagehide',function(){try{if(COP.ch)sb.removeChannel(COP.ch)}catch(e){}});
 /* ---- button, chip, window ---- */
