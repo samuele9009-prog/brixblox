@@ -720,6 +720,8 @@ const BD={
  holdwalkanim:{c:'pl',l:'set player hold item walk to _',a:['hold item walk'],raw:1,tip:'Uses an animation from the rig as the walk animation the player has while holding an item. The default is the animation called hold item walk.'},
  voidh:{c:'pl',l:'set void reset height to _',a:['-150'],tip:'Sets how low the player can fall before they are put back at the start. The default is -150. Negative numbers are fine: -50 resets sooner (right below the baseplate), -500 lets them fall much further. It goes back to -150 when the game restarts.'},
  fov:{c:'pl',l:'set camera fov to _',a:['80'],tip:'Sets how wide the camera sees, from 30 (zoomed in) to 120 (very wide). The default is 70. It goes back to the game setting when the game restarts.'},
+ camset:{c:'pl',l:'set camera to part _ angle _ in _ secs',a:['Part1','front','0.8'],dd:{0:'partn',1:'camang'},tip:'Moves the player\'s camera to a part and looks at it from the side you pick: front, back, left, right, top, bottom, or inside (stands at the front of the part and looks out of it, like a security camera). The camera glides there in the number of seconds you type (0 = instantly). While it is set the mouse does not turn the camera, and W A S D walks the way the camera faces. Use "set camera back to player" to get the normal camera back. It also goes back when the game restarts.'},
+ camreset:{c:'pl',l:'set camera back to player',a:[],tip:'Glides the camera from a part (set with "set camera to part") back to your character, and gives the mouse control of the camera again.'},
  spawnon:{c:'pl',l:'turn on spawnpoint _',a:['SpawnPoint'],dd:{0:'spawn'},tip:'Turns a spawnpoint on, so players can appear on it when the game starts or resets. Make spawnpoints with the + next to World in the Explorer. If several are on, one is picked at random.'},
  spawnrep:{c:'pl',l:'replace current spawnpoint with _',a:['SpawnPoint'],dd:{0:'spawn'},tip:'Turns this spawnpoint on and turns every other spawnpoint off, so it becomes the only place players appear. The change goes back to the part settings when the game restarts.'},
  spawnoff:{c:'pl',l:'turn off spawnpoint _',a:['SpawnPoint'],dd:{0:'spawn'},tip:'Turns a spawnpoint off, so players no longer appear on it. If every spawnpoint is off, players appear where the character was placed.'},
@@ -996,6 +998,7 @@ const KEYOPT=(function(){const o=[];'abcdefghijklmnopqrstuvwxyz'.split('').forEa
 const MATHOPT=['abs','floor','ceiling','sqrt','sin','cos','tan','asin','acos','atan','ln','log','e ^','10 ^'].map(function(q){return [q,q]});
 const EASEOPT=[['smooth','Smooth'],['linear','Linear'],['in','Ease in'],['out','Ease out'],['back','Back (overshoot)'],['bounce','Bounce'],['elastic','Elastic']];
 const TSETOPT=[['fov','Field of view'],['distance','Camera distance'],['speed','Walk speed'],['jump','Jump power']];
+const CAMANGOPT=[['front','Front'],['back','Back'],['left','Left'],['right','Right'],['top','Top'],['bottom','Bottom'],['inside','Inside (looks out the front)']];
 const DIROPT=[['front','Front'],['back','Back'],['left','Left'],['right','Right'],['up','Up'],['down','Down']];
 const BEHOPT=[['idle','Idle'],['wander','Wander'],['follow nearest','Follow nearest player'],['follow random','Follow random player'],['follow player','Follow player (name)']];
 const ACCSLOTOPT=[['auto','Auto'],['hat','Hat'],['face','Face'],['facc','Face accessory'],['neck','Neck'],['back','Back']];
@@ -1049,7 +1052,7 @@ async function tpGame(id){if(TPBUSY)return;
 function ddSel(b,i,kind,ro){
   if(ro){const n=el('input');n.value=b.a[i];n.readOnly=true;fit(n);return n}
   const s=el('select','ddsel');s.title=kind==='var'?'Pick a variable, or make a new one':'';
-  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='img'?[['none','none']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})):kind==='guipart'?[['background','background'],['text','text'],['border','border']]:kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='ease'?EASEOPT.slice():kind==='tset'?TSETOPT.slice():kind==='dir'?DIROPT.slice():kind==='mathf'?MATHOPT.slice():kind==='light'?LIGHTOPT.slice():kind==='skybox'?skyOpts():kind==='mygame'?myGames():kind==='bool'?[['true','true'],['false','false']]:kind==='partn'?(function(){const seen={},r=[];P.parts.forEach(function(q){if(q.av||q.stab||seen[q.name])return;seen[q.name]=1;r.push([q.name,q.name])});return r})():kind==='spawn'?P.parts.filter(function(q){return q.spawn&&!q.parent}).map(function(q){return [q.name,q.name]}):kind==='gp'?gpList().map(function(g){return [g.name,g.name]}):kind==='item'?itemsL().map(function(i){return [i.name,i.name]}):varList().map(function(v){return [v,v]});
+  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='img'?[['none','none']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})):kind==='guipart'?[['background','background'],['text','text'],['border','border']]:kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='ease'?EASEOPT.slice():kind==='tset'?TSETOPT.slice():kind==='dir'?DIROPT.slice():kind==='camang'?CAMANGOPT.slice():kind==='mathf'?MATHOPT.slice():kind==='light'?LIGHTOPT.slice():kind==='skybox'?skyOpts():kind==='mygame'?myGames():kind==='bool'?[['true','true'],['false','false']]:kind==='partn'?(function(){const seen={},r=[];P.parts.forEach(function(q){if(q.av||q.stab||seen[q.name])return;seen[q.name]=1;r.push([q.name,q.name])});return r})():kind==='spawn'?P.parts.filter(function(q){return q.spawn&&!q.parent}).map(function(q){return [q.name,q.name]}):kind==='gp'?gpList().map(function(g){return [g.name,g.name]}):kind==='item'?itemsL().map(function(i){return [i.name,i.name]}):varList().map(function(v){return [v,v]});
     if(kind==='item'&&o.length&&!o.some(function(q){return q[0]===String(b.a[i])})){b.a[i]=o[0][0];save()}
     if(kind==='item'&&!o.length)o=[[String(b.a[i]),'(make an item first)']];
     if(kind==='mygame'&&!o.length)o=[[String(b.a[i]),'(save a game of yours first)']];
@@ -1278,7 +1281,7 @@ function dEnd(e){removeEventListener('pointermove',dMoveRaf);dEv=null;if(dRaf){c
 
 
 /* BricBloc as text */
-const KW={unvisualize:'stop visualizing',tpgame:'teleport to game',playrig:'play animation on rig',riggear:'put item in hand of rig',rigungear:'take item out of rig hand',lighting:'set lighting',skybox:'set skybox to',spawnon:'turn on spawnpoint',spawnrep:'replace current spawnpoint with',spawnoff:'turn off spawnpoint',giveattr:'give attribute',pdset:'set player saved data',pdchange:'change player saved data',pdget:'get player saved data',pdadditem:'put in saved inventory',pdremitem:'take out of saved inventory',pdsave:'save player data',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',friction:'set friction',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',ragdollex:'set ragdoll exaggeration',playercolon:'enable player collision',playercoloff:'disable player collision',fov:'set camera fov',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',setrig:'set player to rig',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
+const KW={unvisualize:'stop visualizing',tpgame:'teleport to game',playrig:'play animation on rig',riggear:'put item in hand of rig',rigungear:'take item out of rig hand',lighting:'set lighting',skybox:'set skybox to',spawnon:'turn on spawnpoint',spawnrep:'replace current spawnpoint with',spawnoff:'turn off spawnpoint',giveattr:'give attribute',pdset:'set player saved data',pdchange:'change player saved data',pdget:'get player saved data',pdadditem:'put in saved inventory',pdremitem:'take out of saved inventory',pdsave:'save player data',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',friction:'set friction',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',ragdollex:'set ragdoll exaggeration',playercolon:'enable player collision',playercoloff:'disable player collision',fov:'set camera fov',camset:'set camera to part',camreset:'set camera back to player',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',setrig:'set player to rig',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){clearTimeout(view._t);view._t=setTimeout(view0,250)}
 function view0(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
@@ -1493,6 +1496,11 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
     case'walkanim':case'jumpanim':case'idleanim':case'fallanim':case'holdanim':case'holdwalkanim':{const nm=a[0].trim();if(!P.anims[nm]){log('Error: no animation named "'+nm+'"');break}
       S[{walkanim:'walkA',jumpanim:'jumpA',idleanim:'idleA',fallanim:'fallA',holdanim:'holdA',holdwalkanim:'holdWA'}[b.t]]=nm;break}
     case'voidh':{const v=Number(val(a[0],S));if(isFinite(v))S.voidY=Math.max(-1e6,Math.min(1e6,v));break}
+    case'camset':{const p=vzFind(a[0],S);if(!p){log('Error: set camera cannot find a part named "'+String(a[0]).trim()+'"');break}
+      const ag=String(a[1]==null?'front':val(a[1],S)).trim().toLowerCase();if(['front','back','left','right','top','bottom','inside'].indexOf(ag)<0){log('Error: pick an angle for the camera: front, back, left, right, top, bottom or inside.');break}
+      const d0=a[2]==null?.8:n(2),dur=Math.max(0,Math.min(30,isFinite(d0)?d0:.8));
+      S.cm={mode:'part',id:p.id,ang:ag,u:0,dur:dur,from:{x:cam.x,y:cam.y,z:cam.z,yaw:cam.yaw,pit:cam.pit}};break}
+    case'camreset':{if(S.cm&&S.cm.mode==='part')S.cm={mode:'player',u:0,dur:S.cm.dur,from:{x:cam.x,y:cam.y,z:cam.z,yaw:cam.yaw,pit:cam.pit}};else S.cm=null;break}
     case'fov':S.fov=Math.max(30,Math.min(120,n(0)));break;
     case'skybox':skySet(String(a[0]).trim());break;
     case'visualize':vzStart(a[0],a[1],S);break;
@@ -1649,6 +1657,31 @@ const sunDir=new THREE.Vector3(8,14,6);
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
 sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.bias=-.0005;sun.shadow.normalBias=.06;sun.shadow.radius=3;
 {const sc=sun.shadow.camera,R=44;sc.left=-R;sc.right=R;sc.top=R;sc.bottom=-R;sc.near=1;sc.far=260;sc.updateProjectionMatrix()}
+/* ===== Graphics (the Graphics button): Automatic, Lowest, Low, Medium, High, Ultra. The better it is, the sharper the picture and the bigger and softer the shadows;
+   Medium and up also switch on reflections and a warm, Roblox-style light (blue shadows, warm sun, filmic colours); High and Ultra add a sun glow and colour grading. Saved on each computer. ===== */
+const GFXT={lowest:{n:'Lowest',cap:1,mul:.6,sh:0,soft:0,R:30,env:0,rb:0,glow:0},low:{n:'Low',cap:1,mul:.8,sh:1024,soft:0,R:34,env:.4,rb:0,glow:0},medium:{n:'Medium',cap:1.25,mul:1,sh:2048,soft:1,R:44,env:.8,rb:1,glow:0},high:{n:'High',cap:1.75,mul:1.15,sh:2048,soft:1,R:56,env:1,rb:2,glow:1},ultra:{n:'Ultra',cap:2,mul:1.5,sh:4096,soft:1,R:72,env:1,rb:3,glow:1}};
+const GFXCROS=/\bCrOS\b/.test(navigator.userAgent);let GFXL='auto';try{const gv=localStorage.getItem('bbGfx');if(gv&&GFXT[gv])GFXL=gv}catch(e){}
+const GFXUI=[];
+function gfxEff(){return GFXL==='auto'?GFXT[GFXCROS?'medium':'high']:GFXT[GFXL]}
+function gfxPR(){const d=window.devicePixelRatio||1;if(GFXL==='auto')return Math.min(d,GFXCROS?1.25:1.5);const G=GFXT[GFXL];return Math.min(d,G.cap)*G.mul}
+function gfxSet(v){if(v!=='auto'&&!GFXT[v])return;GFXL=v;try{localStorage.setItem('bbGfx',v)}catch(e){}try{QS=1;QC=0}catch(e){}lxSig='';try{applyEnv()}catch(e){}try{renderer.shadowMap.needsUpdate=true}catch(e){}GFXUI.forEach(function(f){try{f()}catch(e){}})}
+/* The Roblox-style look that Medium, High and Ultra put on top of the normal lighting (a lighting preset you pick still wins) */
+const LRB={1:{hs:'#dbe9ff',hg:'#56606a',hk:1,sc:'#fff0d4',tm:1,ex:1.18,soft:1,g:null},
+  2:{hs:'#dbe9ff',hg:'#56606a',hk:1,sc:'#fff0d4',tm:1,ex:1.18,soft:1,g:{f:'contrast(1.06) saturate(1.1)',vig:.1,tint:'#ffcf8a',ta:.04,tb:'soft-light'}},
+  3:{hs:'#dbe9ff',hg:'#56606a',hk:1,sc:'#fff0d4',tm:1,ex:1.2,soft:1,g:{f:'contrast(1.08) saturate(1.12)',vig:.12,tint:'#ffcf8a',ta:.05,tb:'soft-light'}}};
+/* Sun glow (High and Ultra): a soft warm bloom around the sun when it is on screen. It fades behind solid parts. */
+let GG=null,ggOcc=0,ggN=0,ggHit=false;const ggR=new THREE.Raycaster(),ggV=new THREE.Vector3(),ggD=new THREE.Vector3();
+function gfxGlow(){const G=gfxEff();
+  if(!GG){if(!G.glow)return;const c=document.querySelector('.cvw');if(!c)return;GG=document.createElement('div');GG.id='gfx-glow';GG.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3;mix-blend-mode:screen;display:none';c.append(GG)}
+  const w=cv.clientWidth,h=cv.clientHeight;if(!G.glow||!sunS.visible||!w||!h){GG.style.display='none';return}
+  camera.updateMatrixWorld();ggV.copy(sunS.position).applyMatrix4(camera.matrixWorldInverse);if(ggV.z>=-1){GG.style.display='none';return}
+  ggV.copy(sunS.position).project(camera);
+  const ev=(sunS.position.y-camera.position.y)/700,fade=Math.max(0,Math.min(1,(ev+.02)/.25)),edge=Math.max(0,Math.min(1,(1.6-Math.max(Math.abs(ggV.x),Math.abs(ggV.y)))/.6));
+  if(playing&&typeof CAMM!=='undefined'&&CAMM&&CAMM.length){if(++ggN%3===0){ggD.copy(sunS.position).sub(camera.position).normalize();ggR.set(camera.position,ggD);ggR.far=600;ggHit=ggR.intersectObjects(CAMM,false).length>0}}else ggHit=false;
+  ggOcc+=((ggHit?1:0)-ggOcc)*.25;
+  const a=fade*edge*(1-ggOcc)*(G===GFXT.ultra?1:.8);if(a<.01){GG.style.display='none';return}
+  const x=(ggV.x*.5+.5)*w,y=(-ggV.y*.5+.5)*h,r2=h*.5;
+  GG.style.display='block';GG.style.background='radial-gradient(circle at '+x.toFixed(0)+'px '+y.toFixed(0)+'px,rgba(255,246,214,'+(a*.6).toFixed(3)+') 0,rgba(255,226,160,'+(a*.28).toFixed(3)+') '+(h*.1).toFixed(0)+'px,rgba(255,206,130,'+(a*.1).toFixed(3)+') '+(r2*.5).toFixed(0)+'px,rgba(255,200,120,0) '+r2.toFixed(0)+'px)'}
 
 /* Realistic reflections: a soft sky-and-ground environment lights every material (metal, glass, water and polished stone reflect it) */
 let ENVOK=false,ENVK=1,ENVT=null;
@@ -1686,7 +1719,7 @@ function addFace(m,p){const k=p.size.join(','),sx=p.size[0]/1.4,sy=p.size[1]/1.5
   const f=CHD.m.faceRel,fm=new THREE.Mesh(g,depthNudge(new THREE.MeshBasicMaterial({color:0x2b1a12}),0.008,0.0002));fm.position.set(-f[0]*sx,f[1]*sy,-f[2]*sz);m.add(fm)}
 // S is the avatar's offset from where it was placed. x right, y forward (toward -z), h height, dir 90 faces forward.
 function initVars(){const o={};((P&&P.vars)||[]).forEach(function(n){o[n]=0});return o}
-function fresh(){return {items:[],heldItem:null,oth:[],x:0,y:0,h:0,vy:0,gr:true,wt:0,jt:0,pvx:0,pvz:0,bp:{},air:false,mv:false,dir:90,col:null,say:'',v:initVars(),fn:{},stop:false,d:0,sl:false,sla:false,slo:0,pcol:false,xeq:{}}}
+function fresh(){return {items:[],heldItem:null,oth:[],x:0,y:0,h:0,vy:0,gr:true,wt:0,jt:0,pvx:0,pvz:0,bp:{},air:false,mv:false,dir:90,col:null,say:'',v:initVars(),fn:{},stop:false,d:0,sl:false,sla:false,slo:0,pcol:false,xeq:{},cm:null}}
 let SPW={};let S=fresh(),running=false;let RV={},RD={},RVY={},NP=[],RY={},CO={},TM=new Map();
 function draw(){const T=byId(P.avId),g=T&&J[T.id];
   for(const id in RO){const r=byId(id);if(r&&J[id]&&id!==P.avId)J[id].position.set(r.pos[0]+RO[id][0],r.pos[1]+(RY[id]||0),r.pos[2]+RO[id][1])}
@@ -3528,6 +3561,7 @@ let edArea=true;
 addEventListener('pointerdown',function(e){edArea=!(e.target&&e.target.closest&&e.target.closest('#s-ws,#s-pal'))},true);
 
 /* ===== Studio-style building tools: snap size, arrow-key nudging, select all, drop to ground (End), align ===== */
+let CAMSP=1;try{const cv0=parseFloat(localStorage.getItem('bbCamSp'));if(isFinite(cv0)&&cv0>0)CAMSP=cv0}catch(x){}
 let SNP=.5;try{const sv=parseFloat(localStorage.getItem('bbSnap'));if(isFinite(sv)&&sv>=0)SNP=sv}catch(x){}
 function snapV(v,free){return free||!SNP?v:Math.round(v/SNP)*SNP}
 function stOk(){return !playing&&!running&&!animOn()&&!rigOn&&!VIEWONLY&&edArea&&$('studio').getClientRects().length>0&&curTab!=='code'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&!(document.activeElement&&document.activeElement.isContentEditable)}
@@ -4473,6 +4507,7 @@ function openGM(){if(menuEl||!(running||playing))return;for(const k in keys)keys
   const mt=el('input');mt.type='checkbox';mt.checked=P.audio.mute;mt.onchange=function(){P.audio.mute=mt.checked;save();liveVol();vIcon()};sp.append(lab('Mute all sounds',mt));
   slider(sp,'Camera distance',P.rules,'cam',4,60,1,null,function(){cdT=P.rules.cam});slider(sp,'Field of view',P.rules,'fov',30,120,1);
   const ct=el('input');ct.type='checkbox';ct.checked=!$('chat').classList.contains('min');ct.onchange=function(){$('chat').classList.toggle('min',!ct.checked)};sp.append(lab('Show chat',ct));
+  {const gs=el('select');[['auto','Automatic'],['lowest','Lowest'],['low','Low'],['medium','Medium'],['high','High'],['ultra','Ultra']].forEach(function(q){const op=el('option','',q[1]);op.value=q[0];gs.append(op)});gs.value=GFXL;gs.onchange=function(){gfxSet(this.value)};sp.append(lab('Graphics',gs))}
   const fb=mb(fsOn?'Exit fullscreen':'Fullscreen','ghost',function(){$('s-fs').click();closeGM()});fb.style.marginTop='6px';sp.append(fb);
   /* Help */
   const k=el('p','gmk');k.innerHTML='<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move &middot; <kbd>Space</kbd> jump &middot; scroll to zoom (all the way in = first person)<br><kbd>/</kbd> chat &middot; <kbd>Esc</kbd> this menu &middot; <kbd>Esc</kbd> then <kbd>L</kbd> leave game<br>Hold right mouse and drag to look';pages.help.append(k);
@@ -4748,6 +4783,7 @@ addEventListener('keydown',function(e){if(e.code!=='KeyF'||e.ctrlKey||e.metaKey|
   e.preventDefault();focusSel()});
 /* ===== Lighting presets (the "set lighting to" block). Each one changes the time of day, sky colour, fog, light colours and strength, tone mapping, shadow softness and a colour grade (tint, contrast, vignette). ===== */
 const LPRE={
+  roblox:{env:{tod:14.5,sky:'#8fc4ff',bright:1.05,sun:1.25,fog:30},hs:'#d6e8ff',hg:'#4b5560',hk:1,sc:'#ffe9c4',tm:1,ex:1.2,soft:1,g:{f:'contrast(1.07) saturate(1.12)',vig:.12,tint:'#ffc873',ta:.05,tb:'soft-light'}},
   realistic:{env:{tod:15.5,sky:'#4f8fd8',bright:1,sun:1.3,fog:52},hs:'#bcd6ff',hg:'#2f3b33',hk:1.05,sc:'#ffeccc',tm:1,ex:1.15,soft:1,g:{f:'contrast(1.1) saturate(.8) brightness(1.03)',vig:.42,tint:'#1b4dff',ta:.1,tb:'soft-light'}},
   cinematic:{env:{tod:16.5,sky:'#2f6fe0',bright:.95,sun:1.2,fog:68},hs:'#9fc4ff',hg:'#1f2c3a',hk:1.05,sc:'#ffd9a8',tm:1,ex:1.2,soft:1,g:{f:'contrast(1.18) saturate(.75) brightness(1.02)',vig:.55,tint:'#1646ff',ta:.18,tb:'soft-light'}},
   sunny:{env:{tod:12.5,sky:'#7fc8ff',bright:1.1,sun:1.2,fog:0},hs:'#ffffff',hg:'#9ab87a',hk:1,sc:'#fff6e0',tm:0,ex:1,soft:1,g:{f:'saturate(.82) contrast(1.04)',vig:0,tint:'#ffd27a',ta:.05,tb:'soft-light'}},
@@ -4757,7 +4793,7 @@ const LPRE={
   spooky:{env:{tod:21.5,sky:'#1c1030',bright:.85,sun:.3,fog:62},hs:'#7a5fb0',hg:'#120a1e',hk:1,sc:'#8a6fd0',tm:1,ex:1.2,soft:1,g:{f:'contrast(1.15) saturate(.7)',vig:.65,tint:'#5a1a8a',ta:.16,tb:'soft-light'}},
   vivid:{env:{tod:13,sky:'#6ec6ff',bright:1.1,sun:1.1,fog:0},hs:'#ffffff',hg:'#8fc27a',hk:1,sc:'#ffffff',tm:0,ex:1,soft:0,g:{f:'saturate(.9) contrast(1.06)',vig:0,tint:'#ffffff',ta:0,tb:'normal'}}
 };
-const LIGHTOPT=[['default','Default'],['realistic','Realistic (blue haze, soft shadows)'],['cinematic','Cinematic (strong blue, dark edges)'],['sunny','Sunny'],['sunset','Sunset'],['night','Night'],['foggy','Foggy'],['spooky','Spooky'],['vivid','Vivid colours']];
+const LIGHTOPT=[['default','Default'],['roblox','Roblox (warm sun, soft shadows)'],['realistic','Realistic (blue haze, soft shadows)'],['cinematic','Cinematic (strong blue, dark edges)'],['sunny','Sunny'],['sunset','Sunset'],['night','Night'],['foggy','Foggy'],['spooky','Spooky'],['vivid','Vivid colours']];
 let LIGHTO=null,lxSig='',lxT=null,lxV=null;
 function lightEnv(){return LIGHTO&&LPRE[LIGHTO]?Object.assign({},P.env,LPRE[LIGHTO].env):P.env}
 function lightStart(){const n=P&&P.env&&P.env.light;if(n&&LPRE[n]){LIGHTO=n;try{skyForLight(n)}catch(e){}}}
@@ -4766,7 +4802,7 @@ function lightSet(n){n=String(n||'').toLowerCase().replace(/[^a-z]/g,'');LIGHTO=
 function lxEls(){if(lxT)return;const c=document.querySelector('.cvw');if(!c)return;
   lxT=document.createElement('div');lxV=document.createElement('div');
   [lxT,lxV].forEach(function(d){d.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:3;display:none';c.append(d)})}
-function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
+function lightX(){const G=gfxEff(),L=LIGHTO&&LPRE[LIGHTO]||(G.rb?LRB[G.rb]:null);
   if(L){hemi.color.set(L.hs);hemi.groundColor.set(L.hg);hemi.intensity*=L.hk;sun.color.set(L.sc)}
   else{hemi.color.set(0xffffff);hemi.groundColor.set(0x5a6878);sun.color.set(0xfff3df)}
   /* your own ambient / shadow colours (Atmosphere panel) sit on top of whatever lighting is active */
@@ -4775,12 +4811,12 @@ function lightX(){const L=LIGHTO&&LPRE[LIGHTO]||null;
   if(E.shd){const m=Math.max(0,Math.min(1,E.shdk==null?.5:E.shdk)),h0=hemi.intensity;
     hemi.groundColor.set(E.shd);shAmb.color.set(E.shd);shAmb.intensity=h0*m;hemi.intensity=h0*(1-m)}
   else shAmb.intensity=0;
-  const sig=L?LIGHTO:'';
+  const sig=(L?(LIGHTO||'rb'+G.rb):'')+'|'+G.n;
   if(sig!==lxSig){lxSig=sig;
     renderer.toneMapping=L&&L.tm?THREE.ACESFilmicToneMapping:THREE.NoToneMapping;renderer.toneMappingExposure=L?L.ex:1;
-    const soft=!!(L&&L.soft);renderer.shadowMap.type=soft?THREE.PCFSoftShadowMap:THREE.PCFShadowMap;
-    const ms=soft?2048:1024;if(sun.shadow.mapSize.x!==ms){sun.shadow.mapSize.set(ms,ms);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
-    sun.shadow.radius=soft?5:3;renderer.shadowMap.needsUpdate=true;
+    const soft=!!(L&&L.soft)||!!G.soft;renderer.shadowMap.enabled=!!G.sh;sun.castShadow=!!G.sh;renderer.shadowMap.type=soft?THREE.PCFSoftShadowMap:THREE.PCFShadowMap;
+    const ms=G.sh||1024;if(sun.shadow.mapSize.x!==ms){sun.shadow.mapSize.set(ms,ms);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}
+    {const sc=sun.shadow.camera;if(sc.right!==G.R){sc.left=-G.R;sc.right=G.R;sc.top=G.R;sc.bottom=-G.R;sc.updateProjectionMatrix()}}sun.shadow.radius=soft?(G.sh>=4096?7:5):3;renderer.shadowMap.needsUpdate=true;
     scene.traverse(function(o){if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(function(m){m.needsUpdate=true})}})}
   lxEls();const g=L&&L.g;cv.style.filter=g?g.f:'none';
   if(lxT){
@@ -4792,7 +4828,7 @@ function applyEnv(){updSkyTex();const e=lightEnv(),a=(e.tod-6)/12*Math.PI,day=Ma
   scene.background=c;hemi.intensity=(.2+.34*k)*e.bright;sun.intensity=.98*day*e.sun*e.bright;sunDir.set(Math.cos(a)*14,Math.max(5,Math.sin(a)*14),6);
   /* default look = the lighting from the inventory avatar page (hemisphere 1.0 + sun 0.8 from the (2,4,3) direction); presets still use their own */
   if(!(LIGHTO&&LPRE[LIGHTO])){hemi.intensity=(.2+.34*k)/.87*e.bright;sun.intensity=.74*Math.min(1,day/.866)*e.sun*e.bright;if(Math.abs(e.tod-14)<.01)sunDir.set(2,4,3)}
-  try{/* the bright sky-reflection light fills in every shadow (and lights the player from all sides), so the default look uses much less of it */envK((.12+.88*Math.min(1,day*2.5))*Math.min(1.4,e.bright)*((LIGHTO&&LPRE[LIGHTO])?1:.4))}catch(_e){}
+  try{/* the bright sky-reflection light fills in every shadow (and lights the player from all sides), so the default look uses much less of it */envK((.12+.88*Math.min(1,day*2.5))*Math.min(1.4,e.bright)*((LIGHTO&&LPRE[LIGHTO])?1:.4)*gfxEff().env)}catch(_e){}
   const on=e.fog>0,fh=skyFogHex();scene.fog=on?new THREE.Fog(fh!==null?fh:c.getHex(),12,Math.max(30,900-e.fog*8.5)):null;
   if(on!==fogOn){fogOn=on;if(PG)PG.traverse(function(o){if(o.material)o.material.needsUpdate=true})}
   lightX()}
@@ -5309,6 +5345,27 @@ $('p-find').oninput=function(){const on=!!this.value.trim();if(on&&!xFiltOn)xOpe
 $('p-exp').onclick=function(){xOpenAll(true);renderParts()};$('p-col').onclick=function(){xOpenAll(false);renderParts()};
 
 
+/* ===== Scripted camera: the "set camera to part" block. The camera glides from where it is to a spot beside the part (front, back, left, right, top, bottom, or inside looking out),
+   and keeps following the part if it moves. "set camera back to player" glides it back. ===== */
+function camTarget(id,ang){const p=byId(id),m=p&&M[p.id];if(!m)return null;
+  m.updateWorldMatrix(true,true);const bx=new THREE.Box3().setFromObject(m);if(bx.isEmpty())return null;
+  const c=bx.getCenter(new THREE.Vector3()),q=new THREE.Quaternion();m.getWorldQuaternion(q);
+  const fr=new THREE.Vector3(0,0,-1).applyQuaternion(q).normalize(),rt=new THREE.Vector3(1,0,0).applyQuaternion(q).normalize(),up=new THREE.Vector3(0,1,0).applyQuaternion(q).normalize(),
+    sz=p.size||[2,2,2],dist=Math.min(120,Math.max(10,Math.max(sz[0],sz[1],sz[2])*1.4+6));
+  let pos,L;
+  if(ang==='inside'){pos=c.clone().addScaledVector(fr,(sz[2]||2)/2+.15);L=fr.clone()}
+  else{const d=ang==='back'?fr.clone().negate():ang==='right'?rt.clone():ang==='left'?rt.clone().negate():ang==='top'?up.clone():ang==='bottom'?up.clone().negate():fr.clone();
+    pos=c.clone().addScaledVector(d,dist);L=d.clone().negate()}
+  let yaw=Math.hypot(L.x,L.z)>.05?Math.atan2(L.x,-L.z):(Math.hypot(fr.x,fr.z)>.05?Math.atan2(fr.x,-fr.z):cam.yaw);
+  return {x:pos.x,y:pos.y,z:pos.z,yaw:yaw,pit:Math.max(-1.5,Math.min(1.5,Math.asin(Math.max(-1,Math.min(1,L.y)))))}}
+function camScript(dt,f){const c=S.cm;if(!c)return;
+  c.u=c.dur<=.01?1:Math.min(1,c.u+dt/c.dur);const e=c.u*c.u*(3-2*c.u),a=c.from;let to;
+  if(c.mode==='part'){to=camTarget(c.id,c.ang);if(!to){S.cm=null;return}}
+  else to={x:cam.x,y:cam.y,z:cam.z,yaw:a.yaw,pit:-.3};/* going back to the player: the camera keeps its turn and levels out while it slides to the character */
+  let d=(to.yaw-a.yaw)%(2*Math.PI);if(d>Math.PI)d-=2*Math.PI;if(d<-Math.PI)d+=2*Math.PI;
+  cam.x=a.x+(to.x-a.x)*e;cam.y=a.y+(to.y-a.y)*e;cam.z=a.z+(to.z-a.z)*e;cam.yaw=a.yaw+d*e;cam.pit=a.pit+(to.pit-a.pit)*e;
+  const g=fwd();f[0]=g[0];f[1]=g[1];f[2]=g[2];
+  if(c.mode==='player'&&c.u>=1)S.cm=null}
 /* Play camera: it never goes through solid parts (it slides in at once and eases back out), and zooming all the way in is first person */
 function camLimit(fx,fy,fz,f,want){
   if(--CAMN<=0){CAMN=15;const ok=Object.keys(M).filter(function(k){const p=byId(k);if(!p||p.av||p.stab||!inW(p)||gone(p)||!solid(rootOf(p)))return false;if((MATS[p.mat]||MATS.plastic).op)return false;const mt=M[k]&&M[k].material;return !(mt&&mt.opacity<.75)});
@@ -5337,7 +5394,7 @@ let QS=1,QE=16.7,QC=0;/* play-mode quality: drops the render resolution a little
 const CROS=/\bCrOS\b/.test(navigator.userAgent);let QUP=0,QLAST=0,QLOCK=false,QRAISED=false;
 /* The render resolution only ever steps down when frames stay slow. It may step back up once; if it has to drop again after that it stays down.
    (Before, it kept bouncing up and down on slow laptops and Chromebooks, and every change redrew the whole canvas, which showed as a flash.) */
-function qTune(ms){if(!playing){QS=1;QC=0;QUP=0;QLOCK=false;QRAISED=false;return}QE+=(ms-QE)*.12;if(++QC<40)return;QC=0;
+function qTune(ms){if(!playing||GFXL!=='auto'){QS=1;QC=0;QUP=0;QLOCK=false;QRAISED=false;return}QE+=(ms-QE)*.12;if(++QC<40)return;QC=0;
   const now=performance.now();if(now-QLAST<5000)return;
   if(QE>24&&QS>.6){QS=Math.max(.6,Math.round((QS-.1)*100)/100);QUP=0;QLAST=now;if(QRAISED)QLOCK=true}
   else if(QE<16.9&&QS<1&&!QLOCK){if(++QUP>=15){QUP=0;QS=Math.min(1,Math.round((QS+.1)*100)/100);QLAST=now;QRAISED=true}}else QUP=0;
@@ -5512,7 +5569,7 @@ function vzTick(){const ids=Object.keys(VZ);if(!ids.length)return;
 function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const dt=Math.min(.1,(now-lt)/1000);qTune(dt*1000);lt=now;const f=fwd();
   if(!playing)FC=false;
   if(playing&&!FC)play(dt,f);
-  else{const sp=(keys.ShiftLeft?36:12)*dt,r=[Math.cos(cam.yaw),0,Math.sin(cam.yaw)],go=function(v,k){cam.x+=v[0]*k;cam.y+=v[1]*k;cam.z+=v[2]*k};
+  else{const sp=(keys.ShiftLeft?36:12)*CAMSP*dt,r=[Math.cos(cam.yaw),0,Math.sin(cam.yaw)],go=function(v,k){cam.x+=v[0]*k;cam.y+=v[1]*k;cam.z+=v[2]*k};
     if(keys.KeyW)go(f,sp);if(keys.KeyS)go(f,-sp);if(keys.KeyD)go(r,sp);if(keys.KeyA)go(r,-sp);if(keys.KeyQ)cam.y-=sp;if(keys.KeyE)cam.y+=sp;if(Math.abs(zq)>.001){const zs=zq*(1-Math.exp(-dt*12));zq-=zs;go(f,zs)}else zq=0}
   if(playing||running){twTick(dt);collide();pcollide();physics(dt);objMove(dt);rigAI(dt);npPhys(dt);touchTick()}try{vzWalk()}catch(e){console.warn('visualize walk',e)}npTick(dt);
   try{gearSync();gearTick()}catch(e){}
@@ -5525,16 +5582,16 @@ function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const
       {const slm=!!S.sl;if(slm!==slPrev){slPrev=slm;if(slm){if(!fpm&&document.pointerLockElement!==cv)lockWarn('Shift lock on: click the game if the mouse did not lock. Press Shift again to turn it off.')}else if(!fpm&&document.pointerLockElement===cv&&!look)document.exitPointerLock()}}
       let xh=document.getElementById('fp-x');if(!xh){xh=document.createElement('div');xh.id='fp-x';xh.style.cssText='position:fixed;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.65);pointer-events:none;z-index:40;display:none';document.body.append(xh)}
       if((fpm||S.sl)&&document.pointerLockElement===cv){const rc=cv.getBoundingClientRect();xh.style.left=(rc.left+rc.width/2)+'px';xh.style.top=(rc.top+rc.height/2)+'px';xh.style.display='block'}else xh.style.display='none'}
-    const hide=camD<(avHid?1.5:1.1);if(hide!==avHid){avHid=hide;avVis(!hide)}
+    const hide=!(S.cm&&S.cm.mode==='part')&&camD<(avHid?1.5:1.1);if(hide!==avHid){avHid=hide;avVis(!hide)}
     S.slo=(S.slo||0)+((S.sl?1.9:0)-(S.slo||0))*(1-Math.exp(-dt*10));const so=S.slo*Math.min(1,camD/2.5);
-    cam.x=fx-f[0]*camD+Math.cos(cam.yaw)*so;cam.y=fy-f[1]*camD;cam.z=fz-f[2]*camD+Math.sin(cam.yaw)*so;accCamClip(true)}}else{accCamClip(false);camF=null;camD=null;fpPrev=false;slPrev=false;{const xh=document.getElementById('fp-x');if(xh)xh.style.display='none'}if(avHid){avHid=false;avVis(true)}}
+    cam.x=fx-f[0]*camD+Math.cos(cam.yaw)*so;cam.y=fy-f[1]*camD;cam.z=fz-f[2]*camD+Math.sin(cam.yaw)*so;camScript(dt,f);accCamClip(true)}}else{accCamClip(false);camF=null;camD=null;fpPrev=false;slPrev=false;{const xh=document.getElementById('fp-x');if(xh)xh.style.display='none'}if(avHid){avHid=false;avVis(true)}}
   if(aPlay&&!playing&&!rigOn){const A=P.anims[curA];if(A){aT+=dt;if(aT>=A.len){if(aLoop)aT%=A.len;else{aT=A.len;aPlay=false;animPlayBtn()}}animTick();applyPose(evalPose(A,aT))}}
   if(gd&&gd.mv&&gd.le&&!playing)rmoveDrag(gd.le);
   stageTick(dt);animBox();animGizUpdate();gizmoFit();
-  const w=cv.clientWidth,h=fsOn?cv.clientHeight:Math.round(w*.75),pr=Math.min(window.devicePixelRatio||1,CROS?1.25:1.5)*QS;
+  const w=cv.clientWidth,h=fsOn?cv.clientHeight:Math.round(w*.75),pr=gfxPR()*QS;
   if(w&&h&&(cv.width!==Math.floor(w*pr)||cv.height!==Math.floor(h*pr))){renderer.setPixelRatio(pr);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
   {const fv=Math.max(30,Math.min(120,+(S.fov!=null?S.fov:P.rules.fov)||70));if(camera.fov!==fv){camera.fov=fv;camera.updateProjectionMatrix()}}
-  camera.position.set(cam.x,cam.y,cam.z);camera.lookAt(cam.x+f[0],cam.y+f[1],cam.z+f[2]);try{vzFold()}catch(e){VF=null}{const T=playing&&byId(P.avId);if(T)sunTick(T.pos[0]+S.x,T.pos[1]+S.h,T.pos[2]-S.y);else sunTick(cam.x+f[0]*22,Math.max(0,cam.y+f[1]*22),cam.z+f[2]*22)}skyTick(dt);try{cullTick()}catch(e){}try{vzTick()}catch(e){console.warn('visualize',e)}renderer.render(scene,camera);outlinePass();try{ppTick(dt)}catch(e){console.warn('prompts',e)}}
+  camera.position.set(cam.x,cam.y,cam.z);camera.lookAt(cam.x+f[0],cam.y+f[1],cam.z+f[2]);try{vzFold()}catch(e){VF=null}{const T=playing&&byId(P.avId);if(T)sunTick(T.pos[0]+S.x,T.pos[1]+S.h,T.pos[2]-S.y);else sunTick(cam.x+f[0]*22,Math.max(0,cam.y+f[1]*22),cam.z+f[2]*22)}skyTick(dt);try{cullTick()}catch(e){}try{vzTick()}catch(e){console.warn('visualize',e)}renderer.render(scene,camera);outlinePass();try{ppTick(dt)}catch(e){console.warn('prompts',e)}try{gfxGlow()}catch(e){}}
 
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing);try{hotRender()}catch(e){}try{renderGui()}catch(e){}}
@@ -5584,6 +5641,41 @@ function setFs(on,fromApi){fsOn=on;$('studio').classList.toggle('fs',on);$('s-fs
 document.addEventListener('fullscreenchange',function(){if(!document.fullscreenElement&&fsOn&&!VIEWONLY)setFs(false,true)});
 addEventListener('keydown',function(e){if(e.code==='Escape'&&fsOn&&!VIEWONLY&&!document.fullscreenElement&&!document.pointerLockElement)setFs(false,true)});
 $('s-fs').onclick=function(){setFs(!fsOn)};
+/* ===== On-stage building bar: tools, undo/redo, snap, duplicate, focus, drop, and how fast the editor camera flies. Only shows while building. ===== */
+(function(){const w=document.querySelector('.cvw');if(!w)return;
+  const st=document.createElement('style');st.textContent='#bb-bar{position:absolute;left:8px;top:8px;z-index:7;display:flex;flex-wrap:wrap;align-items:center;gap:4px;max-width:calc(100% - 132px);padding:4px;border-radius:10px;background:var(--paper);background:color-mix(in srgb,var(--paper) 90%,transparent);border:1px solid var(--line);box-shadow:0 4px 16px rgba(0,0,0,.18);font:600 .72rem system-ui,sans-serif;color:var(--ink);backdrop-filter:blur(4px)}#bb-bar[hidden]{display:none}#bb-bar button,#bb-bar select{min-height:28px;padding:0 8px;border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);font:inherit;cursor:pointer}#bb-bar button:hover,#bb-bar select:hover{border-color:var(--ink)}#bb-bar button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}#bb-bar button:disabled{opacity:.4;cursor:default}#bb-bar .sp{width:1px;align-self:stretch;background:var(--line);margin:0 2px}#bb-bar .rd{padding:0 6px;opacity:.75;white-space:nowrap;max-width:190px;overflow:hidden;text-overflow:ellipsis}#studio.fs #bb-bar{top:56px}';document.head.append(st);
+  const bar=document.createElement('div');bar.id='bb-bar';bar.hidden=true;bar.setAttribute('role','toolbar');bar.setAttribute('aria-label','Building tools');
+  ['pointerdown','mousedown','click','dblclick','contextmenu','wheel'].forEach(function(n){bar.addEventListener(n,function(e){e.stopPropagation()})});
+  const btn=function(t,tip,fn){const b=document.createElement('button');b.type='button';b.textContent=t;b.title=tip;b.setAttribute('aria-label',tip);b.onclick=function(){try{fn()}catch(x){console.warn(x)}this.blur()};bar.append(b);return b},
+    sep=function(){const d=document.createElement('span');d.className='sp';bar.append(d)};
+  btn('+ Part','Add a part in front of you (P)',function(){newPart()});sep();
+  const tb={};[['move','Move','Move tool (2). Drag the arrows.'],['scale','Resize','Resize tool (3). Drag a ball, hold Ctrl for both sides.'],['rotate','Rotate','Rotate tool (4). Drag a ring, hold Shift to snap.']].forEach(function(q){tb[q[0]]=btn(q[1],q[2],function(){setTool(q[0])})});sep();
+  const ub=btn('\u21B6','Undo (Ctrl+Z)',function(){undoRedo(false)}),rb=btn('\u21B7','Redo (Ctrl+Y)',function(){undoRedo(true)});sep();
+  btn('Duplicate','Duplicate the selection (Ctrl+D)',function(){dupSel()});btn('Focus','Fly the camera to the selection (F)',function(){focusSel()});btn('Drop','Drop the selection onto whatever is under it (End)',function(){dropSel()});sep();
+  const sn=document.createElement('select');sn.title='Snap size for moving parts (hold Alt while dragging to move freely)';[['0','Snap: Off'],['.1','Snap: 0.1'],['.25','Snap: 0.25'],['.5','Snap: 0.5'],['1','Snap: 1'],['2','Snap: 2'],['4','Snap: 4']].forEach(function(o){const op=document.createElement('option');op.value=o[0];op.textContent=o[1];sn.append(op)});
+  sn.onchange=function(){SNP=parseFloat(this.value)||0;try{localStorage.setItem('bbSnap',String(SNP))}catch(x){}this.blur()};bar.append(sn);
+  const cs=document.createElement('select');cs.title='How fast the camera flies with W A S D while you build (Shift = faster still)';[['0.4','Fly: Slow'],['1','Fly: Normal'],['2.5','Fly: Fast'],['5','Fly: Turbo']].forEach(function(o){const op=document.createElement('option');op.value=o[0];op.textContent=o[1];cs.append(op)});
+  cs.value=String(CAMSP);if(cs.value!==String(CAMSP))cs.value='1';cs.onchange=function(){CAMSP=parseFloat(this.value)||1;try{localStorage.setItem('bbCamSp',String(CAMSP))}catch(x){}this.blur()};bar.append(cs);
+  const rd=document.createElement('span');rd.className='rd';bar.append(rd);w.append(bar);
+  const r3=function(v){return Math.round(v*100)/100};
+  setInterval(function(){const off=VIEWONLY||playing||running||animOn()||rigOn||!!document.getElementById('shome')||w.getClientRects().length===0;if(bar.hidden!==off)bar.hidden=off;if(off)return;
+    Object.keys(tb).forEach(function(k){tb[k].classList.toggle('on',tool===k)});
+    ub.disabled=!hist.length;rb.disabled=!redoS.length;
+    if(document.activeElement!==sn){if(!Array.from(sn.options).some(function(o){return o.value===String(SNP)})){const op=document.createElement('option');op.value=String(SNP);op.textContent='Snap: '+SNP;sn.append(op)}sn.value=String(SNP)}
+    const ps=sel.map(function(id){return byId(id)}).filter(Boolean);
+    rd.textContent=ps.length===1?(ps[0].name||'Part')+(ps[0].size?'  \u00B7  '+ps[0].size.map(r3).join(' \u00D7 '):''):ps.length>1?ps.length+' selected':'Nothing selected'},200)})();
+/* ===== Graphics button: always on the stage (building, testing and real play). Opens a list of levels. ===== */
+(function(){const w=document.querySelector('.cvw');if(!w)return;
+  const st=document.createElement('style');st.textContent='#gfx-btn{position:absolute;right:8px;top:8px;z-index:8;min-height:28px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--paper);background:color-mix(in srgb,var(--paper) 90%,transparent);color:var(--ink);font:700 .72rem system-ui,sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.18);backdrop-filter:blur(4px)}#gfx-btn:hover{border-color:var(--ink)}#gfx-panel{position:absolute;right:8px;top:42px;z-index:9;width:min(300px,calc(100% - 16px));padding:10px;border-radius:12px;background:var(--paper);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.3);color:var(--ink);font:600 .78rem system-ui,sans-serif}#gfx-panel[hidden]{display:none}#gfx-panel h4{margin:0 0 6px;font:800 .85rem system-ui,sans-serif}#gfx-panel .go{display:block;width:100%;text-align:left;padding:7px 9px;margin:3px 0;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);font:inherit;cursor:pointer}#gfx-panel .go:hover{border-color:var(--ink)}#gfx-panel .go.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}#gfx-panel .go small{display:block;font-weight:500;opacity:.78;margin-top:2px}#studio.fs #gfx-btn{top:56px}#studio.fs #gfx-panel{top:90px}';document.head.append(st);
+  const btn=document.createElement('button');btn.type='button';btn.id='gfx-btn';btn.title='Graphics: the better it is, the more realistic it looks';
+  const pn=document.createElement('div');pn.id='gfx-panel';pn.hidden=true;
+  [btn,pn].forEach(function(e){['pointerdown','mousedown','click','dblclick','contextmenu','wheel'].forEach(function(n){e.addEventListener(n,function(x){x.stopPropagation()})})});
+  const LV=[['auto','Automatic','Picks a look for this computer and lowers the sharpness if the game gets slow.'],['lowest','Lowest','No shadows or reflections. The fastest.'],['low','Low','Basic shadows.'],['medium','Medium','Soft shadows, reflections and warm Roblox-style light.'],['high','High','Bigger softer shadows, sharper picture, sun glow and filmic colours.'],['ultra','Ultra','The sharpest picture and the biggest, finest shadows. Needs a fast computer.']];
+  const h=document.createElement('h4');h.textContent='Graphics';pn.append(h);const rows={};
+  LV.forEach(function(q){const b=document.createElement('button');b.type='button';b.className='go';b.append(document.createTextNode(q[1]));const sm=document.createElement('small');sm.textContent=q[2];b.append(sm);b.onclick=function(){gfxSet(q[0]);this.blur()};pn.append(b);rows[q[0]]=b});
+  const sync=function(){btn.textContent='\u2699 Graphics: '+(GFXL==='auto'?'Auto':GFXT[GFXL].n);Object.keys(rows).forEach(function(k){rows[k].classList.toggle('on',k===GFXL)})};
+  btn.onclick=function(){pn.hidden=!pn.hidden;this.blur()};GFXUI.push(sync);sync();w.append(btn,pn);
+  document.addEventListener('pointerdown',function(){pn.hidden=true})})();
 $('s-name').oninput=function(){P.name=$('s-name').value;save()};
 function theme(t){document.documentElement.dataset.theme=t;store.set('brixblox-theme',t)}
 theme(store.get('brixblox-theme')==='dark'?'dark':'light');
@@ -5704,7 +5796,7 @@ function dropOn(d,t){if(!dropOK(d,t))return;const ps=dragParts(d);let msg0='';
    (only the position of the block is sent, never code, so nothing can be injected). "client side" blocks only ever run on the computer that reached them,
    and are skipped on the other players when they replay a server side block. */
 const LOCALH={gphas:1,standstill:1,landed:1,touched:1,clicked:1,prompt:1,key:1,keydrop:1,keyheld:1,keyrel:1,chat:1,guiclick:1,guithisclick:1,itemhold:1,itemunhold:1,screenclick:1};
-const RSKIP={visualize:1,unvisualize:1,move:1,turn:1,goto:1,jump:1,animate:1,say:1,color:1,walkanim:1,jumpanim:1,idleanim:1,fallanim:1,holdanim:1,holdwalkanim:1,fov:1,shiftlockon:1,shiftlockoff:1,pspeed:1,lighting:1,playercol:1,ragdollex:1,playercolon:1,playercoloff:1,tweenset:1,
+const RSKIP={visualize:1,unvisualize:1,move:1,turn:1,goto:1,jump:1,animate:1,say:1,color:1,walkanim:1,jumpanim:1,idleanim:1,fallanim:1,holdanim:1,holdwalkanim:1,fov:1,camset:1,camreset:1,shiftlockon:1,shiftlockoff:1,pspeed:1,lighting:1,playercol:1,ragdollex:1,playercolon:1,playercoloff:1,tweenset:1,
   givebadge:1,awardbadge:1,giveattr:1,removeattr:1,giveitem:1,removeitem:1,accadd:1,accrem:1,accwear:1,accstrip:1,kick:1,ban:1,addplayer:1,randplayer:1,getcount:1,print:1,setvol:1};
 const RSELF={tweensize:1,tweentrans:1,tweencolor:1,transparency:1,kill:1,pushparent:1};
 const SSVARS=['prompter','toucher','clicker','speaker','message','joiner','leaver'];
