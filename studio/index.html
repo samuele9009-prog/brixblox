@@ -4472,7 +4472,8 @@ function rigBubTick(){const run=running||playing;
     treeOf(r).forEach(function(q){lo=Math.min(lo,q.pos[1]-Math.abs(q.size[1])/2);hi=Math.max(hi,q.pos[1]+Math.abs(q.size[1])/2)});
     const s=RSZ['rig:'+rid]||1,o=RO[rid]||[0,0],top=lo+(hi-lo)*s+(RY[rid]||0);
     e.sp.visible=true;e.sp.material.opacity=f;e.sp.scale.set(6.6*z,2.475*z,1);e.sp.position.set(r.pos[0]+o[0],top+2.25-(1-z),r.pos[2]+o[1])}}
-function aiWarn(m){log('Error: '+m);if(performance.now()-AIWARN.t>15000){AIWARN.t=performance.now();chatSys(m)}}
+const AIWSEEN=new Set();/* each AI problem is shown once per play, not every time the script runs */
+function aiWarn(m){if(AIWSEEN.has(m))return;AIWSEEN.add(m);log('Error: '+m);if(performance.now()-AIWARN.t>15000){AIWARN.t=performance.now();chatSys(m)}}
 async function aiRespond(b,S,o){
   const a=b.a;
   const pers=String(val(a[0],S)).replace(/[\u0000-\u001f]/g,' ').trim().slice(0,300)||'a friendly character';
@@ -4499,7 +4500,7 @@ async function aiRespond(b,S,o){
   try{
     const r=await sb.functions.invoke('npc-ai',{body:{name:rn,personality:pers,message:msg,history:h.slice(-8)}});
     if(r.error){let j=null;try{j=await r.error.context.json()}catch(e){}const c=j&&j.error;
-      err=c==='premium'?'AI replies need BrixBlox Premium.':c==='busy'?rn+' is busy right now. Try again in a moment.':c==='slow'?'You are asking too fast. Wait a moment.':c==='signin'?'AI replies need you to be signed in to BrixBlox.':'the AI could not answer ('+String((j&&j.message)||r.error.message||'server error').slice(0,120)+')'}
+      err=c==='premium'?'AI replies need BrixBlox Premium. (The server said no for the account \"'+String(ME&&ME.username||'?')+'\".)':c==='busy'?rn+' is busy right now. Try again in a moment.':c==='slow'?'You are asking too fast. Wait a moment.':c==='signin'?'AI replies need you to be signed in to BrixBlox.':'the AI could not answer ('+String((j&&j.message)||r.error.message||'server error').slice(0,120)+')'}
     else reply=String((r.data&&r.data.reply)||'').trim()
   }catch(e){err='the AI could not answer ('+String((e&&e.message)||e).slice(0,120)+')'}
   AIBUSY[bk]=0;
@@ -5725,10 +5726,10 @@ function boot(my){reser();try{spawnHere()}catch(e){}const hs=P.scripts.filter(fu
   setTimeout(function(){if(my===S&&(running||playing))firePJ('pjoin',P.player.name)},120);
   setTimeout(function(){if(my===S&&(running||playing))gpStart(my).catch(function(e){log('Error: '+e)})},250);
   return {hs:hs,done:Promise.all(hs.filter(function(s){return s[0].t==='start'}).map(function(s){return ex(s.slice(1),my,s[0].o).catch(function(e){log('Error: '+e)})}))}}
-$('s-run').onclick=async function(){this.blur();if(banGate())return;S.stop=true;resetWorld();const my=S;$('s-out').textContent='';OUTB.length=0;try{outLive()}catch(e){};setRun(true);
+$('s-run').onclick=async function(){this.blur();AIWSEEN.clear();if(banGate())return;S.stop=true;resetWorld();const my=S;$('s-out').textContent='';OUTB.length=0;try{outLive()}catch(e){};setRun(true);
   const b=boot(my);await b.done;
   if(my===S&&!b.hs.some(function(s){return EVH.indexOf(s[0].t)>=0}))setRun(false)};
-$('s-play').onclick=function(){this.blur();if(banGate())return;S.stop=true;sel=[];selModel=null;selSvc=null;selJ=null;resetWorld();cd=cdT=P.rules.cam;CAMN=0;camD=null;avHid=false;playing=true;sync();stageApply();buildEdit();$('s-out').textContent='';OUTB.length=0;try{outLive()}catch(e){};boot(S)};
+$('s-play').onclick=function(){this.blur();AIWSEEN.clear();if(banGate())return;S.stop=true;sel=[];selModel=null;selSvc=null;selJ=null;resetWorld();cd=cdT=P.rules.cam;CAMN=0;camD=null;avHid=false;playing=true;sync();stageApply();buildEdit();$('s-out').textContent='';OUTB.length=0;try{outLive()}catch(e){};boot(S)};
 $('s-stop').onclick=function(){if(VIEWONLY)showLeaving();S.stop=true;running=false;playing=false;sync();resetWorld();if(VIEWONLY)leaveGame()};
 /* Ctrl+L: start testing the game (Play). Press it again to stop. */
 addEventListener('keydown',function(e){if(e.code!=='KeyL'||!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey||e.repeat)return;
