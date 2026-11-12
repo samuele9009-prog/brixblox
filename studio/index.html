@@ -6280,6 +6280,11 @@ if(VIEWONLY){try{$('studio').classList.add('vo')}catch(e){}
     try{bbHud()}catch(e){console.warn('hud',e)}
     /* the game starts at once; joining the online server (chosen on the BrixBlox site, or the first with room) happens in the background */
     try{if(!playing&&!running)$('s-play').click()}catch(e){console.warn('auto play',e)}
+    /* "N playing" on the BrixBlox site: every real play session announces itself on its own counter channel, whichever server (public, private or solo) it is on. */
+    try{if(sb&&PLAYINFO&&PLAYINFO.id&&ME&&!ME.demo){const g=String(PLAYINFO.id).replace(/[^A-Za-z0-9_-]/g,'').slice(0,40);
+      if(g){const cc=sb.channel('bbp:'+g,{config:{presence:{key:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)}}});
+        cc.subscribe(function(st){if(st==='SUBSCRIBED')cc.track({n:String(ME.username).slice(0,16),at:Date.now()})});
+        const bye=function(){try{cc.untrack()}catch(e){}try{sb.removeChannel(cc)}catch(e){}};addEventListener('pagehide',bye);addEventListener('beforeunload',bye)}}}catch(e){console.warn('count',e)}
     if(navigator.onLine===false)NET.solo=true;else{try{netJoin(false)}catch(e){console.warn('join',e)}}},60)}
 /* Ctrl+S would save the web page as a file, and Ctrl+W would close the tab. Ctrl+S is blocked and just tells you how saving works. Browsers do not let a page cancel
    Ctrl+W outright, so it is blocked where the browser allows it, and otherwise the browser asks "Leave site?" so you can stay. */
