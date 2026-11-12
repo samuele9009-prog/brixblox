@@ -4451,7 +4451,7 @@ function filt(t){t=String(t);return chatBad(t)?censor():t}
 function logChat(raw,shown){try{if(!sb||!ME||ME.demo)return;sb.rpc('log_chat',{p_game:String((PLAYINFO&&PLAYINFO.id)||gameId||''),p_raw:String(raw).slice(0,120),p_shown:String(shown).slice(0,120),p_flagged:raw!==shown}).then(function(){},function(){})}catch(e){}}
 /* ===== AI response block (Premium) =====
    The browser never holds the AI key: it asks the "npc-ai" server function, which checks Premium, limits how fast people can ask, and calls Google Gemini. */
-let AILAST='';const AIH={},AIBUSY={},AIWARN={t:0};
+let AILAST='',AILASTN=0,AIDONE=0;/* AILASTN counts chat messages, AIDONE is the last one the AI block answered, so each message gets ONE answer */const AIH={},AIBUSY={},AIWARN={t:0};
 function aiChatLine(a,b){const L=$('chat-log'),d=el('div','');
   try{CHATBUF.push({t:Date.now(),n:String(a)+' [AI]',m:String(b),s:String(b)});if(CHATBUF.length>120)CHATBUF.splice(0,CHATBUF.length-120)}catch(e){}
   const tg=el('span','','AI');tg.style.cssText='font-size:.68em;font-weight:800;background:rgba(255,255,255,.25);border-radius:4px;padding:0 4px;margin-right:5px;vertical-align:middle';tg.title='This message was written by an AI';
@@ -4484,7 +4484,7 @@ async function aiRespond(b,S,o){
   const wait=Math.max(0,Math.min(30,Number(val(a[1],S))||0));
   const rn1=String(a[2]===undefined?'this':a[2]).trim(),rv1=val(rn1,S),rn0=(typeof rv1==='string'&&rv1.trim()?rv1.trim():rn1)||'this';/* the rig is typed in: use the name as typed, unless it is a variable that holds a name */
   let msg=val(a[3]===undefined?'message':a[3],S);msg=String(msg==null?'':msg).trim();
-  if(!msg||msg==='message')msg=AILAST;/* nothing stored in the variable: answer the last thing said in chat */
+  if(!msg||msg==='message'){if(AILASTN===AIDONE)return;/* nobody has said anything new since the last answer: stay quiet */msg=AILAST;AIDONE=AILASTN}/* nothing stored in the variable: answer the last thing said in chat */
   msg=msg.slice(0,200);
   const dest=String(a[4]===undefined?'chat':a[4]).trim().toLowerCase(),vn=String(a[5]===undefined?'':a[5]).trim();
   let rr=null;
@@ -4536,7 +4536,7 @@ function rigBodyCollide(){const T=byId(P.avId);if(!T)return;const fy=feet0()+S.h
     if(fy>=top-STEP||fy+5<=bot)return;/* standing on top of it, or well above or below it */
     const px=T.pos[0]+S.x,pz=T.pos[2]-S.y;let dx=px-(h.cx+o[0]),dz=pz-(h.cz+o[1]);const d=Math.hypot(dx,dz),m=1.1+1.1*s;
     if(d>=m)return;if(d<1e-4){dx=1;dz=0}else{dx/=d;dz/=d}const pen=m-d;S.x+=dx*pen;S.y-=dz*pen})}
-function sendChat(txt){txt=String(txt).trim().slice(0,120);if(!txt||!(running||playing))return;let rawTxt=txt;{const raw=txt;txt=filt(raw);if(txt===raw&&crossBad(raw))txt=censor();logChat(raw,txt);CHATRAW=raw;rawTxt=raw}chatLine(P.player.name,txt);AILAST=txt;netChat(txt,rawTxt);sayBubble(txt);const low=txt.toLowerCase();
+function sendChat(txt){txt=String(txt).trim().slice(0,120);if(!txt||!(running||playing))return;let rawTxt=txt;{const raw=txt;txt=filt(raw);if(txt===raw&&crossBad(raw))txt=censor();logChat(raw,txt);CHATRAW=raw;rawTxt=raw}chatLine(P.player.name,txt);AILAST=txt;AILASTN++;netChat(txt,rawTxt);sayBubble(txt);const low=txt.toLowerCase();
   P.scripts.forEach(function(sc){const h=sc[0];if(h.t!=='chat')return;const w=String(h.a[0]).trim().toLowerCase();
     if(w==='*'||(w&&(low===w||low.slice(0,w.length+1)===w+' '))){S.v.speaker=P.player.name;S.v.message=txt;fireScript(sc)}})}
 $('chat-in').onkeydown=function(e){e.stopPropagation();if(e.key==='Enter'){const v=this.value;this.value='';this.blur();sendChat(v)}else if(e.key==='Escape'){this.value='';this.blur()}};
