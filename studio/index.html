@@ -4472,11 +4472,12 @@ function rigBubTick(){const run=running||playing;
     treeOf(r).forEach(function(q){lo=Math.min(lo,q.pos[1]-Math.abs(q.size[1])/2);hi=Math.max(hi,q.pos[1]+Math.abs(q.size[1])/2)});
     const s=RSZ['rig:'+rid]||1,o=RO[rid]||[0,0],top=lo+(hi-lo)*s+(RY[rid]||0);
     e.sp.visible=true;e.sp.material.opacity=f;e.sp.scale.set(6.6*z,2.475*z,1);e.sp.position.set(r.pos[0]+o[0],top+2.25-(1-z),r.pos[2]+o[1])}}
-const AIWSEEN=new Set();/* each AI problem is shown once per play, not every time the script runs */
-function aiWarn(m){if(AIWSEEN.has(m))return;AIWSEEN.add(m);log('Error: '+m);if(/Premium|signed in/.test(m))return;/* Premium and sign-in problems are only for the creator's Output panel, never shown in the game chat to players */
+const AIWSEEN=new Map();/* the same AI problem is shown at most once every 30 seconds, so loops do not spam but a new failure is never hidden for long */
+function aiOnce(m){const n=performance.now(),t=AIWSEEN.get(m);if(t!==undefined&&n-t<30000)return false;AIWSEEN.set(m,n);return true}
+function aiWarn(m){if(!aiOnce(m))return;log('Error: '+m);if(/Premium|signed in/.test(m))return;/* Premium and sign-in problems are only for the creator's Output panel, never shown in the game chat to players */
   if(performance.now()-AIWARN.t>15000){AIWARN.t=performance.now();chatSys(m)}}
 async function aiRespond(b,S,o){
-  const log1=function(m){m=String(m);if(AIWSEEN.has(m))return;AIWSEEN.add(m);log(m)};/* every message only once per play */
+  const log1=function(m){m=String(m);if(aiOnce(m))log(m)};/* same message at most once every 30 seconds */
   const a=b.a;
   const pers=String(val(a[0],S)).replace(/[\u0000-\u001f]/g,' ').trim().slice(0,300)||'a friendly character';
   const wait=Math.max(0,Math.min(30,Number(val(a[1],S))||0));
@@ -4519,6 +4520,7 @@ async function aiRespond(b,S,o){
   h.push({r:'user',t:msg},{r:'model',t:reply});if(h.length>12)h.splice(0,h.length-12);
   if(vn)S.v[vn]=reply;
   if(toRig)rigSay(rr.id,reply);
+  log('AI answered as '+rn+': '+reply.slice(0,80));
   if(toChat)aiChatLine(rn,reply)}
 /* A rig built like a person (has a Head and a Torso) that is NOT movable acts like a real player: it can not be pushed, and it is one round body (like two players side by side) instead of a box around every arm and leg. */
 const HUMC=new Map();
