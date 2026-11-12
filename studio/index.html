@@ -6252,6 +6252,10 @@ async function studioHome(){
   if(!all.length)allBox.append(el('p','empty','No games found.'));else cards(allBox,all,true)}
 const RELOADED=(function(){try{const n=performance.getEntriesByType('navigation')[0];return !!n&&n.type==='reload'}catch(e){return false}})();
 if(HOME&&!VIEWONLY&&!(gameId&&RELOADED))studioHome();
+/* Real play (opened from the BrixBlox site): never show the Studio. Switch on the play-only layout (it hides the code, parts, explorer and every editor button),
+   start the game straight away, and tell the site the game is ready. The .vo styles were already in the file, but nothing was turning them on. */
+if(VIEWONLY){try{$('studio').classList.add('vo')}catch(e){}
+  setTimeout(function(){try{if(!playing&&!running)$('s-play').click()}catch(e){console.warn('auto play',e)}try{BBREADY=true;bbReadyTry()}catch(e){}},60)}
 /* Ctrl+S would save the web page as a file, and Ctrl+W would close the tab. Ctrl+S is blocked and just tells you how saving works. Browsers do not let a page cancel
    Ctrl+W outright, so it is blocked where the browser allows it, and otherwise the browser asks "Leave site?" so you can stay. */
 let ctlW=0;
