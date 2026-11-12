@@ -5478,23 +5478,34 @@ function camScript(dt,f){const c=S.cm;if(!c)return;
   const g=fwd();f[0]=g[0];f[1]=g[1];f[2]=g[2];
   if(c.mode==='player'&&c.u>=1)S.cm=null}
 /* Play camera: it never goes through solid parts (it slides in at once and eases back out), and zooming all the way in is first person */
+const CLd=new THREE.Vector3(),CLr=new THREE.Vector3(),CLo=new THREE.Vector3(),CLg=new THREE.Vector3(),CLu=new THREE.Vector3(0,1,0),CLs=new THREE.Sphere(),CLn=[],CLh=[],CL0=[0,0],CLA=[[0,0],[1,0],[-1,0],[0,1],[0,-1]];
 function camLimit(fx,fy,fz,f,want){
   if(--CAMN<=0){CAMN=15;const ok=Object.keys(M).filter(function(k){const p=byId(k);if(!p||p.av||p.stab||!inW(p)||gone(p)||!solid(rootOf(p)))return false;if((MATS[p.mat]||MATS.plastic).op)return false;const mt=M[k]&&M[k].material;return !(mt&&mt.opacity<.75)});
     /* meshes whose real shape is known are tested against their real triangles; everything else against its box */
     CAMX=[];CAMM=[];ok.forEach(function(k){const p=byId(k);let L=null;if(p.shape==='mesh'){try{L=colsOf(p)}catch(e){L=null}}if(L&&L[0]&&L[0].mc)CAMX.push(p);else CAMM.push(M[k])})}
-  const d=new THREE.Vector3(-f[0],-f[1],-f[2]).normalize(),r=new THREE.Vector3(Math.cos(cam.yaw),0,Math.sin(cam.yaw)),u=new THREE.Vector3(0,1,0),o=new THREE.Vector3(fx,fy,fz);let best=want;
-  CRAY.far=want+.6;
-  [[0,0],[1,0],[-1,0],[0,1],[0,-1]].forEach(function(a){const org=o.clone().addScaledVector(r,a[0]*.35).addScaledVector(u,a[1]*.35);CRAY.set(org,d);
-    const h=CRAY.intersectObjects(CAMM,false)[0];if(h)best=Math.min(best,Math.max(0,h.distance-.45));
-    CAMX.forEach(function(q){const r0=rootOf(q),o2=RO[r0.id]||[0,0],L=colsOf(q);if(!L||!L[0]||!L[0].mc)return;const rv=RY[r0.id]||0,rad=L.rad+.6,
-      wx=q.pos[0]+o2[0]-org.x,wy=q.pos[1]+rv-org.y,wz=q.pos[2]+o2[1]-org.z,tp=wx*d.x+wy*d.y+wz*d.z;
-      if(tp<-rad||tp>CRAY.far+rad||wx*wx+wy*wy+wz*wz-tp*tp>rad*rad)return;/* the ray does not come near this mesh */
-      L.forEach(function(cl){if(!cl.mc)return;const lo=m4pt(cl.inv,org.x-o2[0],org.y-rv,org.z-o2[1]),dd=m4dir(cl.inv,d.x,d.y,d.z),t=meshRay(cl.mc,lo,dd,CRAY.far);if(t!==null)best=Math.min(best,Math.max(0,t-.45))})})});
+  /* Fast path: no per-frame allocations, and only parts near the camera line are tested (all five rays share one short list) */
+  const d=CLd.set(-f[0],-f[1],-f[2]).normalize(),r=CLr.set(Math.cos(cam.yaw),0,Math.sin(cam.yaw)),o=CLo.set(fx,fy,fz);let best=want;
+  CRAY.far=want+.6;const reach=CRAY.far+.8;
+  CLn.length=0;
+  for(let i=0;i<CAMM.length;i++){const m=CAMM[i],g=m.geometry;if(!g)continue;if(!g.boundingSphere)g.computeBoundingSphere();if(!g.boundingSphere)continue;
+    CLs.copy(g.boundingSphere).applyMatrix4(m.matrixWorld);
+    const wx=CLs.center.x-fx,wy=CLs.center.y-fy,wz=CLs.center.z-fz,tp=wx*d.x+wy*d.y+wz*d.z,rad=CLs.radius+.8;
+    if(tp<-rad||tp>reach+rad||wx*wx+wy*wy+wz*wz-tp*tp>rad*rad)continue;/* nowhere near the camera line */
+    CLn.push(m)}
+  const near=CLn;
+  for(let k=0;k<5;k++){const ax=CLA[k][0],ay=CLA[k][1];
+    CLg.copy(o).addScaledVector(r,ax*.35).addScaledVector(CLu,ay*.35);CRAY.set(CLg,d);
+    for(let i=0;i<near.length;i++){CLh.length=0;near[i].raycast(CRAY,CLh);if(CLh.length){for(let j=0;j<CLh.length;j++){const t=CLh[j].distance;if(t-.45<best)best=Math.max(0,t-.45)}}}
+    for(let i=0;i<CAMX.length;i++){const q=CAMX[i],r0=rootOf(q),o2=RO[r0.id]||CL0,L=colsOf(q);if(!L||!L[0]||!L[0].mc)continue;const rv=RY[r0.id]||0,rad=L.rad+.6,
+      wx=q.pos[0]+o2[0]-CLg.x,wy=q.pos[1]+rv-CLg.y,wz=q.pos[2]+o2[1]-CLg.z,tp=wx*d.x+wy*d.y+wz*d.z;
+      if(tp<-rad||tp>CRAY.far+rad||wx*wx+wy*wy+wz*wz-tp*tp>rad*rad)continue;/* the ray does not come near this mesh */
+      for(let c=0;c<L.length;c++){const cl=L[c];if(!cl.mc)continue;const lo=m4pt(cl.inv,CLg.x-o2[0],CLg.y-rv,CLg.z-o2[1]),dd=m4dir(cl.inv,d.x,d.y,d.z),t=meshRay(cl.mc,lo,dd,CRAY.far);if(t!==null)best=Math.min(best,Math.max(0,t-.45))}}}
   return best}
 /* Hides your own character (but keeps its shadow) while the camera is inside it */
 /* Camera inside a big accessory (like a box worn over the whole head): hide your own accessory while the camera is inside it.
    Otherwise the camera sees the inside walls of the box and the whole game looks invisible. */
-function accCamClip(on){const T=byId(P.avId),g=T&&J[T.id];if(!g)return;const cp=new THREE.Vector3(cam.x,cam.y,cam.z),bx=new THREE.Box3();
+const ACP=new THREE.Vector3(),ACB=new THREE.Box3();
+function accCamClip(on){const T=byId(P.avId),g=T&&J[T.id];if(!g)return;const cp=ACP.set(cam.x,cam.y,cam.z),bx=ACB;
   g.traverse(function(o){if(!o.userData||!o.userData.acc)return;
     if(!on){if(o.userData.clip){o.userData.clip=false;if(!avHid)o.visible=true}return}
     if(avHid)return;
