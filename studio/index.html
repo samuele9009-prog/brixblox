@@ -849,7 +849,13 @@ let P=null,gameId=null,gameVis=null,gameDraft=false,saveFail=false,skipUnload=fa
 /* Who is signed in comes from the BrixBlox front page. Not signed in: go back there. */
 const ME=(function(){try{return JSON.parse(store.get('brixblox-me'))}catch(e){return null}})();
 if(!ME)location.replace('/');
-const PLAYREQ=store.get('brixblox-play');if(PLAYREQ)store.del('brixblox-play');
+/* Play mode is handed over by the BrixBlox site in 'brixblox-play'. It is read once and removed, so a plain refresh used to lose it and drop the player into the Studio.
+   Now the handoff is also kept for this one tab (sessionStorage) and used again ONLY when the page is refreshed. A normal open with no handoff still shows the Studio, and a stale copy is thrown away. */
+const PLAYREQ=(function(){let rl=false;try{const n=performance.getEntriesByType('navigation')[0];rl=!!n&&n.type==='reload'}catch(e){}
+  const r=store.get('brixblox-play');
+  if(r){store.del('brixblox-play');try{sessionStorage.setItem('bb-playkeep',r)}catch(e){}return r}
+  try{const k=sessionStorage.getItem('bb-playkeep');if(k&&rl)return k;sessionStorage.removeItem('bb-playkeep')}catch(e){}
+  return null})();
 const SB_URL='https://ocgjqoeohuahyzhhfdie.supabase.co',SB_KEY='sb_publishable_8O1KHSBnGsoF9QjL0BVVeg_lAgjVlEc';
 let sb=null,cloudErr=false,PEND=false,upBusy=false,upBtn=null;const cpT={};
 try{if(window.supabase&&ME&&!ME.demo)sb=window.supabase.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:40}},auth:{persistSession:true,autoRefreshToken:true,storage:{getItem:function(k){return store.get(k)},setItem:function(k,v){store.set(k,v)},removeItem:function(k){store.del(k)}}}})}catch(e){sb=null}
@@ -5670,10 +5676,33 @@ $('s-fs').onclick=function(){setFs(!fsOn)};
   const btn=document.createElement('button');btn.type='button';btn.id='gfx-btn';btn.title='Graphics: the better it is, the more realistic it looks';
   const pn=document.createElement('div');pn.id='gfx-panel';pn.hidden=true;
   [btn,pn].forEach(function(e){['pointerdown','mousedown','click','dblclick','contextmenu','wheel'].forEach(function(n){e.addEventListener(n,function(x){x.stopPropagation()})})});
-  const LV=[['auto','Automatic','Picks a look for this computer and lowers the sharpness if the game gets slow.'],['lowest','Lowest','No shadows or reflections. The fastest.'],['low','Low','Basic shadows.'],['medium','Medium','Soft shadows, reflections and warm Roblox-style light.'],['high','High','Bigger softer shadows, sharper picture, sun glow and filmic colours.'],['ultra','Ultra','The sharpest picture and the biggest, finest shadows. Needs a fast computer.']];
-  const h=document.createElement('h4');h.textContent='Graphics';pn.append(h);const rows={};
-  LV.forEach(function(q){const b=document.createElement('button');b.type='button';b.className='go';b.append(document.createTextNode(q[1]));const sm=document.createElement('small');sm.textContent=q[2];b.append(sm);b.onclick=function(){gfxSet(q[0]);this.blur()};pn.append(b);rows[q[0]]=b});
-  const sync=function(){btn.textContent='\u2699 Graphics: '+(GFXL==='auto'?'Auto':GFXT[GFXL].n);Object.keys(rows).forEach(function(k){rows[k].classList.toggle('on',k===GFXL)})};
+  /* Roblox-style quality slider: a row of squares you click or drag across. Automatic is a switch above it. */
+  const st2=document.createElement('style');st2.textContent='#gfx-lab{margin:2px 0 8px;font-weight:800;font-size:.9rem}#gfx-sl{display:flex;gap:5px;align-items:center;padding:10px 8px;border:1px solid var(--line);border-radius:8px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;outline:0}#gfx-sl:focus-visible{box-shadow:0 0 0 2px var(--ink)}#gfx-sl i{flex:1;height:18px;border-radius:3px;box-sizing:border-box;border:1px solid var(--line);background:color-mix(in srgb,var(--ink) 14%,transparent);transition:background .08s,transform .08s}#gfx-sl i.on{background:var(--ink);border-color:var(--ink)}#gfx-sl i.cur{transform:scaleY(1.7)}#gfx-sl.dim i.on{opacity:.45}#gfx-desc{display:block;margin:8px 0 6px;font-weight:500;opacity:.78;min-height:2.6em;line-height:1.3}#gfx-panel .go.tg{text-align:center;font-weight:700}';document.head.append(st2);
+  const TIERS=['lowest','low','medium','high','ultra'];
+  const DESC={lowest:'No shadows or reflections. The fastest.',low:'Basic shadows.',medium:'Soft shadows, reflections and warm Roblox-style light.',high:'Bigger softer shadows, sharper picture, sun glow and filmic colours.',ultra:'The sharpest picture and the biggest, finest shadows. Needs a fast computer.'};
+  const cur=function(){return GFXL==='auto'?(GFXCROS?'medium':'high'):GFXL};
+  const h=document.createElement('h4');h.textContent='Graphics Quality';pn.append(h);
+  const lab=document.createElement('div');lab.id='gfx-lab';pn.append(lab);
+  const sl=document.createElement('div');sl.id='gfx-sl';sl.tabIndex=0;sl.setAttribute('role','slider');sl.setAttribute('aria-label','Graphics quality');sl.setAttribute('aria-valuemin','1');sl.setAttribute('aria-valuemax','5');
+  const sq=TIERS.map(function(){const d=document.createElement('i');sl.append(d);return d});pn.append(sl);
+  const desc=document.createElement('small');desc.id='gfx-desc';pn.append(desc);
+  const au=document.createElement('button');au.type='button';au.className='go tg';pn.append(au);
+  const sync=function(){const a=GFXL==='auto',c=cur(),i=TIERS.indexOf(c);
+    btn.textContent='\u2699 Graphics: '+(a?'Auto':GFXT[GFXL].n);
+    sq.forEach(function(d,k){d.classList.toggle('on',k<=i);d.classList.toggle('cur',k===i)});
+    sl.classList.toggle('dim',a);sl.setAttribute('aria-valuenow',String(i+1));sl.setAttribute('aria-valuetext',GFXT[c].n);
+    lab.textContent=GFXT[c].n+(a?' (Automatic)':'');
+    desc.textContent=a?'Automatic picks the level for this computer and lowers the sharpness if the game gets slow. Drag the squares to choose your own.':DESC[c];
+    au.classList.toggle('on',a);au.textContent='Automatic: '+(a?'On':'Off')};
+  let drag=false;
+  const idxAt=function(e){const r=sl.getBoundingClientRect();return Math.max(0,Math.min(4,Math.floor((e.clientX-r.left)/r.width*5)))};
+  const setI=function(i){const t=TIERS[i];if(t&&GFXL!==t)gfxSet(t)};
+  sl.addEventListener('pointerdown',function(e){if(e.pointerType==='mouse'&&e.button!==0)return;e.preventDefault();try{sl.setPointerCapture(e.pointerId)}catch(x){}drag=true;sl.focus();setI(idxAt(e))});
+  sl.addEventListener('pointermove',function(e){if(drag)setI(idxAt(e))});
+  ['pointerup','pointercancel','lostpointercapture'].forEach(function(n){sl.addEventListener(n,function(){drag=false})});
+  sl.addEventListener('keydown',function(e){const k=e.key;if(k!=='ArrowLeft'&&k!=='ArrowRight'&&k!=='ArrowUp'&&k!=='ArrowDown'&&k!=='Home'&&k!=='End')return;e.preventDefault();e.stopPropagation();
+    let i=TIERS.indexOf(cur());i=k==='Home'?0:k==='End'?4:(k==='ArrowLeft'||k==='ArrowDown')?i-1:i+1;setI(Math.max(0,Math.min(4,i)))});
+  au.onclick=function(){gfxSet(GFXL==='auto'?cur():'auto');this.blur()};
   btn.onclick=function(){pn.hidden=!pn.hidden;this.blur()};GFXUI.push(sync);sync();w.append(btn,pn);
   document.addEventListener('pointerdown',function(){pn.hidden=true})})();
 $('s-name').oninput=function(){P.name=$('s-name').value;save()};
