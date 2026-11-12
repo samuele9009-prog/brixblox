@@ -6276,7 +6276,11 @@ if(HOME&&!VIEWONLY&&!(gameId&&RELOADED))studioHome();
 /* Real play (opened from the BrixBlox site): never show the Studio. Switch on the play-only layout (it hides the code, parts, explorer and every editor button),
    make the stage fill the whole window, start the game straight away, and tell the site the game is ready. The .vo styles were already in the file, but nothing was turning them on. */
 if(VIEWONLY){try{$('studio').classList.add('vo')}catch(e){}
-  setTimeout(function(){try{setFs(true,true)}catch(e){console.warn('play layout',e)}try{if(!playing&&!running)$('s-play').click()}catch(e){console.warn('auto play',e)}try{BBREADY=true;bbReadyTry()}catch(e){}},60)}
+  setTimeout(function(){try{setFs(true,true)}catch(e){console.warn('play layout',e)}try{BBREADY=true;bbReadyTry()}catch(e){}
+    try{bbHud()}catch(e){console.warn('hud',e)}
+    /* join an online server first (the player picks one from the list), then start the game in it. Offline / demo: straight in, solo. */
+    const go=function(){if(NET.kicked)return;try{if(!playing&&!running)$('s-play').click()}catch(e){console.warn('auto play',e)}};
+    if(navigator.onLine===false){NET.solo=true;go()}else{try{netJoin(true).then(go,go)}catch(e){go()}}},60)}
 /* Ctrl+S would save the web page as a file, and Ctrl+W would close the tab. Ctrl+S is blocked and just tells you how saving works. Browsers do not let a page cancel
    Ctrl+W outright, so it is blocked where the browser allows it, and otherwise the browser asks "Leave site?" so you can stay. */
 let ctlW=0;
@@ -6327,21 +6331,82 @@ function netLeave(fast){
   return Promise.race([done,new Promise(function(r){setTimeout(r,800)})]).then(close,close)}
 addEventListener('pagehide',function(){netLeave(true)});
 function netChat(t,raw){if(NET.on){const p={id:NET.id,n:ME.username,t:t};if(raw!=null&&String(raw)!==String(t))p.r=String(raw).slice(0,120);/* unfiltered text, only sent when the filter changed it, so reports can show what was really said */NET.ch.send({type:'broadcast',event:'c',payload:p})}}
-async function netJoin(){
+/* Private server: costs 100 blockbucks once. The code is kept in the buyer's account (user_metadata.psrv) and the spend is added to avatar.spent, the same way the shop and gamepasses do it. */
+const PSPRICE=100;
+function psNewCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',b=new Uint8Array(6);crypto.getRandomValues(b);let c='';for(let i=0;i<6;i++)c+=A[b[i]%A.length];return c}
+async function psBuy(){
+  try{if(!sb||!ME||ME.demo)return {ok:false,why:'Sign in to an online BrixBlox account to buy a private server.'};
+    const md=(await gpMeta())||{};if(md.psrv&&md.psrv.code){ME.ps=md.psrv.code;return {ok:true,had:true}}
+    const bb=gpIsBB();if(!bb){const bal=await gpBalance();if(bal<PSPRICE)return {ok:false,why:'Not enough blockbucks. You need '+(PSPRICE-bal)+' more.'}}
+    const av=Object.assign({},md.avatar||ME.av||{});if(!bb)av.spent=(+av.spent||0)+PSPRICE;
+    const code=psNewCode(),r=await sb.auth.updateUser({data:{avatar:av,psrv:{code:code,at:Date.now()}}});if(r.error)throw r.error;
+    ME.av=av;ME.ps=code;try{store.set('brixblox-me',JSON.stringify(ME))}catch(e){}return {ok:true,code:code}}
+  catch(e){return {ok:false,why:String((e&&e.message)||e)}}}
+/* Server list: reads who is in each server of this game from the lobby channel. */
+function srvCounts(lob){const cn={},nm={};try{const ps=lob.presenceState();Object.keys(ps).forEach(function(k){(ps[k]||[]).forEach(function(m){if(m&&m.sid){cn[m.sid]=(cn[m.sid]||0)+1;(nm[m.sid]=nm[m.sid]||[]).push(String(m.n||'').slice(0,16))}})})}catch(e){}return {cn:cn,nm:nm}}
+/* Server browser shown before the game starts. Resolves to 's3' (join that server), 'auto' (first server with room) or 's7' for a brand new server. */
+function srvPick(lob,mxs){return new Promise(function(res){
+  const o=document.createElement('div');o.id='srv-pick';
+  o.style.cssText='position:fixed;inset:0;z-index:9990;background:#232527;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;overflow:auto;font:700 1rem Montserrat,system-ui,sans-serif';
+  const h=el('div','',(P&&P.name)||'BrixBlox game');h.style.fontSize='1.6rem';
+  const sub=el('div','','Pick a server to join. Each server holds up to '+mxs+' player'+(mxs===1?'':'s')+'.');sub.style.cssText='opacity:.8;font-weight:600';
+  const list=el('div','');list.style.cssText='width:min(460px,100%);display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow:auto';
+  const bar=el('div','');bar.style.cssText='display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px';
+  let done=false,tm=null;
+  const fin=function(v){if(done)return;done=true;clearInterval(tm);NET.pickRefresh=null;o.remove();res(v)};
+  const draw=function(){const c=srvCounts(lob),ids=Object.keys(c.cn).filter(function(k){return /^s\d+$/.test(k)}).sort(function(a,b){return +a.slice(1)-+b.slice(1)});list.textContent='';
+    if(!ids.length){const e=el('div','','No servers are running yet. Create one!');e.style.opacity='.75';list.append(e)}
+    ids.forEach(function(id){const n=c.cn[id],full=n>=mxs,row=el('div','');row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:#33363a;text-align:left';
+      const info=el('div','');info.style.cssText='flex:1;min-width:0';const t=el('div','','Server '+id.slice(1)+' \u00b7 '+n+'/'+mxs+(full?' (full)':''));
+      const nms=c.nm[id]||[],w=el('div','',nms.slice(0,4).join(', ')+(nms.length>4?' +'+(nms.length-4):''));w.style.cssText='font-size:.8rem;font-weight:600;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';info.append(t,w);
+      const jb=el('button','btn small',full?'Full':'Join');jb.type='button';jb.disabled=full;jb.onclick=function(){fin(id)};row.append(info,jb);list.append(row)})};
+  const nb=el('button','btn','Create new server');nb.type='button';nb.onclick=function(){const cn=srvCounts(lob).cn;let k=1;while(cn['s'+k]&&k<200)k++;fin('s'+k)};
+  const qb=el('button','btn ghost','Quick join');qb.type='button';qb.onclick=function(){fin('auto')};
+  const sb2=el('button','btn ghost','Play solo (offline)');sb2.type='button';sb2.onclick=function(){fin('solo')};
+  const bb=el('button','btn ghost small','Back to BrixBlox');bb.type='button';bb.onclick=function(){leaveGame()};
+  const pv=el('div','');pv.style.cssText='width:min(460px,100%);margin-top:6px;padding:12px;border-radius:12px;background:#2b2e31;display:flex;flex-direction:column;gap:8px;text-align:left';
+  const pt=el('div','','Private server');const pm=el('div','');pm.style.cssText='font-size:.85rem;font-weight:600;opacity:.85;min-height:1.2em';
+  const jr=el('div','');jr.style.cssText='display:flex;gap:8px';
+  const ci=document.createElement('input');ci.type='text';ci.maxLength=6;ci.placeholder='Enter a code';ci.style.cssText='flex:1;min-width:0;min-height:36px;padding:0 10px;border-radius:8px;border:1px solid #555;background:#1b1d1f;color:#fff;text-transform:uppercase;letter-spacing:.15em;font:inherit';
+  const cj=el('button','btn small','Join');cj.type='button';cj.onclick=function(){const c=ci.value.trim().toUpperCase();if(!/^[A-HJ-NP-Z2-9]{6}$/.test(c)){pm.textContent='A private server code is 6 letters and numbers.';return}fin('priv:'+c)};jr.append(ci,cj);
+  const own=el('div','');own.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:center';
+  const drawOwn=function(){own.textContent='';
+    if(ME&&ME.ps){const cd=el('b','',ME.ps);cd.style.letterSpacing='.15em';const hb=el('button','btn small','Host my private server');hb.type='button';hb.onclick=function(){fin('priv:'+ME.ps)};own.append(el('span','','Your code:'),cd,hb)}
+    else{const by=el('button','btn small','Buy a private server ('+PSPRICE+' blockbucks)');by.type='button';by.onclick=async function(){if(!confirm('Buy a private server code for '+PSPRICE+' blockbucks?'))return;by.disabled=true;pm.textContent='Working...';const r=await psBuy();pm.textContent=r.ok?'Done! Share your code with friends so they can join.':r.why;drawOwn()};own.append(by)}};
+  pv.append(pt,jr,own,pm);drawOwn();
+  (async function(){try{const md=await gpMeta(),c=md&&md.psrv&&md.psrv.code;if(c&&ME&&ME.ps!==c){ME.ps=c;drawOwn()}}catch(e){}})();
+  bar.append(nb,qb,sb2);o.append(h,sub,list,bar,pv,bb);document.body.append(o);NET.pickRefresh=draw;draw();tm=setInterval(draw,1000)})}
+async function netJoin(pick){
   if(!sb||!PLAYINFO||!PLAYINFO.id){NET.fail=true;return}
-  const gid=String(PLAYINFO.id).replace(/[^A-Za-z0-9_-]/g,'').slice(0,40);setTimeout(function(){if(!NET.on)NET.fail=true},9000);
+  let gid=String(PLAYINFO.id).replace(/[^A-Za-z0-9_-]/g,'').slice(0,40);
   try{
-    const lob=NET.lob=sb.channel('bbl:'+gid,{config:{presence:{key:NET.id}}});
-    await new Promise(function(ok){let d=0;const fin=function(){if(!d){d=1;ok()}};lob.on('presence',{event:'sync'},function(){});
-      lob.subscribe(function(st){if(st==='SUBSCRIBED')setTimeout(fin,1200);else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')fin()});setTimeout(fin,4000)});
+    let lob=NET.lob=sb.channel('bbl:'+gid,{config:{presence:{key:NET.id}}});
+    let lobOK=false;
+    await new Promise(function(ok){let d=0;const fin=function(){if(!d){d=1;ok()}};lob.on('presence',{event:'sync'},function(){if(NET.pickRefresh)NET.pickRefresh()});
+      lob.subscribe(function(st){if(st==='SUBSCRIBED'){lobOK=true;setTimeout(fin,1200)}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')fin()});setTimeout(fin,4000)});
     /* Same account already in this game (any server)? Then this newcomer is kicked at once: no join message, nobody sees them. */
     const myN=String(ME&&ME.username||'').trim().toLowerCase(),dupOf=function(older){let hit=false;try{const q=lob.presenceState();Object.keys(q).forEach(function(k){if(k===NET.id)return;(q[k]||[]).forEach(function(m){
         if(!m||!m.n||String(m.n).trim().toLowerCase()!==myN)return;if(!older)hit=true;else if((+m.at||0)<NET.at||((+m.at||0)===NET.at&&k<NET.id))hit=true})})}catch(e){}return hit},
-      nice=function(){NET.on=false;netLeave().then(function(){endGameFor('kicked','Nice try')})};NET.at=Date.now();
+      nice=function(){NET.on=false;NET.kicked=true;netLeave().then(function(){endGameFor('kicked','Nice try')})};NET.at=Date.now();
     if(myN&&dupOf(false)){nice();return}
-    const cn={},ps=lob.presenceState();Object.keys(ps).forEach(function(k){ps[k].forEach(function(m){if(m.sid)cn[m.sid]=(cn[m.sid]||0)+1})});
-    let n=1;const mxs=Math.max(1,Math.min(30,Math.round(+P.maxp)||NETMAX));while((cn['s'+n]||0)>=mxs)n++;NET.sid='s'+n;await lob.track({sid:NET.sid,n:ME.username,at:NET.at});
+    const mxs=Math.max(1,Math.min(30,Math.round(+P.maxp)||NETMAX));NET.max=mxs;
+    let want=null;
+    if(pick&&lobOK){want=await srvPick(lob,mxs);if(!NET.lob)return;NET.at=Date.now()}/* the player chooses a server, or Quick join / Create new */
+    if(want&&want.indexOf('priv:')===0){/* private server: leave the public lobby and open one that only people with this code share */
+      const pc=want.slice(5).replace(/[^A-Z0-9]/g,'').slice(0,6);try{sb.removeChannel(lob)}catch(e){}
+      gid=gid+'-p-'+pc;NET.priv=pc;lob=NET.lob=sb.channel('bbl:'+gid,{config:{presence:{key:NET.id}}});
+      await new Promise(function(ok){let d=0;const fin=function(){if(!d){d=1;ok()}};lob.on('presence',{event:'sync'},function(){});lob.subscribe(function(st){if(st==='SUBSCRIBED')setTimeout(fin,1200);else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')fin()});setTimeout(fin,4000)});
+      if(!NET.lob)return;want='auto'}
+    if(want==='solo'){NET.solo=true;NET.on=false;try{sb.removeChannel(lob)}catch(e){}NET.lob=null;return}/* the player chose to play alone */
+    setTimeout(function(){if(!NET.on)NET.fail=true},9000);
+    const cn=srvCounts(lob).cn;let n=1;
+    if(want&&/^s\d{1,3}$/.test(want)&&(cn[want]||0)<mxs)n=+want.slice(1);else while((cn['s'+n]||0)>=mxs)n++;/* a full or vanished server falls back to the first one with room */
+    NET.sid='s'+n;await lob.track({sid:NET.sid,n:ME.username,at:NET.at});
     if(myN){await new Promise(function(r){setTimeout(r,900)});if(!NET.lob)return;if(dupOf(true)){nice();return}}/* two joined at the same moment: the later one goes */
+    {let tr=0;const rank=function(){const q=lob.presenceState(),mem=[];Object.keys(q).forEach(function(k){(q[k]||[]).forEach(function(m){if(m&&m.sid===NET.sid)mem.push({k:k,at:+m.at||0})})});mem.sort(function(a,b){return a.at-b.at||(a.k<b.k?-1:a.k>b.k?1:0)});return mem.findIndex(function(m){return m.k===NET.id})};
+      /* if more people grabbed the last slots of a server than it holds, the latest arrivals move to the next server with room, so the player limit is never exceeded */
+      await new Promise(function(r){setTimeout(r,450)});if(!NET.lob)return;
+      while(rank()>=mxs&&tr++<6){const c2=srvCounts(lob).cn;let k=1;while((c2['s'+k]||0)>=mxs&&k<200)k++;NET.sid='s'+k;await lob.track({sid:NET.sid,n:ME.username,at:NET.at});await new Promise(function(r){setTimeout(r,450)});if(!NET.lob)return}}
     const ch=NET.ch=sb.channel('bbs:'+gid+':'+NET.sid,{config:{presence:{key:NET.id},broadcast:{self:false}}});
     ch.on('broadcast',{event:'p'},function(m){netRecv(m.payload)});
     ch.on('broadcast',{event:'bye'},function(m){const p=m.payload;if(p&&p.id&&p.id!==NET.id)netDrop(p.id)});/* a player pressed Leave: drop them right away */
@@ -6424,9 +6489,28 @@ setInterval(function(){if(!NET.on||!NET.ch||!(running||playing))return;
   NP.slice().forEach(function(n){if(!n.net)return;const quiet=now-(n.seen||0);
     if(NET.synced&&ps){if(!ps[n.net]&&quiet>5000)netDrop(n.net)}else if(quiet>12000)netDrop(n.net);
     if(quiet>45000)netDrop(n.net)})},1000);
-function bbHud(){const lb=el('button','btn ghost small','Leave game');lb.id='bb-leave';lb.style.cssText='position:fixed;top:10px;right:10px;z-index:60';lb.onclick=leaveGame;
-  const inf=el('div','chip');inf.style.cssText='position:fixed;top:10px;right:140px;z-index:60';document.body.append(lb,inf);
-  setInterval(function(){inf.textContent=P.name+' \u00b7 '+(NET.on?('Server '+NET.sid.slice(1)+' \u00b7 '+(1+NP.filter(function(n){return n.net}).length)+' online'):(NET.fail?'Solo (online unavailable)':'Connecting...'))},700)}
+/* Debug panel (like F3 in Minecraft): hidden until you press Shift+H. Leaving the game is in the Esc menu (Leave game, or press L). */
+function bbHud(){
+  const dbg=document.createElement('div');dbg.id='bb-debug';dbg.hidden=true;
+  dbg.style.cssText='position:fixed;top:8px;left:8px;z-index:60;padding:8px 10px;border-radius:6px;background:rgba(0,0,0,.55);color:#fff;font:600 12px/1.45 ui-monospace,Menlo,Consolas,monospace;white-space:pre;pointer-events:none;text-shadow:0 1px 1px #000;max-width:calc(100vw - 16px);overflow:hidden';
+  document.body.append(dbg);
+  let on=false,raf=0,fr=0,fps=0,t0=performance.now(),tx=0;
+  const f1=function(v){return isFinite(+v)?(+v).toFixed(1):'?'};
+  function text(){
+    const others=NP.filter(function(n){return n.net}).map(function(n){return String(n.un||n.name)}),max=NET.max||NETMAX;
+    let srv;if(NET.on)srv=(NET.priv?'Private '+NET.priv+' \u00b7 ':'')+'Server '+String(NET.sid).slice(1)+' \u00b7 '+(1+others.length)+'/'+max+' players';
+    else srv=NET.solo?'Solo (offline)':NET.fail?'Solo (online unavailable)':'Connecting...';
+    const L=[P.name+(PLAYINFO&&PLAYINFO.id?'  ('+PLAYINFO.id+')':''),'FPS: '+fps,'Server: '+srv];
+    if(NET.on)L.push('Players: '+[ME&&ME.username||'you'].concat(others).slice(0,12).join(', ')+(others.length>11?' +'+(others.length-11):''));
+    L.push('XYZ: '+f1(S.x)+' / '+f1(S.h)+' / '+f1(-S.y),'Facing: '+Math.round(NDIR(S.dir))+'\u00b0  On ground: '+(S.gr?'yes':'no'),
+      'You: '+(ME&&ME.username||'?')+'   Net id: '+NET.id,'Shift+H to hide');
+    return L.join('\n')}
+  function loop(now){if(!on)return;fr++;if(now-t0>=500){fps=Math.round(fr*1000/(now-t0));fr=0;t0=now}
+    if(now-tx>=200){tx=now;try{dbg.textContent=text()}catch(e){dbg.textContent='(info not ready yet)'}}
+    raf=requestAnimationFrame(loop)}
+  function toggle(){on=!on;dbg.hidden=!on;if(on){fr=0;fps=0;t0=performance.now();tx=0;raf=requestAnimationFrame(loop)}else cancelAnimationFrame(raf)}
+  addEventListener('keydown',function(e){if(e.code!=='KeyH'||!e.shiftKey||e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;
+    const a=document.activeElement;if(a&&(/INPUT|TEXTAREA|SELECT/.test(a.tagName)||a.isContentEditable))return;e.preventDefault();toggle()})}
 /* Blockbank: while someone plays a game opened from the front page, report once a minute so they earn blockbucks for play time.
    Players who do nothing for 15 minutes are kicked back to the front page. */
 (function(){if(!VIEWONLY||!ME)return;
