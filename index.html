@@ -1285,7 +1285,7 @@ function presStop(){if(api.sbc){if(PRES.ch){try{PRES.ch.untrack()}catch(e){}try{
   PRES.ch=null;PRES.name='';PRES.on={};GC.ch={};GC.n={};GC.want={};GC.order=[];clearInterval(DM.poll);DM.poll=0;DM.unread={};DM.with=null;badgePaint()}
 addEventListener('pagehide',function(){try{if(PRES.ch)PRES.ch.untrack()}catch(e){}});
 /* Players in a game: counted from the same lobby channel the game uses (only people already in a public server count; private servers are not shown). */
-function gcCount(ch){let n=0;try{const ps=ch.presenceState();Object.keys(ps).forEach(function(k){(ps[k]||[]).forEach(function(m){if(m&&m.sid)n++})})}catch(e){}return n}
+function gcCount(ch){let n=0;try{const ps=ch.presenceState();Object.keys(ps).forEach(function(k){(ps[k]||[]).forEach(function(m){if(m)n++})})}catch(e){}return n}
 function gcEl(id){if(api.demo||!api.sbc||/^(acc_|avatar_|sys_)/.test(String(id)))return null;const s=mkx('span','pc');s.dataset.g=String(id);gcSet(s);return s}
 function gcSet(s){const n=GC.n[s.dataset.g]||0;s.textContent=n+' playing';s.classList.toggle('live',n>0)}
 function gcPaint(id){document.querySelectorAll('.pc[data-g]').forEach(function(s){if(s.dataset.g===String(id))gcSet(s)})}
@@ -1293,7 +1293,7 @@ function gcWatch(key,ids){if(api.demo||!api.sbc||!me)return;GC.want[key]=ids.map
   const keep=[];GC.order.forEach(function(k){(GC.want[k]||[]).forEach(function(id){if(keep.indexOf(id)<0&&keep.length<40&&!/^(acc_|avatar_|sys_)/.test(id))keep.push(id)})});
   Object.keys(GC.ch).forEach(function(id){if(keep.indexOf(id)<0){try{api.sbc.removeChannel(GC.ch[id])}catch(e){}delete GC.ch[id];delete GC.n[id]}});
   keep.forEach(function(id){if(GC.ch[id])return;const safe=id.replace(/[^A-Za-z0-9_-]/g,'').slice(0,40);if(!safe)return;
-    const ch=GC.ch[id]=api.sbc.channel('bbl:'+safe);ch.on('presence',{event:'sync'},function(){GC.n[id]=gcCount(ch);gcPaint(id)});ch.subscribe()})}
+    const ch=GC.ch[id]=api.sbc.channel('bbp:'+safe);ch.on('presence',{event:'sync'},function(){GC.n[id]=gcCount(ch);gcPaint(id)});ch.subscribe()})}
 /* Friend chat (direct messages). Messages are saved in Supabase (brixblox-dms.sql); a ping on the presence channel makes them show up at once. */
 function dmErr(e){const m=String((e&&e.message)||e||'');return /dm_send|dm_thread|dm_unread|schema cache/i.test(m)?'Messages are not set up yet. Run brixblox-dms.sql in the Supabase SQL editor.':errText(e)}
 function badgePaint(){let t=0;Object.keys(DM.unread).forEach(function(k){t+=DM.unread[k]});const b=$('n-badge'),n=FRINC+t;b.hidden=!n;b.textContent=n;
