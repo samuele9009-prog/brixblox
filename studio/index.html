@@ -6864,5 +6864,29 @@ setInterval(function(){const w=document.getElementById('bb-who');if(w)w.textCont
 document.documentElement.classList.toggle('bbvo',!!VIEWONLY);
 setInterval(function(){document.body.classList.toggle('bbplay',!!(playing||running))},250);
 </script>
+<script>
+/* New-message pop-up shown inside the game. Inside the BrixBlox player it is handed over by the main page; if the Studio is open on its own it listens for messages itself. */
+(function(){
+  var st=document.createElement('style');
+  st.textContent='#bb-msgpop{position:fixed;left:50%;top:max(14px,env(safe-area-inset-top,0px));transform:translate(-50%,-140%);opacity:0;pointer-events:none;width:min(360px,calc(100vw - 24px));box-sizing:border-box;background:#fff;color:#1d2147;border-left:5px solid #4c8dff;border-radius:14px;padding:10px 14px;box-shadow:0 8px 28px rgba(0,0,0,.4);z-index:2147483000;transition:transform .3s,opacity .3s;font:600 .9rem Montserrat,system-ui,sans-serif}#bb-msgpop.on{transform:translate(-50%,0);opacity:1}#bb-msgpop b{display:block;font-size:.85rem}#bb-msgpop span{display:block;font-weight:500;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}';
+  document.head.append(st);
+  var el=null,t=0;
+  function pop(name,body){
+    if(!el){el=document.createElement('div');el.id='bb-msgpop';el.setAttribute('role','status');document.body.append(el)}
+    var b=document.createElement('b'),s=document.createElement('span');
+    b.textContent='New message from '+String(name||'').slice(0,16);s.textContent=String(body||'Sent you a message').slice(0,120);
+    el.replaceChildren(b,s);el.classList.add('on');clearTimeout(t);t=setTimeout(function(){el.classList.remove('on')},6000)}
+  addEventListener('message',function(e){
+    if(e.origin!==location.origin||e.source!==window.parent)return;
+    var d=e.data&&e.data.bbMsgPop;if(d)pop(d.name,d.body)});
+  try{
+    if(window.parent===window&&typeof sb!=='undefined'&&sb&&ME&&!ME.demo){
+      var me=String(ME.username).toLowerCase();
+      sb.channel('bb-online',{config:{broadcast:{self:false}}})
+        .on('broadcast',{event:'dm'},function(m){var p=m&&m.payload;if(p&&String(p.to)===me)pop(p.from,p.body)})
+        .subscribe()}
+  }catch(e){}
+})();
+</script>
 </body>
 </html>
