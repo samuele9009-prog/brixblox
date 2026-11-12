@@ -6278,9 +6278,9 @@ if(HOME&&!VIEWONLY&&!(gameId&&RELOADED))studioHome();
 if(VIEWONLY){try{$('studio').classList.add('vo')}catch(e){}
   setTimeout(function(){try{setFs(true,true)}catch(e){console.warn('play layout',e)}try{BBREADY=true;bbReadyTry()}catch(e){}
     try{bbHud()}catch(e){console.warn('hud',e)}
-    /* join an online server first (the player picks one from the list), then start the game in it. Offline / demo: straight in, solo. */
-    const go=function(){if(NET.kicked)return;try{if(!playing&&!running)$('s-play').click()}catch(e){console.warn('auto play',e)}};
-    if(navigator.onLine===false){NET.solo=true;go()}else{try{netJoin(true).then(go,go)}catch(e){go()}}},60)}
+    /* the game starts at once; joining the online server (chosen on the BrixBlox site, or the first with room) happens in the background */
+    try{if(!playing&&!running)$('s-play').click()}catch(e){console.warn('auto play',e)}
+    if(navigator.onLine===false)NET.solo=true;else{try{netJoin(false)}catch(e){console.warn('join',e)}}},60)}
 /* Ctrl+S would save the web page as a file, and Ctrl+W would close the tab. Ctrl+S is blocked and just tells you how saving works. Browsers do not let a page cancel
    Ctrl+W outright, so it is blocked where the browser allows it, and otherwise the browser asks "Leave site?" so you can stay. */
 let ctlW=0;
@@ -6391,7 +6391,8 @@ async function netJoin(pick){
     if(myN&&dupOf(false)){nice();return}
     const mxs=Math.max(1,Math.min(30,Math.round(+P.maxp)||NETMAX));NET.max=mxs;
     let want=null;
-    if(pick&&lobOK){want=await srvPick(lob,mxs);if(!NET.lob)return;NET.at=Date.now()}/* the player chooses a server, or Quick join / Create new */
+    if(pick&&lobOK){want=await srvPick(lob,mxs);if(!NET.lob)return;NET.at=Date.now()}
+    else if(PLAYINFO&&PLAYINFO.srv&&PLAYINFO.srv!=='auto')want=String(PLAYINFO.srv);/* the server was chosen on the BrixBlox site: 's3', 'priv:CODE' or 'solo' */
     if(want&&want.indexOf('priv:')===0){/* private server: leave the public lobby and open one that only people with this code share */
       const pc=want.slice(5).replace(/[^A-Z0-9]/g,'').slice(0,6);try{sb.removeChannel(lob)}catch(e){}
       gid=gid+'-p-'+pc;NET.priv=pc;lob=NET.lob=sb.channel('bbl:'+gid,{config:{presence:{key:NET.id}}});
