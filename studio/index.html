@@ -606,6 +606,27 @@ body{filter:none}
 .pp-tx{display:flex;flex-direction:column;gap:1px;min-width:0}
 .pp-ob{font-size:.72rem;font-weight:700;color:rgba(255,255,255,.66)}.pp-ob:empty{display:none}
 .pp-ac{font-size:1rem;font-weight:800}
+
+/* ===== Play layout (all devices) ===== */
+#studio.vo{overflow:hidden!important;padding:0!important}
+#studio.vo .sgrid{display:block!important;height:0!important;min-height:0!important;margin:0!important;overflow:visible!important}
+#studio.vo .cvw{position:fixed!important;inset:0;z-index:0}
+#studio.vo #s-cv{display:block;width:100%!important;height:100%!important;border:0;border-radius:0}
+#studio.vo .xhelp,#studio.vo .rz{display:none!important}
+body.bbplay #gfx-btn,body.bbplay #gfx-panel,#studio.vo #gfx-btn,#studio.vo #gfx-panel{display:none!important}
+#bb-pl{border-radius:12px!important;backdrop-filter:blur(4px)}
+html.mob.bbvo #chat{width:min(50vw,220px)!important;top:max(8px,env(safe-area-inset-top,0px))!important;left:max(8px,env(safe-area-inset-left,0px))!important}
+html.mob.bbvo #chat-tg{width:38px;height:38px}
+html.mob.bbvo #chat-log{max-height:96px;font-size:.7rem}
+html.mob.bbvo #chat-in{height:32px;font-size:16px!important;padding:0 8px}
+html.mob.bbvo #mt-menu{left:calc(max(8px,env(safe-area-inset-left,0px)) + 46px)!important;right:auto!important;top:max(8px,env(safe-area-inset-top,0px))!important;width:38px!important;height:38px!important;font-size:1.05rem;border-radius:10px}
+html.mob.bbvo #bb-pl{top:max(8px,env(safe-area-inset-top,0px))!important;right:max(8px,env(safe-area-inset-right,0px))!important;width:136px!important;font-size:.72rem!important}
+html.mob.bbvo #hpbar{right:max(8px,env(safe-area-inset-right,0px))!important;width:136px!important}
+html.mob #bb-adm{left:10px!important;right:auto!important;bottom:calc(env(safe-area-inset-bottom,0px) + 190px)!important;padding:0 10px!important}
+html.mob #bb-admp{left:10px!important;right:auto!important;bottom:calc(env(safe-area-inset-bottom,0px) + 236px)!important;width:min(300px,92vw)!important}
+html.mob #hotbar{bottom:10px!important;gap:4px!important}
+html.mob #hotbar button{width:48px!important;height:48px!important;font-size:.6rem!important}
+@media (max-height:480px){html.mob #bb-adm{bottom:calc(env(safe-area-inset-bottom,0px) + 130px)!important}html.mob #bb-admp{bottom:calc(env(safe-area-inset-bottom,0px) + 176px)!important}html.mob.bbvo #chat-log{max-height:60px}}
 </style>
 </head>
 <body>
@@ -1669,7 +1690,7 @@ const GFXT={lowest:{n:'Lowest',cap:1,mul:.6,sh:0,soft:0,R:30,env:0,rb:0,glow:0},
 const GFXCROS=/\bCrOS\b/.test(navigator.userAgent);let GFXL='auto';try{const gv=localStorage.getItem('bbGfx');if(gv&&GFXT[gv])GFXL=gv}catch(e){}
 const GFXUI=[];
 function gfxEff(){return GFXL==='auto'?GFXT[GFXCROS?'medium':'high']:GFXT[GFXL]}
-function gfxPR(){const d=window.devicePixelRatio||1;if(GFXL==='auto')return Math.min(d,GFXCROS?1.25:1.5);const G=GFXT[GFXL];return Math.min(d,G.cap)*G.mul}
+function gfxPR(){const d=window.devicePixelRatio||1,tc=matchMedia('(pointer:coarse)').matches;let r;if(GFXL==='auto')r=Math.min(d,GFXCROS?1.25:1.5);else{const G=GFXT[GFXL];r=Math.min(d,G.cap)*G.mul;if(tc)r=Math.min(r,1.5)}const w=Math.max(1,cv.clientWidth),h=Math.max(1,cv.clientHeight),mx=tc?2.4e6:7e6;return Math.max(.5,Math.min(r,Math.sqrt(mx/(w*h))))}
 function gfxSet(v){if(v!=='auto'&&!GFXT[v])return;GFXL=v;try{localStorage.setItem('bbGfx',v)}catch(e){}try{QS=1;QC=0}catch(e){}lxSig='';try{applyEnv()}catch(e){}try{renderer.shadowMap.needsUpdate=true}catch(e){}GFXUI.forEach(function(f){try{f()}catch(e){}})}
 /* The Roblox-style look that Medium, High and Ultra put on top of the normal lighting (a lighting preset you pick still wins) */
 const LRB={1:{hs:'#dbe9ff',hg:'#56606a',hk:1,sc:'#fff0d4',tm:1,ex:1.18,soft:1,g:null},
@@ -5594,7 +5615,7 @@ function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const
   if(aPlay&&!playing&&!rigOn){const A=P.anims[curA];if(A){aT+=dt;if(aT>=A.len){if(aLoop)aT%=A.len;else{aT=A.len;aPlay=false;animPlayBtn()}}animTick();applyPose(evalPose(A,aT))}}
   if(gd&&gd.mv&&gd.le&&!playing)rmoveDrag(gd.le);
   stageTick(dt);animBox();animGizUpdate();gizmoFit();
-  const w=cv.clientWidth,h=fsOn?cv.clientHeight:Math.round(w*.75),pr=gfxPR()*QS;
+  const w=cv.clientWidth,h=(fsOn||VIEWONLY)?cv.clientHeight:Math.round(w*.75),pr=gfxPR()*QS;
   if(w&&h&&(cv.width!==Math.floor(w*pr)||cv.height!==Math.floor(h*pr))){renderer.setPixelRatio(pr);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
   {const fv=Math.max(30,Math.min(120,+(S.fov!=null?S.fov:P.rules.fov)||70));if(camera.fov!==fv){camera.fov=fv;camera.updateProjectionMatrix()}}
   camera.position.set(cam.x,cam.y,cam.z);camera.lookAt(cam.x+f[0],cam.y+f[1],cam.z+f[2]);try{vzFold()}catch(e){VF=null}{const T=playing&&byId(P.avId);if(T)sunTick(T.pos[0]+S.x,T.pos[1]+S.h,T.pos[2]-S.y);else sunTick(cam.x+f[0]*22,Math.max(0,cam.y+f[1]*22),cam.z+f[2]*22)}skyTick(dt);try{cullTick()}catch(e){}try{vzTick()}catch(e){console.warn('visualize',e)}renderer.render(scene,camera);outlinePass();try{ppTick(dt)}catch(e){console.warn('prompts',e)}try{gfxGlow()}catch(e){}}
@@ -6541,7 +6562,7 @@ function admPanelFill(){admLs.replaceChildren();bbSec.hidden=!(ME&&admIsBB(ME.us
   if(!ADM.list.length){const e=el('div',null,'No other admins yet.');e.style.cssText='color:#bdbebe;font-size:.78rem';admLs.append(e)}
   ADM.list.forEach(function(n){admLs.append(admRow(n,'Remove',async function(){try{await admSave(ADM.list.filter(function(x){return x!==n}));admMsg.textContent=n+' is no longer an admin.';admPanelFill()}catch(e){admMsg.textContent='Could not save: '+((e&&e.message)||e)}}))})}
 admBtn.onclick=function(){admPanel.style.display=admPanel.style.display==='none'?'block':'none';if(admPanel.style.display==='block')admLoad().then(admPanelFill)};
-document.body.append(admBtn,admPanel);setFly(false);admPanelFill();
+admBtn.id='bb-adm';admPanel.id='bb-admp';document.body.append(admBtn,admPanel);setFly(false);admPanelFill();
 /* Admin output: the game's output (print, warnings, errors) normally only shows inside the studio. In a live game, admins can open the same output from the Admin panel. */
 var OUTSHOW=false,outVis=false;
 const outBox=el('div'),outHd=el('div'),outPre=el('pre'),outBtn=el('button','btn small ghost','Show output');
@@ -6753,6 +6774,10 @@ setInterval(function(){const w=document.getElementById('bb-who');if(w)w.textCont
   addEventListener('blur',releaseAll);
   addEventListener('orientationchange',function(){setTimeout(function(){try{dispatchEvent(new Event('resize'))}catch(e){}},250)});
 })();
+</script>
+<script>
+document.documentElement.classList.toggle('bbvo',!!VIEWONLY);
+setInterval(function(){document.body.classList.toggle('bbplay',!!(playing||running))},250);
 </script>
 </body>
 </html>
