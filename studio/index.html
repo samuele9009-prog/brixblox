@@ -4921,8 +4921,8 @@ function guiBuild(pid,host,k,ed,live){guiKids(pid).forEach(function(g){const st=
     else if(live&&guiClickable(g)){s.pointerEvents='auto';s.cursor='pointer';e.tabIndex=-1;e.onmousedown=function(ev){ev.preventDefault()};e.onclick=function(){guiClick(g)}}
     GE[g.id]=e;host.append(e);guiBuild(g.id,e,k,ed,live)})}
 function renderGui(){const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
-  const ed=guiEdit(),live=running||playing,k=w/480;
-  GL.style.width=w+'px';GL.style.height=h+'px';GL.style.left=cv.offsetLeft+'px';GL.style.top=cv.offsetTop+'px';GL.replaceChildren();CVW.classList.toggle('gedit',ed);
+  const ed=guiEdit(),live=running||playing,gw=Math.min(w,h*16/9),gh=gw*9/16,k=gw/480;
+  GL.style.width=gw+'px';GL.style.height=gh+'px';GL.style.left=(cv.offsetLeft+(w-gw)/2)+'px';GL.style.top=(cv.offsetTop+(h-gh)/2)+'px';GL.replaceChildren();CVW.classList.toggle('gedit',ed);
   GL.style.pointerEvents=ed?'auto':'none';GL.style.boxShadow=ed?'inset 0 0 0 2px #00e08a':'none';
   GL.style.backgroundImage=ed&&GED.grid?GRIDBG:'none';GL.style.backgroundSize=ed&&GED.grid?GED.grid+'% '+GED.grid+'%':'';
   GL.onpointerdown=ed?function(ev){if(ev.target===GL&&ev.button===0){ev.preventDefault();if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();guiSelect(null)}}:null;
@@ -5615,7 +5615,7 @@ function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const
   if(aPlay&&!playing&&!rigOn){const A=P.anims[curA];if(A){aT+=dt;if(aT>=A.len){if(aLoop)aT%=A.len;else{aT=A.len;aPlay=false;animPlayBtn()}}animTick();applyPose(evalPose(A,aT))}}
   if(gd&&gd.mv&&gd.le&&!playing)rmoveDrag(gd.le);
   stageTick(dt);animBox();animGizUpdate();gizmoFit();
-  const w=cv.clientWidth,h=(fsOn||VIEWONLY)?cv.clientHeight:Math.round(w*(window.__phr||.75)),pr=gfxPR()*QS;
+  const w=cv.clientWidth,h=(fsOn||VIEWONLY)?cv.clientHeight:Math.round(w*(window.__phr||.5625)),pr=gfxPR()*QS;
   if(w&&h&&(cv.width!==Math.floor(w*pr)||cv.height!==Math.floor(h*pr))){renderer.setPixelRatio(pr);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
   {const fv=Math.max(30,Math.min(120,+(S.fov!=null?S.fov:P.rules.fov)||70));if(camera.fov!==fv){camera.fov=fv;camera.updateProjectionMatrix()}}
   camera.position.set(cam.x,cam.y,cam.z);camera.lookAt(cam.x+f[0],cam.y+f[1],cam.z+f[2]);try{vzFold()}catch(e){VF=null}{const T=playing&&byId(P.avId);if(T)sunTick(T.pos[0]+S.x,T.pos[1]+S.h,T.pos[2]-S.y);else sunTick(cam.x+f[0]*22,Math.max(0,cam.y+f[1]*22),cam.z+f[2]*22)}skyTick(dt);try{cullTick()}catch(e){}try{vzTick()}catch(e){console.warn('visualize',e)}renderer.render(scene,camera);outlinePass();try{ppTick(dt)}catch(e){console.warn('prompts',e)}try{gfxGlow()}catch(e){}}
@@ -6937,7 +6937,8 @@ setInterval(function(){document.body.classList.toggle('bbplay',!!(playing||runni
     const w=c.clientWidth,h=c.clientHeight,l=c.offsetLeft,t=c.offsetTop,b=parseFloat(getComputedStyle(c).borderLeftWidth)||0;
     ov.style.left=(l+b)+'px';ov.style.top=(t+b)+'px';ov.style.width=(w-2*b)+'px';ov.style.height=(h-2*b)+'px';
     /* flag any GUI that sits on a phone control */
-    try{const gs=(P.guis||[]).filter(function(g){return g.vis!==false}).map(function(g){const a=guiAbs(g);return {n:g.name,x:a.x,y:a.y,w:a.w,h:a.h}});
+    try{const sw=c.clientWidth,sh=c.clientHeight,bw=Math.min(sw,sh*16/9),bh=bw*9/16,fx=bw/sw,fy=bh/sh,ox=(1-fx)/2*100,oy=(1-fy)/2*100;
+      const gs=(P.guis||[]).filter(function(g){return g.vis!==false}).map(function(g){const a=guiAbs(g);return {n:g.name,x:ox+a.x*fx,y:oy+a.y*fy,w:a.w*fx,h:a.h*fy}});
       Z.forEach(function(z,i){if(z.notch)return;const zx=z.x/RW*100,zy=z.y/RH*100,zw=z.w/RW*100,zh=z.h/RH*100;
         const hit=gs.filter(function(g){return g.x<zx+zw&&g.x+g.w>zx&&g.y<zy+zh&&g.y+g.h>zy}).map(function(g){return g.n});
         zs[i].classList.toggle('hit',hit.length>0);zs[i].title=hit.length?'Covered by: '+hit.join(', '):''})}catch(e){}}
@@ -7003,6 +7004,38 @@ setInterval(function(){document.body.classList.toggle('bbplay',!!(playing||runni
     }catch(e){}});
   ['fullscreenchange','webkitfullscreenchange'].forEach(function(n){document.addEventListener(n,paint)});
   document.body.append(b);
+})();
+</script>
+<script>
+/* ===== Building panel, tidied: the floating toolbar on the stage is gone and everything it did now lives in this panel, in clear sections. ===== */
+(function(){
+  const st=document.createElement('style');
+  st.textContent='#bb-bar{display:none!important}#s-parts .tb{display:flex;flex-direction:column;gap:6px}#s-parts .tb>.tgrp,#s-parts #st-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line)}#s-parts .tb>.tgrp:last-child{border-bottom:0}#s-parts .tgl{flex:0 0 64px;font-size:.68rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.65}';
+  document.head.append(st);
+  const tb=document.querySelector('#s-parts .tb');if(!tb)return;
+  const grp=function(name){return Array.from(tb.querySelectorAll('.tgrp')).find(function(g){const l=g.querySelector('.tgl');return l&&l.textContent.trim()===name})};
+  const mk=function(label){const g=document.createElement('div');g.className='tgrp';const l=document.createElement('span');l.className='tgl';l.textContent=label;g.append(l);return g};
+  const btn=function(t,tip,fn,ghost){const b=document.createElement('button');b.type='button';b.className='btn small'+(ghost===false?'':' ghost');b.textContent=t;b.title=tip;b.onclick=function(){try{fn()}catch(x){console.warn(x)}this.blur()};return b};
+  /* Tools: move / resize / rotate, undo / redo */
+  const tools=mk('Tools'),tbn={};
+  [['move','Move','Move tool (2). Drag the arrows.'],['scale','Resize','Resize tool (3). Drag a ball, hold Ctrl for both sides.'],['rotate','Rotate','Rotate tool (4). Drag a ring, hold Shift to snap.']].forEach(function(q){tbn[q[0]]=btn(q[1],q[2],function(){setTool(q[0])});tools.append(tbn[q[0]])});
+  const ub=btn('↶ Undo','Undo (Ctrl+Z)',function(){undoRedo(false)}),rb=btn('↷ Redo','Redo (Ctrl+Y)',function(){undoRedo(true)});tools.append(ub,rb);
+  /* Camera: focus + fly speed */
+  const cam=mk('Camera');
+  cam.append(btn('Focus','Fly the camera to the selection (F)',function(){focusSel()}));
+  const cs=document.createElement('select');cs.className='btn ghost small';cs.title='How fast the camera flies with W A S D while you build (Shift = faster still)';
+  [['0.4','Fly: Slow'],['1','Fly: Normal'],['2.5','Fly: Fast'],['5','Fly: Turbo']].forEach(function(o){const op=document.createElement('option');op.value=o[0];op.textContent=o[1];cs.append(op)});
+  cs.value=String(CAMSP);if(cs.value!==String(CAMSP))cs.value='1';
+  cs.onchange=function(){CAMSP=parseFloat(this.value)||1;try{localStorage.setItem('bbCamSp',String(CAMSP))}catch(x){}this.blur()};cam.append(cs);
+  const add=grp('Add'),models=grp('Models'),edit=grp('Edit'),rig=grp('Rig'),snap=document.getElementById('st-bar');
+  if(snap){const l=snap.querySelector('.tgl');if(l)l.textContent='Align'}
+  /* order: Tools, Add, Edit, Models, Align, Camera, Rig */
+  [tools,add,edit,models,snap,cam,rig].forEach(function(g){if(g)tb.append(g)});
+  const msg=document.getElementById('p-msg');
+  setInterval(function(){
+    try{Object.keys(tbn).forEach(function(k){tbn[k].setAttribute('aria-pressed',tool===k?'true':'false')});
+      ub.disabled=!hist.length;rb.disabled=!redoS.length;
+      if(document.activeElement!==cs&&cs.value!==String(CAMSP)){if(!Array.from(cs.options).some(function(o){return o.value===String(CAMSP)})){const op=document.createElement('option');op.value=String(CAMSP);op.textContent='Fly: '+CAMSP;cs.append(op)}cs.value=String(CAMSP)}}catch(e){}},250);
 })();
 </script>
 </body>
