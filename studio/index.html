@@ -807,6 +807,7 @@ const BD={
  ragdollex:{c:'en',l:'set ragdoll exaggeration to _',a:['1'],tip:'Sets how exaggerated ragdolls look, from 1 to 100. 1 is the normal cartoony ragdoll (the default): arms fling out and the body gets a little random kick. The higher the number, the more it calms down and acts like real physics: no random kick, no arm flinging, and limbs swing and tumble freely. 100 is fully realistic ragdolling. It applies to every ragdoll that starts after this block runs and goes back to 1 when the game restarts.'},
  unragdoll:{c:'en',l:'unragdoll _',a:['target'],tip:'Makes a ragdolled rig or player get back up right away. Type a name, a variable, or player (the first player in the server; player2 is the second, and so on). Does nothing if they are not ragdolled (and cannot save someone who was killed).'},
  pushparent:{c:'en',l:'push parent rig _ studs in _ seconds toward _',a:['5','0.5','front'],dd:{2:'dir'},tip:'Pushes the rig this script belongs to forward by exactly this many studs, taking this many seconds. To push your own character, put the script inside the character. A script that belongs to nothing does nothing. It eases in and out. A negative number pushes backward. Works even while ragdolled and even if Movable is off. If it is already being pushed, a new push waits until the first one is done, so a forever loop gives one push after another.'},
+ airesponse:{c:'en',l:'AI response personality _ response time _ secs rig _ reply to _ show in _ into variable _',a:['a friendly shopkeeper','1','this','message','chat','aireply'],dd:{2:'rign',4:'aiout',5:'var'},tip:'PREMIUM. Asks an AI (Google Gemini) to answer like a character. Personality: describe who it is (for example \"a grumpy pirate who loves gold\"). Response time: the AI waits at least this many seconds before it answers, like someone typing (0 to 30). Rig: the rig that is talking. Its name is used for the chat message and the bubble over its head (pick \"this rig\" inside a rig script). Reply to: what the player said. Leave it as message inside a \"when player says _ in chat\" script, or type a variable. Show in: the chat, a bubble above the rig, both, or nothing (variable only). The answer is also stored in the variable you pick. Players without Premium do not get an answer. It remembers the last few things said to each rig, keeps answers short and kid-friendly, and only you see the answer.'},
  rigsize:{c:'en',l:'set rig size _ to _',a:['target','2'],tip:'Scales a rig or player. 1 is normal, 2 is double. Type a name, a variable, or player (the first player in the server; player2 is the second, and so on).'},
  tpgame:{c:'en',l:'teleport to game _',a:[''],dd:{0:'mygame'},tip:'Takes the player to another game and shows a loading screen with that game\'s picture and name. You can only pick games you made yourself, and players can only be sent to games made by the creator of this game.'},
  teleport:{c:'en',l:'teleport _ to x _ y _ z _',a:['target','0','5','0'],tip:'Moves a rig or player to this spot in the world. y is the height of the feet (the floor is usually 0). Type a name, a variable, or player (the first player in the server; player2 is the second, and so on).'},
@@ -1028,6 +1029,9 @@ const TSETOPT=[['fov','Field of view'],['distance','Camera distance'],['speed','
 const CAMANGOPT=[['front','Front'],['back','Back'],['left','Left'],['right','Right'],['top','Top'],['bottom','Bottom'],['inside','Inside (looks out the front)']];
 const DIROPT=[['front','Front'],['back','Back'],['left','Left'],['right','Right'],['up','Up'],['down','Down']];
 const BEHOPT=[['idle','Idle'],['wander','Wander'],['follow nearest','Follow nearest player'],['follow random','Follow random player'],['follow player','Follow player (name)']];
+/* AI response block: where the answer is shown, and the list of rigs to pick from */
+const AIOUTOPT=[['chat','Chat'],['above rig','Above the rig'],['both','Chat and above the rig'],['variable only','Nowhere (only the variable)']];
+function rigOpts(){const seen={},r=[['this','this rig']];P.parts.forEach(function(p){if(p.parent||p.av||p.stab||!kids(p).length)return;const m=p.model&&byModel(p.model),n=m?m.name:p.name;if(seen[n])return;seen[n]=1;r.push([n,n])});return r}
 const ACCSLOTOPT=[['auto','Auto'],['hat','Hat'],['face','Face'],['facc','Face accessory'],['neck','Neck'],['back','Back']];
 function ownerObj(o){return o?(byId(o)||byModel(o)||guiById(o)||null):null}
 function ownName(o){const x=ownerObj(o);return x?x.name:null}
@@ -1079,7 +1083,7 @@ async function tpGame(id){if(TPBUSY)return;
 function ddSel(b,i,kind,ro){
   if(ro){const n=el('input');n.value=b.a[i];n.readOnly=true;fit(n);return n}
   const s=el('select','ddsel');s.title=kind==='var'?'Pick a variable, or make a new one':'';
-  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='img'?[['none','none']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})):kind==='guipart'?[['background','background'],['text','text'],['border','border']]:kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='ease'?EASEOPT.slice():kind==='tset'?TSETOPT.slice():kind==='dir'?DIROPT.slice():kind==='camang'?CAMANGOPT.slice():kind==='mathf'?MATHOPT.slice():kind==='light'?LIGHTOPT.slice():kind==='skybox'?skyOpts():kind==='mygame'?myGames():kind==='bool'?[['true','true'],['false','false']]:kind==='partn'?(function(){const seen={},r=[];P.parts.forEach(function(q){if(q.av||q.stab||seen[q.name])return;seen[q.name]=1;r.push([q.name,q.name])});return r})():kind==='spawn'?P.parts.filter(function(q){return q.spawn&&!q.parent}).map(function(q){return [q.name,q.name]}):kind==='gp'?gpList().map(function(g){return [g.name,g.name]}):kind==='item'?itemsL().map(function(i){return [i.name,i.name]}):varList().map(function(v){return [v,v]});
+  const fill=function(){s.replaceChildren();let o=kind==='keys'?KEYOPT.slice():kind==='gui'?(P.guis||[]).map(function(g){return [g.name,g.name]}):kind==='guit'?[['this','this GUI']].concat((P.guis||[]).map(function(g){return [g.name,g.name]})):kind==='img'?[['none','none']].concat(Object.keys(P.assets.images).map(function(n){return [n,n]})):kind==='guipart'?[['background','background'],['text','text'],['border','border']]:kind==='aiout'?AIOUTOPT.slice():kind==='rign'?rigOpts():kind==='behav'?BEHOPT.slice():kind==='accslot'?ACCSLOTOPT.slice():kind==='ease'?EASEOPT.slice():kind==='tset'?TSETOPT.slice():kind==='dir'?DIROPT.slice():kind==='camang'?CAMANGOPT.slice():kind==='mathf'?MATHOPT.slice():kind==='light'?LIGHTOPT.slice():kind==='skybox'?skyOpts():kind==='mygame'?myGames():kind==='bool'?[['true','true'],['false','false']]:kind==='partn'?(function(){const seen={},r=[];P.parts.forEach(function(q){if(q.av||q.stab||seen[q.name])return;seen[q.name]=1;r.push([q.name,q.name])});return r})():kind==='spawn'?P.parts.filter(function(q){return q.spawn&&!q.parent}).map(function(q){return [q.name,q.name]}):kind==='gp'?gpList().map(function(g){return [g.name,g.name]}):kind==='item'?itemsL().map(function(i){return [i.name,i.name]}):varList().map(function(v){return [v,v]});
     if(kind==='item'&&o.length&&!o.some(function(q){return q[0]===String(b.a[i])})){b.a[i]=o[0][0];save()}
     if(kind==='item'&&!o.length)o=[[String(b.a[i]),'(make an item first)']];
     if(kind==='mygame'&&!o.length)o=[[String(b.a[i]),'(save a game of yours first)']];
@@ -1308,7 +1312,7 @@ function dEnd(e){removeEventListener('pointermove',dMoveRaf);dEv=null;if(dRaf){c
 
 
 /* BricBloc as text */
-const KW={unvisualize:'stop visualizing',tpgame:'teleport to game',playrig:'play animation on rig',riggear:'put item in hand of rig',rigungear:'take item out of rig hand',lighting:'set lighting',skybox:'set skybox to',spawnon:'turn on spawnpoint',spawnrep:'replace current spawnpoint with',spawnoff:'turn off spawnpoint',giveattr:'give attribute',pdset:'set player saved data',pdchange:'change player saved data',pdget:'get player saved data',pdadditem:'put in saved inventory',pdremitem:'take out of saved inventory',pdsave:'save player data',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',friction:'set friction',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',ragdollex:'set ragdoll exaggeration',playercolon:'enable player collision',playercoloff:'disable player collision',fov:'set camera fov',camset:'set camera to part',camreset:'set camera back to player',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',setrig:'set player to rig',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
+const KW={airesponse:'AI response',unvisualize:'stop visualizing',tpgame:'teleport to game',playrig:'play animation on rig',riggear:'put item in hand of rig',rigungear:'take item out of rig hand',lighting:'set lighting',skybox:'set skybox to',spawnon:'turn on spawnpoint',spawnrep:'replace current spawnpoint with',spawnoff:'turn off spawnpoint',giveattr:'give attribute',pdset:'set player saved data',pdchange:'change player saved data',pdget:'get player saved data',pdadditem:'put in saved inventory',pdremitem:'take out of saved inventory',pdsave:'save player data',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',friction:'set friction',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',ragdollex:'set ragdoll exaggeration',playercolon:'enable player collision',playercoloff:'disable player collision',fov:'set camera fov',camset:'set camera to part',camreset:'set camera back to player',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',setrig:'set player to rig',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){clearTimeout(view._t);view._t=setTimeout(view0,250)}
 function view0(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
@@ -1553,6 +1557,7 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
       if(!vn){log('Error: type a variable name to store the result in.');break}
       const r=nearest(pl?plist():rlist(),og,rg,cnt);S.v[vn]=r.map(function(x){return x.name}).join(',');if(many)S.v[vn+'_count']=r.length;break}
     case'ragdoll':resolve(String(val(a[0],S))).forEach(function(t){/* inside server side, another player ragdolls only on their own computer; everyone else is shown that real pose, so all screens match */if(t.key.slice(0,3)==='np:'&&(S.remote||S.inss>0))return;startRag(t.key,false)});break;
+    case'airesponse':await aiRespond(b,S,o);break;
     case'ragdollex':{const v=+n(0);S.rex=Math.max(1,Math.min(100,isFinite(v)?v:1));break}
     case'unragdoll':resolve(String(val(a[0],S))).forEach(function(t){const e=RAG[t.key];if(e&&!e.dead&&e.t<=e.end)e.end=Math.max(e.t,RFALL)});break;
     case'kill':startRag(origin(o).self,true);break;
@@ -2648,7 +2653,7 @@ function props0(){const d=$('p-props');d.replaceChildren();if(selFold&&!sel.leng
   {const sA=sect(d,'Appearance');sA.append(lab('Material',matSel(p.mat,function(k){setMat(p,k);all()})),lab('Color',col));if(!p.stab){shineAll(sA,[p],p.shape==='mesh'?'Shininess (mesh & texture)':undefined);trAll(sA,[p],'Transparency')}
    const sT=sect(d,'Position & size');sT.append(vec('Position',p.pos,true),vec('Size',p.size,false))}
   const sP=sect(d,'Physics');
-  if(!p.parent){const c=el('input');c.type='checkbox';c.checked=!!p.movable;c.onchange=function(){p.movable=c.checked;save()};const l=el('label','','Movable (push it with your character)');l.append(c);sP.append(l);
+  if(!p.parent){const c=el('input');c.type='checkbox';c.checked=!!p.movable;c.onchange=function(){p.movable=c.checked;save()};const l=el('label','','Movable (push it with your character)');l.title='Off: a rig built like a person acts like a real player (solid, cannot be pushed). On: your character can push it around.';l.append(c);sP.append(l);
     const c2=el('input');c2.type='checkbox';c2.checked=!p.nocol;c2.onchange=function(){if(c2.checked)delete p.nocol;else p.nocol=true;save()};const l2=el('label','','Collision (solid: blocks your character)');l2.append(c2);sP.append(l2);{const px={get fr(){return p.fr==null?1:p.fr},set fr(v){if(v===1)delete p.fr;else p.fr=v}};slider(sP,'Friction (0 ice, 1 normal, 3+ grippy)',px,'fr',0,5,.05,function(v){return (+v).toFixed(2)})}}
   else sP.append(el('p','note','Welded: moves with the part it is welded to.'));if((!p.av||p.acc)&&!p.sm&&!p.stab&&p.shape!=='mesh'&&p.shape!=='union'){const ss=el('select');[['box','Block'],['cyl','Cylinder'],['sphere','Sphere'],['wedge','Triangle']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ss.append(op)});ss.value=p.shape||'box';ss.onchange=function(){if(ss.value==='box')delete p.shape;else p.shape=ss.value;all()};d.append(lab('Shape',ss))}
   if(p.shape==='mesh')meshProps(d,p);
@@ -3665,6 +3670,7 @@ function collide(){const T=byId(P.avId);if(!T)return;const R=1.1,fy=feet0()+S.h;
   for(let it=0;it<2;it++)P.parts.forEach(function(q){if(q.av)return;
     if(vzNoCol(q.id))return;/* visualize windows and their target spots can be walked through */
     const r=rootOf(q);if((r.svc||'world')!=='world'||!solid(r)||gone(q))return;
+    if(!r.movable&&humRig(r))return;/* a person-shaped rig that is not movable is one round body: see rigBodyCollide */
     /* far-away parts are skipped before any of the expensive work (the part's size box always contains the whole shape) */
     {const o0=RO[r.id]||[0,0],sz=q.size,rad=Math.abs(sz[0])+Math.abs(sz[1])+Math.abs(sz[2])+R+3;if(Math.abs(T.pos[0]+S.x-(q.pos[0]+o0[0]))>rad||Math.abs(T.pos[2]-S.y-(q.pos[2]+o0[1]))>rad)return}
     const eq=eh(q),hx=eq[0],hy=eq[1],hz=eq[2],qy=q.pos[1]+(RY[r.id]||0);if(qy+hy<=fy+STEP||qy-hy>=fy+6)return;
@@ -4442,7 +4448,85 @@ function censor(){const n=8+Math.floor(Math.random()*9);let o='';for(let i=0;i<n
 function filt(t){t=String(t);return chatBad(t)?censor():t}
 /* Chat log for moderators: every message is saved with what was typed, what others saw, and whether the filter caught it. Needs brixblox-chatlogs.sql in Supabase; fails silently without it. */
 function logChat(raw,shown){try{if(!sb||!ME||ME.demo)return;sb.rpc('log_chat',{p_game:String((PLAYINFO&&PLAYINFO.id)||gameId||''),p_raw:String(raw).slice(0,120),p_shown:String(shown).slice(0,120),p_flagged:raw!==shown}).then(function(){},function(){})}catch(e){}}
-function sendChat(txt){txt=String(txt).trim().slice(0,120);if(!txt||!(running||playing))return;let rawTxt=txt;{const raw=txt;txt=filt(raw);if(txt===raw&&crossBad(raw))txt=censor();logChat(raw,txt);CHATRAW=raw;rawTxt=raw}chatLine(P.player.name,txt);netChat(txt,rawTxt);sayBubble(txt);const low=txt.toLowerCase();
+/* ===== AI response block (Premium) =====
+   The browser never holds the AI key: it asks the "npc-ai" server function, which checks Premium, limits how fast people can ask, and calls Google Gemini. */
+let AILAST='';const AIH={},AIBUSY={},AIWARN={t:0};
+function aiChatLine(a,b){const L=$('chat-log'),d=el('div','');
+  try{CHATBUF.push({t:Date.now(),n:String(a)+' [AI]',m:String(b),s:String(b)});if(CHATBUF.length>120)CHATBUF.splice(0,CHATBUF.length-120)}catch(e){}
+  const tg=el('span','','AI');tg.style.cssText='font-size:.68em;font-weight:800;background:rgba(255,255,255,.25);border-radius:4px;padding:0 4px;margin-right:5px;vertical-align:middle';tg.title='This message was written by an AI';
+  const n=el('span','cn',a+': ');n.style.color=nameCol(a);/* an AI line never gets the admin or Premium badge, whatever the rig is called */
+  d.append(tg,n,document.createTextNode(b));L.append(d);while(L.children.length>60)L.firstChild.remove();L.scrollTop=1e9;setTimeout(function(){d.classList.add('old')},12000)}
+/* A chat bubble over a rig (the same look as the say block) */
+const RIGB={};
+function rigSay(rid,t,dur){let e=RIGB[rid];
+  if(!t){if(e){e.say='';if(e.sp)e.sp.visible=false}return}
+  if(!e){const c=document.createElement('canvas');c.width=1024;c.height=384;const x=c.getContext('2d');x.scale(2,2);const tx=new THREE.CanvasTexture(c);tx.minFilter=THREE.LinearFilter;tx.generateMipmaps=false;
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthTest:false}));sp.renderOrder=9;sp.visible=false;scene.add(sp);e=RIGB[rid]={x:x,t:tx,sp:sp,say:'',at:0,dur:6000}}
+  e.say=String(t).slice(0,120);e.at=performance.now();e.dur=dur||Math.min(12000,Math.max(5000,e.say.length*80));bubPaint(e.say,e.x,e.t)}
+function rigBubTick(){const run=running||playing;
+  for(const rid in RIGB){const e=RIGB[rid];if(!e.sp)continue;const r=byId(rid);
+    if(!run||!r||!e.say||goneKey('rig:'+rid)){e.sp.visible=false;if(!run)e.say='';continue}
+    const age=performance.now()-e.at;if(age>e.dur){e.say='';e.sp.visible=false;continue}
+    if(!e.sp.parent)scene.add(e.sp);
+    const k=Math.max(0,Math.min(1,(e.dur-age)/BUBFADE)),f=k*k*(3-2*k),z=.4+.6*f;let lo=1e9,hi=-1e9;
+    treeOf(r).forEach(function(q){lo=Math.min(lo,q.pos[1]-Math.abs(q.size[1])/2);hi=Math.max(hi,q.pos[1]+Math.abs(q.size[1])/2)});
+    const s=RSZ['rig:'+rid]||1,o=RO[rid]||[0,0],top=lo+(hi-lo)*s+(RY[rid]||0);
+    e.sp.visible=true;e.sp.material.opacity=f;e.sp.scale.set(6.6*z,2.475*z,1);e.sp.position.set(r.pos[0]+o[0],top+2.25-(1-z),r.pos[2]+o[1])}}
+function aiWarn(m){log('Error: '+m);if(performance.now()-AIWARN.t>15000){AIWARN.t=performance.now();chatSys(m)}}
+async function aiRespond(b,S,o){
+  const a=b.a;
+  const pers=String(val(a[0],S)).replace(/[\u0000-\u001f]/g,' ').trim().slice(0,300)||'a friendly character';
+  const wait=Math.max(0,Math.min(30,Number(val(a[1],S))||0));
+  const rn0=String(val(a[2]===undefined?'this':a[2],S)).trim()||'this';
+  let msg=val(a[3]===undefined?'message':a[3],S);msg=String(msg==null?'':msg).trim();
+  if(!msg||msg==='message')msg=AILAST;/* nothing stored in the variable: answer the last thing said in chat */
+  msg=msg.slice(0,200);
+  const dest=String(a[4]===undefined?'chat':a[4]).trim().toLowerCase(),vn=String(a[5]===undefined?'':a[5]).trim();
+  let rr=null;
+  if(rn0.toLowerCase()==='this'){rr=roots(o).filter(function(r){return kids(r).length>0})[0]||null}else rr=skinFind(rn0);
+  const m0=rr&&rr.model&&byModel(rr.model),rn=rr?String(m0?m0.name:rr.name):(rn0.toLowerCase()==='this'?'AI':rn0);
+  const toChat=dest==='chat'||dest==='both'||((dest==='above rig'||dest==='both')&&!rr),toRig=!!rr&&(dest==='above rig'||dest==='both');
+  if(!rr&&dest!=='chat'&&dest!=='variable only')log('Error: there is no rig named \"'+rn0+'\"'+(rn0.toLowerCase()==='this'?' (put this block in a script that belongs to a rig, or pick the rig by name)':'')+'. A rig is named after its model (parts welded together). The answer goes to the chat instead.');
+  if(!msg){log('Error: AI response has nothing to reply to. In the \"reply to\" box use message (inside a \"when player says _ in chat\" script) or a variable.');return}
+  if(dest==='variable only'&&!vn){log('Error: AI response is set to Nowhere, so pick a variable to store the answer in.');return}
+  if(!(ME&&ME.prem)){aiWarn('\uD83D\uDD12 AI replies need BrixBlox Premium.');return}
+  if(!sb){aiWarn('AI replies need you to be signed in to BrixBlox.');return}
+  const bk=rr?rr.id:'chat:'+rn.toLowerCase();if(AIBUSY[bk]){log(rn+' is still thinking about the last message.');return}
+  AIBUSY[bk]=1;const t0=performance.now(),hk=bk+'|'+String(S.v.speaker||P.player.name).toLowerCase(),h=(AIH[hk]=AIH[hk]||[]);
+  if(toRig)rigSay(rr.id,'...',45000);
+  let reply='',err='';
+  try{
+    const r=await sb.functions.invoke('npc-ai',{body:{name:rn,personality:pers,message:msg,history:h.slice(-8)}});
+    if(r.error){let j=null;try{j=await r.error.context.json()}catch(e){}const c=j&&j.error;
+      err=c==='premium'?'AI replies need BrixBlox Premium.':c==='busy'?rn+' is busy right now. Try again in a moment.':c==='slow'?'You are asking too fast. Wait a moment.':c==='signin'?'AI replies need you to be signed in to BrixBlox.':'the AI could not answer ('+String((j&&j.message)||r.error.message||'server error').slice(0,120)+')'}
+    else reply=String((r.data&&r.data.reply)||'').trim()
+  }catch(e){err='the AI could not answer ('+String((e&&e.message)||e).slice(0,120)+')'}
+  AIBUSY[bk]=0;
+  if(S.stop){if(toRig)rigSay(rr.id,'');return}
+  reply=reply.replace(/[*_`#>]+/g,'').replace(/\s+/g,' ').trim().slice(0,240);
+  if(!reply&&!err)err='the AI sent an empty answer';
+  if(err){if(toRig)rigSay(rr.id,'');aiWarn(err);if(vn)S.v[vn]='';return}
+  reply=filt(reply);/* the same chat filter as players get */
+  const rest=wait*1000-(performance.now()-t0);if(rest>0)await sl(rest);
+  if(S.stop){if(toRig)rigSay(rr.id,'');return}
+  h.push({r:'user',t:msg},{r:'model',t:reply});if(h.length>12)h.splice(0,h.length-12);
+  if(vn)S.v[vn]=reply;
+  if(toRig)rigSay(rr.id,reply);
+  if(toChat)aiChatLine(rn,reply)}
+/* A rig built like a person (has a Head and a Torso) that is NOT movable acts like a real player: it can not be pushed, and it is one round body (like two players side by side) instead of a box around every arm and leg. */
+const HUMC=new Map();
+function humRig(r){if(!(playing||running)){if(HUMC.size)HUMC.clear();return false}
+  let v=HUMC.get(r.id);if(v===undefined){const tr=treeOf(r),to=tr.find(function(q){return q.name==='Torso'}),hd=tr.some(function(q){return q.name==='Head'});v=false;
+    if(to&&hd){let lo=1e9,hi=-1e9;tr.forEach(function(q){lo=Math.min(lo,q.pos[1]-Math.abs(q.size[1])/2);hi=Math.max(hi,q.pos[1]+Math.abs(q.size[1])/2)});v={lo:lo,hi:hi,cx:to.pos[0],cz:to.pos[2]}}
+    HUMC.set(r.id,v)}return v}
+function rigBodyCollide(){const T=byId(P.avId);if(!T)return;const fy=feet0()+S.h;
+  P.parts.forEach(function(r){if(r.parent||r.av||r.stab||r.movable||!kids(r).length||(r.svc||'world')!=='world'||!solid(r)||gone(r))return;
+    const h=humRig(r);if(!h||RAG['rig:'+r.id])return;
+    const s=RSZ['rig:'+r.id]||1,o=RO[r.id]||[0,0],y0=RY[r.id]||0,bot=h.lo+y0,top=h.lo+(h.hi-h.lo)*s+y0;
+    if(fy>=top-STEP||fy+5<=bot)return;/* standing on top of it, or well above or below it */
+    const px=T.pos[0]+S.x,pz=T.pos[2]-S.y;let dx=px-(h.cx+o[0]),dz=pz-(h.cz+o[1]);const d=Math.hypot(dx,dz),m=1.1+1.1*s;
+    if(d>=m)return;if(d<1e-4){dx=1;dz=0}else{dx/=d;dz/=d}const pen=m-d;S.x+=dx*pen;S.y-=dz*pen})}
+function sendChat(txt){txt=String(txt).trim().slice(0,120);if(!txt||!(running||playing))return;let rawTxt=txt;{const raw=txt;txt=filt(raw);if(txt===raw&&crossBad(raw))txt=censor();logChat(raw,txt);CHATRAW=raw;rawTxt=raw}chatLine(P.player.name,txt);AILAST=txt;netChat(txt,rawTxt);sayBubble(txt);const low=txt.toLowerCase();
   P.scripts.forEach(function(sc){const h=sc[0];if(h.t!=='chat')return;const w=String(h.a[0]).trim().toLowerCase();
     if(w==='*'||(w&&(low===w||low.slice(0,w.length+1)===w+' '))){S.v.speaker=P.player.name;S.v.message=txt;fireScript(sc)}})}
 $('chat-in').onkeydown=function(e){e.stopPropagation();if(e.key==='Enter'){const v=this.value;this.value='';this.blur();sendChat(v)}else if(e.key==='Escape'){this.value='';this.blur()}};
@@ -5598,7 +5682,7 @@ function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const
   if(playing&&!FC)play(dt,f);
   else{const sp=(keys.ShiftLeft?36:12)*CAMSP*dt,r=[Math.cos(cam.yaw),0,Math.sin(cam.yaw)],go=function(v,k){cam.x+=v[0]*k;cam.y+=v[1]*k;cam.z+=v[2]*k};
     if(keys.KeyW)go(f,sp);if(keys.KeyS)go(f,-sp);if(keys.KeyD)go(r,sp);if(keys.KeyA)go(r,-sp);if(keys.KeyQ)cam.y-=sp;if(keys.KeyE)cam.y+=sp;if(Math.abs(zq)>.001){const zs=zq*(1-Math.exp(-dt*12));zq-=zs;go(f,zs)}else zq=0}
-  if(playing||running){twTick(dt);collide();pcollide();physics(dt);objMove(dt);rigAI(dt);npPhys(dt);touchTick()}try{vzWalk()}catch(e){console.warn('visualize walk',e)}npTick(dt);
+  if(playing||running){twTick(dt);collide();rigBodyCollide();pcollide();physics(dt);objMove(dt);rigAI(dt);npPhys(dt);touchTick()}try{vzWalk()}catch(e){console.warn('visualize walk',e)}npTick(dt);try{rigBubTick()}catch(e){console.warn('rig bubble',e)}
   try{gearSync();gearTick()}catch(e){}
   draw();entTick(dt);
   if(playing&&!FC){const T=byId(P.avId);if(T){S.ch=S.ch===undefined?S.h:S.ch+(S.h-S.ch)*(1-Math.exp(-dt*9));
@@ -5846,7 +5930,7 @@ function dropOn(d,t){if(!dropOK(d,t))return;const ps=dragParts(d);let msg0='';
    (only the position of the block is sent, never code, so nothing can be injected). "client side" blocks only ever run on the computer that reached them,
    and are skipped on the other players when they replay a server side block. */
 const LOCALH={gphas:1,standstill:1,landed:1,touched:1,clicked:1,prompt:1,key:1,keydrop:1,keyheld:1,keyrel:1,chat:1,guiclick:1,guithisclick:1,itemhold:1,itemunhold:1,screenclick:1};
-const RSKIP={visualize:1,unvisualize:1,move:1,turn:1,goto:1,jump:1,animate:1,say:1,color:1,walkanim:1,jumpanim:1,idleanim:1,fallanim:1,holdanim:1,holdwalkanim:1,fov:1,camset:1,camreset:1,shiftlockon:1,shiftlockoff:1,pspeed:1,lighting:1,playercol:1,ragdollex:1,playercolon:1,playercoloff:1,tweenset:1,
+const RSKIP={airesponse:1,visualize:1,unvisualize:1,move:1,turn:1,goto:1,jump:1,animate:1,say:1,color:1,walkanim:1,jumpanim:1,idleanim:1,fallanim:1,holdanim:1,holdwalkanim:1,fov:1,camset:1,camreset:1,shiftlockon:1,shiftlockoff:1,pspeed:1,lighting:1,playercol:1,ragdollex:1,playercolon:1,playercoloff:1,tweenset:1,
   givebadge:1,awardbadge:1,giveattr:1,removeattr:1,giveitem:1,removeitem:1,accadd:1,accrem:1,accwear:1,accstrip:1,kick:1,ban:1,addplayer:1,randplayer:1,getcount:1,print:1,setvol:1};
 const RSELF={tweensize:1,tweentrans:1,tweencolor:1,transparency:1,kill:1,pushparent:1};
 const SSVARS=['prompter','toucher','clicker','speaker','message','joiner','leaver'];
