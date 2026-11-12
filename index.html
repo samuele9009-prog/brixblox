@@ -495,6 +495,12 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 #dm input{flex:1 1 auto;width:auto;min-width:0;min-height:40px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:transparent;color:inherit;font:inherit}
 #dm form .btn{width:auto;flex:none;margin:0;padding:0 16px;min-height:40px}
 #dm .dh .btn{width:auto;margin:0}
+
+.svr{display:flex;align-items:center;gap:10px;padding:10px;background:#232527;border-radius:8px;margin-top:8px}[data-theme=light] .svr{background:#f2f4f6}
+.svr .nm{flex:1;min-width:0}.svr .nm small{display:block;opacity:.65;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.svr .btn,.svb .btn,.svp .btn{width:auto;margin:0}.svb{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.svp{margin-top:14px;padding:12px;border-radius:8px;background:#232527}[data-theme=light] .svp{background:#f2f4f6}.svp h4{margin:0 0 8px}
+.svp .addrow input{text-transform:uppercase;letter-spacing:.15em}.svp .own{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
 </style>
 </head>
 <body>
@@ -702,6 +708,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       <div class="gm-info"><h2 id="gm-name"></h2><p class="gm-by">By <button id="gm-by" class="gm-link" type="button"></button></p><div id="gm-tag"></div><button id="gm-join" class="btn" type="button">Join</button><button id="gm-fav" class="btn ghost" type="button">☆ Favorite</button></div>
     </section>
     <section><h3>About this game</h3><dl id="gm-stats" class="gm-stats"></dl></section>
+    <section><h3>Servers</h3><div id="gm-srv"></div></section>
     <section><h3>Badges</h3><div id="gm-bds"></div></section>
     <section><h3>Gamepasses</h3><div id="gm-gp"></div></section>
   </div>
@@ -1173,7 +1180,7 @@ function lobby(){
   paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');if(store.get('brixblox-gopremium')){store.del('brixblox-gopremium');nav('premium');paintPrem()}loadFriends();loadGames();loadEvents();$('n-admin').hidden=!isBB();$('n-bill').hidden=!isBB();loadAdmins();checkNotices();loadBank();loadItems();api.pubAvatar(me.id,me.av).catch(function(e){console.warn('Avatar share failed',e);if(!window.__avWarn){window.__avWarn=1;toast('Friends cannot see your avatar yet: '+((e&&e.message)||e))}})}
 const PAGES=['home','discover','friends','avatar','catalog','bank','premium','settings'];
 var pfSelf=false,pfName='';
-function nav(p){PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p||(p==='profile'&&x==='friends'&&!pfSelf)||(p==='item'&&x===IV.back))});$('n-profile').classList.toggle('on',(p==='profile'&&pfSelf)||(p==='item'&&IV.back==='profile'&&pfSelf));$('p-profile').hidden=p!=='profile';$('p-game').hidden=p!=='game';$('p-item').hidden=p!=='item'}
+function nav(p){if(p!=='game'){try{svClose()}catch(e){}}PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p||(p==='profile'&&x==='friends'&&!pfSelf)||(p==='item'&&x===IV.back))});$('n-profile').classList.toggle('on',(p==='profile'&&pfSelf)||(p==='item'&&IV.back==='profile'&&pfSelf));$('p-profile').hidden=p!=='profile';$('p-game').hidden=p!=='game';$('p-item').hidden=p!=='item'}
 const IC={profile:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',catalog:'<path d="M5 8h14l-1 12H6zM9 8a3 3 0 016 0"/>',premium:'<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',discover:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',bank:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 9l9-6 9 6M8 13v3M12 13v3M16 13v3"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
 document.querySelectorAll('.snav button').forEach(function(b){b.insertAdjacentHTML('afterbegin','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+IC[b.dataset.i]+'</svg>')});
 function theme(t){document.documentElement.dataset.theme=t;store.set('brixblox-theme',t);$('th-light').setAttribute('aria-pressed',String(t==='light'));$('th-dark').setAttribute('aria-pressed',String(t==='dark'))}
@@ -1228,6 +1235,36 @@ $('f-add').addEventListener('submit',async function(e){e.preventDefault();const 
   try{const r=await api.addFriend(me.id,n);m.className='hint '+(r.ok?'ok':'bad');m.textContent=r.ok?r.msg:r.reason;if(r.ok)$('f-name').value='';loadFriends()}catch(er){m.className='hint bad';m.textContent=errText(er)}});
 $('b-out').onclick=async function(){try{presStop();dmClose()}catch(e){}try{await api.logOut()}catch(e){}store.del('brixblox-me');me=null;recs={};show('auth');tab(false)};
 
+/* ===== Servers (chosen here, the game then opens at once in that server) and private servers ===== */
+const SV={ch:null,code:null},PSPRICE=100;
+function svClose(){if(SV.ch&&api.sbc){try{api.sbc.removeChannel(SV.ch)}catch(e){}}SV.ch=null}
+function psNewCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',b=new Uint8Array(6);crypto.getRandomValues(b);let c='';for(let i=0;i<6;i++)c+=A[b[i]%A.length];return c}
+async function psBuy(){const md=(await api.gpMeta())||{};if(md.psrv&&md.psrv.code)return {ok:true,code:md.psrv.code};
+  if(!isBB()&&balance()<PSPRICE)return {ok:false,why:'Not enough blockbucks. You need '+(PSPRICE-balance())+' more.'};
+  const av=Object.assign({},md.avatar||me.av||{});if(!isBB())av.spent=(+av.spent||0)+PSPRICE;
+  const code=psNewCode(),r=await api.sbc.auth.updateUser({data:{avatar:av,psrv:{code:code,at:Date.now()}}});if(r.error)throw r.error;
+  me.av.spent=+av.spent||0;syncMe();return {ok:true,code:code}}
+function gmServers(g,P){svClose();const box=$('gm-srv');box.replaceChildren();
+  if(api.demo||!api.sbc){box.append(mkx('p','empty','Servers need an online BrixBlox account.'));return}
+  const mx=Math.max(1,Math.min(30,Math.round(+(P&&P.maxp))||10)),safe=String(g.id).replace(/[^A-Za-z0-9_-]/g,'').slice(0,40);
+  const hint=mkx('p','hint','Each server holds up to '+mx+' player'+(mx===1?'':'s')+'. The Join button at the top puts you in the first server with room.'),list=mkx('div',''),bar=mkx('div','svb'),pv=mkx('div','svp');
+  box.append(hint,list,bar,pv);
+  const counts=function(){const cn={},nm={};try{const ps=SV.ch.presenceState();Object.keys(ps).forEach(function(k){(ps[k]||[]).forEach(function(m){if(m&&m.sid){cn[m.sid]=(cn[m.sid]||0)+1;(nm[m.sid]=nm[m.sid]||[]).push(String(m.n||'').slice(0,16))}})})}catch(e){}return {cn:cn,nm:nm}};
+  const draw=function(){const c=counts(),ids=Object.keys(c.cn).filter(function(k){return /^s\d+$/.test(k)}).sort(function(a,b){return +a.slice(1)-+b.slice(1)});list.replaceChildren();
+    if(!ids.length)list.append(mkx('p','empty','No servers are running yet. Create one!'));
+    ids.forEach(function(id){const n=c.cn[id],full=n>=mx,row=mkx('div','svr'),nm=mkx('div','nm',''),names=c.nm[id]||[];nm.append(document.createTextNode('Server '+id.slice(1)+'  -  '+n+'/'+mx+(full?' (full)':'')),mkx('small','',names.slice(0,4).join(', ')+(names.length>4?' +'+(names.length-4):'')));
+      const jb=mkx('button','btn small',full?'Full':'Join');jb.type='button';jb.disabled=full;jb.onclick=function(){playGame(g,id)};row.append(nm,jb);list.append(row)})};
+  const ch=SV.ch=api.sbc.channel('bbl:'+safe);ch.on('presence',{event:'sync'},draw);ch.subscribe();draw();
+  const nb=mkx('button','btn small','Create new server');nb.type='button';nb.onclick=function(){const cn=counts().cn;let k=1;while(cn['s'+k]&&k<200)k++;playGame(g,'s'+k)};
+  const sb=mkx('button','btn ghost small','Play solo');sb.type='button';sb.onclick=function(){playGame(g,'solo')};bar.append(nb,sb);
+  const drawPv=function(msg){pv.replaceChildren(mkx('h4','','Private server'));
+    const jr=mkx('div','addrow'),ci=document.createElement('input');ci.type='text';ci.maxLength=6;ci.placeholder='Enter a code';ci.autocapitalize='characters';ci.spellcheck=false;
+    const cj=mkx('button','btn small','Join');cj.type='button';cj.onclick=function(){const c=ci.value.trim().toUpperCase();if(!/^[A-HJ-NP-Z2-9]{6}$/.test(c)){drawPv('A private server code is 6 letters and numbers.');return}playGame(g,'priv:'+c)};jr.append(ci,cj);pv.append(jr);
+    const own=mkx('div','own');
+    if(SV.code){const b=mkx('b','',SV.code);b.style.letterSpacing='.15em';const hb=mkx('button','btn small','Host my private server');hb.type='button';hb.onclick=function(){playGame(g,'priv:'+SV.code)};own.append(mkx('span','','Your code:'),b,hb)}
+    else{const by=mkx('button','btn small','Buy a private server ('+PSPRICE+' blockbucks)');by.type='button';by.onclick=async function(){if(!isBB()&&!confirm('Buy a private server code for '+PSPRICE+' blockbucks?'))return;by.disabled=true;let m;try{const r=await psBuy();if(r.ok){SV.code=r.code;m='Done! Share your code with friends so they can join.'}else m=r.why}catch(e){m=errText(e)}drawPv(m)};own.append(by)}
+    pv.append(own);if(msg)pv.append(mkx('p','hint',msg))};
+  drawPv();Promise.resolve(api.gpMeta()).then(function(md){const c=md&&md.psrv&&md.psrv.code;if(c&&SV.code!==c&&SV.ch===ch){SV.code=c;drawPv()}}).catch(function(){})}
 /* ===== Online dots, live player counts and friend chat ===== */
 const PRES={ch:null,name:'',on:{}},GC={ch:{},n:{},want:{},order:[]},DM={with:null,unread:{},names:{},msgs:[],tok:0,poll:0};
 let FRINC=0;
@@ -1353,16 +1390,16 @@ function bbLoad(name,thumb){const o=document.createElement('div');o.id='bb-load'
   o.append(card,nm,bar,sub);document.body.append(o);try{o.animate([{opacity:1,visibility:'visible'},{opacity:0,visibility:'hidden'}],{delay:5000,duration:300,fill:'forwards'})}catch(e){}setTimeout(function(){try{o.remove()}catch(e){}if(BBL===o)BBL=null},5500);BBL=o;BBLT=Date.now();clearTimeout(BBLK);BBLK=setTimeout(function(){bbLoadHide(true)},5000)}
 function bbLoadHide(now){const o=BBL;if(!o)return;BBL=null;clearTimeout(BBLK);if(now){o.remove();return}
   const wait=Math.max(0,5000-(Date.now()-BBLT));setTimeout(function(){o.style.opacity='0';setTimeout(function(){o.remove()},200)},wait)}
-async function playGame(g){if(/^(acc_|avatar_|sys_)/.test(String(g&&g.id))){toast('That cannot be opened.');return}
+async function playGame(g,srv){if(/^(acc_|avatar_|sys_)/.test(String(g&&g.id))){toast('That cannot be opened.');return}
   if(joining||$('pl-frame'))return;
   if(lockHeld()){lockPaint();toast(LOCK_MSG);return}
   goFull();joining=true;lockStart(g.id);bbLoad(g.name,g.thumb);/* claim the account right away so a second tab can't start a game while this one loads */
-  try{await playGame2(g)}catch(e){joining=false;bbLoadHide(true);if(!$('pl-frame'))lockEnd();throw e}
+  try{await playGame2(g,srv)}catch(e){joining=false;bbLoadHide(true);if(!$('pl-frame'))lockEnd();throw e}
   joining=false;if(!$('pl-frame')){bbLoadHide(true);lockEnd()}}
-async function playGame2(g){const d=await gameData(g);if(!d){bbLoadHide(true);toast('Could not load that game.');return}
+async function playGame2(g,srv){const d=await gameData(g);if(!d){bbLoadHide(true);toast('Could not load that game.');return}
   await Promise.race([Promise.resolve(api.recordPlay(me.id,g.id,g.ownerId)).catch(function(){}),new Promise(function(r){setTimeout(r,1500)})]);
   try{const k='brixblox-bump:'+g.id,n=Date.now();if(n-(+store.get(k)||0)>3e5){store.set(k,String(n));Promise.resolve(api.bumpPlay(g.id)).catch(function(){})}}catch(e){}/* counts toward Frequently played, once per 5 minutes per game on this device */
-  store.set('brixblox-play',JSON.stringify({id:g.id,data:d,owner:g.ownerName,ownerId:g.ownerId,name:g.name}));try{sessionStorage.setItem('bb-thumb',g.thumb||'')}catch(e){}openPlayer()}
+  store.set('brixblox-play',JSON.stringify({id:g.id,data:d,owner:g.ownerName,ownerId:g.ownerId,name:g.name,srv:(typeof srv==='string'&&srv)||'auto'}));try{sessionStorage.setItem('bb-thumb',g.thumb||'')}catch(e){}openPlayer()}
 /* Games run right here on BrixBlox in a full-screen player (no Studio buttons). The Studio only saves the game. */
 function openPlayer(){if($('pl-frame'))return;const f=document.createElement('iframe');f.id='pl-frame';f.src=STUDIO_URL+'?player=1';f.setAttribute('allow','fullscreen; autoplay');f.onload=function(){bbLoadHide()};f.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:60;background:#111';document.body.append(f)}
 function closePlayer(){bbLoadHide(true);const f=$('pl-frame');if(f)f.remove();lockEnd();try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}kbLockTop();const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}if(me){loadBank();loadGames()}}
@@ -1578,7 +1615,7 @@ async function openGamePage(g){
   gmStat(dl,'Created',gmDate(meta.created_at||(P&&P.created)));
   gmStat(dl,'Last updated',gmDate(meta.updated_at||g.at));
   const cb=mkx('button','gm-link',mine?'you':(g.ownerName||'?'));cb.type='button';cb.onclick=by.onclick;gmStat(dl,'Creator',cb);
-  const pl=+(meta.plays!=null?meta.plays:g.plays)||0;gmStat(dl,'Plays',String(pl));{const pc=gcEl(g.id);if(pc){gmStat(dl,'Playing now',pc);gcWatch('gm',[g.id])}}
+  const pl=+(meta.plays!=null?meta.plays:g.plays)||0;gmStat(dl,'Plays',String(pl));try{gmServers(g,P)}catch(e){console.warn('servers',e)}{const pc=gcEl(g.id);if(pc){gmStat(dl,'Playing now',pc);gcWatch('gm',[g.id])}}
   if(!P){$('gm-bds').replaceChildren(mkx('p','empty','Could not load this game.'));$('gm-gp').replaceChildren(mkx('p','empty','Could not load this game.'));return}
   const bds=Array.isArray(P.badges)?P.badges:[],box=$('gm-bds');
   box.className='';if(!bds.length)box.replaceChildren(mkx('p','empty','This game has no badges yet.'));
