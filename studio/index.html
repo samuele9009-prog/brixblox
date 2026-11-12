@@ -353,7 +353,7 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
 .dghost.del{opacity:.45}
 .dropi{position:absolute;height:6px;border-radius:3px;background:#fff;box-shadow:0 0 0 2px #00b06f,0 0 14px #00b06f;pointer-events:none;z-index:50}
 body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!important}
-.c-tw{--bc:#e8833a}.c-ph{--bc:#139fb5}.c-pl{--bc:#3fa34d}.c-ad{--bc:#c62f4a}.c-au{--bc:#a3a31c}.c-en{--bc:#7b5a48}.c-gu{--bc:#5c6bc0}
+.c-tw{--bc:#e8833a}.c-ph{--bc:#139fb5}.c-pl{--bc:#3fa34d}.c-ad{--bc:#c62f4a}.c-au{--bc:#a3a31c}.c-en{--bc:#7b5a48}.c-pr{--bc:#ffc800}.c-pr>.bk2{color:#2b2000;text-shadow:none}.pal h4.c-pr{color:#b88a00}.c-gu{--bc:#5c6bc0}
 .arow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px;margin-top:8px;border:1px solid var(--line);border-radius:10px;background:rgba(127,127,127,.07)}
 .arow .atop{display:flex;align-items:center;gap:10px;width:100%;min-width:0}
 .arow .ainf{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
@@ -690,7 +690,7 @@ const store=(function(){
 const $=function(id){return document.getElementById(id)};
 /* Runtime rotation (set by the tween blocks, never saved) and the list of running tweens */
 const RR={};let TW=[];function prot(p){return RR[p.id]||p.rot}
-const CAT={tw:'Tween',gu:'GUI',op:'Operators',rv:'Variables',ev:'Events',mo:'Motion',ph:'Physics',pl:'Player',ad:'Admin',dt:'Data',au:'Audio',en:'Entities',lk:'Looks',ct:'Control',vr:'Variables',fn:'Functions'};
+const CAT={tw:'Tween',gu:'GUI',op:'Operators',rv:'Variables',ev:'Events',mo:'Motion',ph:'Physics',pl:'Player',ad:'Admin',dt:'Data',au:'Audio',en:'Entities',lk:'Looks',ct:'Control',vr:'Variables',fn:'Functions',pr:'Premium'};
 // l: label, _ marks an input. hat: starts a script. k: holds blocks inside. raw: first input is a plain word, not an expression.
 const BD={
  start:{c:'ev',hat:1,l:'when start',a:[]},
@@ -807,7 +807,6 @@ const BD={
  ragdollex:{c:'en',l:'set ragdoll exaggeration to _',a:['1'],tip:'Sets how exaggerated ragdolls look, from 1 to 100. 1 is the normal cartoony ragdoll (the default): arms fling out and the body gets a little random kick. The higher the number, the more it calms down and acts like real physics: no random kick, no arm flinging, and limbs swing and tumble freely. 100 is fully realistic ragdolling. It applies to every ragdoll that starts after this block runs and goes back to 1 when the game restarts.'},
  unragdoll:{c:'en',l:'unragdoll _',a:['target'],tip:'Makes a ragdolled rig or player get back up right away. Type a name, a variable, or player (the first player in the server; player2 is the second, and so on). Does nothing if they are not ragdolled (and cannot save someone who was killed).'},
  pushparent:{c:'en',l:'push parent rig _ studs in _ seconds toward _',a:['5','0.5','front'],dd:{2:'dir'},tip:'Pushes the rig this script belongs to forward by exactly this many studs, taking this many seconds. To push your own character, put the script inside the character. A script that belongs to nothing does nothing. It eases in and out. A negative number pushes backward. Works even while ragdolled and even if Movable is off. If it is already being pushed, a new push waits until the first one is done, so a forever loop gives one push after another.'},
- airesponse:{c:'en',l:'AI response personality _ response time _ secs rig _ reply to _ show in _ into variable _',a:['a friendly shopkeeper','1','this','message','chat','aireply'],dd:{2:'rign',4:'aiout',5:'var'},tip:'PREMIUM. Asks an AI (Google Gemini) to answer like a character. Personality: describe who it is (for example \"a grumpy pirate who loves gold\"). Response time: the AI waits at least this many seconds before it answers, like someone typing (0 to 30). Rig: the rig that is talking. Its name is used for the chat message and the bubble over its head (pick \"this rig\" inside a rig script). Reply to: what the player said. Leave it as message inside a \"when player says _ in chat\" script, or type a variable. Show in: the chat, a bubble above the rig, both, or nothing (variable only). The answer is also stored in the variable you pick. Players without Premium do not get an answer. It remembers the last few things said to each rig, keeps answers short and kid-friendly, and only you see the answer.'},
  rigsize:{c:'en',l:'set rig size _ to _',a:['target','2'],tip:'Scales a rig or player. 1 is normal, 2 is double. Type a name, a variable, or player (the first player in the server; player2 is the second, and so on).'},
  tpgame:{c:'en',l:'teleport to game _',a:[''],dd:{0:'mygame'},tip:'Takes the player to another game and shows a loading screen with that game\'s picture and name. You can only pick games you made yourself, and players can only be sent to games made by the creator of this game.'},
  teleport:{c:'en',l:'teleport _ to x _ y _ z _',a:['target','0','5','0'],tip:'Moves a rig or player to this spot in the world. y is the height of the feet (the floor is usually 0). Type a name, a variable, or player (the first player in the server; player2 is the second, and so on).'},
@@ -859,7 +858,8 @@ const BD={
  opplayers:{c:'op',rep:1,l:'number of players',a:[],sk:'',f:function(x){return 'playercount()'}},
  var:{c:'rv',rep:1,l:'_',a:[''],sk:'',f:function(x){return x[0]}},
  def:{c:'fn',hat:1,l:'define _',a:['spin'],raw:1},
- call:{c:'fn',l:'call _',a:['spin'],raw:1}
+ call:{c:'fn',l:'call _',a:['spin'],raw:1},
+ airesponse:{c:'pr',l:'AI response personality _ response time _ secs rig _ reply to _ show in _ into variable _',a:['a friendly shopkeeper','1','this','message','chat','aireply'],dd:{2:'rign',4:'aiout',5:'var'},tip:'PREMIUM. Asks an AI (Google Gemini) to answer like a character. Personality: describe who it is (for example \"a grumpy pirate who loves gold\"). Response time: the AI waits at least this many seconds before it answers, like someone typing (0 to 30). Rig: the rig that is talking. Its name is used for the chat message and the bubble over its head (pick \"this rig\" inside a rig script). Reply to: what the player said. Leave it as message inside a \"when player says _ in chat\" script, or type a variable. Show in: the chat, a bubble above the rig, both, or nothing (variable only). The answer is also stored in the variable you pick. Players without Premium do not get an answer. It remembers the last few things said to each rig, keeps answers short and kid-friendly, and only you see the answer.'}
 };
 const EVH=['gphas','standstill','landed','key','keydrop','keyheld','keyrel','recv','touched','clicked','prompt','chat','guiclick','guithisclick','pjoin','pleave','itemhold','itemunhold','screenclick'];
 function mk(t,a,k){return {t:t,a:a||BD[t].a.slice(),k:BD[t].k?(k||[]):null}}
@@ -1094,7 +1094,7 @@ function ddSel(b,i,kind,ro){
     if(kind==='var'){const nw=el('option','','\uFF0B New variable\u2026');nw.value='\u0001new';s.append(nw)}
     s.value=cur};
   fill();
-  s.onpointerdown=function(e){e.stopPropagation();if(kind==='partn'||kind==='mygame'||kind==='var'||kind==='gui'||kind==='guit'||kind==='img'||kind==='item'||kind==='spawn'||kind==='skybox'||kind==='gp')fill()};
+  s.onpointerdown=function(e){e.stopPropagation();if(kind==='partn'||kind==='mygame'||kind==='var'||kind==='gui'||kind==='guit'||kind==='img'||kind==='item'||kind==='spawn'||kind==='skybox'||kind==='gp'||kind==='rign'||kind==='behav')fill()};
   s.onchange=function(){
     if(s.value==='\u0001new'){newVarDlg(function(v){if(v){b.a[i]=v;save();rend();renderParts()}else fill()});return}
     b.a[i]=s.value;reser();save();view()};
