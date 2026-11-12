@@ -859,7 +859,7 @@ const BD={
  var:{c:'rv',rep:1,l:'_',a:[''],sk:'',f:function(x){return x[0]}},
  def:{c:'fn',hat:1,l:'define _',a:['spin'],raw:1},
  call:{c:'fn',l:'call _',a:['spin'],raw:1},
- airesponse:{c:'pr',l:'AI response personality _ response time _ secs rig _ reply to _ show in _ into variable _',a:['a friendly shopkeeper','1','this','message','chat','aireply'],dd:{2:'rign',4:'aiout',5:'var'},tip:'PREMIUM. Asks an AI (Google Gemini) to answer like a character. Personality: describe who it is (for example \"a grumpy pirate who loves gold\"). Response time: the AI waits at least this many seconds before it answers, like someone typing (0 to 30). Rig: the rig that is talking. Its name is used for the chat message and the bubble over its head (pick \"this rig\" inside a rig script). Reply to: what the player said. Leave it as message inside a \"when player says _ in chat\" script, or type a variable. Show in: the chat, a bubble above the rig, both, or nothing (variable only). The answer is also stored in the variable you pick. Players without Premium do not get an answer. It remembers the last few things said to each rig, keeps answers short and kid-friendly, and only you see the answer.'}
+ airesponse:{c:'pr',l:'AI response personality _ response time _ secs rig _ reply to _ show in _ into variable _',a:['a friendly shopkeeper','1','this','message','chat','aireply'],dd:{4:'aiout',5:'var'},tip:'PREMIUM. Asks an AI (Google Gemini) to answer like a character. Personality: describe who it is (for example \"a grumpy pirate who loves gold\"). Response time: the AI waits at least this many seconds before it answers, like someone typing (0 to 30). Rig: type the name of the rig that is talking (the name of its model), or leave it as this inside a rig script. Its name is used for the chat message and the bubble over its head (pick \"this rig\" inside a rig script). Reply to: what the player said. Leave it as message inside a \"when player says _ in chat\" script, or type a variable. Show in: the chat, a bubble above the rig, both, or nothing (variable only). The answer is also stored in the variable you pick. Players without Premium do not get an answer. It remembers the last few things said to each rig, keeps answers short and kid-friendly, and only you see the answer.'}
 };
 const EVH=['gphas','standstill','landed','key','keydrop','keyheld','keyrel','recv','touched','clicked','prompt','chat','guiclick','guithisclick','pjoin','pleave','itemhold','itemunhold','screenclick'];
 function mk(t,a,k){return {t:t,a:a||BD[t].a.slice(),k:BD[t].k?(k||[]):null}}
@@ -4477,7 +4477,7 @@ async function aiRespond(b,S,o){
   const a=b.a;
   const pers=String(val(a[0],S)).replace(/[\u0000-\u001f]/g,' ').trim().slice(0,300)||'a friendly character';
   const wait=Math.max(0,Math.min(30,Number(val(a[1],S))||0));
-  const rn0=String(val(a[2]===undefined?'this':a[2],S)).trim()||'this';
+  const rn1=String(a[2]===undefined?'this':a[2]).trim(),rv1=val(rn1,S),rn0=(typeof rv1==='string'&&rv1.trim()?rv1.trim():rn1)||'this';/* the rig is typed in: use the name as typed, unless it is a variable that holds a name */
   let msg=val(a[3]===undefined?'message':a[3],S);msg=String(msg==null?'':msg).trim();
   if(!msg||msg==='message')msg=AILAST;/* nothing stored in the variable: answer the last thing said in chat */
   msg=msg.slice(0,200);
@@ -4489,7 +4489,8 @@ async function aiRespond(b,S,o){
   if(!rr&&dest!=='chat'&&dest!=='variable only')log('Error: there is no rig named \"'+rn0+'\"'+(rn0.toLowerCase()==='this'?' (put this block in a script that belongs to a rig, or pick the rig by name)':'')+'. A rig is named after its model (parts welded together). The answer goes to the chat instead.');
   if(!msg){log('Error: AI response has nothing to reply to. In the \"reply to\" box use message (inside a \"when player says _ in chat\" script) or a variable.');return}
   if(dest==='variable only'&&!vn){log('Error: AI response is set to Nowhere, so pick a variable to store the answer in.');return}
-  if(!(ME&&ME.prem)){aiWarn('\uD83D\uDD12 AI replies need BrixBlox Premium.');return}
+  /* No local Premium check here: the saved sign-in info (ME.prem) can be old or missing it, which wrongly blocked Premium owners. The server checks Premium for real and answers 'premium' if the account does not have it. */
+  if(!ME){aiWarn('AI replies need you to be signed in to BrixBlox.');return}
   if(!sb){aiWarn('AI replies need you to be signed in to BrixBlox.');return}
   const bk=rr?rr.id:'chat:'+rn.toLowerCase();if(AIBUSY[bk]){log(rn+' is still thinking about the last message.');return}
   AIBUSY[bk]=1;const t0=performance.now(),hk=bk+'|'+String(S.v.speaker||P.player.name).toLowerCase(),h=(AIH[hk]=AIH[hk]||[]);
