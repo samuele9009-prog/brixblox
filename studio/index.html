@@ -4473,8 +4473,10 @@ function rigBubTick(){const run=running||playing;
     const s=RSZ['rig:'+rid]||1,o=RO[rid]||[0,0],top=lo+(hi-lo)*s+(RY[rid]||0);
     e.sp.visible=true;e.sp.material.opacity=f;e.sp.scale.set(6.6*z,2.475*z,1);e.sp.position.set(r.pos[0]+o[0],top+2.25-(1-z),r.pos[2]+o[1])}}
 const AIWSEEN=new Set();/* each AI problem is shown once per play, not every time the script runs */
-function aiWarn(m){if(AIWSEEN.has(m))return;AIWSEEN.add(m);log('Error: '+m);if(performance.now()-AIWARN.t>15000){AIWARN.t=performance.now();chatSys(m)}}
+function aiWarn(m){if(AIWSEEN.has(m))return;AIWSEEN.add(m);log('Error: '+m);if(/Premium|signed in/.test(m))return;/* Premium and sign-in problems are only for the creator's Output panel, never shown in the game chat to players */
+  if(performance.now()-AIWARN.t>15000){AIWARN.t=performance.now();chatSys(m)}}
 async function aiRespond(b,S,o){
+  const log1=function(m){m=String(m);if(AIWSEEN.has(m))return;AIWSEEN.add(m);log(m)};/* every message only once per play */
   const a=b.a;
   const pers=String(val(a[0],S)).replace(/[\u0000-\u001f]/g,' ').trim().slice(0,300)||'a friendly character';
   const wait=Math.max(0,Math.min(30,Number(val(a[1],S))||0));
@@ -4487,13 +4489,13 @@ async function aiRespond(b,S,o){
   if(rn0.toLowerCase()==='this'){rr=roots(o).filter(function(r){return kids(r).length>0})[0]||null}else rr=skinFind(rn0);
   const m0=rr&&rr.model&&byModel(rr.model),rn=rr?String(m0?m0.name:rr.name):(rn0.toLowerCase()==='this'?'AI':rn0);
   const toChat=dest==='chat'||dest==='both'||((dest==='above rig'||dest==='both')&&!rr),toRig=!!rr&&(dest==='above rig'||dest==='both');
-  if(!rr&&dest!=='chat'&&dest!=='variable only')log('Error: there is no rig named \"'+rn0+'\"'+(rn0.toLowerCase()==='this'?' (put this block in a script that belongs to a rig, or pick the rig by name)':'')+'. A rig is named after its model (parts welded together). The answer goes to the chat instead.');
-  if(!msg){log('Error: AI response has nothing to reply to. In the \"reply to\" box use message (inside a \"when player says _ in chat\" script) or a variable.');return}
-  if(dest==='variable only'&&!vn){log('Error: AI response is set to Nowhere, so pick a variable to store the answer in.');return}
+  if(!rr&&dest!=='chat'&&dest!=='variable only')log1('Error: there is no rig named \"'+rn0+'\"'+(rn0.toLowerCase()==='this'?' (put this block in a script that belongs to a rig, or pick the rig by name)':'')+'. A rig is named after its model (parts welded together). The answer goes to the chat instead.');
+  if(!msg){log1('Error: AI response has nothing to reply to. In the \"reply to\" box use message (inside a \"when player says _ in chat\" script) or a variable.');return}
+  if(dest==='variable only'&&!vn){log1('Error: AI response is set to Nowhere, so pick a variable to store the answer in.');return}
   /* No local Premium check here: the saved sign-in info (ME.prem) can be old or missing it, which wrongly blocked Premium owners. The server checks Premium for real and answers 'premium' if the account does not have it. */
   if(!ME){aiWarn('AI replies need you to be signed in to BrixBlox.');return}
   if(!sb){aiWarn('AI replies need you to be signed in to BrixBlox.');return}
-  const bk=rr?rr.id:'chat:'+rn.toLowerCase();if(AIBUSY[bk]){log(rn+' is still thinking about the last message.');return}
+  const bk=rr?rr.id:'chat:'+rn.toLowerCase();if(AIBUSY[bk]){log1(rn+' is still thinking about the last message.');return}
   AIBUSY[bk]=1;const t0=performance.now(),hk=bk+'|'+String(S.v.speaker||P.player.name).toLowerCase(),h=(AIH[hk]=AIH[hk]||[]);
   if(toRig)rigSay(rr.id,'...',45000);
   let reply='',err='';
