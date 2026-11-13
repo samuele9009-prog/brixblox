@@ -4281,7 +4281,7 @@ function movRigTick(dt){if(!(playing||running)){for(const k in MRA)delete MRA[k]
   if(!(dt>0))return;const D=Math.PI/180;
   P.parts.forEach(function(r){
     if(r.parent||r.av||!r.movable||!kids(r).length||gone(r)||RB[r.id])return;
-    const id=r.id,o=RO[id]||[0,0],px=r.pos[0]+o[0],pz=r.pos[2]+o[1];
+    const id=r.id,o=RO[id]||(RO[id]=[0,0]),px=r.pos[0]+o[0],pz=r.pos[2]+o[1];
     let m=MRA[id];
     if(!m){const ids={};rigParts(r).forEach(function(q){ids[q.id]=1});
       /* find the animation: the exact name first, then any capital letters, then any name that contains the word (like "Walk cycle"); it must have keyframes for this rig's parts */
