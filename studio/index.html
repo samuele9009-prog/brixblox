@@ -713,6 +713,7 @@ const BD={
  pleave:{c:'ev',hat:1,l:'when a player leaves',a:[],tip:'Runs when a player leaves, is kicked or banned. The variable leaver holds their name. "number of players" is already updated.'},
  clicked:{c:'ev',hat:1,l:'when this block is clicked from _ studs away',a:['20'],tip:'Runs when you click the object this script belongs to while playing (press Play). The number is how far away you can click from. The variable clicker holds your name.'},
  chat:{c:'ev',hat:1,l:'when player says _ in chat',a:['hello'],raw:1,tip:'Runs when a player types this in the chat box (press / while playing, type, then press Enter to send). It matches the whole message, or the start of it when the message continues after a space (so \"!kick Bob\" matches !kick). Type * to match every message. The variables speaker and message are filled in.'},
+ chatany:{c:'ev',hat:1,l:'when player sends a message in chat',a:[],tip:'Runs whenever a player sends any message in the chat box (press / while playing, type, then press Enter). The variables speaker and message are filled in. Put an "AI response" block under it with reply to message and the AI answers whatever was said.'},
  prompt:{c:'ev',hat:1,l:'when player uses prompt _ on _ with key _ hold _ secs within _ studs',a:['Interact','','e','0','8'],dd:{2:'keys'},tip:'Shows a button over the object this script belongs to when a player walks within this many studs (like a Roblox proximity prompt). The first box is the action text, the second is small text above it (like the object name). Press the key, or tap the button, to run the script. Hold above 0 means the player must keep it pressed that many seconds while a ring fills. Only one prompt per key shows at a time (the nearest). It is hidden when something solid is in the way. The variable prompter holds the player name. Put the script on an object with the + next to it in the Explorer.'},
  promptenable:{c:'ev',l:'set prompts on this object to _',a:['true'],dd:{0:'bool'},tip:'true: the prompts on this object show when a player is close. false: they are hidden and cannot be used. Handy for one-time buttons. Needs a script that belongs to an object.'},
  move:{c:'mo',l:'move _ steps',a:['10']},
@@ -856,13 +857,14 @@ const BD={
  opmobile:{c:'op',rep:1,bool:1,l:'player _ is on mobile ?',a:['player'],sk:'t',tip:'True when the player is playing on a phone or tablet (a touch screen). Put it in an if block, like: if player is on mobile. Type the player name, a variable like toucher, or player (you). It only works for the person playing on this device, so other players always count as not on mobile.',f:function(x){return 'ismobile('+x[0]+')'}},
  opinair:{c:'op',rep:1,bool:1,l:'player _ is in the air ?',a:['player'],sk:'t',f:function(x){return 'inair('+x[0]+')'}},
  ophasattr:{c:'op',rep:1,bool:1,l:'player _ has attribute _ ?',a:['player','Hurt'],sk:'tt',f:function(x){return 'hasattr('+x[0]+', '+x[1]+')'}},
+ opany:{c:'op',rep:1,bool:1,l:'any',a:[],sk:'',tip:'Matches anything. Use it like: if message = (any). That is true for every message the player sends. It also works in a contains block.',f:function(x){return 'any()'}},
  opplayers:{c:'op',rep:1,l:'number of players',a:[],sk:'',f:function(x){return 'playercount()'}},
  var:{c:'rv',rep:1,l:'_',a:[''],sk:'',f:function(x){return x[0]}},
  def:{c:'fn',hat:1,l:'define _',a:['spin'],raw:1},
  call:{c:'fn',l:'call _',a:['spin'],raw:1},
  airesponse:{c:'pr',l:'AI response personality _ response time _ secs rig _ reply to _ show in _ into variable _',a:['a friendly shopkeeper','1','this','message','chat','aireply'],dd:{4:'aiout',5:'var'},tip:'PREMIUM. Asks an AI to answer like a character. Personality: describe who it is (for example \"a grumpy pirate who loves gold\"). Response time: the AI waits at least this many seconds before it answers, like someone typing (0 to 30). Rig: type the name of the rig that is talking (the name of its model), or leave it as this inside a rig script. Its name is used for the chat message and the bubble over its head (pick \"this rig\" inside a rig script). Reply to: what the player said. Leave it as message inside a \"when player says _ in chat\" script, or type a variable. Show in: the chat, a bubble above the rig, both, or nothing (variable only). The answer is also stored in the variable you pick. Players without Premium do not get an answer. It remembers the last few things said to each rig, keeps answers short and kid-friendly, and only you see the answer.'}
 };
-const EVH=['gphas','standstill','landed','key','keydrop','keyheld','keyrel','recv','touched','clicked','prompt','chat','guiclick','guithisclick','pjoin','pleave','itemhold','itemunhold','screenclick'];
+const EVH=['gphas','standstill','landed','key','keydrop','keyheld','keyrel','recv','touched','clicked','prompt','chat','chatany','guiclick','guithisclick','pjoin','pleave','itemhold','itemunhold','screenclick'];
 function mk(t,a,k){return {t:t,a:a||BD[t].a.slice(),k:BD[t].k?(k||[]):null}}
 function starter(){return [[mk('start'),mk('say',['Hello!']),mk('repeat',['4'],[mk('move',['6']),mk('turn',['90']),mk('wait',['0.3'])])]]}
 /* Games only exist on disk once they are published. An unpublished game is a draft that is lost when the page closes. */
@@ -1019,7 +1021,7 @@ function varList(){const v=new Set((P&&Array.isArray(P.vars))?P.vars:[]);
     if(b.k)w(b.k)})};
   P.scripts.forEach(function(sc){w(sc)});
   const has=function(t){return P.scripts.some(function(sc){return sc[0].t===t})};
-  if(has('landed'))v.add('fallheight');if(has('gphas'))v.add('passplayer');if(has('touched'))v.add('toucher');if(has('prompt'))v.add('prompter');if(has('pjoin'))v.add('joiner');if(has('pleave'))v.add('leaver');if(has('clicked')||has('guiclick')||has('guithisclick')||has('screenclick'))v.add('clicker');if(has('chat')){v.add('speaker');v.add('message')}
+  if(has('landed'))v.add('fallheight');if(has('gphas'))v.add('passplayer');if(has('touched'))v.add('toucher');if(has('prompt'))v.add('prompter');if(has('pjoin'))v.add('joiner');if(has('pleave'))v.add('leaver');if(has('clicked')||has('guiclick')||has('guithisclick')||has('screenclick'))v.add('clicker');if(has('chat')||has('chatany')){v.add('speaker');v.add('message')}
   return Array.from(v).sort()}
 const KEYOPT=(function(){const o=[];'abcdefghijklmnopqrstuvwxyz'.split('').forEach(function(c){o.push([c,c.toUpperCase()])});'0123456789'.split('').forEach(function(c){o.push([c,c])});
   [['space','Space'],['enter','Enter'],['shift','Shift'],['ctrl','Ctrl'],['alt','Alt'],['tab','Tab'],['escape','Escape'],['backspace','Backspace'],['up','Up arrow'],['down','Down arrow'],['left','Left arrow'],['right','Right arrow']].forEach(function(q){o.push(q)});
@@ -1390,10 +1392,11 @@ function ssTick(dt,mv){if(menuEl||S.fly||S.rag||!S.gr||mv||Math.hypot(S.pvx,S.pv
 function attrKeys(str){const q=String(str).trim().toLowerCase(),pl=plist(),m=pl.filter(function(x){return String(x.name).toLowerCase()===q});if(m.length)return m.map(function(x){return String(x.name).toLowerCase()});
   const pm=/^player(\d*)$/.exec(q);if(pm){const x=pl[pm[1]?+pm[1]-1:0];if(x)return [String(x.name).toLowerCase()]}return []}
 function attrNm(a){return String(a).trim().toLowerCase()}
-const FN={pdata:function(p,k){const ks=attrKeys(String(p));if(!ks.length)return 0;pdLoad();const d=PD[ks[0]],v=d&&d.f[String(k).trim().toLowerCase()];return v==null?0:v},
+const ANYV={toString:function(){return 'any'}};
+const FN={any:function(){return ANYV},pdata:function(p,k){const ks=attrKeys(String(p));if(!ks.length)return 0;pdLoad();const d=PD[ks[0]],v=d&&d.f[String(k).trim().toLowerCase()];return v==null?0:v},
   pdinv:function(it,p){const ks=attrKeys(String(p));if(!ks.length)return 0;pdLoad();const d=PD[ks[0]];return (d&&d.i[String(it).trim().toLowerCase()])||0},
   ismobile:function(p){const me=attrKeys('player')[0];return !!me&&attrKeys(p).indexOf(me)>=0&&document.documentElement.classList.contains('mob')},  inair:function(p){const pl=playersOf(String(p));return pl.length?airOf(pl[0].key):false},holdingkey:function(p,k){const me=attrKeys('player')[0];return !!me&&attrKeys(p).indexOf(me)>=0&&KH.has(String(k).trim().toLowerCase())},hasattr:function(p,a){const n=attrNm(a);return attrKeys(p).some(function(k){return ATTR[k]&&ATTR[k].has(n)})},playercount:function(){return 1+S.oth.length},keyheld:function(k){return KH.has(String(k).trim().toLowerCase())},join:function(a,b){return String(a)+String(b)},letter:function(n,s){return String(s).charAt(Math.floor(+n)-1)},length:function(s){return String(s).length},
-  contains:function(s,q){return String(s).toLowerCase().indexOf(String(q).toLowerCase())>=0},
+  contains:function(s,q){if(s===ANYV||q===ANYV)return true;return String(s).toLowerCase().indexOf(String(q).toLowerCase())>=0},
   random:function(a,b){a=+a||0;b=+b||0;const lo=Math.min(a,b),hi=Math.max(a,b);return(Number.isInteger(a)&&Number.isInteger(b))?lo+Math.floor(Math.random()*(hi-lo+1)):lo+Math.random()*(hi-lo)},
   round:function(x){return Math.round(+x||0)},mod:function(a,b){a=+a||0;b=+b||0;return b?((a%b)+b)%b:0},
   mathf:function(o,x){x=+x||0;const R=Math.PI/180,D=180/Math.PI;switch(o){case'abs':return Math.abs(x);case'floor':return Math.floor(x);case'ceiling':return Math.ceil(x);case'sqrt':return Math.sqrt(x);case'sin':return Math.sin(x*R);case'cos':return Math.cos(x*R);case'tan':return Math.tan(x*R);case'asin':return Math.asin(x)*D;case'acos':return Math.acos(x)*D;case'atan':return Math.atan(x)*D;case'ln':return Math.log(x);case'log':return Math.log10(x);case'e ^':return Math.exp(x);case'10 ^':return Math.pow(10,x)}return 0}};
@@ -1405,7 +1408,7 @@ function ev(src,S){
     if(TOKC.size>4000)TOKC.clear();TOKC.set(src,t)}
   if(t===null)throw 0;
   let p=0;const L=[['or'],['and'],['==','!=','<','>','<=','>='],['+','-'],['*','/','%']];
-  function bin(o,a,b){switch(o){case'or':return a||b;case'and':return a&&b;case'==':return a==b;case'!=':return a!=b;case'<':return a<b;case'>':return a>b;case'<=':return a<=b;case'>=':return a>=b;case'+':return(typeof a==='string'||typeof b==='string')?''+a+b:a+b;case'-':return a-b;case'*':return a*b;case'/':return a/b;default:return a%b}}
+  function bin(o,a,b){switch(o){case'or':return a||b;case'and':return a&&b;case'==':return(a===ANYV||b===ANYV)?true:a==b;case'!=':return(a===ANYV||b===ANYV)?false:a!=b;case'<':return a<b;case'>':return a>b;case'<=':return a<=b;case'>=':return a>=b;case'+':return(typeof a==='string'||typeof b==='string')?''+a+b:a+b;case'-':return a-b;case'*':return a*b;case'/':return a/b;default:return a%b}}
   function lv(i){if(i===L.length)return un();let a=lv(i+1);while(L[i].indexOf(t[p])>=0){const o=t[p++];a=bin(o,a,lv(i+1))}return a}
   function un(){const k=t[p++];if(k==null)throw 0;
     if(k==='-')return -un();if(k==='not')return !un();
@@ -4492,7 +4495,7 @@ async function aiRespond(b,S,o){
   const m0=rr&&rr.model&&byModel(rr.model),rn=rr?String(m0?m0.name:rr.name):(rn0.toLowerCase()==='this'?'AI':rn0);
   const toChat=dest==='chat'||dest==='both'||((dest==='above rig'||dest==='both')&&!rr),toRig=!!rr&&(dest==='above rig'||dest==='both');
   if(!rr&&dest!=='chat'&&dest!=='variable only')log1('Error: there is no rig named \"'+rn0+'\"'+(rn0.toLowerCase()==='this'?' (put this block in a script that belongs to a rig, or pick the rig by name)':'')+'. A rig is named after its model (parts welded together). The answer goes to the chat instead.');
-  if(!msg){log1('Error: AI response has nothing to reply to. In the \"reply to\" box use message (inside a \"when player says _ in chat\" script) or a variable.');return}
+  if(!msg){log1('Error: AI response has nothing to reply to. In the \"reply to\" box use message (inside a \"when player says _ in chat\" or \"when player sends a message in chat\" script) or a variable.');return}
   if(dest==='variable only'&&!vn){log1('Error: AI response is set to Nowhere, so pick a variable to store the answer in.');return}
   /* No local Premium check here: the saved sign-in info (ME.prem) can be old or missing it, which wrongly blocked Premium owners. The server checks Premium for real and answers 'premium' if the account does not have it. */
   if(!ME){aiWarn('AI replies need you to be signed in to BrixBlox.');return}
@@ -4538,7 +4541,8 @@ function rigBodyCollide(){const T=byId(P.avId);if(!T)return;const fy=feet0()+S.h
     if(d>=m)return;if(d<1e-4){dx=1;dz=0}else{dx/=d;dz/=d}const pen=m-d;S.x+=dx*pen;S.y-=dz*pen})}
 function sendChat(txt){txt=String(txt).trim().slice(0,120);if(!txt||!(running||playing))return;let rawTxt=txt;{const raw=txt;txt=filt(raw);if(txt===raw&&crossBad(raw))txt=censor();logChat(raw,txt);CHATRAW=raw;rawTxt=raw}chatLine(P.player.name,txt);AILAST=txt;AILASTN++;netChat(txt,rawTxt);sayBubble(txt);const low=txt.toLowerCase();
   P.scripts.forEach(function(sc){const h=sc[0];if(h.t!=='chat')return;const w=String(h.a[0]).trim().toLowerCase();
-    if(w==='*'||(w&&(low===w||low.slice(0,w.length+1)===w+' '))){S.v.speaker=P.player.name;S.v.message=txt;fireScript(sc)}})}
+    if(w==='*'||(w&&(low===w||low.slice(0,w.length+1)===w+' '))){S.v.speaker=P.player.name;S.v.message=txt;fireScript(sc)}});
+  P.scripts.forEach(function(sc){if(sc[0].t!=='chatany')return;S.v.speaker=P.player.name;S.v.message=txt;fireScript(sc)})}
 $('chat-in').onkeydown=function(e){e.stopPropagation();if(e.key==='Enter'){const v=this.value;this.value='';this.blur();sendChat(v)}else if(e.key==='Escape'){this.value='';this.blur()}};
 addEventListener('keydown',function(e){if(e.key!=='/'||e.repeat||e.ctrlKey||e.metaKey||e.altKey||!(running||playing))return;const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT|BUTTON/.test(a.tagName))return;
   e.preventDefault();for(const k in keys)keys[k]=false;$('chat').classList.remove('min');$('chat-in').focus()});
@@ -5370,6 +5374,7 @@ function addGroups(c){if(c.t==='gui'){const O2=[];[['text','Text','A text label 
     Sx.push(scr('Script: when this block is clicked','clicked','Runs when you click it while playing'));
     Sx.push(scr('Script: when player uses prompt','prompt','Shows a key button over it when you walk close'));
     Sx.push(scr('Script: when player says in chat','chat','Runs when a player types a word in chat'));
+    Sx.push(scr('Script: when player sends a message in chat','chatany','Runs when a player sends any message in chat'));
     Sx.push(scr('Script: when player holds item in hand','itemhold','Runs when you hold an item you made'));
     Sx.push(scr('Script: when player stops holding item in hand','itemunhold','Runs when you stop holding an item'));
     Sx.push(scr('Script: when player clicks screen','screenclick','Runs every time you click the game screen'));
@@ -5950,7 +5955,7 @@ function dropOn(d,t){if(!dropOK(d,t))return;const ps=dragParts(d);let msg0='';
    Every player runs the game on their own computer, so "server side" works by telling every other player's computer to run the very same block
    (only the position of the block is sent, never code, so nothing can be injected). "client side" blocks only ever run on the computer that reached them,
    and are skipped on the other players when they replay a server side block. */
-const LOCALH={gphas:1,standstill:1,landed:1,touched:1,clicked:1,prompt:1,key:1,keydrop:1,keyheld:1,keyrel:1,chat:1,guiclick:1,guithisclick:1,itemhold:1,itemunhold:1,screenclick:1};
+const LOCALH={gphas:1,standstill:1,landed:1,touched:1,clicked:1,prompt:1,key:1,keydrop:1,keyheld:1,keyrel:1,chat:1,chatany:1,guiclick:1,guithisclick:1,itemhold:1,itemunhold:1,screenclick:1};
 const RSKIP={airesponse:1,visualize:1,unvisualize:1,move:1,turn:1,goto:1,jump:1,animate:1,say:1,color:1,walkanim:1,jumpanim:1,idleanim:1,fallanim:1,holdanim:1,holdwalkanim:1,fov:1,camset:1,camreset:1,shiftlockon:1,shiftlockoff:1,pspeed:1,lighting:1,playercol:1,ragdollex:1,playercolon:1,playercoloff:1,tweenset:1,
   givebadge:1,awardbadge:1,giveattr:1,removeattr:1,giveitem:1,removeitem:1,accadd:1,accrem:1,accwear:1,accstrip:1,kick:1,ban:1,addplayer:1,randplayer:1,getcount:1,print:1,setvol:1};
 const RSELF={tweensize:1,tweentrans:1,tweencolor:1,transparency:1,kill:1,pushparent:1};
