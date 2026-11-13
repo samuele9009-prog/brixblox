@@ -4287,7 +4287,7 @@ function movRigTick(dt){if(!(playing||running)){for(const k in MRA)delete MRA[k]
       /* find the animation: the exact name first, then any capital letters, then any name that contains the word (like "Walk cycle"); it must have keyframes for this rig's parts */
       const find=function(w){const ok=function(n){const A=P.anims[n];return !!A&&Object.keys(A.keys).some(function(k){return ids[k]})},ns=Object.keys(P.anims);
         if(ok(w))return w;return ns.find(function(n){return n.trim().toLowerCase()===w&&ok(n)})||ns.find(function(n){return n.toLowerCase().indexOf(w)>=0&&ok(n)})||''};
-      m={x:px,z:pz,at:0,hold:0,was:false,ids:ids,wn:find('walk'),inn:find('idle'),jn:find('jump'),fn:find('fall'),yaw:((r.ry||0)*D)+(RYAW[id]||0)};m.w=!!m.wn;m.i=!!m.inn;m.j=!!m.jn;m.f=!!m.fn;MRA[id]=m;
+      m={x:px,z:pz,at:0,hold:0,was:false,ids:ids,wn:find('walk'),inn:find('idle'),jn:find('jump'),fn:find('fall'),yaw:((r.ry||0)*D)+(RYAW[id]||0)};m.w=!!m.wn;m.i=!!m.inn;m.j=!!m.jn;m.f=!!m.fn;MRA[id]=m;log('Movable rig \"'+r.name+'\" is on: gravity active. Animations found: walk='+(m.wn||'none')+', idle='+(m.inn||'none')+', jump='+(m.jn||'none')+', fall='+(m.fn||'none'));
       if(!m.w&&!m.i&&!m.j&&!m.f)log('Error: \"'+r.name+'\" is Movable but has no animation named walk, idle or jump with keyframes for its parts, so it can not animate. Make a walk and an idle animation for this rig in the animation editor.')}
     const dx=px-m.x,dz=pz-m.z,d=Math.hypot(dx,dz),sp=d/dt;m.x=px;m.z=pz;
     const rg=RAG['rig:'+id];if(rg&&!rg.gone&&(rg.dead||rg.t<rg.end+RRISE))return;
