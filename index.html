@@ -1157,7 +1157,7 @@ $('f-in').addEventListener('submit',async function(e){e.preventDefault();$('b-in
 /* The game reads who you are (name, shirt colour) from here, so your in-game avatar matches this page. */
 /* ===== BrixBlox Premium =====
    Premium is stored on the server (premium_members) so it cannot be faked from this page. This page only shows it. */
-const PREM_PRICE=200;let PREM=new Set(),prem={on:false,bonus:0,log:[],err:false},gpe={total:0,log:[]},adj={total:0,log:[]};
+const PREM_PRICE=200;let PREM=new Set(),prem={on:false,bonus:0,log:[],err:false},gpe={total:0,log:[]},adj={total:0,log:[]},srv=null;
 function premOn(){return isBB()||prem.on}
 function pstar(){const s=document.createElement('span');s.className='pstar';s.title='BrixBlox Premium';s.textContent='\u2605';return s}
 function nameEl(el,name){el.textContent=name;if(PREM.has(String(name).toLowerCase()))el.append(pstar())}
@@ -1166,6 +1166,8 @@ async function loadPrem(){
   try{const r=await api.premStatus(me.id);prem={on:!!r.premium,bonus:+r.bonus||0,log:r.log||[],err:false};
     try{const e=await api.gpEarn(me.id);gpe={total:+e.total||0,log:e.log||[]}}catch(e){gpe={total:0,log:[]}}
     try{const a=await api.adjStatus();adj={total:+a.total||0,log:a.log||[]}}catch(e){adj={total:0,log:[]}}
+    /* Use the server's own total (the same one admins see) so the wallet and inventory always match it */
+    try{const r=await api.adminBalance(me.id);srv=(r&&typeof r.balance!=='undefined')?{bal:+r.balance||0,spent:+r.spent||0}:null}catch(e){srv=null}
     const all=await api.premAll();PREM=new Set((all||[]).map(function(x){return String(x).toLowerCase()}));if(prem.on)PREM.add(me.username.toLowerCase())}
   catch(e){console.warn('Premium',e);prem={on:false,bonus:0,log:[],err:true};PREM=new Set()}
   syncMe();try{paintShop()}catch(e){}}
@@ -2190,7 +2192,7 @@ function pvTick(now){
   pv.cam.position.set(0,pv.ly+.15+Math.sin(pv.pitch)*pv.zoom,Math.cos(pv.pitch)*pv.zoom);pv.cam.lookAt(0,pv.ly,0);
   pv.r.render(pv.sc,pv.cam)}
 function coinsEarned(){let n=10;Object.keys(recs).forEach(function(k){n+=recs[k].coins||0});return n}
-function balance(){return isBB()?Infinity:coinsEarned()+(bank&&bank.wallet||0)+(prem.bonus||0)+(gpe.total||0)+(adj.total||0)+(me.av.codeBux||0)-(me.av.spent||0)-(prem.on?PREM_PRICE:0)}
+function balance(){if(!isBB()&&srv)return srv.bal-((me.av.spent||0)-srv.spent);return isBB()?Infinity:coinsEarned()+(bank&&bank.wallet||0)+(prem.bonus||0)+(gpe.total||0)+(adj.total||0)+(me.av.codeBux||0)-(me.av.spent||0)-(prem.on?PREM_PRICE:0)}
 /* Always work from the newest copy of the account. A second computer (like a school laptop) can hold an old copy, and using it made codes redeem twice and spending go missing. */
 async function refreshAv(){try{const a=await api.freshAv(me.id);me.av=a;syncMe();return true}catch(e){return false}}
 /* Reload every part of the balance (account copy, premium/gamepass/admin amounts, Blockbank) so every page adds up the same */
