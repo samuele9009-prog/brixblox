@@ -4316,6 +4316,9 @@ function movRigTick(dt){if(!(playing||running)){for(const k in MRA)delete MRA[k]
     m.at+=dt*(move?Math.max(.6,Math.min(1.6,sp/8)):1);
     let pn=move?m.wa:m.ia,pt=m.at,inAir=false;
     if(air&&(m.j||(m.f&&G.vy<-6))){inAir=true;if(m.f&&G.vy<-6){pn=m.fa;pt=G.jt}else{pn=m.ja;pt=Math.min(G.jt,Math.max(0,(pn&&pn.len||.5)-.001))}}
+    /* when the pose changes (walk, idle, jump, fall) put every part back to rest first, so a part the new animation does not move (the default idle has no leg keys) does not stay stuck in the old pose */
+    const kind=inAir?(pn===m.fa?'f':'j'):(move?'w':'i');
+    if(kind!==m.pk){m.pk=kind;const z0={};Object.keys(m.ids).forEach(function(k){z0[k]=[0,0,0]});applyKeyed(z0)}
     if(!(pn&&rbPose(r,m,pn,pt))&&m.was&&!move&&!inAir){const z={};Object.keys(m.ids).forEach(function(k){z[k]=[0,0,0]});applyKeyed(z)}
     m.was=move||inAir})}
 function xeqSet(t,slot,id,wear){
