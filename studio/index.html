@@ -4225,7 +4225,7 @@ function rbSet(r,md,tn,sp){const id=r.id;
   const cur=RB[id];if(cur&&cur.md===md&&cur.tn===tn){cur.sp=sp;return}
   const o=RO[id]||[0,0];
   RB[id]={md:md,tn:tn,sp:sp,hx:r.pos[0]+o[0],hz:r.pos[2]+o[1],yaw:((r.ry||0)*Math.PI/180)+(RYAW[id]||0),path:null,pi:0,pt:0,pg:null,wp:null,wait:0,at:0,lx:r.pos[0]+o[0],lz:r.pos[2]+o[1],lt:performance.now(),stuck:0,side:0,sd:1,obs:[],ids:null,was:false}}
-function rbPose(r,b,name,t){const A=P.anims[name];if(!A)return false;if(!b.ids){b.ids={};rigParts(r).forEach(function(q){b.ids[q.id]=1})}
+function rbPose(r,b,name,t){const A=typeof name==='object'?name:P.anims[name];if(!A)return false;if(!b.ids){b.ids={};rigParts(r).forEach(function(q){b.ids[q.id]=1})}
   if(!Object.keys(A.keys).some(function(k){return b.ids[k]}))return false;
   const po=evalPose(A,A.len>0?t%A.len:0),o={};for(const k in po){if(b.ids[k.slice(0,2)==='p:'?k.slice(2):k])o[k]=po[k]}applyKeyed(o);return true}
 function rigAI(dt){const ids=Object.keys(RB);if(!ids.length)return;const now=performance.now(),D=Math.PI/180;
@@ -4287,8 +4287,15 @@ function movRigTick(dt){if(!(playing||running)){for(const k in MRA)delete MRA[k]
       /* find the animation: the exact name first, then any capital letters, then any name that contains the word (like "Walk cycle"); it must have keyframes for this rig's parts */
       const find=function(w){const ok=function(n){const A=P.anims[n];return !!A&&Object.keys(A.keys).some(function(k){return ids[k]})},ns=Object.keys(P.anims);
         if(ok(w))return w;return ns.find(function(n){return n.trim().toLowerCase()===w&&ok(n)})||ns.find(function(n){return n.toLowerCase().indexOf(w)>=0&&ok(n)})||''};
-      m={x:px,z:pz,at:0,hold:0,was:false,ids:ids,wn:find('walk'),inn:find('idle'),jn:find('jump'),fn:find('fall'),yaw:((r.ry||0)*D)+(RYAW[id]||0)};m.w=!!m.wn;m.i=!!m.inn;m.j=!!m.jn;m.f=!!m.fn;MRA[id]=m;log('Movable rig \"'+r.name+'\" is on: gravity active. Animations found: walk='+(m.wn||'none')+', idle='+(m.inn||'none')+', jump='+(m.jn||'none')+', fall='+(m.fn||'none'));
-      if(!m.w&&!m.i&&!m.j&&!m.f)log('Error: \"'+r.name+'\" is Movable but has no animation named walk, idle or jump with keyframes for its parts, so it can not animate. Make a walk and an idle animation for this rig in the animation editor.')}
+      /* no animation of its own? use the default player animation (the one every new game has) on this rig's parts, matched by part name (Head, Torso, Rarm, Larm, Rleg, Lleg) */
+      const nz=function(x){x=String(x||'').toLowerCase().replace(/[^a-z]/g,'');return {rightarm:'rarm',leftarm:'larm',rightleg:'rleg',leftleg:'lleg'}[x]||x},rp={};
+      rigParts(r).forEach(function(q){const k=nz(q.name);if(k&&!rp[k])rp[k]=q.id});
+      const pick=function(w){const n=find(w);if(n)return {n:n,a:P.anims[n]};const Dn=P.anims[w];if(!Dn||!Dn.keys)return null;const keys={};
+        Object.keys(Dn.keys).forEach(function(k){const kk=k.slice(0,2)==='p:'?k.slice(2):k,ap=P.parts.find(function(q){return q.id===kk});if(!ap)return;const t=rp[nz(ap.name)];if(t&&t!==kk)keys[t]=Dn.keys[k]});
+        return Object.keys(keys).length?{n:w+' (default)',a:{len:Dn.len,keys:keys,type:Dn.type}}:null};
+      const W=pick('walk'),I=pick('idle'),JP=pick('jump'),F=pick('fall');
+      m={x:px,z:pz,at:0,hold:0,was:false,ids:ids,wn:W?W.n:'',inn:I?I.n:'',jn:JP?JP.n:'',fn:F?F.n:'',wa:W&&W.a,ia:I&&I.a,ja:JP&&JP.a,fa:F&&F.a,yaw:((r.ry||0)*D)+(RYAW[id]||0)};m.w=!!m.wn;m.i=!!m.inn;m.j=!!m.jn;m.f=!!m.fn;MRA[id]=m;log('Movable rig \"'+r.name+'\" is on: gravity active. Animations found: walk='+(m.wn||'none')+', idle='+(m.inn||'none')+', jump='+(m.jn||'none')+', fall='+(m.fn||'none'));
+      if(!m.w&&!m.i&&!m.j&&!m.f)log('Error: \"'+r.name+'\" is Movable but has no animation named walk, idle or jump with keyframes for its parts, so it can not animate. Name its parts Head, Torso, Rarm, Larm, Rleg and Lleg to use the default animations, or make a walk and an idle animation for this rig in the animation editor.')}
     const dx=px-m.x,dz=pz-m.z,d=Math.hypot(dx,dz),sp=d/dt;m.x=px;m.z=pz;
     const rg=RAG['rig:'+id];if(rg&&!rg.gone&&(rg.dead||rg.t<rg.end+RRISE))return;
     /* gravity: a Movable rig falls, lands on solid parts, and can jump, like a player */
@@ -4307,8 +4314,8 @@ function movRigTick(dt){if(!(playing||running)){for(const k in MRA)delete MRA[k]
     else m.hold-=dt;
     const move=m.hold>0;
     m.at+=dt*(move?Math.max(.6,Math.min(1.6,sp/8)):1);
-    let pn=move?m.wn:m.inn,pt=m.at,inAir=false;
-    if(air&&(m.j||(m.f&&G.vy<-6))){inAir=true;if(m.f&&G.vy<-6){pn=m.fn;pt=G.jt}else{pn=m.jn;const A=P.anims[pn];pt=Math.min(G.jt,Math.max(0,(A&&A.len||.5)-.001))}}
+    let pn=move?m.wa:m.ia,pt=m.at,inAir=false;
+    if(air&&(m.j||(m.f&&G.vy<-6))){inAir=true;if(m.f&&G.vy<-6){pn=m.fa;pt=G.jt}else{pn=m.ja;pt=Math.min(G.jt,Math.max(0,(pn&&pn.len||.5)-.001))}}
     if(!(pn&&rbPose(r,m,pn,pt))&&m.was&&!move&&!inAir){const z={};Object.keys(m.ids).forEach(function(k){z[k]=[0,0,0]});applyKeyed(z)}
     m.was=move||inAir})}
 function xeqSet(t,slot,id,wear){
