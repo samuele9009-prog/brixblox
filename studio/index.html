@@ -1371,20 +1371,18 @@ function gpReset(){GP.own={};GP.ready=null;GP.busy=false}
 function gpFire(g){if(!(running||playing)||!g)return;S.v.passplayer=String((P.player&&P.player.name)||(ME&&ME.username)||'');
   P.scripts.forEach(function(sc){if(sc[0].t==='gphas'&&gpFind(sc[0].a[0])===g)fireScript(sc)})}
 async function gpStart(my){await gpLoad();if(my!==S||!(running||playing))return;gpList().forEach(function(g){if(GP.own[g.id])gpFire(g)})}
-/* Same sum as the Avatar page: 10 to start + coins from old courses + redeemed wallet + Premium visit bonus + gamepass sales - spent - the Premium price */
+/* Same sum as the Avatar page: 10 to start + coins from old courses + redeemed wallet + Premium visit bonus + gamepass sales + code blockbucks - spent - the Premium price */
 async function gpBalance(){
   if(gpIsBB())return Infinity;
   if(!sb||!ME)throw new Error('Sign in to an online BrixBlox account to buy gamepasses.');
-  /* Use the server's own total (the same one admins see). Falls back to the sum below if it is not available. */
-  try{const rs=await sb.rpc('admin_get_balance',{p_user:ME.id});if(!rs.error&&rs.data&&typeof rs.data.balance!=='undefined'){const md0=await gpMeta();return (+rs.data.balance||0)-((+((md0&&md0.avatar&&md0.avatar.spent)||0))-(+rs.data.spent||0))}}catch(e){}
   const rb=await sb.rpc('bank_status');if(rb.error)throw new Error('Could not check your blockbucks. Try again.');
   const w=+(rb.data&&rb.data.wallet)||0;let bonus=0,coins=10;
   try{const rp=await sb.rpc('premium_status');if(!rp.error)bonus=+(rp.data&&rp.data.bonus)||0}catch(e){}
   try{const rr=await sb.from('level_records').select('best_coins').eq('user_id',ME.id);if(!rr.error)(rr.data||[]).forEach(function(x){coins+=+x.best_coins||0})}catch(e){}
   let ge=0;try{const re=await sb.rpc('gamepass_earnings_status');if(!re.error)ge=+(re.data&&re.data.total)||0}catch(e){}
   try{const ra=await sb.rpc('blockbuck_adjustments_status');if(!ra.error)ge+=+(ra.data&&ra.data.total)||0}catch(e){}
-  const md=await gpMeta(),spent=+((md&&md.avatar&&md.avatar.spent)||0);
-  return coins+w+bonus+ge-spent-(ME.prem?200:0)}
+  const md=await gpMeta(),spent=+((md&&md.avatar&&md.avatar.spent)||0),codeBux=Math.max(0,Math.floor(+((md&&md.avatar&&md.avatar.codeBux)||0)));/* blockbucks from codes live on the avatar */
+  return coins+w+bonus+ge+codeBux-spent-(ME.prem?200:0)}
 async function gpBuy(g){
   if(GP.busy)return {ok:false,why:'One moment, still working on the last one.'};
   GP.busy=true;
