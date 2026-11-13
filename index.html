@@ -1180,6 +1180,7 @@ function paintPrem(){
   st.textContent=need>0?'Premium costs '+PREM_PRICE+' blockbucks. You need '+need+' more.':'Premium costs '+PREM_PRICE+' blockbucks, one time. You have enough.';
   buy.disabled=false}
 $('pm-buy').onclick=async function(){
+  await refreshMoney();
   if(balance()<PREM_PRICE){pmMsg('Not enough blockbucks. You need '+(PREM_PRICE-balance())+' more.');return}
   if(!confirm('Spend '+PREM_PRICE+' blockbucks on BrixBlox Premium? This is a one-time purchase.'))return;
   $('pm-buy').disabled=true;pmMsg('Getting Premium...',true);
@@ -1270,7 +1271,7 @@ $('f-acct').addEventListener('submit',async function(e){e.preventDefault();
   $('b-acct').disabled=true;sMsg('Saving...',true);
   try{const r=await api.setAccount(me.id,{email:email,age:age},me.email);me.age=age;if(r.pending){me.pending=email;sMsg('Saved. We sent a confirmation link to '+email+'. Open it to finish adding your email.',true)}else{if(api.demo)me.email=email;sMsg('Saved.',true)}}catch(er){sMsg(errText(er))}
   $('b-acct').disabled=false});
-$('n-avatar').onclick=function(){nav('avatar');openAvatarPage()};$('n-profile').onclick=function(){openProfile(me.username)};$('n-catalog').onclick=function(){nav('catalog');paintCatalog();loadBank().then(function(){if(!$('p-catalog').hidden)paintCatalog()})};$('n-bank').onclick=function(){nav('bank');loadBank()};$('n-codes').onclick=function(){nav('codes');paintCodes()};$('n-premium').onclick=function(){nav('premium');loadPrem().then(paintPrem)};$('n-settings').onclick=function(){nav('settings')};$('n-admin').onclick=function(){openAdmin()};$('n-bill').onclick=function(){openBBMgr()};
+$('n-avatar').onclick=function(){nav('avatar');openAvatarPage()};$('n-profile').onclick=function(){openProfile(me.username)};$('n-catalog').onclick=function(){nav('catalog');paintCatalog();loadBank().then(function(){if(!$('p-catalog').hidden)paintCatalog()})};$('n-bank').onclick=function(){nav('bank');loadBank()};$('n-codes').onclick=function(){nav('codes');paintCodes()};$('n-premium').onclick=function(){nav('premium');paintPrem();refreshMoney().then(function(){if(!$('p-premium').hidden)paintPrem()})};$('n-settings').onclick=function(){nav('settings')};$('n-admin').onclick=function(){openAdmin()};$('n-bill').onclick=function(){openBBMgr()};
 $('n-home').onclick=function(){nav('home');loadGames()};$('n-discover').onclick=function(){nav('discover');loadGames()};$('n-friends').onclick=function(){nav('friends');loadFriends()};
 /* Friend avatars: draw the real 3D avatar (same makeAvatar as the Avatar page) into a small picture */
 const FAV={r:null,sc:null,cam:null,fail:false,cache:{}};
@@ -2192,6 +2193,8 @@ function coinsEarned(){let n=10;Object.keys(recs).forEach(function(k){n+=recs[k]
 function balance(){return isBB()?Infinity:coinsEarned()+(bank&&bank.wallet||0)+(prem.bonus||0)+(gpe.total||0)+(adj.total||0)+(me.av.codeBux||0)-(me.av.spent||0)-(prem.on?PREM_PRICE:0)}
 /* Always work from the newest copy of the account. A second computer (like a school laptop) can hold an old copy, and using it made codes redeem twice and spending go missing. */
 async function refreshAv(){try{const a=await api.freshAv(me.id);me.av=a;syncMe();return true}catch(e){return false}}
+/* Reload every part of the balance (account copy, premium/gamepass/admin amounts, Blockbank) so every page adds up the same */
+async function refreshMoney(){await refreshAv();await loadPrem();await loadBank()}
 async function saveAv(){try{await api.setAvatar(me.id,me.av);syncMe();return true}catch(e){toast('Could not save: '+errText(e));return false}}
 /* ===== 3D shop tiles: every accessory in the shop is drawn as a small spinning 3D model. One shared renderer draws each model and copies it onto the tile. ===== */
 const TH={r:null,sc:null,cam:null,list:[],ok:null,sz:132,raf:0,t:0,models:{}};
