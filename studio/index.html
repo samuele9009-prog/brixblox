@@ -862,7 +862,7 @@ const BD={
  var:{c:'rv',rep:1,l:'_',a:[''],sk:'',f:function(x){return x[0]}},
  def:{c:'fn',hat:1,l:'define _',a:['spin'],raw:1},
  call:{c:'fn',l:'call _',a:['spin'],raw:1},
- airesponse:{c:'pr',l:'AI response personality _ response time _ secs rig _ reply to _ show in _ into variable _',a:['a friendly shopkeeper','1','this','message','chat','aireply'],dd:{4:'aiout',5:'var'},tip:'PREMIUM. Asks an AI to answer like a character. Personality: describe who it is (for example \"a grumpy pirate who loves gold\"). Response time: the AI waits at least this many seconds before it answers, like someone typing (0 to 30). Rig: type the name of the rig that is talking (the name of its model), or leave it as this inside a rig script. Its name is used for the chat message and the bubble over its head (pick \"this rig\" inside a rig script). Reply to: what the player said. Leave it as message inside a \"when player says _ in chat\" script, or type a variable. Show in: the chat, a bubble above the rig, both, or nothing (variable only). The answer is also stored in the variable you pick. Players without Premium do not get an answer. It remembers the last few things said to each rig, keeps answers short and kid-friendly, and only you see the answer.'}
+ airesponse:{c:'pr',l:'AI response personality _ response time _ secs rig _ reply to _ show in _ into variable _',a:['a friendly person who only talks about creating: building, making games, art, music and ideas. Steer every topic back to creating','1','this','message','both','aireply'],dd:{4:'aiout',5:'var'},tip:'PREMIUM. Asks an AI to answer like a character. Personality: describe who it is (for example \"a grumpy pirate who loves gold\"). Response time: the AI waits at least this many seconds before it answers, like someone typing (0 to 30). Rig: type the name of the rig that is talking (the name of its model), or leave it as this inside a rig script. Its name is used for the chat message and the bubble over its head (pick \"this rig\" inside a rig script). Reply to: what the player said. Leave it as message inside a \"when player says _ in chat\" script, or type a variable. Show in: the chat, a bubble above the rig, both, or nothing (variable only). The answer is also stored in the variable you pick. Players without Premium do not get an answer. It remembers the last few things said to each rig, keeps answers short and kid-friendly, and only you see the answer.'}
 };
 const EVH=['gphas','standstill','landed','key','keydrop','keyheld','keyrel','recv','touched','clicked','prompt','chat','chatany','guiclick','guithisclick','pjoin','pleave','itemhold','itemunhold','screenclick'];
 function mk(t,a,k){return {t:t,a:a||BD[t].a.slice(),k:BD[t].k?(k||[]):null}}
@@ -4493,7 +4493,7 @@ async function aiRespond(b,S,o){
   let rr=null;
   if(rn0.toLowerCase()==='this'){rr=roots(o).filter(function(r){return kids(r).length>0})[0]||null}else rr=skinFind(rn0);
   const m0=rr&&rr.model&&byModel(rr.model),rn=rr?String(m0?m0.name:rr.name):(rn0.toLowerCase()==='this'?'AI':rn0);
-  const toChat=dest==='chat'||dest==='both'||((dest==='above rig'||dest==='both')&&!rr),toRig=!!rr&&(dest==='above rig'||dest==='both');
+  const toChat=dest==='chat'||dest==='both'||((dest==='above rig'||dest==='both')&&!rr),toRig=!!rr&&dest!=='variable only';
   if(!rr&&dest!=='chat'&&dest!=='variable only')log1('Error: there is no rig named \"'+rn0+'\"'+(rn0.toLowerCase()==='this'?' (put this block in a script that belongs to a rig, or pick the rig by name)':'')+'. A rig is named after its model (parts welded together). The answer goes to the chat instead.');
   if(!msg){log1('Error: AI response has nothing to reply to. In the \"reply to\" box use message (inside a \"when player says _ in chat\" or \"when player sends a message in chat\" script) or a variable.');return}
   if(dest==='variable only'&&!vn){log1('Error: AI response is set to Nowhere, so pick a variable to store the answer in.');return}
@@ -4507,7 +4507,7 @@ async function aiRespond(b,S,o){
   for(let att=0;att<3;att++){/* Gemini says 503 when it is overloaded for a moment: try again up to 2 more times before giving up */
   reply='';err='';
   try{
-    const r=await sb.functions.invoke('npc-ai',{body:{name:rn,personality:pers,message:msg,history:h.slice(-8)}});
+    const r=await sb.functions.invoke('npc-ai',{body:{name:rn,personality:pers+' Chat like a real person: one or two short casual sentences under 100 characters, no lists or markdown, stay in character. If someone sincerely asks if you are an AI, be honest.',message:msg,history:h.slice(-8)}});
     if(r.error){let j=null;try{j=await r.error.context.json()}catch(e){}const c=j&&j.error;
       err=c==='premium'?'AI replies need BrixBlox Premium. (The server said no for the account \"'+String(ME&&ME.username||'?')+'\".)':c==='busy'?rn+' is busy right now. Try again in a moment.':c==='slow'?'You are asking too fast. Wait a moment.':c==='signin'?'AI replies need you to be signed in to BrixBlox.':'the AI could not answer ('+String((j&&j.message)||r.error.message||'server error').slice(0,120)+')'}
     else reply=String((r.data&&r.data.reply)||'').trim()
