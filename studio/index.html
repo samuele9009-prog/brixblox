@@ -4599,11 +4599,12 @@ async function aiRespond(b,S,o){
       err=c==='premium'?'AI replies need BrixBlox Premium. (The server said no for the account \"'+String(ME&&ME.username||'?')+'\".)':c==='busy'?rn+' is busy right now. Try again in a moment.':c==='slow'?'You are asking too fast. Wait a moment.':c==='signin'?'AI replies need you to be signed in to BrixBlox.':'the AI could not answer ('+String((j&&j.message)||r.error.message||'server error').slice(0,120)+')'}
     else reply=String((r.data&&r.data.reply)||'').trim()
   }catch(e){err='the AI could not answer ('+String((e&&e.message)||e).slice(0,120)+')'}
-  if(!err&&!asksBuild&&!strict&&BLEED.test(reply)&&!S.stop){strict=1;continue}/* the answer talked about building when nobody asked: ask once more with a stricter rule */
   if(!err||!/503|429|busy|overload|unavailable/i.test(err)||S.stop)break;await sl(1500*(att+1))}
   AIBUSY[bk]=0;
   if(S.stop){if(toRig)rigSay(rr.id,'');return}
   reply=reply.replace(/[*_`#>]+/g,'').replace(/\s+/g,' ').trim().slice(0,240);
+  if(reply&&!asksBuild&&!/what (game|place)|which game|where (are|am) (we|i)|what is this/i.test(msg)){/* nobody asked about building: drop any sentence about it (no second request, so no rate limit) */
+    const ps=reply.match(/[^.!?]+[.!?]*/g)||[reply],kp=ps.filter(function(x){return !BLEED.test(x)});if(kp.length&&kp.length<ps.length)reply=kp.join(' ').trim()}
   if(!reply&&!err)err='the AI sent an empty answer';
   if(err){if(toRig)rigSay(rr.id,'');aiWarn(err);if(vn)S.v[vn]='';return}
   reply=filt(reply);/* the same chat filter as players get */
