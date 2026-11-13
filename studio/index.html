@@ -4591,8 +4591,10 @@ async function aiRespond(b,S,o){
   const asksBuild=/build|block|studio|bricbloc|script|coding|\bcode\b|scratch|(make|making|create|creating) (a |my |the )?games?/i.test(msg),BLEED=/\b(blocks?|building|builders?|bricbloc|studio|scripts?|coding)\b/i;let strict=0;
   const NOB=asksBuild?'':' STRICT RULE: do NOT talk about building, blocks, Studio, coding, scripts or making games. Only chat about what the player actually said, like a normal friend would.';
   const GAMEFACT=' If the player asks what game this is, what game you are in, or where you are, answer: \"We are in BrixBlox. A game where people create games and have fun, all ages.\"';
+  const GAMEQ=/what game (are|were|we|is this|am i|is it)|what('s| is) this (game|place)|which game (are|were|is this)|what place (are|were|is this)|where (are|were|am) (we|i)\b|what (are|were) we (in|playing)/i.test(msg);
   for(let att=0;att<3;att++){/* Gemini says 503 when it is overloaded for a moment: try again up to 2 more times before giving up */
   reply='';err='';
+  if(GAMEQ){reply='We are in BrixBlox. A game where people create games and have fun, all ages.';break}/* the where-are-we question always gets this exact answer, the server AI can not change it */
   try{
     const r=await sb.functions.invoke('npc-ai',{body:{name:rn,personality:pers+' Chat like a real person: one or two short casual sentences under 100 characters, no lists or markdown, stay in character. Reply to what the player actually said. Never bring up blocks or building unless the player does. If someone sincerely asks if you are an AI, be honest.'+NOB+(strict?' You must not use the words blocks, building, Studio, code or scripts in your answer.':'')+GAMEFACT,message:msg,history:h.slice(-8)}});
     if(r.error){let j=null;try{j=await r.error.context.json()}catch(e){}const c=j&&j.error;
@@ -4603,7 +4605,7 @@ async function aiRespond(b,S,o){
   AIBUSY[bk]=0;
   if(S.stop){if(toRig)rigSay(rr.id,'');return}
   reply=reply.replace(/[*_`#>]+/g,'').replace(/\s+/g,' ').trim().slice(0,240);
-  if(reply&&!asksBuild&&!/what (game|place)|which game|where (are|am) (we|i)|what is this/i.test(msg)){/* nobody asked about building: drop any sentence about it (no second request, so no rate limit) */
+  if(reply&&!asksBuild&&!GAMEQ){/* nobody asked about building: drop any sentence about it (no second request, so no rate limit) */
     const ps=reply.match(/[^.!?]+[.!?]*/g)||[reply],kp=ps.filter(function(x){return !BLEED.test(x)});if(kp.length&&kp.length<ps.length)reply=kp.join(' ').trim()}
   if(!reply&&!err)err='the AI sent an empty answer';
   if(err){if(toRig)rigSay(rr.id,'');aiWarn(err);if(vn)S.v[vn]='';return}
