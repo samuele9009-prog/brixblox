@@ -666,6 +666,24 @@ html.mob #hotbar button{width:48px!important;height:48px!important;font-size:.6r
   </div>
 </main>
 
+<script>
+/* Timers that keep running when this tab is not in front. Browsers slow normal timers and animation frames in background tabs (to once a second or even once a minute),
+   which froze the game, made other players see you glitch, and stopped timers. Timers of 4 ms or more are run by a background worker instead, which the browser does not slow down.
+   If the worker can not start (blocked by the browser), the normal timers are used and nothing changes. */
+(function(){try{
+  if(window.__bgT||typeof Worker==='undefined')return;window.__bgT=1;
+  var src="postMessage('r');var m={};onmessage=function(e){var d=e.data,i=d.i;if(d.c==='x'){clearTimeout(m[i]);clearInterval(m[i]);delete m[i]}else if(d.c==='t')m[i]=setTimeout(function(){delete m[i];postMessage(i)},d.d);else m[i]=setInterval(function(){postMessage(i)},d.d)};";
+  var w=new Worker(URL.createObjectURL(new Blob([src],{type:'text/javascript'}))),cb={},n=1e9,nst=window.setTimeout,nsi=window.setInterval,nct=window.clearTimeout;
+  var add=function(f,ms,a,rep){ms=+ms||0;if(typeof f!=='function'||ms<4)return null;var i=++n;cb[i]={f:f,a:a,r:rep};w.postMessage({c:rep?'i':'t',i:i,d:ms});return i};
+  var on=function(){
+    window.setTimeout=function(f,ms){var i=add(f,ms,[].slice.call(arguments,2),false);return i===null?nst.apply(window,arguments):i};
+    window.setInterval=function(f,ms){var i=add(f,ms,[].slice.call(arguments,2),true);return i===null?nsi.apply(window,arguments):i};
+    window.clearTimeout=window.clearInterval=function(i){if(i>1e9){if(cb[i]){delete cb[i];w.postMessage({c:'x',i:i})}}else nct.call(window,i)}};
+  var ready=false;
+  w.onmessage=function(e){var i=e.data;if(i==='r'){if(!ready){ready=true;on()}return}var o=cb[i];if(!o)return;if(!o.r)delete cb[i];try{o.f.apply(window,o.a)}catch(err){nst.call(window,function(){throw err},0)}};
+  w.onerror=function(){};
+}catch(e){}})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
@@ -5769,7 +5787,8 @@ function vzTick(){const ids=Object.keys(VZ);if(!ids.length)return;
     skyBox.position.copy(vzCam.position);skyBox.scale.setScalar(.5);/* the sky box follows the player's camera, so for this picture it is centred on the second camera and made small enough to stay inside its draw distance */
     try{renderer.shadowMap.autoUpdate=false;renderer.clippingPlanes=clip?[vzPlane]:[];renderer.setRenderTarget(rt);renderer.render(scene,vzCam)}
     finally{skyBox.position.copy(sbP);skyBox.scale.setScalar(sbS);renderer.setRenderTarget(pr);renderer.clippingPlanes=pc;renderer.shadowMap.autoUpdate=au;z.ov.visible=true;hid.forEach(function(o){o.visible=true});back.forEach(function(m){m.visible=false})}})}
-function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const dt=Math.min(.1,(now-lt)/1000);qTune(dt*1000);lt=now;const f=fwd();
+function frame(now){requestAnimationFrame(frame);frameRun(now)}
+function frameRun(now){ROOTC.clear();now=now||lt;const dt=Math.min(.1,(now-lt)/1000);qTune(dt*1000);lt=now;const f=fwd();
   if(!playing)FC=false;
   if(playing&&!FC)play(dt,f);
   else{const sp=(keys.ShiftLeft?36:12)*CAMSP*dt,r=[Math.cos(cam.yaw),0,Math.sin(cam.yaw)],go=function(v,k){cam.x+=v[0]*k;cam.y+=v[1]*k;cam.z+=v[2]*k};
@@ -5794,7 +5813,7 @@ function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const
   const w=cv.clientWidth,h=(fsOn||VIEWONLY)?cv.clientHeight:Math.round(w*(window.__phr||.5625)),pr=gfxPR()*QS;
   if(w&&h&&(cv.width!==Math.floor(w*pr)||cv.height!==Math.floor(h*pr))){renderer.setPixelRatio(pr);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
   {const fv=Math.max(30,Math.min(120,+(S.fov!=null?S.fov:P.rules.fov)||70));if(camera.fov!==fv){camera.fov=fv;camera.updateProjectionMatrix()}}
-  camera.position.set(cam.x,cam.y,cam.z);camera.lookAt(cam.x+f[0],cam.y+f[1],cam.z+f[2]);try{vzFold()}catch(e){VF=null}{const T=playing&&byId(P.avId);if(T)sunTick(T.pos[0]+S.x,T.pos[1]+S.h,T.pos[2]-S.y);else sunTick(cam.x+f[0]*22,Math.max(0,cam.y+f[1]*22),cam.z+f[2]*22)}skyTick(dt);try{cullTick()}catch(e){}try{vzTick()}catch(e){console.warn('visualize',e)}renderer.render(scene,camera);outlinePass();try{ppTick(dt)}catch(e){console.warn('prompts',e)}try{gfxGlow()}catch(e){}}
+  camera.position.set(cam.x,cam.y,cam.z);camera.lookAt(cam.x+f[0],cam.y+f[1],cam.z+f[2]);try{vzFold()}catch(e){VF=null}{const T=playing&&byId(P.avId);if(T)sunTick(T.pos[0]+S.x,T.pos[1]+S.h,T.pos[2]-S.y);else sunTick(cam.x+f[0]*22,Math.max(0,cam.y+f[1]*22),cam.z+f[2]*22)}skyTick(dt);try{cullTick()}catch(e){}try{vzTick()}catch(e){console.warn('visualize',e)}if(!document.hidden){renderer.render(scene,camera);outlinePass()}try{ppTick(dt)}catch(e){console.warn('prompts',e)}try{gfxGlow()}catch(e){}}
 
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing);try{hotRender()}catch(e){}try{renderGui()}catch(e){}}
@@ -5933,7 +5952,7 @@ if(!P.v12){P.v12=1;if(P.avId&&!P.anims['hold item'])holdAnim();save()}
 if(!P.v13){P.v13=1;if(P.avId&&P.anims.walk&&!P.anims['hold item walk']){holdWalkAnim();save()}}
 if(!P.v14){P.v14=1;if(P.avId){if(!P.anims.fall)fallAnim();if(!P.anims['hold item jump'])holdJumpAnim();save()}}
 if(!P.v15){P.v15=1;if(P.anims['hold item fall']){delete P.anims['hold item fall'];if(curA==='hold item fall')curA=P.anims.walk?'walk':Object.keys(P.anims)[0];save()}}
-applyEnv();rebuildParts();renderParts();anims();requestAnimationFrame(frame);loadBig();setTimeout(gcBig,4000);
+applyEnv();rebuildParts();renderParts();anims();requestAnimationFrame(frame);setInterval(function(){if(performance.now()-lt>80){try{frameRun(performance.now())}catch(e){console.warn('background frame',e)}}},16);loadBig();setTimeout(gcBig,4000);
 /* no automatic uploads: the game only goes online when you press Publish or Update */
 
 
