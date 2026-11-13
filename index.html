@@ -263,9 +263,25 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .rw-name{font-family:var(--display);font-size:1.5rem;margin:4px 0 0;overflow-wrap:anywhere}
 .rw-slot{font-size:.85rem;color:var(--muted);margin:0 0 14px}
 .rw-card .btn{width:100%}
+.rw-card{position:relative}
+.rw-card h2{animation:rwtitle .6s .1s cubic-bezier(.2,1.5,.4,1) backwards}
+.rw-stage{position:relative}
+.rw-rays{position:absolute;inset:-30px;border-radius:50%;pointer-events:none;opacity:.55;animation:rwrot 9s linear infinite,rwfade .6s .1s backwards;
+  background:repeating-conic-gradient(from 0deg,rgba(255,214,90,.9) 0 8deg,rgba(255,214,90,0) 8deg 20deg);-webkit-mask-image:radial-gradient(circle,#000 25%,transparent 68%);mask-image:radial-gradient(circle,#000 25%,transparent 68%)}
+.rw-stage>:not(.rw-rays){position:relative;animation:rwdrop .8s .2s cubic-bezier(.2,1.4,.4,1) backwards}
+.rw-amt,.rw-name{animation:rwup .5s .5s ease-out backwards}
+.rw-slot,.rw-sub{animation:rwup .5s .6s ease-out backwards}
+.rw-conf{position:absolute;left:50%;top:42%;width:0;height:0;pointer-events:none;z-index:2}
+.rw-conf i{position:absolute;left:-5px;top:-5px;width:10px;height:14px;border-radius:2px;opacity:0;animation:rwconf var(--t,1.6s) var(--d,.15s) cubic-bezier(.15,.7,.3,1) forwards}
+@keyframes rwconf{0%{opacity:1;transform:translate(0,0) scale(.3) rotate(0)}25%{opacity:1;transform:translate(calc(var(--dx)*.8),var(--dy)) scale(1) rotate(calc(var(--rot)*.4))}100%{opacity:0;transform:translate(var(--dx),calc(var(--dy) + 260px)) scale(1) rotate(var(--rot))}}
+@keyframes rwrot{to{transform:rotate(360deg)}}
+@keyframes rwfade{from{opacity:0}}
+@keyframes rwdrop{0%{transform:translateY(-70px) scale(.2) rotate(-25deg);opacity:0}60%{opacity:1}100%{transform:none;opacity:1}}
+@keyframes rwup{from{transform:translateY(14px);opacity:0}}
+@keyframes rwtitle{from{transform:scale(.3);opacity:0}}
 @keyframes rwpop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes rwspin{0%,100%{transform:rotateY(-25deg) translateY(0)}50%{transform:rotateY(25deg) translateY(-6px)}}
-@media(prefers-reduced-motion:reduce){.rw-card,.rw-bux,.rw-ov{animation:none}}
+@media(prefers-reduced-motion:reduce){.rw-card,.rw-bux,.rw-ov,.rw-rays,.rw-card h2,.rw-stage>*,.rw-amt,.rw-name,.rw-slot,.rw-sub{animation:none!important}.rw-conf{display:none}}
 .soon{border:2px dashed var(--line);border-radius:8px;padding:28px;text-align:center;color:var(--muted)}
 .soon b{display:block;color:#fff;font-size:1.1rem;margin-bottom:4px}
 .addrow{display:flex;gap:8px}.addrow .btn{width:auto;margin:0;white-space:nowrap}
@@ -672,8 +688,8 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       <div class="bb-top">
         <div class="bb-box"><small>Saved in your Blockbank</small><div class="bb-big"><span id="bb-saved">0</span> blockbucks</div>
           <div class="bb-bar"><i id="bb-bar"></i></div><p id="bb-need" class="hint"></p></div>
-        <div class="bb-box"><small>Your wallet (redeemed)</small><div class="bb-big"><span id="bb-wallet">0</span> blockbucks</div>
-          <p class="hint">Blockbucks you redeem land here.</p></div>
+        <div class="bb-box"><small>Your wallet</small><div class="bb-big"><span id="bb-wallet">0</span> blockbucks</div>
+          <p class="hint">Everything you have to spend: blockbucks you redeem and codes you use, minus what you spent. It matches the Inventory and Catalog.</p></div>
       </div>
       <h3>How you earn</h3>
       <ul class="bb-earn">
@@ -993,6 +1009,7 @@ function makeDemo(){
     async codeSave(c){const d=load();d.codes=d.codes||{};d.codes[c.name]=c;save(d)},
     async codeDel(n){const d=load();if(d.codes)delete d.codes[n];save(d)},
     async setAvatar(id,a){const d=load();const u=d.users.find(function(x){return x.id===id});if(u){u.av=a;save(d)}},
+    async freshAv(id){const d=load();const u=d.users.find(function(x){return x.id===id});return normAv(u&&u.av)},
     async pubAvatar(){},
     async setAccount(id,a){const d=load();const u=d.users.find(function(x){return x.id===id});if(u){u.contact=a.email;u.age=a.age;save(d)}return {pending:false}},
     async setColor(id,c){const d=load();const u=d.users.find(function(x){return x.id===id});if(u){u.color=c;save(d)}},
@@ -1071,7 +1088,8 @@ function makeSupa(){
     async dmSend(id,to,body){const r=await sb.rpc('dm_send',{p_to:to,p_body:body});if(r.error)throw r.error;return r.data},
     async dmThread(id,name){const r=await sb.rpc('dm_thread',{p_with:name});if(r.error)throw r.error;return r.data||[]},
     async dmUnread(id){const r=await sb.rpc('dm_unread');if(r.error)throw r.error;return r.data||[]},
-    async restore(){const r=await sb.auth.getSession();return r.data.session?await profile(r.data.session.user.id,r.data.session.user):null},
+    async restore(){const r=await sb.auth.getSession();if(!r.data.session)return null;let u=r.data.session.user;try{const f=await sb.auth.getUser();if(f&&f.data&&f.data.user)u=f.data.user}catch(e){}return await profile(u.id,u)},
+    async freshAv(){const f=await sb.auth.getUser();if(f.error)throw f.error;if(!(f.data&&f.data.user))throw new Error('No account');return normAv((f.data.user.user_metadata||{}).avatar)},
     async bankStatus(){const r=await sb.rpc('bank_status');if(r.error)throw r.error;const x=r.data||{};return {saved:x.saved||0,wallet:x.wallet||0,code:x.code||null,codeAmt:x.code_amount||0,log:x.log||[]}},
     async recordPlay(id,gid){const r=await sb.rpc('record_play',{p_game:String(gid)});if(r.error)throw r.error},
     async gameMeta(gid){const r=await sb.from('games').select('created_at,updated_at,plays').eq('id',String(gid)).maybeSingle();if(r.error){const q=await sb.from('games').select('updated_at,plays').eq('id',String(gid)).maybeSingle();return q.data||{}}return r.data||{}},
@@ -1170,6 +1188,7 @@ $('pm-buy').onclick=async function(){
 async function enter(p){me=p;syncMe();$('a-msg').textContent='';$('f-up').reset();$('f-in').reset();nameOk=false;updUp();
   try{recs=await api.records(me.id)}catch(e){recs={};toast('Could not load your times.')}
   await loadPrem();
+  await loadBank();
   try{presStart();dmPoll()}catch(e){}
   lobby()}
 /* ===== Color wheel: one wheel for shirt, skin and pants ===== */
@@ -1817,7 +1836,7 @@ function bbMsg(t,good){const m=$('bb-msg');m.textContent=t;m.className='msg'+(go
 async function loadBank(){try{bank=await api.bankStatus(me.id);bbMsg('')}catch(e){bbMsg(errText(e))}paintBank()}
 function paintBank(){
   const inf=isBB();$('bb-owner').hidden=!inf;
-  $('bb-saved').textContent=inf?'\u221E':bank.saved;$('bb-wallet').textContent=bank.wallet+(prem.bonus||0)+(gpe.total||0)+(adj.total||0)+((me.av&&me.av.codeBux)||0);
+  $('bb-saved').textContent=inf?'\u221E':bank.saved;$('bb-wallet').textContent=inf?'\u221E':balance();
   $('bb-bar').style.width=inf?'100%':Math.min(100,bank.saved/BANK_MIN*100)+'%';
   $('bb-need').textContent=inf?'Unlimited. Use Take out below.':bank.saved>=BANK_MIN?'You can redeem now.':'Save '+(BANK_MIN-bank.saved)+' more to redeem.';
   $('bb-get').hidden=inf;$('bb-get').disabled=inf||bank.saved<BANK_MIN;
@@ -1866,6 +1885,7 @@ async function redeemCode(raw,where){
   if(!c||c.name!==name)throw new Error('That code is not valid.');
   const bux=c.type==='bux';
   if(where==='bank'&&!bux)throw new Error('That code gives an avatar item. Enter it on the Codes page.');
+  if(!await refreshAv())throw new Error('Could not check your account. Try again.');
   const av=me.av,key=cdKey(c);av.codes=av.codes||[];
   if(av.codes.indexOf(key)>=0)throw new Error('You already used that code.');
   const prev=JSON.stringify(av);let res;
@@ -1905,17 +1925,23 @@ function showReward(kind,x){
   ok.type='button';ok.onclick=rwClose;
   card.append(mkx('h2','','You received!'));
   if(kind==='bux'){
-    card.append(mkx('p','rw-sub','Added to your wallet'),st);st.append(mkx('div','rw-bux'));
-    card.append(mkx('div','rw-amt','+'+x.amount.toLocaleString()),mkx('p','rw-slot','blockbucks'))}
+    card.append(mkx('p','rw-sub','Added to your wallet'),st);st.append(mkx('div','rw-rays'),mkx('div','rw-bux'));
+    const am=mkx('div','rw-amt','+0');card.append(am,mkx('p','rw-slot','blockbucks'));
+    const t0=performance.now(),dur=Math.min(1400,500+String(x.amount).length*140);
+    const tick=function(now){if(!am.isConnected)return;const k=Math.min(1,((now||performance.now())-t0-500)/dur);const e=k<=0?0:1-Math.pow(1-k,3);
+      am.textContent='+'+Math.round(x.amount*e).toLocaleString();if(k<1)requestAnimationFrame(tick)};requestAnimationFrame(tick)}
   else{
     const it=x.item;let o=null;
     if(rwInit()){try{const m=thModel(it);o=m&&m.clone(true)}catch(e){o=null}}
-    card.append(mkx('p','rw-sub','A new avatar item'),st);
+    card.append(mkx('p','rw-sub','A new avatar item'),st);st.append(mkx('div','rw-rays'));
     if(o){st.append(RW.r.domElement);RW.obj=o;RW.sc.add(o);let a=.6;
       const loop=function(){a+=.02;o.rotation.set(.2,a,0);RW.r.render(RW.sc,RW.cam);RW.raf=requestAnimationFrame(loop)};loop()}
     else{const sw=mkx('div');sw.style.cssText='width:120px;height:120px;border-radius:18px;background:'+(/^#[0-9a-f]{6}$/i.test(it.c||'')?it.c:'#4a4c4e');st.append(sw)}
     card.append(mkx('div','rw-name',it.name),mkx('p','rw-slot',(SLOT_ONE[it.slot]||'Item')+' \u00B7 added to your Inventory'))}
-  card.append(ok);ov.append(card);ov.onclick=function(e){if(e.target===ov)rwClose()};
+  const cf=mkx('div','rw-conf'),cols=['#ffc233','#ff6b57','#46c26b','#3da5ff','#7a4cff','#ff7ab8','#1fc8b4'];
+  for(let i=0;i<44;i++){const p=document.createElement('i'),a=Math.random()*Math.PI*2,r=80+Math.random()*150;
+    p.style.cssText='background:'+cols[i%cols.length]+';--dx:'+Math.round(Math.cos(a)*r)+'px;--dy:'+Math.round(Math.sin(a)*r*.8-70)+'px;--rot:'+Math.round((Math.random()-.5)*900)+'deg;--d:'+(.1+Math.random()*.25).toFixed(2)+'s;--t:'+(1.4+Math.random()*.8).toFixed(2)+'s';cf.append(p)}
+  card.append(ok,cf);ov.append(card);ov.onclick=function(e){if(e.target===ov)rwClose()};
   document.body.append(ov);RW.ov=ov;document.addEventListener('keydown',rwKey);ok.focus()}
 
 /* Codes page: players */
@@ -2164,6 +2190,8 @@ function pvTick(now){
   pv.r.render(pv.sc,pv.cam)}
 function coinsEarned(){let n=10;Object.keys(recs).forEach(function(k){n+=recs[k].coins||0});return n}
 function balance(){return isBB()?Infinity:coinsEarned()+(bank&&bank.wallet||0)+(prem.bonus||0)+(gpe.total||0)+(adj.total||0)+(me.av.codeBux||0)-(me.av.spent||0)-(prem.on?PREM_PRICE:0)}
+/* Always work from the newest copy of the account. A second computer (like a school laptop) can hold an old copy, and using it made codes redeem twice and spending go missing. */
+async function refreshAv(){try{const a=await api.freshAv(me.id);me.av=a;syncMe();return true}catch(e){return false}}
 async function saveAv(){try{await api.setAvatar(me.id,me.av);syncMe();return true}catch(e){toast('Could not save: '+errText(e));return false}}
 /* ===== 3D shop tiles: every accessory in the shop is drawn as a small spinning 3D model. One shared renderer draws each model and copies it onto the tile. ===== */
 const TH={r:null,sc:null,cam:null,list:[],ok:null,sz:132,raf:0,t:0,models:{}};
@@ -2235,6 +2263,8 @@ function paintShop(){
     else{
       btn('Try',function(){pv.tryEq=Object.assign({},eq);pv.tryEq[it.slot]=trying?eqArr(eq[it.slot]):eqPut(eqArr(eq[it.slot]),it.id);pvRebuild();paintShop()},true);
       if(!off)btn('Buy',async function(){
+        if(!await refreshAv()){toast('Could not check your account. Try again.');return}
+        const eq=me.av.eq;
         if(it.sale===false){toast('This item is no longer on sale.');return}
         if(it.prem&&!premOn()){toast('This item is for Premium players. Get Premium on the Premium page.');nav('premium');paintPrem();return}
         if(balance()<it.price){toast('Not enough blockbucks. You need '+(it.price-balance())+' more.');return}
@@ -2384,7 +2414,7 @@ $('cat-q').addEventListener('input',function(){CAT.q=this.value.trim().toLowerCa
 async function toggleEquip(it){const eq=me.av.eq,old=eqArr(eq[it.slot]),worn=old.indexOf(it.id)>=0;
   eq[it.slot]=worn?old.filter(function(x){return x!==it.id}):eqPut(old,it.id);pv.tryEq=null;pvRebuild();paintItem();
   if(!await saveAv()){eq[it.slot]=old;pvRebuild()}paintItem()}
-async function buyItem(it){const eq=me.av.eq;
+async function buyItem(it){if(!await refreshAv()){toast('Could not check your account. Try again.');return}const eq=me.av.eq;
   if(it.sale===false&&!isAdm()){toast('This item is no longer on sale.');return}
   if(it.prem&&!premOn()){toast('This item is for Premium players. Get Premium on the Premium page.');nav('premium');paintPrem();return}
   if(balance()<it.price){toast('Not enough blockbucks. You need '+(it.price-balance())+' more.');return}
