@@ -4588,14 +4588,18 @@ async function aiRespond(b,S,o){
   AIBUSY[bk]=1;const t0=performance.now(),hk=bk+'|'+String(S.v.speaker||P.player.name).toLowerCase(),h=(AIH[hk]=AIH[hk]||[]);
   if(toRig)rigSay(rr.id,'...',45000);
   let reply='',err='';
+  const asksBuild=/build|block|studio|bricbloc|script|coding|\bcode\b|scratch|(make|making|create|creating) (a |my |the )?games?/i.test(msg),BLEED=/\b(blocks?|building|builders?|bricbloc|studio|scripts?|coding)\b/i;let strict=0;
+  const NOB=asksBuild?'':' STRICT RULE: do NOT talk about building, blocks, Studio, coding, scripts or making games. Only chat about what the player actually said, like a normal friend would.';
+  const GAMEFACT=' If the player asks what game this is, what game you are in, or where you are, answer: \"We are in BrixBlox. A game where people create games and have fun, all ages.\"';
   for(let att=0;att<3;att++){/* Gemini says 503 when it is overloaded for a moment: try again up to 2 more times before giving up */
   reply='';err='';
   try{
-    const r=await sb.functions.invoke('npc-ai',{body:{name:rn,personality:pers+' Chat like a real person: one or two short casual sentences under 100 characters, no lists or markdown, stay in character. Reply to what the player actually said. Never bring up blocks or building unless the player does. If someone sincerely asks if you are an AI, be honest.',message:msg,history:h.slice(-8)}});
+    const r=await sb.functions.invoke('npc-ai',{body:{name:rn,personality:pers+' Chat like a real person: one or two short casual sentences under 100 characters, no lists or markdown, stay in character. Reply to what the player actually said. Never bring up blocks or building unless the player does. If someone sincerely asks if you are an AI, be honest.'+NOB+(strict?' You must not use the words blocks, building, Studio, code or scripts in your answer.':'')+GAMEFACT,message:msg,history:h.slice(-8)}});
     if(r.error){let j=null;try{j=await r.error.context.json()}catch(e){}const c=j&&j.error;
       err=c==='premium'?'AI replies need BrixBlox Premium. (The server said no for the account \"'+String(ME&&ME.username||'?')+'\".)':c==='busy'?rn+' is busy right now. Try again in a moment.':c==='slow'?'You are asking too fast. Wait a moment.':c==='signin'?'AI replies need you to be signed in to BrixBlox.':'the AI could not answer ('+String((j&&j.message)||r.error.message||'server error').slice(0,120)+')'}
     else reply=String((r.data&&r.data.reply)||'').trim()
   }catch(e){err='the AI could not answer ('+String((e&&e.message)||e).slice(0,120)+')'}
+  if(!err&&!asksBuild&&!strict&&BLEED.test(reply)&&!S.stop){strict=1;continue}/* the answer talked about building when nobody asked: ask once more with a stricter rule */
   if(!err||!/503|429|busy|overload|unavailable/i.test(err)||S.stop)break;await sl(1500*(att+1))}
   AIBUSY[bk]=0;
   if(S.stop){if(toRig)rigSay(rr.id,'');return}
