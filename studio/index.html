@@ -1382,7 +1382,7 @@ async function gpBalance(){
   let ge=0;try{const re=await sb.rpc('gamepass_earnings_status');if(!re.error)ge=+(re.data&&re.data.total)||0}catch(e){}
   try{const ra=await sb.rpc('blockbuck_adjustments_status');if(!ra.error)ge+=+(ra.data&&ra.data.total)||0}catch(e){}
   const md=await gpMeta(),spent=+((md&&md.avatar&&md.avatar.spent)||0),codeBux=Math.max(0,Math.floor(+((md&&md.avatar&&md.avatar.codeBux)||0)));/* blockbucks from codes live on the avatar */
-  return coins+w+bonus+ge+codeBux-spent-(ME.prem?200:0)}
+  return coins+w+bonus+ge-spent-(ME.prem?200:0)}
 async function gpBuy(g){
   if(GP.busy)return {ok:false,why:'One moment, still working on the last one.'};
   GP.busy=true;
