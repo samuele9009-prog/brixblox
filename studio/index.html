@@ -1465,11 +1465,11 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
   const a=b.a,n=function(i){return Number(val(a[i],S))||0};
   if(S.only&&ONLYB[b.t]){await onlyDo(b,S,o);return}
   switch(b.t){
-    case'move':{const r=S.dir*Math.PI/180;S.x=cl(S.x+Math.cos(r)*n(0),250);S.y=cl(S.y+Math.sin(r)*n(0),250);break}
-    case'turn':S.dir=(S.dir-n(0))%360;break;
+    case'move':{const mr=movOwn(o);if(mr){await movRigStep(mr,n(0),S);break}const r=S.dir*Math.PI/180;S.x=cl(S.x+Math.cos(r)*n(0),250);S.y=cl(S.y+Math.sin(r)*n(0),250);break}
+    case'turn':{const mr=movOwn(o);if(mr){movRigTurn(mr,n(0));break}S.dir=(S.dir-n(0))%360;break}
     case'goto':S.x=cl(n(0),250);S.y=cl(n(1),250);break;
     case'animate':await playAnim(a[0].trim(),S);break;
-    case'jump':{const H=Math.max(0,n(0)),JA=P.anims[S.jumpA||'jump'];if(S.gr&&H>0){S.vy=Math.sqrt(2*P.rules.grav*H);S.gr=false;jumpSound();let t=0;while(!S.stop&&!S.gr&&t<6){t+=.016;if(JA)applyPose(evalPose(JA,Math.min(t,JA.len)));await sl(16)}if(JA)applyPose({})}break}
+    case'jump':{const mr=movOwn(o);if(mr){await movRigJump(mr,Math.max(0,n(0)),S);break}const H=Math.max(0,n(0)),JA=P.anims[S.jumpA||'jump'];if(S.gr&&H>0){S.vy=Math.sqrt(2*P.rules.grav*H);S.gr=false;jumpSound();let t=0;while(!S.stop&&!S.gr&&t<6){t+=.016;if(JA)applyPose(evalPose(JA,Math.min(t,JA.len)));await sl(16)}if(JA)applyPose({})}break}
     case'say':sayBubble(String(val(a[0],S)));break;
     case'color':S.col=a[0].trim();break;
     case'wait':await sl(Math.max(0,n(0))*1000);break;
@@ -2642,7 +2642,7 @@ function modelProps(d,m){const ps=partsOf(m.id),nm=el('input');nm.value=m.name;n
     d.append(lab('Inside model',pr),el('p','note','Models can sit inside other models. Select several parts or models and group them to nest them, or drag a model onto another one in the list.'))}
   {const sA=sect(d,'Appearance');sA.append(lab('Material (all pieces)',ms),lab('Color (all pieces)',col));if(ps.length){shineAll(sA,ps,'Shininess (all pieces)');trAll(sA,ps,'Transparency (all pieces)')}}{const gr=ps.find(function(q){return !q.parent&&!q.av&&kids(q).length});if(gr){gearBox(d,gr);
     const sM=sect(d,'Physics'),mc=el('input');mc.type='checkbox';mc.checked=!!gr.movable;mc.onchange=function(){gr.movable=mc.checked;save()};
-    const ml=el('label','','Movable (push it with your character)');ml.title='On: your character can push it around, and it plays its idle animation when still and its walk animation whenever it is moved (needs animations named idle and walk).';ml.append(mc);sM.append(ml)}}contSel(d)}
+    const ml=el('label','','Movable (push it with your character)');ml.title='On: your character can push it around, and it plays its idle animation when still and its walk animation whenever it is moved (it falls with gravity and can jump; needs animations named idle, walk and jump).';ml.append(mc);sM.append(ml)}}contSel(d)}
 /* Several parts picked at once (Shift/Ctrl-click or a Shift-drag box): material and colour apply to every one of them */
 function multiProps(d,ps){const ms=el('select'),ph=el('option','','Choose a material for all...');ph.value='';ms.append(ph);
   Object.keys(MATS).forEach(function(k){const o=el('option','',MATS[k].n);o.value=k;ms.append(o)});ms.value='';
@@ -2659,7 +2659,7 @@ function props0(){const d=$('p-props');d.replaceChildren();if(selFold&&!sel.leng
   {const sA=sect(d,'Appearance');sA.append(lab('Material',matSel(p.mat,function(k){setMat(p,k);all()})),lab('Color',col));if(!p.stab){shineAll(sA,[p],p.shape==='mesh'?'Shininess (mesh & texture)':undefined);trAll(sA,[p],'Transparency')}
    const sT=sect(d,'Position & size');sT.append(vec('Position',p.pos,true),vec('Size',p.size,false))}
   const sP=sect(d,'Physics');
-  if(!p.parent){const c=el('input');c.type='checkbox';c.checked=!!p.movable;c.onchange=function(){p.movable=c.checked;save()};const l=el('label','','Movable (push it with your character)');l.title='Off: a rig built like a person acts like a solid player (cannot be pushed). On: your character can push it around, and it plays its idle animation when still and its walk animation whenever it is moved (needs animations named idle and walk).';l.append(c);sP.append(l);
+  if(!p.parent){const c=el('input');c.type='checkbox';c.checked=!!p.movable;c.onchange=function(){p.movable=c.checked;save()};const l=el('label','','Movable (push it with your character)');l.title='Off: a rig built like a person acts like a solid player (cannot be pushed). On: your character can push it around, and it plays its idle animation when still and its walk animation whenever it is moved (it falls with gravity and can jump; needs animations named idle, walk and jump).';l.append(c);sP.append(l);
     const c2=el('input');c2.type='checkbox';c2.checked=!p.nocol;c2.onchange=function(){if(c2.checked)delete p.nocol;else p.nocol=true;save()};const l2=el('label','','Collision (solid: blocks your character)');l2.append(c2);sP.append(l2);{const px={get fr(){return p.fr==null?1:p.fr},set fr(v){if(v===1)delete p.fr;else p.fr=v}};slider(sP,'Friction (0 ice, 1 normal, 3+ grippy)',px,'fr',0,5,.05,function(v){return (+v).toFixed(2)})}}
   else sP.append(el('p','note','Welded: moves with the part it is welded to.'));if((!p.av||p.acc)&&!p.sm&&!p.stab&&p.shape!=='mesh'&&p.shape!=='union'){const ss=el('select');[['box','Block'],['cyl','Cylinder'],['sphere','Sphere'],['wedge','Triangle']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ss.append(op)});ss.value=p.shape||'box';ss.onchange=function(){if(ss.value==='box')delete p.shape;else p.shape=ss.value;all()};d.append(lab('Shape',ss))}
   if(p.shape==='mesh')meshProps(d,p);
@@ -4266,8 +4266,18 @@ function rigAI(dt){const ids=Object.keys(RB);if(!ids.length)return;const now=per
     if(!rbPose(r,b,move?'walk':'idle',b.at)&&b.was&&!move){const z={};if(!b.ids){b.ids={};rigParts(r).forEach(function(q){b.ids[q.id]=1})}Object.keys(b.ids).forEach(function(k){z[k]=[0,0,0]});applyKeyed(z)}
     b.was=move})}
 /* A Movable rig built like a person acts like a real player: it plays its "idle" animation while it stands still, and its "walk" animation (turning to face where it goes) whenever something moves it: a push, a tween, a move or go to block. It needs animations named walk and idle that have keyframes for its parts. Rigs controlled by the rig AI, ragdolls and rigs playing a scripted animation are left alone. */
-const MRA={};
-function movRigTick(dt){if(!(playing||running)){for(const k in MRA)delete MRA[k];return}
+const MRA={},MRG={};
+/* A script that belongs to a Movable rig: "move _ steps", "turn _" and "jump _" act on that rig (walk, turn, jump) instead of on your character. */
+function movOwn(o){try{const r=roots(o,true)[0];if(r&&!r.parent&&!r.av&&r.movable&&kids(r).length&&!gone(r))return r}catch(e){}return null}
+function movRigG(id){return MRG[id]||(MRG[id]={vy:0,gr:true,jt:0})}
+async function movRigStep(r,dist,S){const id=r.id,sp=Math.max(4,+P.rules.speed||16),sg=dist<0?-1:1,dv=dirOf('rig:'+id,'front');let left=Math.abs(dist),last=performance.now();
+  while(left>0&&!S.stop&&(playing||running)){await sl(16);const now=performance.now(),dt=Math.min(.05,(now-last)/1000);last=now;
+    const rg=RAG['rig:'+id];if(rg&&!rg.gone&&(rg.dead||rg.t<rg.end))break;
+    const k=Math.min(left,sp*dt),q=RO[id]||(RO[id]=[0,0]);q[0]+=dv.x*sg*k;q[1]+=dv.z*sg*k;left-=k}}
+function movRigTurn(r,deg){const id=r.id,D=Math.PI/180;RYAW[id]=(RYAW[id]||0)-deg*D;const yaw=(r.ry||0)*D+RYAW[id],m=MRA[id];if(m)m.yaw=yaw;const g=J[id];if(g){g.userData.gry=yaw;g.rotation.y=yaw}}
+async function movRigJump(r,H,S){const G=movRigG(r.id);if(!(G.gr&&H>0))return;G.vy=Math.sqrt(2*P.rules.grav*H);G.gr=false;G.jt=0;let t=0;
+  while(!S.stop&&!G.gr&&t<6&&(playing||running)){await sl(16);t+=.016}}
+function movRigTick(dt){if(!(playing||running)){for(const k in MRA)delete MRA[k];for(const k in MRG)delete MRG[k];return}
   if(!(dt>0))return;const D=Math.PI/180;
   P.parts.forEach(function(r){
     if(r.parent||r.av||!r.movable||!kids(r).length||gone(r)||RB[r.id])return;
@@ -4277,19 +4287,30 @@ function movRigTick(dt){if(!(playing||running)){for(const k in MRA)delete MRA[k]
       /* find the animation: the exact name first, then any capital letters, then any name that contains the word (like "Walk cycle"); it must have keyframes for this rig's parts */
       const find=function(w){const ok=function(n){const A=P.anims[n];return !!A&&Object.keys(A.keys).some(function(k){return ids[k]})},ns=Object.keys(P.anims);
         if(ok(w))return w;return ns.find(function(n){return n.trim().toLowerCase()===w&&ok(n)})||ns.find(function(n){return n.toLowerCase().indexOf(w)>=0&&ok(n)})||''};
-      m={x:px,z:pz,at:0,hold:0,was:false,ids:ids,wn:find('walk'),inn:find('idle'),yaw:((r.ry||0)*D)+(RYAW[id]||0)};m.w=!!m.wn;m.i=!!m.inn;MRA[id]=m;
-      if(!m.w&&!m.i)log('Error: \"'+r.name+'\" is Movable but has no animation named walk or idle with keyframes for its parts, so it can not animate. Make a walk and an idle animation for this rig in the animation editor.')}
+      m={x:px,z:pz,at:0,hold:0,was:false,ids:ids,wn:find('walk'),inn:find('idle'),jn:find('jump'),fn:find('fall'),yaw:((r.ry||0)*D)+(RYAW[id]||0)};m.w=!!m.wn;m.i=!!m.inn;m.j=!!m.jn;m.f=!!m.fn;MRA[id]=m;
+      if(!m.w&&!m.i&&!m.j&&!m.f)log('Error: \"'+r.name+'\" is Movable but has no animation named walk, idle or jump with keyframes for its parts, so it can not animate. Make a walk and an idle animation for this rig in the animation editor.')}
     const dx=px-m.x,dz=pz-m.z,d=Math.hypot(dx,dz),sp=d/dt;m.x=px;m.z=pz;
-    if(!m.w&&!m.i)return;
     const rg=RAG['rig:'+id];if(rg&&!rg.gone&&(rg.dead||rg.t<rg.end+RRISE))return;
+    /* gravity: a Movable rig falls, lands on solid parts, and can jump, like a player */
+    const G=movRigG(id);
+    if(RD[id]||RVY[id]){G.vy=0}
+    else{const fy=feetOf(r)+(RY[id]||0),g=groundAt(px,pz,fy,id),was=G.gr;
+      G.vy=Math.max(-220,G.vy-P.rules.grav*dt);let ny=fy+G.vy*dt;
+      if(g>-1e8&&G.vy<=0&&(ny<=g||(was&&fy-g<1.2))){ny=g;G.vy=0;G.gr=true}else G.gr=false;
+      if(ny<(S.voidY!=null?S.voidY:-150)){RO[id]=[0,0];RY[id]=0;G.vy=0;G.gr=false}else RY[id]=ny-feetOf(r);
+      if(was&&!G.gr)G.jt=0}
+    const air=!G.gr&&!RD[id]&&!RVY[id];if(air)G.jt+=dt;
+    if(!m.w&&!m.i&&!m.j&&!m.f)return;
     if(rigParts(r).some(function(q){return RBUSY[q.id]>0}))return;
     if(sp>.6&&d<8){m.hold=.2;const ty=Math.atan2(-dx,-dz);let df=ty-m.yaw;df=df-2*Math.PI*Math.floor((df+Math.PI)/(2*Math.PI));m.yaw+=df*(1-Math.exp(-dt*10));
       RYAW[id]=m.yaw-(r.ry||0)*D;const g=J[id];if(g){g.userData.gry=m.yaw;g.rotation.y=m.yaw}}
     else m.hold-=dt;
     const move=m.hold>0;
     m.at+=dt*(move?Math.max(.6,Math.min(1.6,sp/8)):1);
-    const pn=move?m.wn:m.inn;if(!(pn&&rbPose(r,m,pn,m.at))&&m.was&&!move&&m.w){const z={};Object.keys(m.ids).forEach(function(k){z[k]=[0,0,0]});applyKeyed(z)}
-    m.was=move})}
+    let pn=move?m.wn:m.inn,pt=m.at,inAir=false;
+    if(air&&(m.j||(m.f&&G.vy<-6))){inAir=true;if(m.f&&G.vy<-6){pn=m.fn;pt=G.jt}else{pn=m.jn;const A=P.anims[pn];pt=Math.min(G.jt,Math.max(0,(A&&A.len||.5)-.001))}}
+    if(!(pn&&rbPose(r,m,pn,pt))&&m.was&&!move&&!inAir){const z={};Object.keys(m.ids).forEach(function(k){z[k]=[0,0,0]});applyKeyed(z)}
+    m.was=move||inAir})}
 function xeqSet(t,slot,id,wear){
   if(t.key==='main'){S.xeq=S.xeq||{};if(wear)S.xeq[slot]=id;else Object.keys(S.xeq).forEach(function(k){if(S.xeq[k]===id)delete S.xeq[k]});try{accLocal()}catch(e){}return}
   const n=NP.find(function(x){return 'np:'+x.name===t.key});if(!n)return;
