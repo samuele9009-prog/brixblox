@@ -14,6 +14,7 @@
   --sky:#8fd3ff; --sky2:#e6f6ff; --sun:#ffc233; --grass:#2fa95a; --coral:#ff6b57; --berry:#7a4cff;
   --display:"Lilita One","Trebuchet MS",system-ui,sans-serif;
   --body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --bbicon:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2l9 5-9 5-9-5z' fill='%23ffe27a'/><path d='M3 7l9 5v10l-9-5z' fill='%23f2a61d'/><path d='M21 7l-9 5v10l9-5z' fill='%23d9840b'/><path d='M3 7l9 5 9-5M12 12v10' fill='none' stroke='%237a4a00' stroke-width='1' stroke-linejoin='round'/><path d='M12 2l9 5v10l-9 5-9-5V7z' fill='none' stroke='%237a4a00' stroke-width='1.3' stroke-linejoin='round'/><path d='M8.6 6.6l3-1.5' stroke='white' stroke-width='1.2' stroke-linecap='round' opacity='.75'/></svg>");
   color-scheme:light;
 }
 *{box-sizing:border-box}
@@ -177,7 +178,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .av-tools .btn{width:auto;margin:0}
 .av-tools .btn[aria-pressed=true]{background:#00b06f!important;color:#fff!important}
 .wallet{display:inline-flex;align-items:center;gap:6px;font-weight:800;padding:4px 12px;border-radius:99px;border:1px solid var(--line)}
-.wallet i{width:14px;height:14px;border-radius:50%;background:#ffc233;display:block;border:1px solid rgba(0,0,0,.35)}
+.wallet i{width:17px;height:17px;background:var(--bbicon) center/contain no-repeat;display:block}
 .pstar{display:inline-block;margin-left:6px;padding:0 6px;border-radius:99px;background:linear-gradient(135deg,#ffd45e,#f29b1d);color:#4a2f00;font-size:.7em;font-weight:800;line-height:1.5;vertical-align:middle;cursor:default}
 .item .tagprem{font-size:.75rem;font-weight:800;color:#b36b00;margin-left:6px}
 .prem-panel .bb-box{max-width:300px;margin:8px 0}
@@ -190,7 +191,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .item .sw.sw3 canvas{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
 .item b{font-size:.95rem}
 .item .pr{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:5px}
-.item .pr i{width:11px;height:11px;border-radius:50%;background:#ffc233;display:block}
+.item .pr i{width:14px;height:14px;background:var(--bbicon) center/contain no-repeat;display:block}
 .item .row{display:flex;gap:6px;flex-wrap:wrap}.item .row .btn{flex:1;margin:0;width:auto;padding:0 6px}
 .item .tagoff{font-size:.75rem;font-weight:800;color:#c2321f}
 .ed{border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px;background:rgba(127,127,127,.10);color:var(--ink)}
@@ -242,6 +243,29 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 @keyframes bbdraw{to{stroke-dashoffset:0}}
 @keyframes bbfade{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.bb-circle,.bb-circle path,.bb-ok{animation-duration:.01s;animation-delay:0s}}
+.cd-adm{margin-top:18px;border-top:1px solid var(--line);padding-top:6px}
+.cd-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.cd-form input,.cd-form select{min-height:40px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font:inherit}
+.cd-form input[type=number]{width:140px}.cd-form #cda-name{width:180px;text-transform:uppercase;letter-spacing:.05em}
+.cd-form .btn{width:auto;margin:0}
+.cd-list{margin:10px 0 0;padding:0;list-style:none}
+.cd-list li{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.cd-list code{font-weight:900;letter-spacing:.06em;font-size:1.05rem}
+.cd-list .cd-r{color:var(--muted);font-size:.9rem}.cd-list .btn{margin-left:auto}
+.rw-ov{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(10,12,30,.62);padding:16px;animation:bbfade .2s}
+.rw-card{width:min(340px,100%);background:var(--paper);color:var(--ink);border-radius:22px;padding:22px 20px 20px;text-align:center;border:1px solid var(--line);animation:rwpop .45s cubic-bezier(.2,1.3,.4,1)}
+.rw-card h2{font-size:1.8rem;margin:0 0 2px}
+.rw-sub{margin:0 0 6px;color:var(--muted)}
+.rw-stage{width:230px;height:230px;max-width:100%;margin:6px auto;border-radius:50%;background:radial-gradient(circle,rgba(255,194,51,.45),rgba(255,194,51,0) 68%);display:grid;place-items:center}
+.rw-stage canvas{width:230px;height:230px;max-width:100%;display:block}
+.rw-bux{width:120px;height:120px;background:var(--bbicon) center/contain no-repeat;animation:rwspin 2.4s ease-in-out infinite}
+.rw-amt{font-family:var(--display);font-size:2.4rem;line-height:1}
+.rw-name{font-family:var(--display);font-size:1.5rem;margin:4px 0 0;overflow-wrap:anywhere}
+.rw-slot{font-size:.85rem;color:var(--muted);margin:0 0 14px}
+.rw-card .btn{width:100%}
+@keyframes rwpop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes rwspin{0%,100%{transform:rotateY(-25deg) translateY(0)}50%{transform:rotateY(25deg) translateY(-6px)}}
+@media(prefers-reduced-motion:reduce){.rw-card,.rw-bux,.rw-ov{animation:none}}
 .soon{border:2px dashed var(--line);border-radius:8px;padding:28px;text-align:center;color:var(--muted)}
 .soon b{display:block;color:#fff;font-size:1.1rem;margin-bottom:4px}
 .addrow{display:flex;gap:8px}.addrow .btn{width:auto;margin:0;white-space:nowrap}
@@ -346,7 +370,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .gm-bd .ic{font-size:1.8rem;width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:50%;background:#fff;border:1px solid var(--line)}
 .gm-bd small{display:block;color:var(--muted)}
 #p-game .gpbal{display:inline-flex;align-items:center;gap:6px;font-weight:800;margin:0 0 10px}
-#p-game .gpbal i,#p-game .gpp i{width:12px;height:12px;border-radius:50%;background:#ffc233;display:inline-block}
+#p-game .gpbal i,#p-game .gpp i{width:15px;height:15px;background:var(--bbicon) center/contain no-repeat;display:inline-block}
 #p-game .gpcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
 #p-game .gpc{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
 #p-game .gpc .gpi{width:100%;aspect-ratio:1/1;border-radius:8px;background:#8fa3c8 center/cover no-repeat;display:grid;place-items:center;font-size:2.4rem;color:#fff}
@@ -413,7 +437,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .it-tag.off{background:#c2321f;color:#fff}
 .it-tag.ok{background:#00b06f;color:#fff}
 .it-price{display:flex;align-items:center;gap:8px;font-size:1.7rem;font-weight:800}
-.it-price i{width:18px;height:18px;border-radius:50%;background:#ffc233;display:block;border:1px solid rgba(0,0,0,.35)}
+.it-price i{width:21px;height:21px;background:var(--bbicon) center/contain no-repeat;display:block}
 .it-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .it-acts .btn{min-width:130px}
 .it-views{display:flex;gap:8px}
@@ -449,7 +473,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .it-rows dd{margin:0;font-weight:600;overflow-wrap:anywhere}
 .it-rows .it-acts{grid-column:2;flex-direction:column;align-items:stretch;gap:10px}
 .it-price2{display:flex;align-items:center;gap:8px;font-size:1.35rem;font-weight:800}
-.it-price2 i{width:16px;height:16px;border-radius:50%;background:#ffc233;display:block;border:1px solid rgba(0,0,0,.35)}
+.it-price2 i{width:19px;height:19px;background:var(--bbicon) center/contain no-repeat;display:block}
 .it-acts .btn.it-buy{background:#335fff;color:#fff;border:1px solid #335fff;border-radius:8px;min-height:50px;width:100%;font-size:1.05rem}
 .it-acts .btn.it-sec{background:#fff;color:#1d2147;border:1px solid var(--line);border-radius:8px;min-height:50px;width:100%;font-size:1.05rem}
 .it-acts .btn.it-sec.on{background:#fff6dc}
@@ -551,6 +575,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       <button id="n-catalog" type="button" data-i="catalog">Catalog</button>
       <button id="n-avatar" type="button" data-i="avatar">Inventory</button>
       <button id="n-bank" type="button" data-i="bank">Blockbank</button>
+      <button id="n-codes" type="button" data-i="codes">Codes</button>
       <button id="n-premium" type="button" data-i="premium">Premium</button>
       <button id="n-studio" type="button" data-i="studio">Studio</button>
       <button id="n-settings" type="button" data-i="settings">Settings</button>
@@ -662,7 +687,8 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       <p class="hint">Redeem when you have 20 or more saved. Getting a code does not take any blockbucks out of your Blockbank. They only leave when you redeem the code.</p>
       <div class="seg"><button id="bb-get" class="btn" type="button" disabled="">Get my redeem code</button></div>
       <div id="bb-code" class="bb-code" hidden=""><code id="bb-codev"></code><span class="hint" style="margin:0">for <b id="bb-codeamt">0</b> blockbucks</span><button id="bb-copy" class="btn ghost small" type="button">Copy</button></div>
-      <form id="f-bb" class="addrow" style="margin-top:12px"><input id="bb-in" type="text" maxlength="20" placeholder="Enter your code (BBX-XXXX-XXXX)" autocapitalize="characters" spellcheck="false" autocomplete="off" required=""><button class="btn" type="submit">Redeem</button></form>
+      <form id="f-bb" class="addrow" style="margin-top:12px"><input id="bb-in" type="text" placeholder="Enter your code (BBX-XXXX-XXXX)" autocapitalize="characters" spellcheck="false" autocomplete="off" required="" maxlength="24"><button class="btn" type="submit">Redeem</button></form>
+      <p class="hint">Codes that give blockbucks work here. Codes that give an avatar item go on the Codes page.</p>
       <p id="bb-msg" class="msg" role="status"></p>
       <div id="bb-owner" hidden="">
         <h3>Take out (brixblox)</h3>
@@ -673,6 +699,27 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       </div>
       <h3>Recent activity</h3>
       <ul id="bb-log" class="bb-log"></ul>
+    </section>
+  </div>
+  <div id="p-codes" class="page" hidden="">
+    <section class="panel">
+      <h2>Codes</h2>
+      <p class="hint">Got a code? Type it in to get a free avatar item. Codes that give blockbucks are redeemed on the Blockbank page.</p>
+      <form id="f-code" class="addrow" style="margin-top:12px"><input id="cd-in" type="text" maxlength="24" placeholder="Enter a code" autocapitalize="characters" spellcheck="false" autocomplete="off" required=""><button class="btn" type="submit">Redeem</button></form>
+      <p id="cd-msg" class="msg" role="status"></p>
+      <div id="cd-adm" class="cd-adm" hidden="">
+        <h3>Create a code (admins)</h3>
+        <p class="hint">Pick a name players will type, like RELEASE, then choose what it gives. Each player can use a code once. Item codes are redeemed on this page. Blockbuck codes are redeemed on the Blockbank page.</p>
+        <div class="cd-form">
+          <input id="cda-name" type="text" maxlength="24" placeholder="Code name" autocapitalize="characters" spellcheck="false" autocomplete="off">
+          <select id="cda-type" aria-label="Reward type"><option value="item">Avatar item</option><option value="bux">Blockbucks</option></select>
+          <select id="cda-item" aria-label="Avatar item"></select>
+          <input id="cda-amt" type="number" min="1" max="1000000000" step="1" placeholder="Amount" hidden="">
+          <button id="cda-go" class="btn small" type="button">Create code</button>
+        </div>
+        <p id="cd-amsg" class="msg" role="status"></p>
+        <ul id="cd-list" class="cd-list"></ul>
+      </div>
     </section>
   </div>
   <div id="p-premium" class="page" hidden="">
@@ -883,7 +930,7 @@ function tooAlike(a,b){return colorDist(a,b)<MIN_LOOK_DIST}
 /* Each slot can hold up to 2 accessories (older saves held one id as a plain string) */
 function eqArr(v){return Array.isArray(v)?v.filter(function(x){return typeof x==='string'&&x}).slice(-2):(typeof v==='string'&&v?[v]:[])}
 function eqPut(arr,id){arr=arr.filter(function(x){return x!==id});arr.push(id);const it=itemById(id);return arr.slice(it&&it.slot==='shirt'?-1:-2)}
-function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:eqArr(e.hat),face:eqArr(e.face),facc:eqArr(e.facc),back:eqArr(e.back),neck:eqArr(e.neck),shirt:eqArr(e.shirt).slice(-1)},spent:a.spent||0,skin:HEX.test(a.skin)?a.skin:DEF_SKIN,pants:HEX.test(a.pants)?a.pants:DEF_PANTS,
+function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:eqArr(e.hat),face:eqArr(e.face),facc:eqArr(e.facc),back:eqArr(e.back),neck:eqArr(e.neck),shirt:eqArr(e.shirt).slice(-1)},spent:a.spent||0,codes:Array.isArray(a.codes)?a.codes.filter(function(x){return typeof x==='string'}).slice(-500):[],codeBux:Math.max(0,Math.floor(+a.codeBux||0)),clog:Array.isArray(a.clog)?a.clog.slice(0,15).map(function(x){return {amount:+x.amount||0,reason:String(x.reason||'').slice(0,60),created_at:String(x.created_at||'')}}):[],skin:HEX.test(a.skin)?a.skin:DEF_SKIN,pants:HEX.test(a.pants)?a.pants:DEF_PANTS,
     favI:Array.isArray(a.favI)?a.favI.filter(function(x){return typeof x==='string'&&x}).slice(0,100):[],
     favG:Array.isArray(a.favG)?a.favG.filter(function(g){return g&&g.id!=null}).slice(0,100).map(function(g){return {id:String(g.id),name:String(g.name||'').slice(0,60),ownerId:g.ownerId||null,ownerName:String(g.ownerName||'').slice(0,32)}}):[]}}
 function makeDemo(){
@@ -941,6 +988,10 @@ function makeDemo(){
       if(/^GFT-/.test(gc)){const n=d.gifts&&d.gifts[gc];if(!n)throw new Error('That code is not valid or was already used.');delete d.gifts[gc];b.wallet+=n;b.log.unshift({amount:n,reason:'Gift code redeemed',created_at:new Date().toISOString()});save(d);return {amount:n,saved:b.saved,wallet:b.wallet}}
       if(!b.code||b.code!==String(code).trim().toUpperCase())throw new Error('That code is not valid or was already used.');if(b.saved<b.amt)throw new Error('Not enough blockbucks saved for that code.');
       const n=b.amt;b.saved-=n;b.wallet+=n;b.code=null;b.amt=0;b.log.unshift({amount:-n,reason:'Redeemed to your wallet',created_at:new Date().toISOString()});save(d);return {amount:n,saved:b.saved,wallet:b.wallet}},
+    async codeGet(n){const d=load();return (d.codes&&d.codes[n])||null},
+    async codeList(){const d=load();return Object.keys(d.codes||{}).map(function(k){return d.codes[k]})},
+    async codeSave(c){const d=load();d.codes=d.codes||{};d.codes[c.name]=c;save(d)},
+    async codeDel(n){const d=load();if(d.codes)delete d.codes[n];save(d)},
     async setAvatar(id,a){const d=load();const u=d.users.find(function(x){return x.id===id});if(u){u.av=a;save(d)}},
     async pubAvatar(){},
     async setAccount(id,a){const d=load();const u=d.users.find(function(x){return x.id===id});if(u){u.contact=a.email;u.age=a.age;save(d)}return {pending:false}},
@@ -1033,6 +1084,10 @@ function makeSupa(){
     async buyPremium(){const r=await sb.rpc('buy_premium');if(r.error)throw r.error;return r.data},
     async bankCode(){const r=await sb.rpc('bank_create_code');if(r.error)throw r.error;return r.data},
     async bankRedeem(id,code){const gift=/^GFT-/i.test(String(code).trim()),r=await sb.rpc(gift?'bank_redeem_gift':'bank_redeem',{p_code:code});if(r.error)throw r.error;return r.data},
+    async codeGet(n){const r=await sb.from('games').select('data').eq('id','sys_code_'+n).maybeSingle();if(r.error)throw r.error;if(!r.data)return null;let d=r.data.data;if(typeof d==='string'){try{d=JSON.parse(d)}catch(e){d=null}}return d||null},
+    async codeList(){const r=await sb.from('games').select('id,data').like('id','sys_code_%');if(r.error)throw r.error;return (r.data||[]).map(function(x){let d=x.data;if(typeof d==='string'){try{d=JSON.parse(d)}catch(e){d=null}}return d}).filter(function(d){return d&&d.name})},
+    async codeSave(c){const r=await sb.from('games').upsert({id:'sys_code_'+c.name,owner_id:me.id,owner_name:me.username,name:'code',vis:'public',data:JSON.stringify(c),updated_at:new Date().toISOString()});if(r.error)throw r.error},
+    async codeDel(n){const r=await sb.from('games').delete().eq('id','sys_code_'+n).select('id');if(r.error)throw r.error;if(!(r.data||[]).length)throw new Error('That code could not be deleted. Only the admin who made it can delete it.')},
     async bankGift(id,n){const r=await sb.rpc('bank_admin_gift',{p_amount:n});if(r.error)throw r.error;return r.data},
     async bankTake(id,n){const r=await sb.rpc('bank_admin_take',{p_amount:n});if(r.error)throw r.error;return r.data},
     async setAvatar(id,a){const r=await sb.auth.updateUser({data:{avatar:a}});if(r.error)throw r.error;try{await this.pubAvatar(id,a)}catch(e){console.warn('Avatar share failed',e);if(!window.__avWarn){window.__avWarn=1;toast('Friends cannot see your avatar yet: '+((e&&e.message)||e))}}},
@@ -1181,10 +1236,10 @@ function lobby(){
   {const v=me.av;if(tooAlike(v.skin,v.pants)){const ok=PANTS.find(function(c){return !tooAlike(v.skin,c)});if(ok)v.pants=ok}}/* older saves that are too alike get safe pants */
   setPart('shirt');
   paintAvatar();$('s-mail').value=me.pending||me.email||'';$('s-age').value=me.age||'';if(me.pending)sMsg('Waiting for you to confirm '+me.pending+'. Check your inbox.',true);else $('s-msg').textContent='';nav('home');if(store.get('brixblox-gopremium')){store.del('brixblox-gopremium');nav('premium');paintPrem()}loadFriends();loadGames();loadEvents();$('n-admin').hidden=!isBB();$('n-bill').hidden=!isBB();loadAdmins();checkNotices();loadBank();loadItems();api.pubAvatar(me.id,me.av).catch(function(e){console.warn('Avatar share failed',e);if(!window.__avWarn){window.__avWarn=1;toast('Friends cannot see your avatar yet: '+((e&&e.message)||e))}})}
-const PAGES=['home','discover','friends','avatar','catalog','bank','premium','settings'];
+const PAGES=['home','discover','friends','avatar','catalog','bank','codes','premium','settings'];
 var pfSelf=false,pfName='';
 function nav(p){if(p!=='game'){try{svClose()}catch(e){}}PAGES.forEach(function(x){$('p-'+x).hidden=x!==p;$('n-'+x).classList.toggle('on',x===p||(p==='profile'&&x==='friends'&&!pfSelf)||(p==='item'&&x===IV.back))});$('n-profile').classList.toggle('on',(p==='profile'&&pfSelf)||(p==='item'&&IV.back==='profile'&&pfSelf));$('p-profile').hidden=p!=='profile';$('p-game').hidden=p!=='game';$('p-item').hidden=p!=='item'}
-const IC={profile:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',catalog:'<path d="M5 8h14l-1 12H6zM9 8a3 3 0 016 0"/>',premium:'<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',discover:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',bank:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 9l9-6 9 6M8 13v3M12 13v3M16 13v3"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
+const IC={profile:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',catalog:'<path d="M5 8h14l-1 12H6zM9 8a3 3 0 016 0"/>',premium:'<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',discover:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',home:'<path d="M3 11l9-8 9 8v10H3z"/>',friends:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 010 7M18 14c2.5.6 4 2.4 4 6"/>',codes:'<rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 13h18M12 8C10 4 6 4 6 6.5S10 8 12 8zM12 8c2-4 6-4 6-1.5S14 8 12 8z"/>',bank:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 9l9-6 9 6M8 13v3M12 13v3M16 13v3"/>',avatar:'<circle cx="12" cy="6" r="3"/><path d="M6 21v-7h12v7"/>',studio:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'};
 document.querySelectorAll('.snav button').forEach(function(b){b.insertAdjacentHTML('afterbegin','<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+IC[b.dataset.i]+'</svg>')});
 function theme(t){document.documentElement.dataset.theme=t;store.set('brixblox-theme',t);$('th-light').setAttribute('aria-pressed',String(t==='light'));$('th-dark').setAttribute('aria-pressed',String(t==='dark'))}
 $('th-light').onclick=function(){theme('light')};$('th-dark').onclick=function(){theme('dark')};theme(store.get('brixblox-theme')==='dark'?'dark':'light');
@@ -1196,7 +1251,7 @@ $('f-acct').addEventListener('submit',async function(e){e.preventDefault();
   $('b-acct').disabled=true;sMsg('Saving...',true);
   try{const r=await api.setAccount(me.id,{email:email,age:age},me.email);me.age=age;if(r.pending){me.pending=email;sMsg('Saved. We sent a confirmation link to '+email+'. Open it to finish adding your email.',true)}else{if(api.demo)me.email=email;sMsg('Saved.',true)}}catch(er){sMsg(errText(er))}
   $('b-acct').disabled=false});
-$('n-avatar').onclick=function(){nav('avatar');openAvatarPage()};$('n-profile').onclick=function(){openProfile(me.username)};$('n-catalog').onclick=function(){nav('catalog');paintCatalog();loadBank().then(function(){if(!$('p-catalog').hidden)paintCatalog()})};$('n-bank').onclick=function(){nav('bank');loadBank()};$('n-premium').onclick=function(){nav('premium');loadPrem().then(paintPrem)};$('n-settings').onclick=function(){nav('settings')};$('n-admin').onclick=function(){openAdmin()};$('n-bill').onclick=function(){openBBMgr()};
+$('n-avatar').onclick=function(){nav('avatar');openAvatarPage()};$('n-profile').onclick=function(){openProfile(me.username)};$('n-catalog').onclick=function(){nav('catalog');paintCatalog();loadBank().then(function(){if(!$('p-catalog').hidden)paintCatalog()})};$('n-bank').onclick=function(){nav('bank');loadBank()};$('n-codes').onclick=function(){nav('codes');paintCodes()};$('n-premium').onclick=function(){nav('premium');loadPrem().then(paintPrem)};$('n-settings').onclick=function(){nav('settings')};$('n-admin').onclick=function(){openAdmin()};$('n-bill').onclick=function(){openBBMgr()};
 $('n-home').onclick=function(){nav('home');loadGames()};$('n-discover').onclick=function(){nav('discover');loadGames()};$('n-friends').onclick=function(){nav('friends');loadFriends()};
 /* Friend avatars: draw the real 3D avatar (same makeAvatar as the Avatar page) into a small picture */
 const FAV={r:null,sc:null,cam:null,fail:false,cache:{}};
@@ -1762,13 +1817,13 @@ function bbMsg(t,good){const m=$('bb-msg');m.textContent=t;m.className='msg'+(go
 async function loadBank(){try{bank=await api.bankStatus(me.id);bbMsg('')}catch(e){bbMsg(errText(e))}paintBank()}
 function paintBank(){
   const inf=isBB();$('bb-owner').hidden=!inf;
-  $('bb-saved').textContent=inf?'\u221E':bank.saved;$('bb-wallet').textContent=bank.wallet+(prem.bonus||0)+(gpe.total||0)+(adj.total||0);
+  $('bb-saved').textContent=inf?'\u221E':bank.saved;$('bb-wallet').textContent=bank.wallet+(prem.bonus||0)+(gpe.total||0)+(adj.total||0)+((me.av&&me.av.codeBux)||0);
   $('bb-bar').style.width=inf?'100%':Math.min(100,bank.saved/BANK_MIN*100)+'%';
   $('bb-need').textContent=inf?'Unlimited. Use Take out below.':bank.saved>=BANK_MIN?'You can redeem now.':'Save '+(BANK_MIN-bank.saved)+' more to redeem.';
   $('bb-get').hidden=inf;$('bb-get').disabled=inf||bank.saved<BANK_MIN;
   $('bb-code').hidden=!bank.code;if(bank.code){$('bb-codev').textContent=bank.code;$('bb-codeamt').textContent=bank.codeAmt}
   const ul=$('bb-log');ul.replaceChildren();
-  const LG=bank.log.concat(prem.log||[],gpe.log||[],adj.log||[]).sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at)}).slice(0,15);
+  const LG=bank.log.concat(prem.log||[],gpe.log||[],adj.log||[],(me.av&&me.av.clog)||[]).sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at)}).slice(0,15);
   if(!LG.length){const li=document.createElement('li');li.textContent='Nothing yet. Publish a game and get players!';ul.append(li)}
   LG.forEach(function(x){const li=document.createElement('li'),a=document.createElement('span'),b=document.createElement('b');
     a.textContent=x.reason+'  -  '+new Date(x.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
@@ -1791,8 +1846,115 @@ $('bbo-gift').onclick=async function(){if(!isBB())return;const n=Math.floor(+$('
 $('bbo-copy').onclick=function(){const c=$('bbo-codev').textContent;try{navigator.clipboard.writeText(c);toast('Code copied')}catch(e){$('bb-in').value=c}};
 $('bb-copy').onclick=function(){try{navigator.clipboard.writeText(bank.code);toast('Code copied')}catch(e){$('bb-in').value=bank.code}};
 $('f-bb').addEventListener('submit',async function(e){e.preventDefault();const c=$('bb-in').value.trim();if(!c)return;
+  if(!/^(BBX|GFT)-/i.test(c)){try{const r=await redeemCode(c,'bank');$('bb-in').value='';bbMsg('');showReward('bux',r)}catch(er){bbMsg(errText(er))}return}
   try{const r=await api.bankRedeem(me.id,c);$('bb-in').value='';checkAnim(r.amount);bbMsg('')}catch(er){bbMsg(errText(er));return}
   await loadBank()});
+
+/* ===== 5e. Codes: admins make a named code, players type it in. Blockbuck codes are redeemed on the Blockbank page, item codes on the Codes page. ===== */
+const CODE_RE=/^[A-Z0-9_-]{2,24}$/;
+const SLOT_ONE={hat:'Hat',face:'Face',facc:'Face accessory',back:'Back item',neck:'Neck item',shirt:'Shirt'};
+function cdKey(c){return c.name+'@'+(c.v||0)}/* re-making a code gives it a new key, so players can use the new one */
+function cdMsg(id,t,good){const m=$(id);m.textContent=t||'';m.className='msg'+(good?' good':'')}
+function cdRefresh(){
+  try{paintBank()}catch(e){}
+  try{if(!$('p-catalog').hidden)paintCatalog()}catch(e){}
+  try{const b=isBB()?'\u221E':balance();$('wal').textContent=b;$('cat-wal').textContent=b;$('pm-wal').textContent=b}catch(e){}}
+async function redeemCode(raw,where){
+  const name=String(raw||'').trim().toUpperCase();
+  if(!CODE_RE.test(name))throw new Error('That code is not valid.');
+  const c=await api.codeGet(name);
+  if(!c||c.name!==name)throw new Error('That code is not valid.');
+  const bux=c.type==='bux';
+  if(where==='bank'&&!bux)throw new Error('That code gives an avatar item. Enter it on the Codes page.');
+  if(where==='codes'&&bux)throw new Error('That code gives blockbucks. Enter it on the Blockbank page.');
+  const av=me.av,key=cdKey(c);av.codes=av.codes||[];
+  if(av.codes.indexOf(key)>=0)throw new Error('You already used that code.');
+  const prev=JSON.stringify(av);let res;
+  if(bux){
+    const n=Math.floor(+c.amount);if(!(n>=1))throw new Error('That code is not valid.');
+    av.codes.push(key);av.codeBux=(av.codeBux||0)+n;
+    av.clog=[{amount:n,reason:'Code '+c.name,created_at:new Date().toISOString()}].concat(av.clog||[]).slice(0,15);
+    res={kind:'bux',amount:n}}
+  else{
+    const it=ITEMS.find(function(x){return x.id===c.item});
+    if(!it)throw new Error('That item is not available any more.');
+    if(av.owned.indexOf(it.id)>=0)throw new Error('You already own '+it.name+'.');
+    av.owned.push(it.id);av.codes.push(key);
+    res={kind:'item',item:it}}
+  if(!await saveAv()){me.av=JSON.parse(prev);throw new Error('Could not save your reward. Try again.')}
+  cdRefresh();return res}
+
+/* "You received" pop up: a spinning 3D render of the item, or the blockbuck icon and amount */
+const RW={r:null,sc:null,cam:null,ok:null,raf:0,obj:null,ov:null};
+function rwInit(){
+  if(RW.ok!==null)return RW.ok;
+  try{RW.r=new THREE.WebGLRenderer({antialias:true,alpha:true});RW.r.setPixelRatio(Math.min(devicePixelRatio||1,2));RW.r.setSize(230,230,false);
+    RW.sc=new THREE.Scene();RW.cam=new THREE.PerspectiveCamera(32,1,.05,20);RW.cam.position.set(0,.3,4.2);RW.cam.lookAt(0,0,0);
+    RW.sc.add(new THREE.HemisphereLight(0xffffff,0x8899aa,1));const dl=new THREE.DirectionalLight(0xfff3df,.8);dl.position.set(2,4,3);RW.sc.add(dl);RW.ok=true}
+  catch(e){RW.ok=false}
+  return RW.ok}
+function rwClose(){
+  if(RW.raf){cancelAnimationFrame(RW.raf);RW.raf=0}
+  if(RW.obj&&RW.sc)RW.sc.remove(RW.obj);RW.obj=null;
+  if(RW.ov){RW.ov.remove();RW.ov=null}
+  document.removeEventListener('keydown',rwKey)}
+function rwKey(e){if(e.key==='Escape'||e.key==='Enter')rwClose()}
+function showReward(kind,x){
+  rwClose();
+  const ov=mkx('div','rw-ov'),card=mkx('div','rw-card'),st=mkx('div','rw-stage'),ok=mkx('button','btn','Awesome!');
+  ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label','You received a reward');
+  ok.type='button';ok.onclick=rwClose;
+  card.append(mkx('h2','','You received!'));
+  if(kind==='bux'){
+    card.append(mkx('p','rw-sub','Added to your wallet'),st);st.append(mkx('div','rw-bux'));
+    card.append(mkx('div','rw-amt','+'+x.amount.toLocaleString()),mkx('p','rw-slot','blockbucks'))}
+  else{
+    const it=x.item;let o=null;
+    if(rwInit()){try{const m=thModel(it);o=m&&m.clone(true)}catch(e){o=null}}
+    card.append(mkx('p','rw-sub','A new avatar item'),st);
+    if(o){st.append(RW.r.domElement);RW.obj=o;RW.sc.add(o);let a=.6;
+      const loop=function(){a+=.02;o.rotation.set(.2,a,0);RW.r.render(RW.sc,RW.cam);RW.raf=requestAnimationFrame(loop)};loop()}
+    else{const sw=mkx('div');sw.style.cssText='width:120px;height:120px;border-radius:18px;background:'+(/^#[0-9a-f]{6}$/i.test(it.c||'')?it.c:'#4a4c4e');st.append(sw)}
+    card.append(mkx('div','rw-name',it.name),mkx('p','rw-slot',(SLOT_ONE[it.slot]||'Item')+' \u00B7 added to your Inventory'))}
+  card.append(ok);ov.append(card);ov.onclick=function(e){if(e.target===ov)rwClose()};
+  document.body.append(ov);RW.ov=ov;document.addEventListener('keydown',rwKey);ok.focus()}
+
+/* Codes page: players */
+$('f-code').addEventListener('submit',async function(e){e.preventDefault();const c=$('cd-in').value.trim();if(!c)return;
+  try{const r=await redeemCode(c,'codes');$('cd-in').value='';cdMsg('cd-msg','');showReward('item',r)}catch(er){cdMsg('cd-msg',errText(er))}});
+/* Codes page: admins create and delete codes */
+function cdReward(c){if(c.type==='bux')return Math.floor(+c.amount).toLocaleString()+' blockbucks (Blockbank page)';const it=ITEMS.find(function(x){return x.id===c.item});return (it?it.name:'an item that is gone')+' (Codes page)'}
+function cdaType(){const b=$('cda-type').value==='bux';$('cda-item').hidden=b;$('cda-amt').hidden=!b}
+$('cda-type').onchange=cdaType;
+async function loadCodeList(){
+  const ul=$('cd-list');ul.replaceChildren(mkx('li','empty','Loading...'));let rows;
+  try{rows=await api.codeList()}catch(e){ul.replaceChildren();cdMsg('cd-amsg',errText(e));return}
+  ul.replaceChildren();if(!rows.length){ul.append(mkx('li','empty','No codes yet.'));return}
+  rows.sort(function(a,b){return a.name<b.name?-1:1}).forEach(function(c){
+    const li=document.createElement('li'),cd=mkx('code','',c.name),r=mkx('span','cd-r',cdReward(c)),del=mkx('button','btn ghost small','Delete');del.type='button';
+    del.onclick=async function(){if(!confirm('Delete the code '+c.name+'?'))return;del.disabled=true;
+      try{await api.codeDel(c.name);cdMsg('cd-amsg','Deleted '+c.name+'.',true)}catch(e){cdMsg('cd-amsg',errText(e))}loadCodeList()};
+    li.append(cd,r,del);ul.append(li)})}
+function paintCodes(){
+  cdMsg('cd-msg','');$('cd-adm').hidden=!isAdm();if(!isAdm())return;
+  const sel=$('cda-item'),keep=sel.value;sel.replaceChildren();
+  ITEMS.slice().sort(function(a,b){return a.name.toLowerCase()<b.name.toLowerCase()?-1:1}).forEach(function(it){
+    const o=document.createElement('option');o.value=it.id;o.textContent=it.name+' ('+(SLOT_ONE[it.slot]||it.slot)+')'+(it.sale===false?' - off sale':'');sel.append(o)});
+  if(!ITEMS.length){const o=document.createElement('option');o.textContent='No items yet';o.value='';sel.append(o)}
+  if(keep)sel.value=keep;cdaType();loadCodeList()}
+$('cda-go').onclick=async function(){
+  const name=$('cda-name').value.trim().toUpperCase(),bux=$('cda-type').value==='bux';let code;
+  if(!CODE_RE.test(name)){cdMsg('cd-amsg','A code name is 2 to 24 letters, numbers, dashes or underscores.');return}
+  if(/^(BBX|GFT)-/.test(name)){cdMsg('cd-amsg','Names starting with BBX- or GFT- are used by the Blockbank. Pick another name.');return}
+  if(bux){const n=Math.floor(+$('cda-amt').value);if(!(n>=1)||n>1e9){cdMsg('cd-amsg','Enter a whole number of blockbucks from 1 to 1,000,000,000.');return}code={name:name,type:'bux',amount:n}}
+  else{const id=$('cda-item').value;if(!id||!ITEMS.some(function(x){return x.id===id})){cdMsg('cd-amsg','Pick an avatar item.');return}code={name:name,type:'item',item:id}}
+  $('cda-go').disabled=true;
+  try{let ex=null;try{ex=await api.codeGet(name)}catch(e){}
+    if(ex&&!confirm('A code named '+name+' already exists. Replace it? Players who used the old one can use the new one again.'))return;
+    code.v=Date.now();code.by=me.username;await api.codeSave(code);
+    $('cda-name').value='';$('cda-amt').value='';cdMsg('cd-amsg','Code '+name+' is ready: '+cdReward(code)+'.',true);loadCodeList()}
+  catch(er){cdMsg('cd-amsg',errText(er))}
+  finally{$('cda-go').disabled=false}};
 
 /* ===== 6. 3D view ===== */
 const renderer=new THREE.WebGLRenderer({canvas:$('gl'),antialias:true});
@@ -2003,7 +2165,7 @@ function pvTick(now){
   pv.cam.position.set(0,pv.ly+.15+Math.sin(pv.pitch)*pv.zoom,Math.cos(pv.pitch)*pv.zoom);pv.cam.lookAt(0,pv.ly,0);
   pv.r.render(pv.sc,pv.cam)}
 function coinsEarned(){let n=10;Object.keys(recs).forEach(function(k){n+=recs[k].coins||0});return n}
-function balance(){return isBB()?Infinity:coinsEarned()+(bank&&bank.wallet||0)+(prem.bonus||0)+(gpe.total||0)+(adj.total||0)-(me.av.spent||0)-(prem.on?PREM_PRICE:0)}
+function balance(){return isBB()?Infinity:coinsEarned()+(bank&&bank.wallet||0)+(prem.bonus||0)+(gpe.total||0)+(adj.total||0)+(me.av.codeBux||0)-(me.av.spent||0)-(prem.on?PREM_PRICE:0)}
 async function saveAv(){try{await api.setAvatar(me.id,me.av);syncMe();return true}catch(e){toast('Could not save: '+errText(e));return false}}
 /* ===== 3D shop tiles: every accessory in the shop is drawn as a small spinning 3D model. One shared renderer draws each model and copies it onto the tile. ===== */
 const TH={r:null,sc:null,cam:null,list:[],ok:null,sz:132,raf:0,t:0,models:{}};
@@ -2189,7 +2351,7 @@ function openAvatarPage(){$('acc-up').hidden=!isAdm();$('sh-up').hidden=!isAdm()
 /* ===== Catalog and item pages ===== */
 const CAT={tab:'all',q:'',off:false};
 const IV={r:null,sc:null,cam:null,obj:null,fx:{},id:null,mode:'item',yaw:.6,pitch:.2,drag:false,px:0,py:0,w:0,h:0,back:'catalog'};
-function goPage(p){nav(p);if(p==='profile')openProfile(pfName);else if(p==='avatar')openAvatarPage();else if(p==='catalog')paintCatalog();else if(p==='home'||p==='discover')loadGames();else if(p==='friends')loadFriends();else if(p==='bank')loadBank()}
+function goPage(p){nav(p);if(p==='profile')openProfile(pfName);else if(p==='avatar')openAvatarPage();else if(p==='catalog')paintCatalog();else if(p==='home'||p==='discover')loadGames();else if(p==='friends')loadFriends();else if(p==='bank')loadBank();else if(p==='codes')paintCodes()}
 function slotName(s){const x=SLOTS.filter(function(a){return a[0]===s})[0];return x?x[1]:s}
 /* Admin buttons used on catalog cards and the item page (the inventory has its own copy inside paintShop) */
 function admBtns(it){const r=document.createElement('div');r.className='row';const off=it.sale===false;
