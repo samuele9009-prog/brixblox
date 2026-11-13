@@ -246,7 +246,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .cd-adm{margin-top:18px;border-top:1px solid var(--line);padding-top:6px}
 .cd-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
 .cd-form input,.cd-form select{min-height:40px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font:inherit}
-.cd-form #cda-reward{width:260px;max-width:100%}.cd-form #cda-name{width:180px;text-transform:uppercase;letter-spacing:.05em}
+.cd-form input[type=number]{width:140px}.cd-form #cda-item{width:230px;max-width:100%}.cd-form #cda-name{width:180px;text-transform:uppercase;letter-spacing:.05em}
 .cd-form .btn{width:auto;margin:0}
 .cd-list{margin:10px 0 0;padding:0;list-style:none}
 .cd-list li{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap}
@@ -688,7 +688,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       <div class="seg"><button id="bb-get" class="btn" type="button" disabled="">Get my redeem code</button></div>
       <div id="bb-code" class="bb-code" hidden=""><code id="bb-codev"></code><span class="hint" style="margin:0">for <b id="bb-codeamt">0</b> blockbucks</span><button id="bb-copy" class="btn ghost small" type="button">Copy</button></div>
       <form id="f-bb" class="addrow" style="margin-top:12px"><input id="bb-in" type="text" placeholder="Enter your code (BBX-XXXX-XXXX)" autocapitalize="characters" spellcheck="false" autocomplete="off" required="" maxlength="24"><button class="btn" type="submit">Redeem</button></form>
-      <p class="hint">Codes that give blockbucks work here. Codes that give an avatar item go on the Codes page.</p>
+      <p class="hint">Codes that give blockbucks work here and on the Codes page. Codes that give an avatar item only work on the Codes page.</p>
       <p id="bb-msg" class="msg" role="status"></p>
       <div id="bb-owner" hidden="">
         <h3>Take out (brixblox)</h3>
@@ -704,15 +704,17 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
   <div id="p-codes" class="page" hidden="">
     <section class="panel">
       <h2>Codes</h2>
-      <p class="hint">Got a code? Type it in to get a free avatar item. Codes that give blockbucks are redeemed on the Blockbank page.</p>
+      <p class="hint">Got a code? Type it in to get a free avatar item or blockbucks.</p>
       <form id="f-code" class="addrow" style="margin-top:12px"><input id="cd-in" type="text" maxlength="24" placeholder="Enter a code" autocapitalize="characters" spellcheck="false" autocomplete="off" required=""><button class="btn" type="submit">Redeem</button></form>
       <p id="cd-msg" class="msg" role="status"></p>
       <div id="cd-adm" class="cd-adm" hidden="">
         <h3>Create a code (admins)</h3>
-        <p class="hint">Pick a name players will type, like RELEASE, then type what it gives: the exact name of an avatar item from the shop, or a number to give that many blockbucks. Each player can use a code once. Item codes are redeemed on this page. Blockbuck codes are redeemed on the Blockbank page.</p>
+        <p class="hint">Pick a name players will type, like RELEASE, then choose what it gives. For an avatar item, type the item's name exactly as it shows in the shop. Each player can use a code once. Blockbuck codes can be redeemed on the Blockbank page or here. Item codes only work here.</p>
         <div class="cd-form">
           <input id="cda-name" type="text" maxlength="24" placeholder="Code name" autocapitalize="characters" spellcheck="false" autocomplete="off">
-          <input id="cda-reward" type="text" maxlength="60" placeholder="Item name or blockbuck amount" autocomplete="off" spellcheck="false" aria-label="Item name, or a number of blockbucks">
+          <select id="cda-type" aria-label="Reward type"><option value="item">Avatar item</option><option value="bux">Blockbucks</option></select>
+          <input id="cda-item" type="text" maxlength="60" placeholder="Item name (type it exactly)" autocomplete="off" spellcheck="false" aria-label="Avatar item name">
+          <input id="cda-amt" type="number" min="1" max="1000000000" step="1" placeholder="Amount" hidden="">
           <button id="cda-go" class="btn small" type="button">Create code</button>
         </div>
         <p id="cd-amsg" class="msg" role="status"></p>
@@ -1864,7 +1866,6 @@ async function redeemCode(raw,where){
   if(!c||c.name!==name)throw new Error('That code is not valid.');
   const bux=c.type==='bux';
   if(where==='bank'&&!bux)throw new Error('That code gives an avatar item. Enter it on the Codes page.');
-  if(where==='codes'&&bux)throw new Error('That code gives blockbucks. Enter it on the Blockbank page.');
   const av=me.av,key=cdKey(c);av.codes=av.codes||[];
   if(av.codes.indexOf(key)>=0)throw new Error('You already used that code.');
   const prev=JSON.stringify(av);let res;
@@ -1919,9 +1920,9 @@ function showReward(kind,x){
 
 /* Codes page: players */
 $('f-code').addEventListener('submit',async function(e){e.preventDefault();const c=$('cd-in').value.trim();if(!c)return;
-  try{const r=await redeemCode(c,'codes');$('cd-in').value='';cdMsg('cd-msg','');showReward('item',r)}catch(er){cdMsg('cd-msg',errText(er))}});
+  try{const r=await redeemCode(c,'codes');$('cd-in').value='';cdMsg('cd-msg','');showReward(r.kind,r)}catch(er){cdMsg('cd-msg',errText(er))}});
 /* Codes page: admins create and delete codes */
-function cdReward(c){if(c.type==='bux')return Math.floor(+c.amount).toLocaleString()+' blockbucks (Blockbank page)';const it=ITEMS.find(function(x){return x.id===c.item});return (it?it.name:'an item that is gone')+' (Codes page)'}
+function cdReward(c){if(c.type==='bux')return Math.floor(+c.amount).toLocaleString()+' blockbucks (Blockbank or Codes page)';const it=ITEMS.find(function(x){return x.id===c.item});return (it?it.name:'an item that is gone')+' (Codes page only)'}
 async function loadCodeList(){
   const ul=$('cd-list');ul.replaceChildren(mkx('li','empty','Loading...'));let rows;
   try{rows=await api.codeList()}catch(e){ul.replaceChildren();cdMsg('cd-amsg',errText(e));return}
@@ -1931,14 +1932,17 @@ async function loadCodeList(){
     del.onclick=async function(){if(!confirm('Delete the code '+c.name+'?'))return;del.disabled=true;
       try{await api.codeDel(c.name);cdMsg('cd-amsg','Deleted '+c.name+'.',true)}catch(e){cdMsg('cd-amsg',errText(e))}loadCodeList()};
     li.append(cd,r,del);ul.append(li)})}
-function paintCodes(){cdMsg('cd-msg','');$('cd-adm').hidden=!isAdm();if(!isAdm())return;loadCodeList()}
+function cdaType(){const b=$('cda-type').value==='bux';$('cda-item').hidden=b;$('cda-amt').hidden=!b}
+$('cda-type').onchange=cdaType;
+function paintCodes(){cdMsg('cd-msg','');$('cd-adm').hidden=!isAdm();if(!isAdm())return;cdaType();loadCodeList()}
 $('cda-go').onclick=async function(){
-  const name=$('cda-name').value.trim().toUpperCase(),rw=$('cda-reward').value.trim();let code;
+  const name=$('cda-name').value.trim().toUpperCase(),bux=$('cda-type').value==='bux';let code;
   if(!CODE_RE.test(name)){cdMsg('cd-amsg','A code name is 2 to 24 letters, numbers, dashes or underscores.');return}
   if(/^(BBX|GFT)-/.test(name)){cdMsg('cd-amsg','Names starting with BBX- or GFT- are used by the Blockbank. Pick another name.');return}
-  if(!rw){cdMsg('cd-amsg','Type an item name or a number of blockbucks.');return}
-  if(/^[0-9,]+$/.test(rw)){const n=parseInt(rw.replace(/,/g,''),10);if(!(n>=1)||n>1e9){cdMsg('cd-amsg','Enter a whole number of blockbucks from 1 to 1,000,000,000.');return}code={name:name,type:'bux',amount:n}}
-  else{const low=rw.toLowerCase(),hits=ITEMS.filter(function(x){return x.name.toLowerCase()===low});
+  if(bux){const n=Math.floor(+$('cda-amt').value);if(!(n>=1)||n>1e9){cdMsg('cd-amsg','Enter a whole number of blockbucks from 1 to 1,000,000,000.');return}code={name:name,type:'bux',amount:n}}
+  else{const rw=$('cda-item').value.trim(),low=rw.toLowerCase();
+    if(!rw){cdMsg('cd-amsg','Type the name of the avatar item.');return}
+    const hits=ITEMS.filter(function(x){return x.name.toLowerCase()===low});
     if(!hits.length){cdMsg('cd-amsg','No avatar item is named "'+rw+'". Type the name exactly as it shows in the shop.');return}
     if(hits.length>1){cdMsg('cd-amsg','More than one item is named "'+rw+'", so that name is not specific enough.');return}
     code={name:name,type:'item',item:hits[0].id}}
@@ -1946,7 +1950,7 @@ $('cda-go').onclick=async function(){
   try{let ex=null;try{ex=await api.codeGet(name)}catch(e){}
     if(ex&&!confirm('A code named '+name+' already exists. Replace it? Players who used the old one can use the new one again.'))return;
     code.v=Date.now();code.by=me.username;await api.codeSave(code);
-    $('cda-name').value='';$('cda-reward').value='';cdMsg('cd-amsg','Code '+name+' is ready: '+cdReward(code)+'.',true);loadCodeList()}
+    $('cda-name').value='';$('cda-item').value='';$('cda-amt').value='';cdMsg('cd-amsg','Code '+name+' is ready: '+cdReward(code)+'.',true);loadCodeList()}
   catch(er){cdMsg('cd-amsg',errText(er))}
   finally{$('cda-go').disabled=false}};
 
