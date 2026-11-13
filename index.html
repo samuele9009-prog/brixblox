@@ -1192,8 +1192,7 @@ async function codeMigrate(){
     if(!await refreshAv())return;
     const av=me.av;if(av.codeReset)return;
     if(av.codeBux>0){
-      const list=await api.codeList();/* if this fails we stop here and try again next time */
-      const keys={};list.forEach(function(c){if(c&&c.type==='bux')keys[cdKey(c)]=1});
+      const keys={};try{(await api.codeList()).forEach(function(c){if(c&&c.type==='bux')keys[cdKey(c)]=1})}catch(e){}
       const took=av.codeBux;
       av.codes=(av.codes||[]).filter(function(k){return !keys[k]});
       av.codeBux=0;av.clog=(av.clog||[]).filter(function(x){return !/^Code /.test(x.reason||'')});
@@ -1908,6 +1907,7 @@ async function redeemCode(raw,where){
   if(av.codes.indexOf(key)>=0)throw new Error('You already used that code.');
   const prev=JSON.stringify(av);let res;
   if(bux){
+    throw new Error('Blockbuck codes are switched off right now because they did not add real blockbucks. Your code was not used up.');
     const n=Math.floor(+c.amount);if(!(n>=1))throw new Error('That code is not valid.');
     av.codes.push(key);av.codeBux=(av.codeBux||0)+n;
     av.clog=[{amount:n,reason:'Code '+c.name,created_at:new Date().toISOString()}].concat(av.clog||[]).slice(0,15);
@@ -2207,7 +2207,7 @@ function pvTick(now){
   pv.cam.position.set(0,pv.ly+.15+Math.sin(pv.pitch)*pv.zoom,Math.cos(pv.pitch)*pv.zoom);pv.cam.lookAt(0,pv.ly,0);
   pv.r.render(pv.sc,pv.cam)}
 function coinsEarned(){let n=10;Object.keys(recs).forEach(function(k){n+=recs[k].coins||0});return n}
-function balance(){return isBB()?Infinity:coinsEarned()+(bank&&bank.wallet||0)+(prem.bonus||0)+(gpe.total||0)+(adj.total||0)+(me.av.codeBux||0)-(me.av.spent||0)-(prem.on?PREM_PRICE:0)}
+function balance(){return isBB()?Infinity:coinsEarned()+(bank&&bank.wallet||0)+(prem.bonus||0)+(gpe.total||0)+(adj.total||0)-(me.av.spent||0)-(prem.on?PREM_PRICE:0)}
 /* Always work from the newest copy of the account. A second computer (like a school laptop) can hold an old copy, and using it made codes redeem twice and spending go missing. */
 async function refreshAv(){try{const a=await api.freshAv(me.id);me.av=a;syncMe();return true}catch(e){return false}}
 /* Reload every part of the balance (account copy, premium/gamepass/admin amounts, Blockbank) so every page adds up the same */
