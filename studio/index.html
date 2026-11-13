@@ -1731,17 +1731,17 @@ function envK(v){v=Math.max(0,v);if(Math.abs(v-ENVK)<.01)return;ENVK=v;scene.tra
 function sunTick(cx,cy,cz){const sc=sun.shadow.camera,tx=(sc.right-sc.left)/sun.shadow.mapSize.x,g=tx*Math.max(1,Math.round(.5/tx));/* snap to whole shadow pixels so shadows do not shimmer as you move */sun.target.position.set(Math.round(cx/g)*g,Math.round(cy/g)*g,Math.round(cz/g)*g);
   sun.position.copy(sun.target.position).addScaledVector(sunDir.clone().normalize(),120);sun.target.updateMatrixWorld()}
 
-const bc=document.createElement('canvas');bc.width=1024;bc.height=384;const bx=bc.getContext('2d'),bt=(bx.scale(2,2),new THREE.CanvasTexture(bc)),bub=new THREE.Sprite(new THREE.SpriteMaterial({map:bt,transparent:true,depthTest:false}));
-bt.minFilter=THREE.LinearFilter;bt.generateMipmaps=false;bt.anisotropy=4;bub.scale.set(6.6,2.475,1);bub.renderOrder=9;bub.visible=false;scene.add(bub);let lastSay='',lastCol='';
-/* Chat bubble: used by the say block and by chat messages. Rounded white bubble with a tail, wrapped to 3 lines, disappears after a few seconds. */
+const bc=document.createElement('canvas');bc.width=1024;bc.height=768;const bx=bc.getContext('2d'),bt=(bx.scale(2,2),new THREE.CanvasTexture(bc)),bub=new THREE.Sprite(new THREE.SpriteMaterial({map:bt,transparent:true,depthTest:false}));
+bt.minFilter=THREE.LinearFilter;bt.generateMipmaps=false;bt.anisotropy=4;bub.scale.set(6.6,4.95,1);bub.center.set(.5,0);bub.renderOrder=9;bub.visible=false;scene.add(bub);let lastSay='',lastCol='';
+/* Chat bubble: used by the say block and by chat messages. Rounded white bubble with a tail, grows taller to fit the whole message (up to the 120 character limit), disappears after a few seconds. */
 const BUBMS=6000,BUBFADE=600;
-function sayBubble(t){S.say=filt(t).slice(0,90);S.sayAt=performance.now()}
+function sayBubble(t){S.say=filt(t).slice(0,120);S.sayAt=performance.now()}
 function bubWrap(t,max){const ws=String(t).split(/\s+/).filter(Boolean),ls=[];let c='';
   ws.forEach(function(w){while(bx.measureText(w).width>max&&w.length>1){let k=w.length-1;while(k>1&&bx.measureText(w.slice(0,k)).width>max)k--;if(c){ls.push(c);c=''}ls.push(w.slice(0,k));w=w.slice(k)}
     const n=c?c+' '+w:w;if(bx.measureText(n).width>max&&c){ls.push(c);c=w}else c=n});
   if(c)ls.push(c);return ls}
-function bubPaint(t,X,T){X=X||bx;T=T||bt;X.clearRect(0,0,512,192);bx.font=X.font='700 24px sans-serif';const ls=bubWrap(t,340);let show=ls.slice(0,3);if(!show.length)return;if(ls.length>3)show[2]=show[2].replace(/.{0,3}$/,'...');
-  const lw=Math.max.apply(null,show.map(function(l){return bx.measureText(l).width})),bw=Math.ceil(lw)+34,bh=show.length*31+20,x0=(512-bw)/2,y0=192-22-bh,r=16;
+function bubPaint(t,X,T){X=X||bx;T=T||bt;X.clearRect(0,0,512,384);bx.font=X.font='700 24px sans-serif';const ls=bubWrap(t,340);let show=ls.slice(0,9);if(!show.length)return;if(ls.length>9)show[8]=show[8].replace(/.{0,3}$/,'...');
+  const lw=Math.max.apply(null,show.map(function(l){return bx.measureText(l).width})),bw=Math.ceil(lw)+34,bh=show.length*31+20,x0=(512-bw)/2,y0=384-22-bh,r=16;
   X.fillStyle='rgba(255,255,255,.97)';X.strokeStyle='rgba(20,22,24,.55)';X.lineWidth=2;X.lineJoin='round';
   X.beginPath();X.moveTo(x0+r,y0);X.lineTo(x0+bw-r,y0);X.quadraticCurveTo(x0+bw,y0,x0+bw,y0+r);X.lineTo(x0+bw,y0+bh-r);X.quadraticCurveTo(x0+bw,y0+bh,x0+bw-r,y0+bh);
   X.lineTo(267,y0+bh);X.lineTo(256,y0+bh+15);X.lineTo(245,y0+bh);X.lineTo(x0+r,y0+bh);X.quadraticCurveTo(x0,y0+bh,x0,y0+bh-r);X.lineTo(x0,y0+r);X.quadraticCurveTo(x0,y0,x0+r,y0);X.closePath();X.fill();X.stroke();
@@ -1764,7 +1764,7 @@ function draw(){const T=byId(P.avId),g=T&&J[T.id];
   if(S.say&&performance.now()-(S.sayAt||0)>BUBMS)S.say='';
   if(S.say!==lastSay){lastSay=S.say;if(S.say)bubPaint(S.say)}
   bub.visible=!!S.say;{const age=performance.now()-(S.sayAt||0),k=S.say?Math.max(0,Math.min(1,(BUBMS-age)/BUBFADE)):1,e=k*k*(3-2*k);
-    bub.material.opacity=e;bub.scale.set(6.6*(.4+.6*e),2.475*(.4+.6*e),1);bub.position.set(g.position.x,g.position.y+4-1*(1-(.4+.6*e)),g.position.z)}}
+    bub.material.opacity=e;bub.scale.set(6.6*(.4+.6*e),4.95*(.4+.6*e),1);bub.position.set(g.position.x,g.position.y+4-1*(1-(.4+.6*e))-1.2375*(.4+.6*e),g.position.z)}}
 
 /* ===== Parts, welds, rig editor, animator ===== */
 P.parts=P.parts||[];P.models=P.models||[];P.anims=P.anims||{};P.nid=P.nid||1;
@@ -2240,7 +2240,7 @@ function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
       {const W=function(x){return x-2*Math.PI*Math.floor((x+Math.PI)/(2*Math.PI))},a=W((q.td-90)*Math.PI/180);/* wrap every angle to -180..180 so a big or negative direction can never make the model whirl round */if(isFinite(a)){if(!isFinite(q.yaw))q.yaw=a;else q.yaw=W(q.yaw+W(a-q.yaw)*k)}}
       q.tag.position.set(T.pos[0]+g.x,q.top+.75+g.y,T.pos[2]+g.z);
       if(q.bub){const age=performance.now()-(q.sayAt||0),on=q.say&&age<BUBMS;q.bub.sp.visible=!!on;
-        if(on){const k=Math.max(0,Math.min(1,(BUBMS-age)/BUBFADE)),e=k*k*(3-2*k),z=.4+.6*e;q.bub.sp.material.opacity=e;q.bub.sp.scale.set(6.6*z,2.475*z,1);q.bub.sp.position.set(T.pos[0]+g.x,q.top+2.25-(1-z)+g.y,T.pos[2]+g.z)}}}
+        if(on){const k=Math.max(0,Math.min(1,(BUBMS-age)/BUBFADE)),e=k*k*(3-2*k),z=.4+.6*e;q.bub.sp.material.opacity=e;q.bub.sp.scale.set(6.6*z,4.95*z,1);q.bub.sp.position.set(T.pos[0]+g.x,q.top+2.25-(1-z)-1.2375*z+g.y,T.pos[2]+g.z)}}}
     let po={};
     let nAir=false,nFall=false;
     if(q.net){const air=!!q.air,JA=npAnim(q.ja)||npAnim('jump'),FA=npAnim(q.fa)||npAnim('fall'),gy=q.g.position.y;
@@ -2631,7 +2631,15 @@ function avTorso(){return P.parts.find(function(p){return p.av&&p.name==='Torso'
 function lab(t,x){const l=el('label','',t);l.append(x);return l}
 function vec(t,a,mv){const w=el('div','v3');a.forEach(function(v,i){const n=el('input');n.type='number';n.step='.5';n.value=v;
   n.oninput=function(){const x=Number(n.value);if(isNaN(x))return;if(mv){const d=[0,0,0];d[i]=x-a[i];moveBy(byId(sel[0]),d)}else a[i]=Math.max(.2,x);save();rebuildParts()};w.append(n)});return lab(t,w)}
-function modelProps(d,m){const ps=partsOf(m.id),nm=el('input');nm.value=m.name;nm.oninput=function(){m.name=nm.value;save()};nm.onchange=function(){renderParts()};
+/* Renaming a rig or object: every block that pointed at the old name (play animation on rig, when touched, push, ...) now points at the new one, so scripts and animations keep working. Text blocks (say, print, ...) are left alone. */
+const RENSKIP={say:1,print:1,guitext:1,airesponse:1};
+function renameRefs(old,nn){old=String(old||'').trim().toLowerCase();nn=String(nn||'').trim();if(!old||!nn||old===nn.toLowerCase())return;let n=0;
+  const w=function(arr){arr.forEach(function(b){if(!RENSKIP[b.t]&&Array.isArray(b.a))b.a=b.a.map(function(x){if(typeof x!=='string')return x;
+      if(x.indexOf(',')<0)return x.trim().toLowerCase()===old?(n++,nn):x;
+      return x.split(',').map(function(q){return q.trim().toLowerCase()===old?(n++,nn):q}).join(',')});
+    if(b.k)w(b.k)})};
+  (P.scripts||[]).forEach(function(sc){w(sc)});if(n)save();return n}
+function modelProps(d,m){const ps=partsOf(m.id),nm=el('input');nm.value=m.name;let onm=m.name;nm.oninput=function(){m.name=nm.value;save()};nm.onchange=function(){renameRefs(onm,m.name);onm=m.name;try{rend()}catch(e){}renderParts()};
   const ms=matSel(ps[0]&&ps[0].mat,function(k){ps.forEach(function(q){setMat(q,k)});all()}),col=el('input');col.type='color';col.value=ps[0]?ps[0].color:'#ffffff';
   col.oninput=function(){avTouch(ps);ps.forEach(function(q){q.color=col.value;M[q.id].material.color.set(col.value)});hl();save()};
   d.append(lab('Model name',nm),el('p','note','Model with '+ps.length+' pieces. Drag the arrows to move all of it. To move one piece, Alt+click it, double-click it, or pick it in the list above.'));
@@ -2653,7 +2661,7 @@ function multiProps(d,ps){const ms=el('select'),ph=el('option','','Choose a mate
   {const sA=sect(d,'Appearance');sA.append(lab('Material (all selected)',ms),lab('Color (all selected)',col));shineAll(sA,ps,'Shininess (all selected)');trAll(sA,ps,'Transparency (all selected)')}contSel(d)}
 function props(){props0();try{propsExtra()}catch(e){}}
 function props0(){const d=$('p-props');d.replaceChildren();if(selFold&&!sel.length&&!selModel&&!selGui){const ff=foldBy(selFold);if(ff){folderProps(d,ff);return}}{const gg=selGui&&!sel.length&&!selModel&&P.guis.find(function(x){return x.id===selGui});if(gg){guiProps(d,gg);return}}if(!selModel&&!sel.length&&selSvc){svcProps(d);return}if(selModel){const mm=byModel(selModel);if(mm){modelProps(d,mm);return}}{const mp=sel.map(function(id){return byId(id)}).filter(function(q){return q&&!q.stab});if(mp.length>1){multiProps(d,mp);return}}const p=byId(sel[0]);if(!p)return;
-  const nm=el('input');nm.value=p.name;nm.oninput=function(){p.name=nm.value;save()};nm.onchange=function(){renderParts()};
+  const nm=el('input');nm.value=p.name;let onm=p.name;nm.oninput=function(){p.name=nm.value;save()};nm.onchange=function(){if(!p.parent&&!p.model)renameRefs(onm,p.name);onm=p.name;try{rend()}catch(e){}renderParts()};
   const col=el('input');col.type='color';col.value=p.color;col.oninput=function(){avTouch(p);p.color=col.value;M[p.id].material.color.set(col.value);hl();save()};
   d.append(lab('Name (arms must be Rarm and Larm)',nm));
   {const sA=sect(d,'Appearance');sA.append(lab('Material',matSel(p.mat,function(k){setMat(p,k);all()})),lab('Color',col));if(!p.stab){shineAll(sA,[p],p.shape==='mesh'?'Shininess (mesh & texture)':undefined);trAll(sA,[p],'Transparency')}
@@ -4522,8 +4530,8 @@ function aiChatLine(a,b){const L=$('chat-log'),d=el('div','');
 const RIGB={};
 function rigSay(rid,t,dur){let e=RIGB[rid];
   if(!t){if(e){e.say='';if(e.sp)e.sp.visible=false}return}
-  if(!e){const c=document.createElement('canvas');c.width=1024;c.height=384;const x=c.getContext('2d');x.scale(2,2);const tx=new THREE.CanvasTexture(c);tx.minFilter=THREE.LinearFilter;tx.generateMipmaps=false;
-    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthTest:false}));sp.renderOrder=9;sp.visible=false;scene.add(sp);e=RIGB[rid]={x:x,t:tx,sp:sp,say:'',at:0,dur:6000}}
+  if(!e){const c=document.createElement('canvas');c.width=1024;c.height=768;const x=c.getContext('2d');x.scale(2,2);const tx=new THREE.CanvasTexture(c);tx.minFilter=THREE.LinearFilter;tx.generateMipmaps=false;
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthTest:false}));sp.center.set(.5,0);sp.renderOrder=9;sp.visible=false;scene.add(sp);e=RIGB[rid]={x:x,t:tx,sp:sp,say:'',at:0,dur:6000}}
   e.say=String(t).slice(0,120);e.at=performance.now();e.dur=dur||Math.min(12000,Math.max(5000,e.say.length*80));bubPaint(e.say,e.x,e.t)}
 function rigBubTick(){const run=running||playing;
   for(const rid in RIGB){const e=RIGB[rid];if(!e.sp)continue;const r=byId(rid);
@@ -4533,7 +4541,7 @@ function rigBubTick(){const run=running||playing;
     const k=Math.max(0,Math.min(1,(e.dur-age)/BUBFADE)),f=k*k*(3-2*k),z=.4+.6*f;let lo=1e9,hi=-1e9;
     treeOf(r).forEach(function(q){lo=Math.min(lo,q.pos[1]-Math.abs(q.size[1])/2);hi=Math.max(hi,q.pos[1]+Math.abs(q.size[1])/2)});
     const s=RSZ['rig:'+rid]||1,o=RO[rid]||[0,0],top=lo+(hi-lo)*s+(RY[rid]||0);
-    e.sp.visible=true;e.sp.material.opacity=f;e.sp.scale.set(6.6*z,2.475*z,1);e.sp.position.set(r.pos[0]+o[0],top+2.25-(1-z),r.pos[2]+o[1])}}
+    e.sp.visible=true;e.sp.material.opacity=f;e.sp.scale.set(6.6*z,4.95*z,1);e.sp.position.set(r.pos[0]+o[0],top+2.25-(1-z)-1.2375*z,r.pos[2]+o[1])}}
 const AIWSEEN=new Map();/* the same AI problem is shown at most once every 30 seconds, so loops do not spam but a new failure is never hidden for long */
 function aiOnce(m){const n=performance.now(),t=AIWSEEN.get(m);if(t!==undefined&&n-t<30000)return false;AIWSEEN.set(m,n);return true}
 function aiWarn(m){if(!aiOnce(m))return;log('Error: '+m);if(/Premium|signed in/.test(m))return;/* Premium and sign-in problems are only for the creator's Output panel, never shown in the game chat to players */
@@ -6647,9 +6655,9 @@ function netItem(e,retry){
       const b=new THREE.Mesh(new THREE.BoxGeometry(.5,.5,.5),new THREE.MeshStandardMaterial({color:0xff9900}));const gg=new THREE.Group();gg.add(b);gg.position.set(+it.px||0,+it.py||0,+it.pz||0);put(gg);return}
     put(itemMake(E,it));say('showing "'+it.name+'" on '+who+'.')}).catch(function(err){e.hiBusy=false;say(String((err&&err.message)||err))})}
 function netSay(id,t){const e=NP.find(function(n){return n.net===id});if(!e)return;
-  if(!e.bub){const c=document.createElement('canvas');c.width=1024;c.height=384;const x=c.getContext('2d');x.scale(2,2);const tx=new THREE.CanvasTexture(c);tx.minFilter=THREE.LinearFilter;tx.generateMipmaps=false;
-    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthTest:false}));sp.renderOrder=9;sp.visible=false;scene.add(sp);e.bub={x:x,t:tx,sp:sp}}
-  e.say=t.slice(0,90);e.sayAt=performance.now();bubPaint(e.say,e.bub.x,e.bub.t)}
+  if(!e.bub){const c=document.createElement('canvas');c.width=1024;c.height=768;const x=c.getContext('2d');x.scale(2,2);const tx=new THREE.CanvasTexture(c);tx.minFilter=THREE.LinearFilter;tx.generateMipmaps=false;
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthTest:false}));sp.center.set(.5,0);sp.renderOrder=9;sp.visible=false;scene.add(sp);e.bub={x:x,t:tx,sp:sp}}
+  e.say=t.slice(0,120);e.sayAt=performance.now();bubPaint(e.say,e.bub.x,e.bub.t)}
 function netDrop(id){const i=NP.findIndex(function(n){return n.net===id});if(i<0)return;const n=NP[i];
   NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);/* remove them first, so nothing below can stop it */
   chatSys(n.name+' left the game');npFree(n);delete RAG['np:'+n.name];delete RSZ['np:'+n.name];delete SKIN['np:'+n.name];try{renderParts()}catch(e){}gmPlRefresh();firePJ('pleave',n.name)}
