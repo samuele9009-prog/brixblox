@@ -2657,7 +2657,7 @@ function props0(){const d=$('p-props');d.replaceChildren();if(selFold&&!sel.leng
   {const sA=sect(d,'Appearance');sA.append(lab('Material',matSel(p.mat,function(k){setMat(p,k);all()})),lab('Color',col));if(!p.stab){shineAll(sA,[p],p.shape==='mesh'?'Shininess (mesh & texture)':undefined);trAll(sA,[p],'Transparency')}
    const sT=sect(d,'Position & size');sT.append(vec('Position',p.pos,true),vec('Size',p.size,false))}
   const sP=sect(d,'Physics');
-  if(!p.parent){const c=el('input');c.type='checkbox';c.checked=!!p.movable;c.onchange=function(){p.movable=c.checked;save()};const l=el('label','','Movable (push it with your character)');l.title='Off: a rig built like a person acts like a real player (solid, cannot be pushed). On: your character can push it around.';l.append(c);sP.append(l);
+  if(!p.parent){const c=el('input');c.type='checkbox';c.checked=!!p.movable;c.onchange=function(){p.movable=c.checked;save()};const l=el('label','','Movable (push it with your character)');l.title='Off: a rig built like a person acts like a solid player (cannot be pushed). On: your character can push it around, and it plays its idle animation when still and its walk animation whenever it is moved (needs animations named idle and walk).';l.append(c);sP.append(l);
     const c2=el('input');c2.type='checkbox';c2.checked=!p.nocol;c2.onchange=function(){if(c2.checked)delete p.nocol;else p.nocol=true;save()};const l2=el('label','','Collision (solid: blocks your character)');l2.append(c2);sP.append(l2);{const px={get fr(){return p.fr==null?1:p.fr},set fr(v){if(v===1)delete p.fr;else p.fr=v}};slider(sP,'Friction (0 ice, 1 normal, 3+ grippy)',px,'fr',0,5,.05,function(v){return (+v).toFixed(2)})}}
   else sP.append(el('p','note','Welded: moves with the part it is welded to.'));if((!p.av||p.acc)&&!p.sm&&!p.stab&&p.shape!=='mesh'&&p.shape!=='union'){const ss=el('select');[['box','Block'],['cyl','Cylinder'],['sphere','Sphere'],['wedge','Triangle']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ss.append(op)});ss.value=p.shape||'box';ss.onchange=function(){if(ss.value==='box')delete p.shape;else p.shape=ss.value;all()};d.append(lab('Shape',ss))}
   if(p.shape==='mesh')meshProps(d,p);
@@ -4263,6 +4263,28 @@ function rigAI(dt){const ids=Object.keys(RB);if(!ids.length)return;const now=per
     b.at+=dt*(move?Math.min(1.6,b.sp/8):1);
     if(!rbPose(r,b,move?'walk':'idle',b.at)&&b.was&&!move){const z={};if(!b.ids){b.ids={};rigParts(r).forEach(function(q){b.ids[q.id]=1})}Object.keys(b.ids).forEach(function(k){z[k]=[0,0,0]});applyKeyed(z)}
     b.was=move})}
+/* A Movable rig built like a person acts like a real player: it plays its "idle" animation while it stands still, and its "walk" animation (turning to face where it goes) whenever something moves it: a push, a tween, a move or go to block. It needs animations named walk and idle that have keyframes for its parts. Rigs controlled by the rig AI, ragdolls and rigs playing a scripted animation are left alone. */
+const MRA={};
+function movRigTick(dt){if(!(playing||running)){for(const k in MRA)delete MRA[k];return}
+  if(!(dt>0))return;const D=Math.PI/180;
+  P.parts.forEach(function(r){
+    if(r.parent||r.av||!r.movable||!kids(r).length||gone(r)||RB[r.id])return;
+    const id=r.id,o=RO[id]||[0,0],px=r.pos[0]+o[0],pz=r.pos[2]+o[1];
+    let m=MRA[id];
+    if(!m){const ids={};rigParts(r).forEach(function(q){ids[q.id]=1});
+      const has=function(n){const A=P.anims[n];return !!A&&Object.keys(A.keys).some(function(k){return ids[k]})};
+      m={x:px,z:pz,at:0,hold:0,was:false,ids:ids,w:has('walk'),i:has('idle'),yaw:((r.ry||0)*D)+(RYAW[id]||0)};MRA[id]=m}
+    const dx=px-m.x,dz=pz-m.z,d=Math.hypot(dx,dz),sp=d/dt;m.x=px;m.z=pz;
+    if(!m.w&&!m.i)return;
+    const rg=RAG['rig:'+id];if(rg&&!rg.gone&&(rg.dead||rg.t<rg.end+RRISE))return;
+    if(rigParts(r).some(function(q){return RBUSY[q.id]>0}))return;
+    if(sp>.6&&d<8){m.hold=.2;const ty=Math.atan2(-dx,-dz);let df=ty-m.yaw;df=df-2*Math.PI*Math.floor((df+Math.PI)/(2*Math.PI));m.yaw+=df*(1-Math.exp(-dt*10));
+      RYAW[id]=m.yaw-(r.ry||0)*D;const g=J[id];if(g){g.userData.gry=m.yaw;g.rotation.y=m.yaw}}
+    else m.hold-=dt;
+    const move=m.hold>0;
+    m.at+=dt*(move?Math.max(.6,Math.min(1.6,sp/8)):1);
+    if(!rbPose(r,m,move?'walk':'idle',m.at)&&m.was&&!move&&m.w){const z={};Object.keys(m.ids).forEach(function(k){z[k]=[0,0,0]});applyKeyed(z)}
+    m.was=move})}
 function xeqSet(t,slot,id,wear){
   if(t.key==='main'){S.xeq=S.xeq||{};if(wear)S.xeq[slot]=id;else Object.keys(S.xeq).forEach(function(k){if(S.xeq[k]===id)delete S.xeq[k]});try{accLocal()}catch(e){}return}
   const n=NP.find(function(x){return 'np:'+x.name===t.key});if(!n)return;
@@ -5708,7 +5730,7 @@ function frame(now){requestAnimationFrame(frame);ROOTC.clear();now=now||lt;const
   if(playing&&!FC)play(dt,f);
   else{const sp=(keys.ShiftLeft?36:12)*CAMSP*dt,r=[Math.cos(cam.yaw),0,Math.sin(cam.yaw)],go=function(v,k){cam.x+=v[0]*k;cam.y+=v[1]*k;cam.z+=v[2]*k};
     if(keys.KeyW)go(f,sp);if(keys.KeyS)go(f,-sp);if(keys.KeyD)go(r,sp);if(keys.KeyA)go(r,-sp);if(keys.KeyQ)cam.y-=sp;if(keys.KeyE)cam.y+=sp;if(Math.abs(zq)>.001){const zs=zq*(1-Math.exp(-dt*12));zq-=zs;go(f,zs)}else zq=0}
-  if(playing||running){twTick(dt);collide();rigBodyCollide();pcollide();physics(dt);objMove(dt);rigAI(dt);npPhys(dt);touchTick()}try{vzWalk()}catch(e){console.warn('visualize walk',e)}npTick(dt);try{rigBubTick()}catch(e){console.warn('rig bubble',e)}
+  if(playing||running){twTick(dt);collide();rigBodyCollide();pcollide();physics(dt);objMove(dt);rigAI(dt);try{movRigTick(dt)}catch(e){console.warn('movable rig',e)}npPhys(dt);touchTick()}try{vzWalk()}catch(e){console.warn('visualize walk',e)}npTick(dt);try{rigBubTick()}catch(e){console.warn('rig bubble',e)}
   try{gearSync();gearTick()}catch(e){}
   draw();entTick(dt);
   if(playing&&!FC){const T=byId(P.avId);if(T){S.ch=S.ch===undefined?S.h:S.ch+(S.h-S.ch)*(1-Math.exp(-dt*9));
