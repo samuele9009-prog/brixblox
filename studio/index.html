@@ -2640,7 +2640,9 @@ function modelProps(d,m){const ps=partsOf(m.id),nm=el('input');nm.value=m.name;n
     pr.value=m.parent&&byModel(m.parent)?m.parent:'';
     pr.onchange=function(){if(pr.value)m.parent=pr.value;else delete m.parent;msg(pr.value?m.name+' is now inside '+byModel(pr.value).name+'.':m.name+' is a top-level model again.');all();props()};
     d.append(lab('Inside model',pr),el('p','note','Models can sit inside other models. Select several parts or models and group them to nest them, or drag a model onto another one in the list.'))}
-  {const sA=sect(d,'Appearance');sA.append(lab('Material (all pieces)',ms),lab('Color (all pieces)',col));if(ps.length){shineAll(sA,ps,'Shininess (all pieces)');trAll(sA,ps,'Transparency (all pieces)')}}{const gr=ps.find(function(q){return !q.parent&&!q.av&&kids(q).length});if(gr)gearBox(d,gr)}contSel(d)}
+  {const sA=sect(d,'Appearance');sA.append(lab('Material (all pieces)',ms),lab('Color (all pieces)',col));if(ps.length){shineAll(sA,ps,'Shininess (all pieces)');trAll(sA,ps,'Transparency (all pieces)')}}{const gr=ps.find(function(q){return !q.parent&&!q.av&&kids(q).length});if(gr){gearBox(d,gr);
+    const sM=sect(d,'Physics'),mc=el('input');mc.type='checkbox';mc.checked=!!gr.movable;mc.onchange=function(){gr.movable=mc.checked;save()};
+    const ml=el('label','','Movable (push it with your character)');ml.title='On: your character can push it around, and it plays its idle animation when still and its walk animation whenever it is moved (needs animations named idle and walk).';ml.append(mc);sM.append(ml)}}contSel(d)}
 /* Several parts picked at once (Shift/Ctrl-click or a Shift-drag box): material and colour apply to every one of them */
 function multiProps(d,ps){const ms=el('select'),ph=el('option','','Choose a material for all...');ph.value='';ms.append(ph);
   Object.keys(MATS).forEach(function(k){const o=el('option','',MATS[k].n);o.value=k;ms.append(o)});ms.value='';
