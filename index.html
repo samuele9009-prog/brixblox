@@ -246,7 +246,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .cd-adm{margin-top:18px;border-top:1px solid var(--line);padding-top:6px}
 .cd-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
 .cd-form input,.cd-form select{min-height:40px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font:inherit}
-.cd-form input[type=number]{width:140px}.cd-form #cda-name{width:180px;text-transform:uppercase;letter-spacing:.05em}
+.cd-form #cda-reward{width:260px;max-width:100%}.cd-form #cda-name{width:180px;text-transform:uppercase;letter-spacing:.05em}
 .cd-form .btn{width:auto;margin:0}
 .cd-list{margin:10px 0 0;padding:0;list-style:none}
 .cd-list li{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap}
@@ -709,12 +709,10 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
       <p id="cd-msg" class="msg" role="status"></p>
       <div id="cd-adm" class="cd-adm" hidden="">
         <h3>Create a code (admins)</h3>
-        <p class="hint">Pick a name players will type, like RELEASE, then choose what it gives. Each player can use a code once. Item codes are redeemed on this page. Blockbuck codes are redeemed on the Blockbank page.</p>
+        <p class="hint">Pick a name players will type, like RELEASE, then type what it gives: the exact name of an avatar item from the shop, or a number to give that many blockbucks. Each player can use a code once. Item codes are redeemed on this page. Blockbuck codes are redeemed on the Blockbank page.</p>
         <div class="cd-form">
           <input id="cda-name" type="text" maxlength="24" placeholder="Code name" autocapitalize="characters" spellcheck="false" autocomplete="off">
-          <select id="cda-type" aria-label="Reward type"><option value="item">Avatar item</option><option value="bux">Blockbucks</option></select>
-          <select id="cda-item" aria-label="Avatar item"></select>
-          <input id="cda-amt" type="number" min="1" max="1000000000" step="1" placeholder="Amount" hidden="">
+          <input id="cda-reward" type="text" maxlength="60" placeholder="Item name or blockbuck amount" autocomplete="off" spellcheck="false" aria-label="Item name, or a number of blockbucks">
           <button id="cda-go" class="btn small" type="button">Create code</button>
         </div>
         <p id="cd-amsg" class="msg" role="status"></p>
@@ -1924,8 +1922,6 @@ $('f-code').addEventListener('submit',async function(e){e.preventDefault();const
   try{const r=await redeemCode(c,'codes');$('cd-in').value='';cdMsg('cd-msg','');showReward('item',r)}catch(er){cdMsg('cd-msg',errText(er))}});
 /* Codes page: admins create and delete codes */
 function cdReward(c){if(c.type==='bux')return Math.floor(+c.amount).toLocaleString()+' blockbucks (Blockbank page)';const it=ITEMS.find(function(x){return x.id===c.item});return (it?it.name:'an item that is gone')+' (Codes page)'}
-function cdaType(){const b=$('cda-type').value==='bux';$('cda-item').hidden=b;$('cda-amt').hidden=!b}
-$('cda-type').onchange=cdaType;
 async function loadCodeList(){
   const ul=$('cd-list');ul.replaceChildren(mkx('li','empty','Loading...'));let rows;
   try{rows=await api.codeList()}catch(e){ul.replaceChildren();cdMsg('cd-amsg',errText(e));return}
@@ -1935,24 +1931,22 @@ async function loadCodeList(){
     del.onclick=async function(){if(!confirm('Delete the code '+c.name+'?'))return;del.disabled=true;
       try{await api.codeDel(c.name);cdMsg('cd-amsg','Deleted '+c.name+'.',true)}catch(e){cdMsg('cd-amsg',errText(e))}loadCodeList()};
     li.append(cd,r,del);ul.append(li)})}
-function paintCodes(){
-  cdMsg('cd-msg','');$('cd-adm').hidden=!isAdm();if(!isAdm())return;
-  const sel=$('cda-item'),keep=sel.value;sel.replaceChildren();
-  ITEMS.slice().sort(function(a,b){return a.name.toLowerCase()<b.name.toLowerCase()?-1:1}).forEach(function(it){
-    const o=document.createElement('option');o.value=it.id;o.textContent=it.name+' ('+(SLOT_ONE[it.slot]||it.slot)+')'+(it.sale===false?' - off sale':'');sel.append(o)});
-  if(!ITEMS.length){const o=document.createElement('option');o.textContent='No items yet';o.value='';sel.append(o)}
-  if(keep)sel.value=keep;cdaType();loadCodeList()}
+function paintCodes(){cdMsg('cd-msg','');$('cd-adm').hidden=!isAdm();if(!isAdm())return;loadCodeList()}
 $('cda-go').onclick=async function(){
-  const name=$('cda-name').value.trim().toUpperCase(),bux=$('cda-type').value==='bux';let code;
+  const name=$('cda-name').value.trim().toUpperCase(),rw=$('cda-reward').value.trim();let code;
   if(!CODE_RE.test(name)){cdMsg('cd-amsg','A code name is 2 to 24 letters, numbers, dashes or underscores.');return}
   if(/^(BBX|GFT)-/.test(name)){cdMsg('cd-amsg','Names starting with BBX- or GFT- are used by the Blockbank. Pick another name.');return}
-  if(bux){const n=Math.floor(+$('cda-amt').value);if(!(n>=1)||n>1e9){cdMsg('cd-amsg','Enter a whole number of blockbucks from 1 to 1,000,000,000.');return}code={name:name,type:'bux',amount:n}}
-  else{const id=$('cda-item').value;if(!id||!ITEMS.some(function(x){return x.id===id})){cdMsg('cd-amsg','Pick an avatar item.');return}code={name:name,type:'item',item:id}}
+  if(!rw){cdMsg('cd-amsg','Type an item name or a number of blockbucks.');return}
+  if(/^[0-9,]+$/.test(rw)){const n=parseInt(rw.replace(/,/g,''),10);if(!(n>=1)||n>1e9){cdMsg('cd-amsg','Enter a whole number of blockbucks from 1 to 1,000,000,000.');return}code={name:name,type:'bux',amount:n}}
+  else{const low=rw.toLowerCase(),hits=ITEMS.filter(function(x){return x.name.toLowerCase()===low});
+    if(!hits.length){cdMsg('cd-amsg','No avatar item is named "'+rw+'". Type the name exactly as it shows in the shop.');return}
+    if(hits.length>1){cdMsg('cd-amsg','More than one item is named "'+rw+'", so that name is not specific enough.');return}
+    code={name:name,type:'item',item:hits[0].id}}
   $('cda-go').disabled=true;
   try{let ex=null;try{ex=await api.codeGet(name)}catch(e){}
     if(ex&&!confirm('A code named '+name+' already exists. Replace it? Players who used the old one can use the new one again.'))return;
     code.v=Date.now();code.by=me.username;await api.codeSave(code);
-    $('cda-name').value='';$('cda-amt').value='';cdMsg('cd-amsg','Code '+name+' is ready: '+cdReward(code)+'.',true);loadCodeList()}
+    $('cda-name').value='';$('cda-reward').value='';cdMsg('cd-amsg','Code '+name+' is ready: '+cdReward(code)+'.',true);loadCodeList()}
   catch(er){cdMsg('cd-amsg',errText(er))}
   finally{$('cda-go').disabled=false}};
 
