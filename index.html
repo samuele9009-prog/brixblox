@@ -946,7 +946,7 @@ function tooAlike(a,b){return colorDist(a,b)<MIN_LOOK_DIST}
 /* Each slot can hold up to 2 accessories (older saves held one id as a plain string) */
 function eqArr(v){return Array.isArray(v)?v.filter(function(x){return typeof x==='string'&&x}).slice(-2):(typeof v==='string'&&v?[v]:[])}
 function eqPut(arr,id){arr=arr.filter(function(x){return x!==id});arr.push(id);const it=itemById(id);return arr.slice(it&&it.slot==='shirt'?-1:-2)}
-function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:eqArr(e.hat),face:eqArr(e.face),facc:eqArr(e.facc),back:eqArr(e.back),neck:eqArr(e.neck),shirt:eqArr(e.shirt).slice(-1)},spent:a.spent||0,codes:Array.isArray(a.codes)?a.codes.filter(function(x){return typeof x==='string'}).slice(-500):[],codeBux:Math.max(0,Math.floor(+a.codeBux||0)),clog:Array.isArray(a.clog)?a.clog.slice(0,15).map(function(x){return {amount:+x.amount||0,reason:String(x.reason||'').slice(0,60),created_at:String(x.created_at||'')}}):[],skin:HEX.test(a.skin)?a.skin:DEF_SKIN,pants:HEX.test(a.pants)?a.pants:DEF_PANTS,
+function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:eqArr(e.hat),face:eqArr(e.face),facc:eqArr(e.facc),back:eqArr(e.back),neck:eqArr(e.neck),shirt:eqArr(e.shirt).slice(-1)},spent:a.spent||0,codes:Array.isArray(a.codes)?a.codes.filter(function(x){return typeof x==='string'}).slice(-500):[],codeBux:Math.max(0,Math.floor(+a.codeBux||0)),codeReset:a.codeReset?1:0,clog:Array.isArray(a.clog)?a.clog.slice(0,15).map(function(x){return {amount:+x.amount||0,reason:String(x.reason||'').slice(0,60),created_at:String(x.created_at||'')}}):[],skin:HEX.test(a.skin)?a.skin:DEF_SKIN,pants:HEX.test(a.pants)?a.pants:DEF_PANTS,
     favI:Array.isArray(a.favI)?a.favI.filter(function(x){return typeof x==='string'&&x}).slice(0,100):[],
     favG:Array.isArray(a.favG)?a.favG.filter(function(g){return g&&g.id!=null}).slice(0,100).map(function(g){return {id:String(g.id),name:String(g.name||'').slice(0,60),ownerId:g.ownerId||null,ownerName:String(g.ownerName||'').slice(0,32)}}):[]}}
 function makeDemo(){
@@ -1186,10 +1186,27 @@ $('pm-buy').onclick=async function(){
   $('pm-buy').disabled=true;pmMsg('Getting Premium...',true);
   try{await api.buyPremium(me.id);await loadPrem();loadFriends();loadGames();$('l-name').textContent='';nameEl($('l-name'),me.username);nameEl($('l-name2'),me.username);pmMsg('You are Premium now! Open Studio and add a gamepass.',true);paintPrem()}
   catch(e){pmMsg(errText(e));$('pm-buy').disabled=false}};
+/* One-time clean up: blockbuck codes redeemed before the fix are taken back (the blockbucks are removed and the codes can be redeemed again). Runs once per account. */
+async function codeMigrate(){
+  try{if(!me||api.demo||isBB())return;
+    if(!await refreshAv())return;
+    const av=me.av;if(av.codeReset)return;
+    if(av.codeBux>0){
+      const list=await api.codeList();/* if this fails we stop here and try again next time */
+      const keys={};list.forEach(function(c){if(c&&c.type==='bux')keys[cdKey(c)]=1});
+      const took=av.codeBux;
+      av.codes=(av.codes||[]).filter(function(k){return !keys[k]});
+      av.codeBux=0;av.clog=(av.clog||[]).filter(function(x){return !/^Code /.test(x.reason||'')});
+      av.codeReset=1;
+      if(await saveAv()){toast(took+' blockbucks from codes were removed. Enter those codes again to get them.');try{cdRefresh()}catch(e){}}
+      else await refreshAv()}
+    else{av.codeReset=1;await saveAv()}}
+  catch(e){console.warn('Code clean up',e)}}
 async function enter(p){me=p;syncMe();$('a-msg').textContent='';$('f-up').reset();$('f-in').reset();nameOk=false;updUp();
   try{recs=await api.records(me.id)}catch(e){recs={};toast('Could not load your times.')}
   await loadPrem();
   await loadBank();
+  await codeMigrate();
   try{presStart();dmPoll()}catch(e){}
   lobby()}
 /* ===== Color wheel: one wheel for shirt, skin and pants ===== */
