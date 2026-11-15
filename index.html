@@ -1071,6 +1071,9 @@ function makeSupa(){
     async adminBan(id,on,why){const r=await sb.rpc('admin_ban',{p_user:id,p_on:on,p_reason:why||''});if(r.error)throw r.error},
     async adminBalance(id){const r=await sb.rpc('admin_get_balance',{p_user:id});if(r.error)throw r.error;return r.data||{}},
     async adminTake(id,n,why){const r=await sb.rpc('admin_take_blockbucks',{p_user:id,p_amount:n,p_reason:why||''});if(r.error)throw r.error;return r.data||{}},
+    async codeBuxTotal(){const r=await sb.rpc('my_code_blockbucks');if(r.error)return 0;return Math.max(0,Math.floor(+(r.data&&r.data.total)||0))},
+    async redeemBux(code){const r=await sb.rpc('redeem_blockbuck_code',{p_code:code});if(r.error){if(/could not find|does not exist|schema cache/i.test(r.error.message||''))throw new Error('Blockbuck codes are not set up yet. Run code-blockbucks.sql in Supabase.');throw r.error}return r.data},
+    async adminCodeBux(id){const r=await sb.rpc('admin_code_blockbucks',{p_user:id});return r.error?0:(+r.data||0)},
     async adjStatus(){const r=await sb.rpc('blockbuck_adjustments_status');if(r.error)return {total:0,log:[]};return r.data||{total:0,log:[]}},
     async adminChatLogs(id){const r=await sb.rpc('admin_chat_logs',{p_user:id});if(r.error)throw r.error;return r.data||[]},
     async adminGames(id){const r=await sb.rpc('admin_remove_games',{p_user:id});if(r.error)throw r.error},
@@ -1157,7 +1160,7 @@ $('f-in').addEventListener('submit',async function(e){e.preventDefault();$('b-in
 /* The game reads who you are (name, shirt colour) from here, so your in-game avatar matches this page. */
 /* ===== BrixBlox Premium =====
    Premium is stored on the server (premium_members) so it cannot be faked from this page. This page only shows it. */
-const PREM_PRICE=200;let PREM=new Set(),prem={on:false,bonus:0,log:[],err:false},gpe={total:0,log:[]},adj={total:0,log:[]};
+const PREM_PRICE=200;let PREM=new Set(),prem={on:false,bonus:0,log:[],err:false},gpe={total:0,log:[]},adj={total:0,log:[]},cbx=0;
 function premOn(){return isBB()||prem.on}
 function pstar(){const s=document.createElement('span');s.className='pstar';s.title='BrixBlox Premium';s.textContent='\u2605';return s}
 function nameEl(el,name){el.textContent=name;if(PREM.has(String(name).toLowerCase()))el.append(pstar())}
@@ -1166,6 +1169,7 @@ async function loadPrem(){
   try{const r=await api.premStatus(me.id);prem={on:!!r.premium,bonus:+r.bonus||0,log:r.log||[],err:false};
     try{const e=await api.gpEarn(me.id);gpe={total:+e.total||0,log:e.log||[]}}catch(e){gpe={total:0,log:[]}}
     try{const a=await api.adjStatus();adj={total:+a.total||0,log:a.log||[]}}catch(e){adj={total:0,log:[]}}
+    try{cbx=await api.codeBuxTotal()}catch(e){cbx=0}/* blockbucks from codes, kept on the server */
     const all=await api.premAll();PREM=new Set((all||[]).map(function(x){return String(x).toLowerCase()}));if(prem.on)PREM.add(me.username.toLowerCase())}
   catch(e){console.warn('Premium',e);prem={on:false,bonus:0,log:[],err:true};PREM=new Set()}
   syncMe();try{paintShop()}catch(e){}}
@@ -1575,7 +1579,7 @@ function openAdmin(){if(!isAdm())return;closeAdmin();
       if(canAct)mk('Warn',async function(){const r=await modDialog('warn',p);if(!r)return;await api.adminWarn(p.id,r.message);return 'Warning sent.'});
       if(canAct&&p.banned)mk('Unban',async function(){await api.adminBan(p.id,false,'');return p.username+' is unbanned.'});
       else if(canAct)mk('Ban',async function(){const r=await modDialog('ban',p);if(!r)return;await api.adminBan(p.id,true,r.reason);return p.username+(r.until?' is banned until '+new Date(r.until).toLocaleString()+'.':' is permanently banned.')});
-      mk('Balance',async function(){const r=await api.adminBalance(p.id);alert(p.username+' has '+(r.balance|0)+' blockbucks.\n\nCoins from games: '+(r.coins|0)+'\nWallet: '+(r.wallet|0)+'\nPremium visit bonus: '+(r.bonus|0)+'\nGamepass sales: '+(r.gamepass|0)+'\nSpent in shop: -'+(r.spent|0)+(r.premium?'\nPremium price: -200':'')+'\nTaken by admins: -'+(r.taken|0));return null});
+      mk('Balance',async function(){const r=await api.adminBalance(p.id);let cb=0,inc=typeof r.codes!=='undefined';if(inc)cb=r.codes|0;else{try{cb=await api.adminCodeBux(p.id)}catch(e){}}alert(p.username+' has '+((r.balance|0)+(inc?0:cb))+' blockbucks.\n\nCoins from games: '+(r.coins|0)+'\nWallet: '+(r.wallet|0)+'\nPremium visit bonus: '+(r.bonus|0)+'\nGamepass sales: '+(r.gamepass|0)+'\nSpent in shop: -'+(r.spent|0)+(r.premium?'\nPremium price: -200':'')+'\nBlockbucks from codes: '+cb+'\nTaken by admins: -'+(r.taken|0));return null});
       if(canAct)mk('Take blockbucks',async function(){const cur=await api.adminBalance(p.id);const a=prompt(p.username+' has '+(cur.balance|0)+' blockbucks.\nHow many do you want to take?');if(a===null)return null;const n=Math.floor(+a);if(!(n>=1))throw new Error('Enter a whole number of 1 or more.');const why=prompt('Reason (the player will see this in their blockbucks log):','')||'';if(!confirm('Take '+n+' blockbucks from '+p.username+'?'))return null;const r=await api.adminTake(p.id,n,why);return 'Took '+n+' from '+p.username+'. They now have '+(r.balance|0)+'.'});
       if(isBB())mk('Remove games',async function(){const n=await gamePicker(p);return n?n+' game'+(n===1?'':'s')+' removed.':null});
       if(isBB()){const d=mk('Delete account',async function(){if(prompt('This permanently deletes '+p.username+' and their games. Type their name to confirm:')!==p.username)return;await api.adminDelete(p.id);return 'Account deleted.'});d.style.color='#d33'}
@@ -1907,11 +1911,9 @@ async function redeemCode(raw,where){
   if(av.codes.indexOf(key)>=0)throw new Error('You already used that code.');
   const prev=JSON.stringify(av);let res;
   if(bux){
-    throw new Error('Blockbuck codes are switched off right now because they did not add real blockbucks. Your code was not used up.');
-    const n=Math.floor(+c.amount);if(!(n>=1))throw new Error('That code is not valid.');
-    av.codes.push(key);av.codeBux=(av.codeBux||0)+n;
-    av.clog=[{amount:n,reason:'Code '+c.name,created_at:new Date().toISOString()}].concat(av.clog||[]).slice(0,15);
-    res={kind:'bux',amount:n}}
+    if(api.demo||!api.redeemBux)throw new Error('Blockbuck codes need the online BrixBlox (Supabase).');
+    const r=await api.redeemBux(name),n=Math.floor(+(r&&r.amount)||0);/* the server adds them to your real balance */
+    cbx+=n;cdRefresh();return {kind:'bux',amount:n}}
   else{
     const it=ITEMS.find(function(x){return x.id===c.item});
     if(!it)throw new Error('That item is not available any more.');
@@ -2207,7 +2209,7 @@ function pvTick(now){
   pv.cam.position.set(0,pv.ly+.15+Math.sin(pv.pitch)*pv.zoom,Math.cos(pv.pitch)*pv.zoom);pv.cam.lookAt(0,pv.ly,0);
   pv.r.render(pv.sc,pv.cam)}
 function coinsEarned(){let n=10;Object.keys(recs).forEach(function(k){n+=recs[k].coins||0});return n}
-function balance(){return isBB()?Infinity:coinsEarned()+(bank&&bank.wallet||0)+(prem.bonus||0)+(gpe.total||0)+(adj.total||0)-(me.av.spent||0)-(prem.on?PREM_PRICE:0)}
+function balance(){return isBB()?Infinity:coinsEarned()+(bank&&bank.wallet||0)+(prem.bonus||0)+(gpe.total||0)+(adj.total||0)+cbx-(me.av.spent||0)-(prem.on?PREM_PRICE:0)}
 /* Always work from the newest copy of the account. A second computer (like a school laptop) can hold an old copy, and using it made codes redeem twice and spending go missing. */
 async function refreshAv(){try{const a=await api.freshAv(me.id);me.av=a;syncMe();return true}catch(e){return false}}
 /* Reload every part of the balance (account copy, premium/gamepass/admin amounts, Blockbank) so every page adds up the same */
