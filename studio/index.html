@@ -5051,7 +5051,7 @@ function applyEnv(){updSkyTex();const e=lightEnv(),a=(e.tod-6)/12*Math.PI,day=Ma
   lightX()}
 
 /* ===== GUI: text, buttons, frames and images that sit on top of the stage. Sizes are percentages of the stage, so they fit any window size. ===== */
-let selGui=null,GR={};
+let selGui=null,GR={},GK=1;
 const CVW=document.querySelector('.cvw');
 const GL=document.createElement('div');GL.id='gui-layer';GL.style.cssText='position:absolute;left:0;top:0;overflow:hidden;pointer-events:none;z-index:4;-webkit-text-size-adjust:100%;text-size-adjust:100%';
 const GB=document.createElement('div');GB.id='gui-bar';GB.hidden=true;
@@ -5093,7 +5093,14 @@ function guiPaint(e,g,k,ed){const s=e.style;
   s.opacity=(g.alpha===undefined?1:g.alpha)*(ed&&g.vis===false?.35:1);
   s.fontWeight=g.bold===false?'400':'700';s.fontFamily=GFONT[g.ff||'']||'inherit';
   s.textAlign=g.al||'center';s.justifyContent=g.al==='left'?'flex-start':g.al==='right'?'flex-end':'center';guiUI(e,g,k,ed)}
-function guiPlace(g){const e=GE[g.id];if(e){e.style.left=g.x+'%';e.style.top=g.y+'%';e.style.width=g.w+'%';e.style.height=g.h+'%'}guiBox()}
+/* Text scaled (like Roblox TextScaled): the text grows or shrinks so it always fits inside its box */
+function guiFit(e,g,k){if(!g.ts||g.type==='image')return;const t=e._t,s=e.style;if(!t)return;
+  const cap=Math.max(6,+g.tsMax||100)*k;let lo=2,hi=Math.max(lo,cap);
+  const ok=function(px){s.fontSize=px+'px';return t.offsetHeight<=e.clientHeight+.5&&t.scrollWidth<=t.clientWidth+1};
+  if(ok(hi))return;
+  for(let i=0;i<12&&hi-lo>.5;i++){const m=(lo+hi)/2;if(ok(m))lo=m;else hi=m}
+  s.fontSize=lo+'px'}
+function guiPlace(g){const e=GE[g.id];if(e){e.style.left=g.x+'%';e.style.top=g.y+'%';e.style.width=g.w+'%';e.style.height=g.h+'%';guiFit(e,g,GK)}guiBox()}
 function makeSB(){const b=document.createElement('div');b.className='gsb';const lb=document.createElement('div');lb.className='gsl';b.append(lb);
   ['nw','n','ne','e','se','s','sw','w'].forEach(function(d){const h=document.createElement('div');h.className='gsh '+d;h.onpointerdown=function(ev){guiResizeStart(ev,d)};b.append(h)});return b}
 function guiBox(){if(!SB)return;const g=guiCur(),e=g&&GE[g.id];if(!e||!guiEdit()){SB.hidden=true;return}
@@ -5109,9 +5116,9 @@ function guiBuild(pid,host,k,ed,live){guiKids(pid).forEach(function(g){const st=
     if(ed){s.pointerEvents='auto';s.cursor=g.lock?'not-allowed':'move';s.userSelect='none';s.outline='1px dashed rgba(255,255,255,.5)';s.outlineOffset='-1px';
       e.onpointerdown=function(ev){guiDown(ev,g)};e.ondblclick=function(ev){ev.stopPropagation();guiInline(g)}}
     else if(live&&guiClickable(g)){s.pointerEvents='auto';s.cursor='pointer';e.tabIndex=-1;e.onmousedown=function(ev){ev.preventDefault()};e.onclick=function(){guiClick(g)}}
-    GE[g.id]=e;host.append(e);guiBuild(g.id,e,k,ed,live)})}
+    GE[g.id]=e;host.append(e);guiFit(e,g,k);guiBuild(g.id,e,k,ed,live)})}
 function renderGui(){const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
-  const ed=guiEdit(),live=running||playing,gw=Math.min(w,h*16/9),gh=gw*9/16,k=gw/480;
+  const ed=guiEdit(),live=running||playing,gw=Math.min(w,h*16/9),gh=gw*9/16,k=gw/480;GK=k;
   GL.style.width=gw+'px';GL.style.height=gh+'px';GL.style.left=(cv.offsetLeft+(w-gw)/2)+'px';GL.style.top=(cv.offsetTop+(h-gh)/2)+'px';GL.replaceChildren();CVW.classList.toggle('gedit',ed);
   GL.style.pointerEvents=ed?'auto':'none';GL.style.boxShadow=ed?'inset 0 0 0 2px #00e08a':'none';
   GL.style.backgroundImage=ed&&GED.grid?GRIDBG:'none';GL.style.backgroundSize=ed&&GED.grid?GED.grid+'% '+GED.grid+'%':'';
@@ -5182,14 +5189,37 @@ addEventListener('keydown',function(e){if(!guiEdit()||!selGui)return;const a=doc
 /* adding, copying, deleting */
 function guiName(base){let n=1,nm=base;while(P.guis.some(function(g){return g.name.toLowerCase()===nm.toLowerCase()}))nm=base+(++n);return nm}
 function addGui(type,pid){if(animOn())return;const T=GTYPE[type];if(!T)return;const nm=guiName(T.n);pid=pid&&guiById(pid)?pid:'';
-  const D={text:{x:35,y:5,w:30,h:10,text:'Hello!',bg:'#000000',op:0,color:'#ffffff',fs:26,round:0},
-    button:{x:40,y:80,w:20,h:9,text:'Click me',bg:'#00b06f',op:1,color:'#ffffff',fs:20,round:10},
+  const D={text:{x:35,y:5,w:30,h:10,text:'Hello!',bg:'#000000',op:0,color:'#ffffff',fs:26,round:0,ts:true,tsMax:100},
+    button:{x:40,y:80,w:20,h:9,text:'Click me',bg:'#00b06f',op:1,color:'#ffffff',fs:20,round:10,ts:true,tsMax:100},
     frame:{x:30,y:30,w:40,h:40,text:'',bg:'#232527',op:.85,color:'#ffffff',fs:20,round:8},
     image:{x:40,y:35,w:20,h:30,text:'',bg:'#ffffff',op:0,color:'#ffffff',fs:20,round:0}}[type];
   if(pid){D.x=r1((100-D.w)/2);D.y=r1((100-D.h)/2)}
   const g=Object.assign({id:'u'+P.nid++,name:nm,type:type,vis:true,img:'',parent:pid},D);
   P.guis.push(g);if(pid)openG[pid]=true;selGui=g.id;sel=[];selModel=null;selSvc=null;openS.gui=true;hl();save();renderParts();
   msg('Added a '+T.n.toLowerCase()+' GUI called '+nm+(pid?' inside '+guiById(pid).name:'')+'. Drag it on the stage to move it, drag the white squares to resize it.')}
+/* ready-made GUI: several pieces added at once, all named so blocks can find them */
+function guiPreset(k,into){if(animOn())return;into=into&&guiById(into)?into:'';
+  const mk=function(t,pid,o){const g=Object.assign({id:'u'+P.nid++,type:t,vis:true,img:'',parent:pid||'',x:30,y:30,w:30,h:10,text:'',bg:'#232527',op:1,color:'#ffffff',fs:20,round:8,ts:true,tsMax:100},o);g.name=guiName(o.name);P.guis.push(g);return g};
+  let top=null,tip='';
+  if(k==='menu'){top=mk('frame',into,{name:'Menu',x:30,y:15,w:40,h:70,op:.9,ts:false});
+    mk('text',top.id,{name:'MenuTitle',x:5,y:5,w:90,h:16,text:'Menu',op:0,bg:'#000000'});
+    [['PlayButton','Play',28,'#00b06f'],['OptionsButton','Options',50,'#3b82f6'],['QuitButton','Quit',72,'#d94b4b']].forEach(function(b){mk('button',top.id,{name:b[0],x:10,y:b[2],w:80,h:16,text:b[1],bg:b[3],round:12})});
+    tip='Use \"when gui clicked\" with PlayButton, OptionsButton or QuitButton.'}
+  else if(k==='health'){top=mk('frame',into,{name:'HealthBar',x:3,y:4,w:26,h:6,bg:'#2b2d2f',op:.9,round:50,ts:false});
+    mk('frame',top.id,{name:'HealthFill',x:3,y:18,w:94,h:64,bg:'#46c26b',op:1,round:50,ts:false});
+    tip='Change the width of HealthFill with a block to show health going down.'}
+  else if(k==='score'){top=mk('text',into,{name:'ScoreText',x:72,y:3,w:25,h:9,text:'Score: 0',bg:'#000000',op:.45,round:12});
+    tip='Use \"set gui ScoreText text to\" to change the words.'}
+  else if(k==='popup'){top=mk('frame',into,{name:'Popup',x:25,y:25,w:50,h:50,op:.92,ts:false});
+    mk('text',top.id,{name:'PopupText',x:6,y:8,w:88,h:50,text:'Your message here',op:0,bg:'#000000'});
+    mk('button',top.id,{name:'CloseButton',x:30,y:68,w:40,h:22,text:'Close',bg:'#d94b4b',round:12});
+    tip='Add \"when gui clicked\" CloseButton, then \"hide gui\" Popup.'}
+  else if(k==='toast'){top=mk('text',into,{name:'Notice',x:25,y:3,w:50,h:9,text:'Something happened!',bg:'#00b06f',op:.95,round:50});
+    tip='Use \"show gui\" and \"hide gui\" with Notice.'}
+  if(!top)return;
+  if(into){top.x=r1((100-top.w)/2);top.y=r1((100-top.h)/2);openG[into]=true}
+  openG[top.id]=true;selGui=top.id;sel=[];selModel=null;selSvc=null;openS.gui=true;hl();save();renderParts();
+  msg('Added '+top.name+'. Drag it to move it. '+tip)}
 function dupGui(g){let first=null;const cp=function(o,par){const c=JSON.parse(JSON.stringify(o));c.id='u'+P.nid++;c.name=guiName(o.name.replace(/\d+$/,'')||'GUI');c.parent=par;c.lock=false;
     if(!first){first=c;c.x=r1(Math.min(100-c.w,c.x+3));c.y=r1(Math.min(100-c.h,c.y+3));P.guis.splice(P.guis.indexOf(g)+1,0,c)}else P.guis.push(c);
     guiKids(o.id).forEach(function(k){cp(k,c.id)})};
@@ -5203,6 +5233,10 @@ function guiBar(ed){GB.replaceChildren();if(!ed){GB.hidden=true;return}GB.hidden
   const mk=function(t,fn,cls,tip){const x=document.createElement('button');x.type='button';x.className='gb'+(cls?' '+cls:'');x.textContent=t;if(tip)x.title=tip;x.onclick=fn;GB.append(x);return x};
   const tt=document.createElement('span');tt.className='gt';tt.textContent='GUI edit mode';GB.append(tt);
   mk('+ Text',function(){addGui('text',into)});mk('+ Button',function(){addGui('button',into)});mk('+ Frame',function(){addGui('frame',into)});mk('+ Image',function(){addGui('image',into)});
+  const pr=document.createElement('select');pr.className='gb';pr.title='Add a ready-made GUI in one click';
+  [['','+ Ready-made...'],['menu','Menu with buttons'],['health','Health bar'],['score','Score counter'],['popup','Pop-up window'],['toast','Notification banner']].forEach(function(o){const op=document.createElement('option');op.value=o[0];op.textContent=o[1];pr.append(op)});
+  pr.onchange=function(){const v=pr.value;pr.value='';if(v)guiPreset(v,into)};GB.append(pr);
+  if(g&&g.type!=='image')mk('Text scaled: '+(g.ts?'On':'Off'),function(){g.ts=!g.ts;if(g.ts&&!g.tsMax)g.tsMax=100;save();renderGui();props()},g.ts?'on':'','Text grows or shrinks to fit the box (like Roblox TextScaled)');
   const cand=g?(g.type==='frame'?g.id:guiPar(g)):'';
   if(cand)mk('Add into: '+(GED.top?'Screen':guiById(cand).name),function(){GED.top=!GED.top;renderGui()},GED.top?'':'on','New GUI goes inside this Frame. Click to switch to the top level (the screen).');
   const GR2=[0,2,5,10];
@@ -5276,7 +5310,8 @@ function guiProps(d,g){const T=GTYPE[g.type]||GTYPE.frame;
   chk('Clip what is inside to this shape',function(){return g.clip!==false},function(v){g.clip=v});
   if(g.type!=='image'){head('Text');
     const tc=el('input');tc.type='color';tc.value=g.color;tc.oninput=function(){g.color=tc.value;save();renderGui()};d.append(lab('Text colour',tc));
-    slider(d,'Text size',g,'fs',8,80,1,null,renderGui);
+    chk('Text scaled (text grows or shrinks to fit the box, like Roblox)',function(){return g.ts},function(v){g.ts=v;props()});
+    if(g.ts)slider(d,'Biggest text size',g,'tsMax',8,200,1,null,renderGui);else slider(d,'Text size',g,'fs',8,80,1,null,renderGui);
     chk('Bold',function(){return g.bold!==false},function(v){g.bold=v});
     const al=el('select');[['center','Centre'],['left','Left'],['right','Right']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];al.append(op)});al.value=g.al||'center';al.onchange=function(){g.al=al.value;save();renderGui()};d.append(lab('Text align',al));
     const ff=el('select');[['','Default'],['round','Rounded'],['serif','Serif'],['mono','Typewriter'],['hand','Handwriting']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ff.append(op)});ff.value=g.ff||'';ff.onchange=function(){g.ff=ff.value;save();renderGui()};d.append(lab('Font',ff))}
