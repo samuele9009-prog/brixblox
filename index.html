@@ -1071,8 +1071,8 @@ function makeSupa(){
     async adminBan(id,on,why){const r=await sb.rpc('admin_ban',{p_user:id,p_on:on,p_reason:why||''});if(r.error)throw r.error},
     async adminBalance(id){const r=await sb.rpc('admin_get_balance',{p_user:id});if(r.error)throw r.error;return r.data||{}},
     async adminTake(id,n,why){const r=await sb.rpc('admin_take_blockbucks',{p_user:id,p_amount:n,p_reason:why||''});if(r.error)throw r.error;return r.data||{}},
-    async codeBuxTotal(){const r=await sb.rpc('my_code_blockbucks');if(r.error)return 0;return Math.max(0,Math.floor(+(r.data&&r.data.total)||0))},
-    async redeemBux(code){const r=await sb.rpc('redeem_blockbuck_code',{p_code:code});if(r.error){if(/could not find|does not exist|schema cache/i.test(r.error.message||''))throw new Error('Blockbuck codes are not set up yet. Run code-blockbucks.sql in Supabase.');throw r.error}return r.data},
+    async codeBuxTotal(){const r=await sb.rpc('my_code_blockbucks');if(r.error){console.warn('my_code_blockbucks',r.error);return 0}let x=r.data;if(Array.isArray(x))x=x[0];if(x&&typeof x==='object')x=('total' in x)?x.total:x.my_code_blockbucks;return Math.max(0,Math.floor(+x||0))},
+    async redeemBux(code){const r=await sb.rpc('redeem_blockbuck_code',{p_code:code});if(r.error){console.warn('redeem_blockbuck_code',r.error);const m=r.error.message||'';if(/could not find the function|schema cache/i.test(m))throw new Error('Blockbuck codes are not set up yet. Run the newest code-blockbucks.sql in Supabase, then refresh this page.');if(/permission denied/i.test(m))throw new Error('Supabase says permission denied. Run the newest code-blockbucks.sql again (it grants access).');throw new Error(m||'That code did not work.')}let x=r.data;if(Array.isArray(x))x=x[0];if(typeof x==='number')x={amount:x};if(x&&typeof x==='object'&&!('amount' in x)&&'redeem_blockbuck_code' in x)x=x.redeem_blockbuck_code;if(typeof x==='number')x={amount:x};return x||{amount:0}},
     async adminCodeBux(id){const r=await sb.rpc('admin_code_blockbucks',{p_user:id});return r.error?0:(+r.data||0)},
     async adjStatus(){const r=await sb.rpc('blockbuck_adjustments_status');if(r.error)return {total:0,log:[]};return r.data||{total:0,log:[]}},
     async adminChatLogs(id){const r=await sb.rpc('admin_chat_logs',{p_user:id});if(r.error)throw r.error;return r.data||[]},
@@ -1902,8 +1902,14 @@ function cdRefresh(){
 async function redeemCode(raw,where){
   const name=String(raw||'').trim().toUpperCase();
   if(!CODE_RE.test(name))throw new Error('That code is not valid.');
-  const c=await api.codeGet(name);
-  if(!c||c.name!==name)throw new Error('That code is not valid.');
+  let c=null;try{c=await api.codeGet(name)}catch(e){console.warn('codeGet',e)}
+  if(c&&c.name!==name)c=null;
+  if(!c){/* the page could not read the code (or it is missing): let the server decide for blockbuck codes */
+    if(api.demo||!api.redeemBux)throw new Error('That code is not valid.');
+    if(!await refreshAv())throw new Error('Could not check your account. Try again.');
+    const r0=await api.redeemBux(name),n0=Math.floor(+(r0&&r0.amount)||0);
+    if(!(n0>=1))throw new Error('That code is not valid.');
+    cbx+=n0;cdRefresh();return {kind:'bux',amount:n0}}
   const bux=c.type==='bux';
   if(where==='bank'&&!bux)throw new Error('That code gives an avatar item. Enter it on the Codes page.');
   if(!await refreshAv())throw new Error('Could not check your account. Try again.');
@@ -1913,7 +1919,7 @@ async function redeemCode(raw,where){
   if(bux){
     if(api.demo||!api.redeemBux)throw new Error('Blockbuck codes need the online BrixBlox (Supabase).');
     const r=await api.redeemBux(name),n=Math.floor(+(r&&r.amount)||0);/* the server adds them to your real balance */
-    cbx+=n;cdRefresh();return {kind:'bux',amount:n}}
+    try{cbx=await api.codeBuxTotal()}catch(e){cbx+=n}if(!(cbx>=n))cbx+=n;cdRefresh();return {kind:'bux',amount:n}}
   else{
     const it=ITEMS.find(function(x){return x.id===c.item});
     if(!it)throw new Error('That item is not available any more.');
