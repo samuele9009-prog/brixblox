@@ -2309,8 +2309,8 @@ function pkEval(A,t){const o={};for(const id in A.keys){if(id.indexOf('p:')===0)
   const f=k[0],l=k[k.length-1];
   if(t<=f.t)o[id]=f.r;else if(t>=l.t)o[id]=l.r;else for(let i=0;i<k.length-1;i++)if(t>=k[i].t&&t<=k[i+1].t){const a=k[i],b=k[i+1],u=(t-a.t)/((b.t-a.t)||1),p0=k[i-1]||a,p3=k[i+2]||b;
     o[id]=a.r.map(function(v,j){const q0=p0.r[j],x=b.r[j],q3=p3.r[j];return .5*(2*v+(x-q0)*u+(2*q0-5*v+4*x-q3)*u*u+(3*v-q0-3*x+q3)*u*u*u)});break}}return o}
-function pkPose(av,A,t){const D=Math.PI/180,po=pkEval(A,t),L=av.limbs,M={Lleg:L[0],Rleg:L[1],Larm:L[2],Rarm:L[3]};
-  Object.keys(M).forEach(function(n){const r=po[n]||[0,0,0];M[n].rotation.set(-r[0]*D,r[1]*D,-r[2]*D)})}
+function pkPose(av,A,t){const D=Math.PI/180,po=pkEval(A,t),L=av.limbs,M={Lleg:L[0],Rleg:L[1],Larm:L[2],Rarm:L[3],Torso:av.tg,Head:av.head};
+  Object.keys(M).forEach(function(n){const r=po[n]||[0,0,0];M[n].rotation.set(-r[0]*D,-r[1]*D,r[2]*D)})}
 function pkPreview(sw,p,full){
   const names=Object.keys(p.anims||{}).filter(function(k){return p.anims[k]&&p.anims[k].keys&&Object.keys(p.anims[k].keys).length});
   if(!names.length||!thInit()){sw.textContent='\u{1F3C3}';sw.style.cssText='display:grid;place-items:center;font-size:44px;background:#e6f6ff;min-height:96px';return null}
@@ -2320,6 +2320,8 @@ function pkPreview(sw,p,full){
   if(!av){sw.textContent='\u{1F3C3}';return null}
   sw.classList.add('sw3');sw.style.background='#e6f6ff';
   const c=document.createElement('canvas');c.width=c.height=TH.sz;sw.appendChild(c);
+  {const ch=av.g.children.slice(0,6),tg=new THREE.Group(),ty=3*.34;tg.position.y=ty;
+   ch.forEach(function(c){c.position.y-=ty;tg.add(c)});av.g.add(tg);av.tg=tg;av.head=ch[1]}
   const root=new THREE.Group();av.g.position.y=-.95;root.add(av.g);
   const e={c:c,x:c.getContext('2d'),root:root,av:av,A:p.anims[shown[0]],t:0,yaw:.45};
   PKP.list.push(e);pkDraw(e);pkRun();
