@@ -2294,7 +2294,7 @@ async function loadPacks(){
     if(ch)await saveAv()}}
 function packOwned(p){return me.av.owned.indexOf(p.id)>=0||(isAdm()&&packMine(p))}
 function packNames(p){return Object.keys(p.anims||{}).sort(function(a,b){return PK_ORDER.indexOf(a)-PK_ORDER.indexOf(b)}).join(', ')||'nothing yet'}
-function packRepaint(){try{if(!$('p-avatar').hidden&&pv.tab==='anim')paintShop();if(!$('p-catalog').hidden)paintCatalog()}catch(e){}}
+function packRepaint(){try{if(!$('p-item').hidden&&IV.pack)paintItem();if(!$('p-avatar').hidden&&pv.tab==='anim')paintShop();if(!$('p-catalog').hidden)paintCatalog()}catch(e){}}
 async function packEquip(p){const old=me.av.anim||'';me.av.anim=old===p.id?'':p.id;packRepaint();if(!await saveAv()){me.av.anim=old}else toast(me.av.anim?'Wearing '+p.name+'. It replaces your walk, jump and idle in games.':'Animation pack removed.');packRepaint()}
 async function packBuy(p){if(!await refreshAv()){toast('Could not check your account. Try again.');return}
   if(p.sale===false&&!isAdm()){toast('This pack is no longer on sale.');return}
@@ -2311,6 +2311,10 @@ function pkEval(A,t){const o={};for(const id in A.keys){if(id.indexOf('p:')===0)
     o[id]=a.r.map(function(v,j){const q0=p0.r[j],x=b.r[j],q3=p3.r[j];return .5*(2*v+(x-q0)*u+(2*q0-5*v+4*x-q3)*u*u+(3*v-q0-3*x+q3)*u*u*u)});break}}return o}
 function pkPose(av,A,t){const D=Math.PI/180,po=pkEval(A,t),L=av.limbs,M={Lleg:L[0],Rleg:L[1],Larm:L[2],Rarm:L[3],Torso:av.tg,Head:av.head};
   Object.keys(M).forEach(function(n){const r=po[n]||[0,0,0];M[n].rotation.set(-r[0]*D,-r[1]*D,r[2]*D)})}
+function pkRig(){let av;try{av=makeAvatar(me.color,null,me.av)}catch(e){return null}
+  const ch=av.g.children.slice(0,6),tg=new THREE.Group(),ty=3*.34;tg.position.y=ty;
+  ch.forEach(function(c){c.position.y-=ty;tg.add(c)});av.g.add(tg);av.tg=tg;av.head=ch[1];return av}
+function pkNames(p){return Object.keys(p.anims||{}).filter(function(k){return p.anims[k]&&p.anims[k].keys&&Object.keys(p.anims[k].keys).length}).sort(function(a,b){return PK_ORDER.indexOf(a)-PK_ORDER.indexOf(b)})}
 function pkPreview(sw,p,full){
   const names=Object.keys(p.anims||{}).filter(function(k){return p.anims[k]&&p.anims[k].keys&&Object.keys(p.anims[k].keys).length});
   if(!names.length||!thInit()){sw.textContent='\u{1F3C3}';sw.style.cssText='display:grid;place-items:center;font-size:44px;background:#e6f6ff;min-height:96px';return null}
@@ -2338,14 +2342,16 @@ function pkRun(){if(PKP.raf)return;
     PKP.list=PKP.list.filter(function(e){return e.c.isConnected});PKP.list.forEach(function(e){e.t+=dt;pkDraw(e)})};
   PKP.raf=requestAnimationFrame(step)}
 function packCard(p,inCat){
-  const owned=packOwned(p),worn=me.av.anim===p.id,d=mkx('div','item'+(worn?' eq':'')+(p.sale===false?' off':'')),sw=mkx('div','sw'),bar=pkPreview(sw,p,inCat);
+  const owned=packOwned(p),worn=me.av.anim===p.id,d=mkx('div','item'+(worn?' eq':'')+(p.sale===false?' off':'')),sw=mkx('div','sw'),bar=pkPreview(sw,p,false);
   const n=mkx('b','',p.name),pr=mkx('div','pr');pr.innerHTML=owned?'Owned':'<i></i>'+(p.price>0?p.price:'Free');
   if(!p.pub)pr.append(mkx('span','tagoff','Draft'));else if(p.sale===false)pr.append(mkx('span','tagoff','Off sale'));
   const ds=mkx('p','hint',packNames(p));ds.style.cssText='margin:2px 0 6px;font-size:.75rem';
   const row=mkx('div','row');function btn(t,f,ghost,par){const b=mkx('button','btn small'+(ghost?' ghost':''),t);b.type='button';b.onclick=f;(par||row).append(b);return b}
   if(owned)btn(worn?'Remove':'Equip',function(){packEquip(p)});else if(p.pub&&p.sale!==false)btn('Buy',function(){packBuy(p)});
-  d.append(sw,n,pr);if(bar)d.append(bar);d.append(ds,row);
-  if(isAdm()&&(packMine(p)||isBB())){const r2=mkx('div','row');
+  d.append(sw,n,pr,ds,row);d.tabIndex=0;d.setAttribute('role','link');d.setAttribute('aria-label',p.name);
+  sw.style.cursor=n.style.cursor='pointer';sw.onclick=n.onclick=function(){openPack(p.id)};
+  row.addEventListener('click',function(e){e.stopPropagation()});
+  if(inCat===2&&isAdm()&&(packMine(p)||isBB())){const r2=mkx('div','row');
     if(!p.pub&&packMine(p))btn('Publish',async function(){const v=prompt('Price in blockbucks (0 = free)','0');if(v===null)return;const price=Math.max(0,Math.min(999,parseInt(v,10)||0));
       try{await api.savePack(Object.assign({},p,{pub:true,sale:true,price:price}));await loadPacks();toast(p.name+' is published. Find it in the Catalog under Animations.');packRepaint()}catch(e){toast('Could not publish: '+errText(e))}},false,r2);
     if(p.pub)btn(p.sale===false?'Put on sale':'Take off sale',async function(){try{await api.savePack(Object.assign({},p,{sale:p.sale===false}));await loadPacks();packRepaint()}catch(e){toast('Could not update: '+errText(e))}},true,r2);
@@ -2546,7 +2552,7 @@ async function buyItem(it){if(!await refreshAv()){toast('Could not check your ac
   if(await saveAv())toast('Bought '+it.name+'!');else{me.av=JSON.parse(prev);pvRebuild()}
   paintItem();if(!$('p-catalog').hidden)paintCatalog()}
 function openItem(id){const cur=PAGES.concat(['profile']).filter(function(x){return !$('p-'+x).hidden})[0];if(cur)IV.back=cur;
-  IV.id=id;IV.mode='item';IV.yaw=.6;IV.pitch=.2;nav('item');
+  IV.pack=null;IV.id=id;IV.mode='item';IV.yaw=.6;IV.pitch=.2;nav('item');
   const ct=document.querySelector('#lobby .ct');if(ct)ct.scrollTop=0;paintItem();ivBuild()}
 /* ----- Favorites (saved on your avatar, so they follow your account) ----- */
 function favList(k){if(!me)return [];if(!Array.isArray(me.av[k]))me.av[k]=[];return me.av[k]}
@@ -2596,7 +2602,56 @@ function paintRecs(it){
 
 const ITYPE={hat:'Head Accessory',face:'Face',facc:'Face Accessory',back:'Back Accessory',neck:'Neck Accessory',shirt:'Shirt'},IPLACE={hat:'Head',face:'Face',facc:'Face',back:'Back',neck:'Neck',shirt:'Torso and arms'};
 const ITA=mkx('div','it-acts');ITA.id='it-acts';
+
+/* ----- the animation pack page (uses the item page layout) ----- */
+function openPack(id){const cur=PAGES.concat(['profile']).filter(function(x){return !$('p-'+x).hidden})[0];if(cur&&cur!=='item')IV.back=cur;
+  IV.pack=id;IV.id=null;IV.mode='pack';IV.yaw=.45;IV.pkName='';IV.pkT=0;nav('item');
+  const ct=document.querySelector('#lobby .ct');if(ct)ct.scrollTop=0;paintItem();ivBuild()}
+function paintPackPage(){
+  const p=packById(IV.pack),acts=ITA,tags=$('it-tags'),adm=$('it-adm'),rows=$('it-rows'),fav=$('it-fav');
+  acts.replaceChildren();tags.replaceChildren();rows.replaceChildren();$('it-views').hidden=true;
+  function row(label,val){const dt=mkx('dt','',label),dd=mkx('dd');if(typeof val==='string')dd.textContent=val;else dd.append(val);rows.append(dt,dd);return dd}
+  if(!p){$('it-name').textContent='Animation pack not found';fav.hidden=true;$('it-recs-box').hidden=true;IV.recKey='';adm.hidden=true;row('Description','This animation pack is not available any more.');return}
+  fav.hidden=false;
+  const owned=packOwned(p),worn=me.av.anim===p.id,off=p.sale===false,isF=isFavItem(p.id);
+  $('it-name').textContent=p.name;
+  function tag(t,c){tags.append(mkx('span','it-tag '+(c||''),t))}
+  if(!p.pub)tag('Draft','off');else if(off)tag('Off sale','off');if(worn)tag('Wearing','ok');else if(owned)tag('Owned','ok');
+  tags.hidden=!tags.childNodes.length;
+  fav.classList.toggle('on',isF);fav.setAttribute('aria-pressed',String(isF));$('it-favt').textContent=isF?'Favorited':'Favorite';fav.onclick=function(){toggleFavItem(p.id)};
+  const pr=mkx('div','it-price2');if(owned)pr.append(document.createTextNode('Owned'));else{pr.append(mkx('i'));pr.append(document.createTextNode(p.price>0?String(p.price):'Free'))}
+  row('Price',pr);
+  function btn(t,f,cls){const x=mkx('button','btn '+cls,t);x.type='button';x.onclick=f;acts.append(x);return x}
+  if(owned)btn(worn?'Remove':'Equip',function(){packEquip(p)},'it-buy');
+  else if(!off||isAdm())btn(p.price>0?'Buy':'Get',function(){packBuy(p)},'it-buy');
+  else acts.append(mkx('span','hint','This pack is not on sale right now.'));
+  const fb=btn(isF?'\u2605 Favorited':'Add to favorites',function(){toggleFavItem(p.id)},'it-sec');fb.classList.toggle('on',isF);
+  rows.append(acts);
+  row('Tradable','No');row('Type','Animation Pack');row('Placement','Animations | Walk, jump, idle and fall');
+  const names=pkNames(p),chips=mkx('div','row');chips.style.cssText='display:flex;flex-wrap:wrap;gap:6px';
+  if(!IV.pkName||names.indexOf(IV.pkName)<0)IV.pkName=names.indexOf('walk')>=0?'walk':(names[0]||'');
+  names.forEach(function(n){const b=mkx('button','btn small ghost',n);b.type='button';b.setAttribute('aria-pressed',String(n===IV.pkName));
+    b.onclick=function(){IV.pkName=n;IV.pkT=0;chips.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b))})};chips.append(b)});
+  row('Animations',names.length?chips:'Nothing in this pack yet.');
+  const dsc=String(p.descr||'').trim(),dd=row('Description',dsc||'No description yet.');dd.className='it-desc'+(dsc?'':' none');
+  const mine=isAdm()&&(packMine(p)||isBB());adm.hidden=!mine;
+  if(mine){adm.replaceChildren();adm.append(mkx('h3','','Admin'));
+    const ta=document.createElement('textarea');ta.maxLength=500;ta.rows=4;ta.placeholder='Write a description players will see on this page';ta.value=p.descr||'';
+    const sv=mkx('button','btn small','Save description');sv.type='button';
+    sv.onclick=async function(){sv.disabled=true;try{await api.savePack(Object.assign({},p,{descr:ta.value.trim().slice(0,500)}));await loadPacks();paintItem();toast('Description saved.')}catch(e){toast('Could not save: '+errText(e))}sv.disabled=false};
+    const r2=mkx('div','row');function ab(t,f){const b=mkx('button','btn small ghost',t);b.type='button';b.onclick=f;r2.append(b)}
+    if(!p.pub&&packMine(p))ab('Publish',async function(){const v=prompt('Price in blockbucks (0 = free)',String(p.price||0));if(v===null)return;const price=Math.max(0,Math.min(999,parseInt(v,10)||0));
+      try{await api.savePack(Object.assign({},p,{pub:true,sale:true,price:price}));await loadPacks();paintItem();toast(p.name+' is published. It is in the Catalog under Animations.')}catch(e){toast('Could not publish: '+errText(e))}});
+    if(p.pub)ab('Change price',async function(){const v=prompt('New price in blockbucks (0 = free)',String(p.price||0));if(v===null)return;try{await api.savePack(Object.assign({},p,{price:Math.max(0,Math.min(999,parseInt(v,10)||0))}));await loadPacks();paintItem()}catch(e){toast('Could not update: '+errText(e))}});
+    if(p.pub)ab(off?'Put on sale':'Take off sale',async function(){try{await api.savePack(Object.assign({},p,{sale:off}));await loadPacks();paintItem()}catch(e){toast('Could not update: '+errText(e))}});
+    ab('Remove',async function(){if(!confirm('Remove '+p.name+(p.pub?' from the shop AND from every player\'s inventory?':'?')))return;try{await api.savePack(Object.assign({},p,{removed:true,pub:false}));await loadPacks();toast(p.name+' was removed.');goPage(IV.back)}catch(e){toast('Could not remove: '+errText(e))}});
+    adm.append(ta,sv,r2)}
+  /* recommendations: other packs */
+  const l=PACKS.filter(function(x){return x.id!==p.id&&x.pub&&x.sale!==false}).slice(0,10),box=$('it-recs');box.replaceChildren();IV.recKey='';$('it-recs-box').hidden=!l.length;
+  l.forEach(function(x){box.append(packCard(x,true))})}
 function paintItem(){
+  if(IV.pack){paintPackPage();return}
+  $('it-views').hidden=false;
   const it=itemById(IV.id),acts=ITA,tags=$('it-tags'),adm=$('it-adm'),rows=$('it-rows'),fav=$('it-fav');
   acts.replaceChildren();tags.replaceChildren();rows.replaceChildren();
   $('it-views').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.v===IV.mode))});
@@ -2642,6 +2697,8 @@ function ivInit(){
 function ivBuild(){
   if(!ivInit())return;
   if(IV.obj){IV.sc.remove(IV.obj);IV.obj=null}
+  if(IV.pack){const p=packById(IV.pack),av=p&&pkRig();if(!av)return;const root=new THREE.Group();av.g.position.y=-.95;root.add(av.g);
+    IV.obj=root;IV.fx={};IV.pkAv=av;IV.cam.position.set(0,.15,5.2);IV.cam.lookAt(0,0,0);IV.sc.add(root);return}
   const it=itemById(IV.id);if(!it)return;
   if(IV.mode==='worn'){
     const eq=Object.assign({},me.av.eq);eq[it.slot]=eqPut(eqArr(eq[it.slot]),it.id);
@@ -2655,6 +2712,9 @@ function ivTick(now){
   if(!IV.r||!me||$('lobby').hidden||$('p-item').hidden||!IV.obj)return;
   const c=$('it3d'),w=c.clientWidth,h=c.clientHeight;
   if(w&&h&&(w!==IV.w||h!==IV.h)){IV.w=w;IV.h=h;IV.r.setPixelRatio(Math.min(devicePixelRatio||1,2));IV.r.setSize(w,h,false);IV.cam.aspect=w/h;IV.cam.updateProjectionMatrix()}
+  if(IV.pack){const p=packById(IV.pack),A=p&&p.anims&&p.anims[IV.pkName];const dt=Math.min(.1,Math.max(0,(now-(IV.pkLast||now))/1000));IV.pkLast=now;
+    if(A&&A.keys&&IV.pkAv){IV.pkT=(IV.pkT||0)+dt;pkPose(IV.pkAv,A,IV.pkT%(A.len||1))}
+    if(!IV.drag)IV.yaw+=.006;IV.obj.rotation.y=IV.yaw;IV.r.render(IV.sc,IV.cam);return}
   if(!IV.drag)IV.yaw+=.012;
   if(IV.mode==='item')IV.obj.rotation.set(IV.pitch,IV.yaw,0);else{IV.obj.rotation.y=IV.yaw;fxAnim(IV.fx,0,now)}
   IV.r.render(IV.sc,IV.cam)}
