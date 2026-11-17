@@ -697,6 +697,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
         <li>2 blockbucks for every hour you spend playing games.</li>
         <li>30 blockbucks every time a Premium player spends an hour in your game (added to your wallet).</li>
         <li>100% of the price every time a player buys one of your gamepasses (added to your wallet).</li>
+        <li>100% of the price every time someone buys a model you put on sale in the Studio Toolbox (added to your wallet).</li>
         <li>100 plays of your game in one hour: 2 blockbucks for every play that hour (so 200 for 100 plays, 2,000 for 1,000 plays).</li>
       </ul>
       <h3>Redeem</h3>
@@ -946,7 +947,7 @@ function tooAlike(a,b){return colorDist(a,b)<MIN_LOOK_DIST}
 /* Each slot can hold up to 2 accessories (older saves held one id as a plain string) */
 function eqArr(v){return Array.isArray(v)?v.filter(function(x){return typeof x==='string'&&x}).slice(-2):(typeof v==='string'&&v?[v]:[])}
 function eqPut(arr,id){arr=arr.filter(function(x){return x!==id});arr.push(id);const it=itemById(id);return arr.slice(it&&it.slot==='shirt'?-1:-2)}
-function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:eqArr(e.hat),face:eqArr(e.face),facc:eqArr(e.facc),back:eqArr(e.back),neck:eqArr(e.neck),shirt:eqArr(e.shirt).slice(-1)},spent:a.spent||0,codes:Array.isArray(a.codes)?a.codes.filter(function(x){return typeof x==='string'}).slice(-500):[],codeBux:Math.max(0,Math.floor(+a.codeBux||0)),codeReset:a.codeReset?1:0,clog:Array.isArray(a.clog)?a.clog.slice(0,15).map(function(x){return {amount:+x.amount||0,reason:String(x.reason||'').slice(0,60),created_at:String(x.created_at||'')}}):[],skin:HEX.test(a.skin)?a.skin:DEF_SKIN,pants:HEX.test(a.pants)?a.pants:DEF_PANTS,
+function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:eqArr(e.hat),face:eqArr(e.face),facc:eqArr(e.facc),back:eqArr(e.back),neck:eqArr(e.neck),shirt:eqArr(e.shirt).slice(-1)},spent:a.spent||0,anim:(typeof a.anim==='string'&&/^sys_anp_[a-z0-9]{1,16}$/.test(a.anim))?a.anim:'',codes:Array.isArray(a.codes)?a.codes.filter(function(x){return typeof x==='string'}).slice(-500):[],codeBux:Math.max(0,Math.floor(+a.codeBux||0)),codeReset:a.codeReset?1:0,clog:Array.isArray(a.clog)?a.clog.slice(0,15).map(function(x){return {amount:+x.amount||0,reason:String(x.reason||'').slice(0,60),created_at:String(x.created_at||'')}}):[],skin:HEX.test(a.skin)?a.skin:DEF_SKIN,pants:HEX.test(a.pants)?a.pants:DEF_PANTS,
     favI:Array.isArray(a.favI)?a.favI.filter(function(x){return typeof x==='string'&&x}).slice(0,100):[],
     favG:Array.isArray(a.favG)?a.favG.filter(function(g){return g&&g.id!=null}).slice(0,100).map(function(g){return {id:String(g.id),name:String(g.name||'').slice(0,60),ownerId:g.ownerId||null,ownerName:String(g.ownerName||'').slice(0,32)}}):[]}}
 function makeDemo(){
@@ -979,6 +980,8 @@ function makeDemo(){
     async events(){return []},async saveEvent(){throw new Error('Billboards need the online BrixBlox (Supabase).')},async delEvent(){},async adminSearch(){return []},async adminWarn(){},async adminBalance(){throw new Error('Needs the online BrixBlox (Supabase).')},async adminTake(){throw new Error('Needs the online BrixBlox (Supabase).')},async adjStatus(){return {total:0,log:[]}},async adminBan(){},async adminChatLogs(){return []},async adminGames(){},async adminListGames(){return []},async adminRemoveGame(){},async adminDelete(){},async notices(){return null},async ackNotices(){},
     async gameData(){return null},
     async listAcc(){try{return (JSON.parse(store.get('brixblox-acc'))||[]).map(function(x){return Object.assign({c:'#4a4c4e'},x)})}catch(e){return []}},
+    async listPacks(){let a=[];try{a=JSON.parse(store.get('brixblox-packs'))||[]}catch(e){}return a},
+    async savePack(p){let a=[];try{a=JSON.parse(store.get('brixblox-packs'))||[]}catch(e){}a=a.filter(function(x){return x.id!==p.id});a.push(p);store.set('brixblox-packs',JSON.stringify(a))},
     async saveAcc(it){let a=[];try{a=JSON.parse(store.get('brixblox-acc'))||[]}catch(e){}a=a.filter(function(x){return x.id!==it.id});a.push(it);store.set('brixblox-acc',JSON.stringify(a))},
     async admins(){try{const d=JSON.parse(store.get('brixblox-admins'));return d&&d.admins||[]}catch(e){return []}},
     async delAcc(id){let a=[];try{a=JSON.parse(store.get('brixblox-acc'))||[]}catch(e){}store.set('brixblox-acc',JSON.stringify(a.filter(function(x){return x.id!==id})))},
@@ -994,6 +997,7 @@ function makeDemo(){
       const hs=Math.floor(now/36e5)*36e5,cnt=d.pl.filter(function(x){return x.g===gid&&x.t>=hs}).length;
       if(cnt>=100){d.hp=d.hp||{};const hk=gid+':'+hs,paid=d.hp[hk]||0,tg=cnt*2;if(tg>paid){badd(d,owner,tg-paid,'Busy hour: '+cnt+' plays');d.hp[hk]=tg}}save(d)},
     async gpEarn(){return {total:0,log:[]}},
+    async tbEarn(){return {total:0,log:[]}},
     async premStatus(id){const d=load(),e=(d.pe||[]).filter(function(x){return x.o===id});return {premium:(d.prem||[]).indexOf(id)>=0,bonus:e.reduce(function(a,x){return a+x.n},0),log:e.slice(-15).reverse().map(function(x){return {amount:x.n,reason:x.r,created_at:x.t}})}},
     async premAll(){const d=load();return (d.prem||[]).map(function(id){return (d.users.find(function(u){return u.id===id})||{}).username}).filter(Boolean)},
     async buyPremium(id){const d=load();d.prem=d.prem||[];if(d.prem.indexOf(id)<0)d.prem.push(id);save(d);return {ok:true}},
@@ -1086,6 +1090,8 @@ function makeSupa(){
     async listAcc(){const r=await sb.from('games').select('id,name,data').like('id','acc_%');if(r.error)throw r.error;return r.data.map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,slot:d.slot,price:d.price,descr:d.descr||'',scale:d.scale,fbx:d.fbx||'',tex:d.tex||'',tf:!!d.tf,sh:d.sh==null?null:d.sh,px:d.px||0,py:d.py||0,pz:d.pz||0,rx:d.rx||0,ry:d.ry||0,rz:d.rz||0,sale:d.sale!==false,prem:!!d.prem,removed:!!d.removed,c:'#4a4c4e'}})},
     async saveAcc(it){const r=await sb.from('games').upsert({id:it.id,owner_id:me.id,owner_name:me.username,name:it.name,vis:'public',data:JSON.stringify({slot:it.slot,price:it.price,descr:String(it.descr||'').slice(0,500),scale:it.scale,fbx:it.fbx||'',tex:it.tex||'',tf:!!it.tf,sh:it.sh==null?null:it.sh,px:it.px||0,py:it.py||0,pz:it.pz||0,rx:it.rx||0,ry:it.ry||0,rz:it.rz||0,sale:it.sale!==false,prem:!!it.prem,removed:!!it.removed}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
     async admins(){const r=await sb.from('games').select('data').eq('id','sys_admins').maybeSingle();if(r.error)throw r.error;let d=r.data&&r.data.data;if(typeof d==='string')d=JSON.parse(d);return d&&d.admins||[]},
+    async listPacks(){const r=await sb.from('games').select('id,name,data').like('id','sys_anp_%');if(r.error)throw r.error;return (r.data||[]).map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,owner:d.owner||'',price:d.price||0,descr:d.descr||'',pub:!!d.pub,sale:d.sale!==false,removed:!!d.removed,anims:d.anims||{}}})},
+    async savePack(p){const r=await sb.from('games').upsert({id:p.id,owner_id:me.id,owner_name:me.username,name:p.name,vis:'public',data:JSON.stringify({owner:p.owner,price:p.price||0,descr:p.descr||'',pub:!!p.pub,sale:p.sale!==false,removed:!!p.removed,anims:p.anims||{}}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
     async delAcc(id){const r=await sb.from('games').delete().eq('id',id);if(r.error)throw r.error},
     async logOut(){await sb.auth.signOut()},
     async dmSend(id,to,body){const r=await sb.rpc('dm_send',{p_to:to,p_body:body});if(r.error)throw r.error;return r.data},
@@ -1100,6 +1106,7 @@ function makeSupa(){
     async gpBuy(gid,pid){const r=await sb.rpc('gamepass_buy',{p_game:String(gid),p_pass_id:String(pid)});if(r.error)throw new Error(/gamepass_buy/.test(r.error.message||'')?'Gamepass sales are not switched on yet. The site owner needs to run the gamepass SQL in Supabase.':r.error.message);return r.data},
     async gpSave(av,gp){const r=await sb.auth.updateUser({data:{avatar:av,gpass:gp}});if(r.error)throw r.error},
     async gpEarn(){const r=await sb.rpc('gamepass_earnings_status');if(r.error)return {total:0,log:[]};return r.data||{total:0,log:[]}},
+    async tbEarn(){const r=await sb.rpc('toolbox_earnings_status');if(r.error)return {total:0,log:[]};return r.data||{total:0,log:[]}},
     async premStatus(){const r=await sb.rpc('premium_status');if(r.error)throw r.error;return r.data||{}},
     async premAll(){const r=await sb.rpc('premium_all');if(r.error)throw r.error;return r.data||[]},
     async buyPremium(){const r=await sb.rpc('buy_premium');if(r.error)throw r.error;return r.data},
@@ -1160,7 +1167,7 @@ $('f-in').addEventListener('submit',async function(e){e.preventDefault();$('b-in
 /* The game reads who you are (name, shirt colour) from here, so your in-game avatar matches this page. */
 /* ===== BrixBlox Premium =====
    Premium is stored on the server (premium_members) so it cannot be faked from this page. This page only shows it. */
-const PREM_PRICE=200;let PREM=new Set(),prem={on:false,bonus:0,log:[],err:false},gpe={total:0,log:[]},adj={total:0,log:[]},cbx=0;
+const PREM_PRICE=200;let PREM=new Set(),prem={on:false,bonus:0,log:[],err:false},gpe={total:0,log:[]},tbe={total:0,log:[]},adj={total:0,log:[]},cbx=0;
 function premOn(){return isBB()||prem.on}
 function pstar(){const s=document.createElement('span');s.className='pstar';s.title='BrixBlox Premium';s.textContent='\u2605';return s}
 function nameEl(el,name){el.textContent=name;if(PREM.has(String(name).toLowerCase()))el.append(pstar())}
@@ -1168,6 +1175,7 @@ function syncMe(){if(me)store.set('brixblox-me',JSON.stringify({id:me.id,usernam
 async function loadPrem(){
   try{const r=await api.premStatus(me.id);prem={on:!!r.premium,bonus:+r.bonus||0,log:r.log||[],err:false};
     try{const e=await api.gpEarn(me.id);gpe={total:+e.total||0,log:e.log||[]}}catch(e){gpe={total:0,log:[]}}
+    try{const t=await api.tbEarn();tbe={total:+t.total||0,log:t.log||[]}}catch(e){tbe={total:0,log:[]}}/* Studio Toolbox sales */
     try{const a=await api.adjStatus();adj={total:+a.total||0,log:a.log||[]}}catch(e){adj={total:0,log:[]}}
     try{cbx=await api.codeBuxTotal()}catch(e){cbx=0}/* blockbucks from codes, kept on the server */
     const all=await api.premAll();PREM=new Set((all||[]).map(function(x){return String(x).toLowerCase()}));if(prem.on)PREM.add(me.username.toLowerCase())}
@@ -1863,7 +1871,7 @@ function paintBank(){
   $('bb-get').hidden=inf;$('bb-get').disabled=inf||bank.saved<BANK_MIN;
   $('bb-code').hidden=!bank.code;if(bank.code){$('bb-codev').textContent=bank.code;$('bb-codeamt').textContent=bank.codeAmt}
   const ul=$('bb-log');ul.replaceChildren();
-  const LG=bank.log.concat(prem.log||[],gpe.log||[],adj.log||[],(me.av&&me.av.clog)||[]).sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at)}).slice(0,15);
+  const LG=bank.log.concat(prem.log||[],gpe.log||[],tbe.log||[],adj.log||[],(me.av&&me.av.clog)||[]).sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at)}).slice(0,15);
   if(!LG.length){const li=document.createElement('li');li.textContent='Nothing yet. Publish a game and get players!';ul.append(li)}
   LG.forEach(function(x){const li=document.createElement('li'),a=document.createElement('span'),b=document.createElement('b');
     a.textContent=x.reason+'  -  '+new Date(x.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
@@ -2107,6 +2115,7 @@ async function loadItems(){
         Object.keys(av.eq).forEach(function(k){const l=eqArr(av.eq[k]);if(l.indexOf(r.id)>=0){av.eq[k]=l.filter(function(x){return x!==r.id});ch=true}})});
       if(ch){if(pv.tryEq)pv.tryEq=null;await saveAv()}}
   }catch(e){ITEMS=[]}
+  try{await loadPacks()}catch(e){}
   if(me){pvRebuild();if(!$('p-avatar').hidden)paintShop();if(!$('p-catalog').hidden)paintCatalog();if(!$('p-item').hidden){paintItem();ivBuild()}loadFriends()}}
 function shirtOf(eq){const id=eq&&eqArr(eq.shirt).slice(-1)[0],it=id&&itemById(id);return it&&it.tex?it:null}
 function makeAvatar(color,eq,look){
@@ -2215,7 +2224,7 @@ function pvTick(now){
   pv.cam.position.set(0,pv.ly+.15+Math.sin(pv.pitch)*pv.zoom,Math.cos(pv.pitch)*pv.zoom);pv.cam.lookAt(0,pv.ly,0);
   pv.r.render(pv.sc,pv.cam)}
 function coinsEarned(){let n=10;Object.keys(recs).forEach(function(k){n+=recs[k].coins||0});return n}
-function balance(){return isBB()?Infinity:coinsEarned()+(bank&&bank.wallet||0)+(prem.bonus||0)+(gpe.total||0)+(adj.total||0)+cbx-(me.av.spent||0)-(prem.on?PREM_PRICE:0)}
+function balance(){return isBB()?Infinity:coinsEarned()+(bank&&bank.wallet||0)+(prem.bonus||0)+(gpe.total||0)+(tbe.total||0)+(adj.total||0)+cbx-(me.av.spent||0)-(prem.on?PREM_PRICE:0)}
 /* Always work from the newest copy of the account. A second computer (like a school laptop) can hold an old copy, and using it made codes redeem twice and spending go missing. */
 async function refreshAv(){try{const a=await api.freshAv(me.id);me.av=a;syncMe();return true}catch(e){return false}}
 /* Reload every part of the balance (account copy, premium/gamepass/admin amounts, Blockbank) so every page adds up the same */
@@ -2269,11 +2278,63 @@ function thRun(){
     const many=TH.list.length>24;/* a very long shop: only the tile under the pointer spins */
     TH.list.forEach(function(e){if(many&&!e.hov)return;e.a+=dt*(e.hov?2.6:.9);thDraw(e)})};
   TH.raf=requestAnimationFrame(step)}
+
+/* ===== Animation packs: made in BrixBlox Studio by admins (right-click an animation > Add to animation pack), published here, bought in the Catalog,
+   worn from the Inventory. Worn packs replace your walk / idle / jump / fall in games (a game can turn that off in its settings). ===== */
+let PACKS=[];
+const PK_ORDER=['walk','idle','jump','fall','hold item','hold item walk','hold item jump'];
+function packById(id){return PACKS.find(function(p){return p.id===id})}
+function packMine(p){return !!me&&p.owner===me.username.toLowerCase()}
+function packVisible(p){return p.pub||(isAdm()&&packMine(p))}
+async function loadPacks(){
+  const all=await api.listPacks();PACKS=all.filter(function(p){return !p.removed&&packVisible(p)});
+  if(me){let ch=false;const av=me.av;
+    all.forEach(function(r){if(!r.removed)return;const i=av.owned.indexOf(r.id);if(i>=0){av.owned.splice(i,1);ch=true;if(REFUND_REMOVED)av.spent=Math.max(0,(av.spent||0)-(r.price||0))}if(av.anim===r.id){av.anim='';ch=true}});
+    if(av.anim&&!packById(av.anim)&&all.length){/* worn pack that is gone or no longer yours */const q=all.find(function(r){return r.id===av.anim});if(!q||q.removed||(!q.pub&&!packMine(q))){av.anim='';ch=true}}
+    if(ch)await saveAv()}}
+function packOwned(p){return me.av.owned.indexOf(p.id)>=0||(isAdm()&&packMine(p))}
+function packNames(p){return Object.keys(p.anims||{}).sort(function(a,b){return PK_ORDER.indexOf(a)-PK_ORDER.indexOf(b)}).join(', ')||'nothing yet'}
+function packRepaint(){try{if(!$('p-avatar').hidden&&pv.tab==='anim')paintShop();if(!$('p-catalog').hidden)paintCatalog()}catch(e){}}
+async function packEquip(p){const old=me.av.anim||'';me.av.anim=old===p.id?'':p.id;packRepaint();if(!await saveAv()){me.av.anim=old}else toast(me.av.anim?'Wearing '+p.name+'. It replaces your walk, jump and idle in games.':'Animation pack removed.');packRepaint()}
+async function packBuy(p){if(!await refreshAv()){toast('Could not check your account. Try again.');return}
+  if(p.sale===false&&!isAdm()){toast('This pack is no longer on sale.');return}
+  if(balance()<p.price){toast('Not enough blockbucks. You need '+(p.price-balance())+' more.');return}
+  const prev=JSON.stringify(me.av);me.av.owned.push(p.id);me.av.spent=(me.av.spent||0)+p.price;me.av.anim=p.id;packRepaint();
+  if(await saveAv())toast('Bought '+p.name+'! It is now your walk, jump and idle.');else{me.av=JSON.parse(prev)}
+  packRepaint();$('wal').textContent=isBB()?'\u221E':balance()}
+function packCard(p,inCat){
+  const owned=packOwned(p),worn=me.av.anim===p.id,d=mkx('div','item'+(worn?' eq':'')+(p.sale===false?' off':'')),sw=mkx('div','sw','\u{1F3C3}');
+  sw.style.cssText='display:grid;place-items:center;font-size:44px;background:#e6f6ff;min-height:96px';
+  const n=mkx('b','',p.name),pr=mkx('div','pr');pr.innerHTML=owned?'Owned':'<i></i>'+(p.price>0?p.price:'Free');
+  if(!p.pub)pr.append(mkx('span','tagoff','Draft'));else if(p.sale===false)pr.append(mkx('span','tagoff','Off sale'));
+  const ds=mkx('p','hint',packNames(p));ds.style.cssText='margin:2px 0 6px;font-size:.75rem';
+  const row=mkx('div','row');function btn(t,f,ghost,par){const b=mkx('button','btn small'+(ghost?' ghost':''),t);b.type='button';b.onclick=f;(par||row).append(b);return b}
+  if(owned)btn(worn?'Remove':'Equip',function(){packEquip(p)});else if(p.pub&&p.sale!==false)btn('Buy',function(){packBuy(p)});
+  d.append(sw,n,pr,ds,row);
+  if(isAdm()&&(packMine(p)||isBB())){const r2=mkx('div','row');
+    if(!p.pub&&packMine(p))btn('Publish',async function(){const v=prompt('Price in blockbucks (0 = free)','0');if(v===null)return;const price=Math.max(0,Math.min(999,parseInt(v,10)||0));
+      try{await api.savePack(Object.assign({},p,{pub:true,sale:true,price:price}));await loadPacks();toast(p.name+' is published. Find it in the Catalog under Animations.');packRepaint()}catch(e){toast('Could not publish: '+errText(e))}},false,r2);
+    if(p.pub)btn(p.sale===false?'Put on sale':'Take off sale',async function(){try{await api.savePack(Object.assign({},p,{sale:p.sale===false}));await loadPacks();packRepaint()}catch(e){toast('Could not update: '+errText(e))}},true,r2);
+    btn('Remove',async function(){if(!confirm('Remove '+p.name+(p.pub?' from the shop AND from every player\'s inventory?':'?')))return;try{await api.savePack(Object.assign({},p,{removed:true,pub:false}));await loadPacks();toast(p.name+' was removed.');packRepaint()}catch(e){toast('Could not remove: '+errText(e))}},true,r2);
+    d.append(r2)}
+  return d}
+function paintPackInv(g){
+  $('shop-note').textContent='Animation packs replace your walk, jump, idle and fall in games. Wear one pack at a time. Admins make packs in BrixBlox Studio (right-click an animation, Add to animation pack) and press Publish here.';
+  const list=PACKS.filter(packOwned);
+  if(!list.length){const p=mkx('p','empty','You do not own any animation packs yet. Visit the Catalog to get some.');p.style.gridColumn='1/-1';g.append(p);return}
+  list.forEach(function(p){g.append(packCard(p,false))})}
+function paintPackCat(g){
+  const list=PACKS.filter(function(p){return (p.pub||(isAdm()&&packMine(p)))&&(!CAT.q||p.name.toLowerCase().indexOf(CAT.q)>=0)&&(p.sale!==false||(CAT.off&&isAdm())||packOwned(p))});
+  if(!list.length){const p=mkx('p','empty',CAT.q?'No packs match your search.':'No animation packs yet.');p.style.gridColumn='1/-1';g.append(p);return}
+  list.forEach(function(p){g.append(packCard(p,true))})}
+
 function paintShop(){
   $('wal').textContent=isBB()?'\u221E':balance();
   const tabs=$('shop-tabs');tabs.innerHTML='';
   SLOTS.forEach(function(s){const b=document.createElement('button');b.type='button';b.className='btn ghost small';b.textContent=s[1];b.setAttribute('aria-pressed',String(pv.tab===s[0]));b.onclick=function(){pv.tab=s[0];paintShop()};tabs.appendChild(b)});
+  {const b=document.createElement('button');b.type='button';b.className='btn ghost small';b.textContent='Animations';b.setAttribute('aria-pressed',String(pv.tab==='anim'));b.onclick=function(){pv.tab='anim';paintShop()};tabs.appendChild(b)}
   TH.list=[];const g=$('shop');g.innerHTML='';const eq=me.av.eq;
+  if(pv.tab==='anim'){paintPackInv(g);return}
   $('shop-note').textContent=pv.tryEq?'Trying on. This is not saved until you buy or equip it.':'Everything you own. You can wear up to 2 accessories of the same type. Click an item to open its page, or find more in the Catalog.';
   const invList=ITEMS.filter(function(x){return x.slot===pv.tab&&me.av.owned.indexOf(x.id)>=0});
   if(!invList.length){const p=document.createElement('p');p.className='empty';p.style.gridColumn='1/-1';p.textContent='You do not own any items in this category yet. Visit the Catalog to get some.';g.appendChild(p)}
@@ -2425,8 +2486,9 @@ function catList(){return ITEMS.filter(function(x){
 function paintCatalog(){
   if(!me)return;$('cat-wal').textContent=isBB()?'\u221E':balance();$('cat-offl').hidden=!isAdm();$('cat-off').checked=CAT.off&&isAdm();
   const tabs=$('cat-tabs');tabs.replaceChildren();
-  [['all','All']].concat(SLOTS).forEach(function(s){const b=document.createElement('button');b.type='button';b.className='btn ghost small';b.textContent=s[1];b.setAttribute('aria-pressed',String(CAT.tab===s[0]));b.onclick=function(){CAT.tab=s[0];paintCatalog()};tabs.appendChild(b)});
+  [['all','All']].concat(SLOTS,[['anim','Animations']]).forEach(function(s){const b=document.createElement('button');b.type='button';b.className='btn ghost small';b.textContent=s[1];b.setAttribute('aria-pressed',String(CAT.tab===s[0]));b.onclick=function(){CAT.tab=s[0];paintCatalog()};tabs.appendChild(b)});
   TH.list=[];const g=$('cat-grid');g.replaceChildren();
+  if(CAT.tab==='anim'){paintPackCat(g);return}
   const list=catList();
   if(!list.length){const p=mkx('p','empty',ITEMS.length?(CAT.q?'No items match your search.':'Nothing to buy here right now.'):'The catalog is empty.');p.style.gridColumn='1/-1';g.append(p);return}
   list.forEach(function(it){
