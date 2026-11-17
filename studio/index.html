@@ -3276,6 +3276,22 @@ addEventListener('keydown',function(e){if(nHit){nHit=false;return}if(e.code!=='K
 addEventListener('keydown',function(e){if(e.code!=='KeyX'||e.ctrlKey||e.metaKey||e.altKey||playing||running||!animOn()||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||(document.activeElement&&document.activeElement.isContentEditable))return;
   e.preventDefault();if(animT)animSelect(null)});
 
+/* M: smooth the animation. Each keyframe is blended with the ones next to it (the first and last keyframes stay put, so the start and end poses do not change). Picked keyframes only if any are picked, otherwise the picked rig(s), otherwise everything. Press M again for more smoothing; Ctrl+Z undoes it. */
+function smoothAnim(){const say=function(t){const h=$('a-hint');if(h)h.textContent=t},A=P.anims[curA];
+  if(!A){say('Press + New to make an animation first, then press M to smooth it.');return}
+  let ids;if(aSelKeys.length)ids=Array.from(new Set(aSelKeys.map(function(q){return q.id})));
+  else{const rs=animTs.map(function(id){return byId(id)}).filter(Boolean);ids=rs.length?rs.reduce(function(a,r){return a.concat(rigParts(r).map(function(q){return q.id}))},[]):Object.keys(A.keys)}
+  const only=aSelKeys.length?new Set(aSelKeys.map(function(q){return q.k})):null;let n=0;
+  ids.forEach(function(id){const k=(A.keys[id]||[]).slice().sort(function(a,b){return a.t-b.t});if(k.length<3)return;
+    const mix=function(get,set){const old=k.map(get);for(let i=1;i<k.length-1;i++){if(only&&!only.has(k[i]))continue;if(!old[i-1]||!old[i]||!old[i+1])continue;
+        set(k[i],old[i].map(function(v,j){return Math.round((v*.5+(old[i-1][j]+old[i+1][j])*.25)*100)/100}));}};
+    mix(function(x){return x.r},function(x,v){x.r=v;n++});
+    if(k.every(function(x){return x.p}))mix(function(x){return x.p},function(x,v){x.p=v})});
+  if(!n){say(aSelKeys.length?'Pick keyframes that are not the first or last one, then press M.':'Nothing to smooth: a part needs at least 3 keyframes. Add more keyframes, then press M.');return}
+  aSelKeys=aSelKeys.filter(function(q){return A.keys[q.id]&&A.keys[q.id].indexOf(q.k)>=0});live={};save();animUI();preview();
+  say('Smoothed '+n+' keyframe'+(n===1?'':'s')+' ('+(only?'picked ones':'whole animation')+'). Press M again for even smoother, Ctrl+Z to undo.')}
+addEventListener('keydown',function(e){if(e.code!=='KeyM'||e.shiftKey||e.ctrlKey||e.metaKey||e.altKey||e.repeat||playing||running||!animOn()||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||(document.activeElement&&document.activeElement.isContentEditable))return;
+  e.preventDefault();smoothAnim()});
 /* Revert a rig: Ctrl+Shift+Y. Restores the layout it started with and, in the Animator, drops the position keyframes. */
 function rigParts(r){const a=[r];(function w(p){kids(p).forEach(function(c){a.push(c);w(c)})})(r);return a}
 function snapRig(r){if(!r||rig0[r.id]||!kids(r).length)return;const m={};rigParts(r).forEach(function(q){m[q.id]={pos:q.pos.slice(),pivot:q.pivot?q.pivot.slice():null}});rig0[r.id]=m}
