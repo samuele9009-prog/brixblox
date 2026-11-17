@@ -2305,7 +2305,7 @@ async function packBuy(p){if(!await refreshAv()){toast('Could not check your acc
 
 /* ----- live preview: your avatar plays the pack's animation inside the card ----- */
 const PKP={list:[],raf:0,t:0};
-function pkEval(A,t){const o={};for(const id in A.keys){if(id.indexOf('p:')===0)continue;const k=A.keys[id].filter(function(x){return !x.p}).sort(function(a,b){return a.t-b.t});if(!k.length)continue;
+function pkEval(A,t){const o={};for(const id in A.keys){if(id.indexOf('p:')===0)continue;const k=A.keys[id].filter(function(x){return x&&x.r}).sort(function(a,b){return a.t-b.t});if(!k.length)continue;
   const f=k[0],l=k[k.length-1];
   if(t<=f.t)o[id]=f.r;else if(t>=l.t)o[id]=l.r;else for(let i=0;i<k.length-1;i++)if(t>=k[i].t&&t<=k[i+1].t){const a=k[i],b=k[i+1],u=(t-a.t)/((b.t-a.t)||1),p0=k[i-1]||a,p3=k[i+2]||b;
     o[id]=a.r.map(function(v,j){const q0=p0.r[j],x=b.r[j],q3=p3.r[j];return .5*(2*v+(x-q0)*u+(2*q0-5*v+4*x-q3)*u*u+(3*v-q0-3*x+q3)*u*u*u)});break}}return o}
