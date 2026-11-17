@@ -509,7 +509,7 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 .gmrep select option{color:#111}
 /* Play-only view: games made by other players can be played, never opened or copied */
 #studio.vo .bar{display:none!important}
-#studio.vo .pal,#studio.vo .ws,#studio.vo .rz,#studio.vo .side>.note,#studio.vo .tabs,#studio.vo #s-parts,#studio.vo #s-out,#studio.vo #s-code,#studio.vo #s-anim,#studio.vo #s-name,#studio.vo .bar>span,#studio.vo #s-run,#studio.vo #s-view{display:none!important}
+#studio.vo .pal,#studio.vo .ws,#studio.vo .rz,#studio.vo .side>.note,#studio.vo .tabs,#studio.vo #s-parts,#studio.vo #s-out,#studio.vo #s-code,#studio.vo #s-anim,#studio.vo #s-tool,#studio.vo #s-name,#studio.vo .bar>span,#studio.vo #s-run,#studio.vo #s-view{display:none!important}
 #studio.vo .who>.btn:not(#s-play):not(#s-stop):not(#s-fs):not(#s-theme):not(#s-back){display:none!important}
 
 .gcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
@@ -628,14 +628,41 @@ html.mob #hotbar{bottom:10px!important;gap:4px!important}
 html.mob #hotbar button{width:48px!important;height:48px!important;font-size:.6rem!important}
 @media (max-height:480px){html.mob #bb-adm{bottom:calc(env(safe-area-inset-bottom,0px) + 130px)!important}html.mob #bb-admp{bottom:calc(env(safe-area-inset-bottom,0px) + 176px)!important}html.mob.bbvo #chat-log{max-height:60px}}
 #s-out{white-space:pre-wrap!important;overflow-wrap:anywhere;word-break:break-word}
+
+/* ===== Toolbox ===== */
+.tbx{display:flex;flex-direction:column;gap:8px}.tbx[hidden]{display:none!important}
+.tbbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tbbar input[type=search]{flex:1 1 120px;min-width:100px}
+.tbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px}
+.tbgrid .note{grid-column:1/-1}
+.tbc{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--paper);cursor:pointer;display:flex;flex-direction:column}
+.tbc:hover,.tbc:focus-visible{outline:2px solid #00b06f;outline-offset:-2px}
+.tbc .tbth{width:100%;aspect-ratio:4/3;object-fit:cover;background:#dff1ff;display:flex;align-items:center;justify-content:center;font-size:2rem}
+.tbc .tbi{padding:6px 8px;font-size:.8rem;display:flex;flex-direction:column;gap:1px;min-width:0}
+.tbc .tbi b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tbc .tbi small{color:var(--muted)}
+.tbhead{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.tbhead .tbth{width:150px;aspect-ratio:4/3;border-radius:10px;object-fit:cover;background:#dff1ff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:2.4rem}
+.tbhead .tbtx{flex:1 1 180px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.tbhead .tbtx p{margin:0;white-space:pre-wrap;word-break:break-word}
+.tbh2{margin:6px 0 0;font-size:1rem}
+.tbs{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:rgba(0,0,0,.035)}
+.tbsh{padding:6px 10px;font-size:.82rem;border-bottom:1px solid var(--line);display:flex;gap:6px;align-items:center;flex-wrap:wrap;background:rgba(0,0,0,.04)}
+.tbsb{padding:12px;overflow:auto;max-height:340px}
+.tbsb .bl{pointer-events:none;width:max-content;min-width:100%}
+.tbsb .bk2{cursor:default}
+.tbsb .bk2 input{pointer-events:none}
+.tbw{color:#c2321f;font-weight:800}
+.tbp{font-weight:800;color:#17803d;font-size:.8rem}
+.tbwarn{border:1px solid #c2321f;background:rgba(194,50,31,.08);border-radius:8px;padding:6px 10px;font-size:.85rem}
 </style>
 </head>
 <body>
 <main id="studio" class="screen">
   <header class="bar">
-    <div class="logo sm"><span class="blk b1"></span><span class="blk b2"></span><span class="blk b3"></span><h1>BrixBlox Studio</h1><small id="bb-who" style="opacity:.6;margin-left:6px">build 2026-11-07 v5</small></div>
+    <div class="logo sm"><span class="blk b1"></span><span class="blk b2"></span><span class="blk b3"></span><h1>BrixBlox Studio</h1><small id="bb-who" style="opacity:.6;margin-left:6px">build 2026-11-16 toolbox v1</small></div>
     <input id="s-name" class="sname" maxlength="30" aria-label="Project name">
-    <div class="who"><button id="s-play" class="btn small" type="button">&#9654; Play</button><button id="s-run" class="btn ghost small" type="button">{ } Run code</button><button id="s-stop" class="btn ghost small" type="button" disabled="">&#9632; Stop</button><select id="s-view" class="sview fsonly" aria-label="Panel"><option value="out">Output</option><option value="code">Code</option><option value="anim">Animator</option><option value="parts">No panel</option></select><button id="s-phone" class="btn ghost small" type="button" title="Preview the stage as a phone screen and see where the phone controls sit">&#128241; Phone view</button><button id="s-fs" class="btn ghost small" type="button">&#9974; Fullscreen</button><button id="s-theme" class="btn ghost small" type="button">Light / Dark</button><button id="s-back" class="btn ghost small" type="button">&larr; BrixBlox</button></div>
+    <div class="who"><button id="s-play" class="btn small" type="button">&#9654; Play</button><button id="s-run" class="btn ghost small" type="button">{ } Run code</button><button id="s-stop" class="btn ghost small" type="button" disabled="">&#9632; Stop</button><select id="s-view" class="sview fsonly" aria-label="Panel"><option value="out">Output</option><option value="code">Code</option><option value="anim">Animator</option><option value="tool">Toolbox</option><option value="parts">No panel</option></select><button id="s-phone" class="btn ghost small" type="button" title="Preview the stage as a phone screen and see where the phone controls sit">&#128241; Phone view</button><button id="s-fs" class="btn ghost small" type="button">&#9974; Fullscreen</button><button id="s-theme" class="btn ghost small" type="button">Light / Dark</button><button id="s-back" class="btn ghost small" type="button">&larr; BrixBlox</button></div>
   </header>
   <div class="sgrid">
     <aside id="s-pal" class="pal panel" aria-label="Block palette"></aside>
@@ -643,13 +670,14 @@ html.mob #hotbar button{width:48px!important;height:48px!important;font-size:.6r
     <aside class="side">
       <div class="cvw"><canvas id="s-cv" width="480" height="360" aria-label="Stage"></canvas><span id="rz-l" class="rz l" title="Right-click and drag to resize"></span><span id="rz-r" class="rz r" title="Right-click and drag to resize"></span><div id="chat" hidden=""><button id="chat-tg" type="button" title="Show or hide chat" aria-label="Show or hide chat">💬</button><div id="chat-log"></div><input id="chat-in" maxlength="120" placeholder="Press / to chat" autocomplete="off" aria-label="Chat"></div></div>
       <details class="xhelp"><summary>Camera &amp; tool controls</summary><div class="kl"><kbd>Right mouse + drag</kbd><span>Look around</span><kbd>W A S D</kbd><span>Fly (Q down, E up)</span><kbd>Scroll</kbd><span>Zoom</span><kbd>Click + drag</kbd><span>Move a part or model (R turns it 90&deg; while dragging, T tilts it)</span><kbd>Click a part</kbd><span>Show its move arrows</span><kbd>R / Shift+R</kbd><span>Next / previous tool (move, resize, rotate)</span><kbd>2 / 3 / 4</kbd><span>Jump to move / resize / rotate</span><kbd>Rotate ring</kbd><span>Drag a ring (hold Shift to snap)</span><kbd>Right-drag a bottom corner</kbd><span>Resize the stage</span><kbd>Play</kbd><span>Walk around with WASD and Space</span></div></details>
-      <div class="tabs"><button id="t-out" type="button" class="on">Output</button><button id="t-code" type="button">Code</button><button id="t-parts" type="button">Explorer</button><button id="t-anim" type="button">Animator</button></div>
+      <div class="tabs"><button id="t-out" type="button" class="on">Output</button><button id="t-code" type="button">Code</button><button id="t-parts" type="button">Explorer</button><button id="t-anim" type="button">Animator</button><button id="t-tool" type="button">Toolbox</button></div>
       <pre id="s-out" class="pre"></pre><pre id="s-code" class="pre" hidden=""></pre>
       <div id="s-parts" class="pnl" hidden="">
         <div class="tb"><div class="tgrp"><span class="tgl">Add</span><button id="p-add" class="btn small" type="button">+ Part</button><select id="p-shape" class="btn ghost small" aria-label="Add a shape"><option value="">+ Shape</option><option value="cyl">Cylinder</option><option value="sphere">Sphere</option><option value="wedge">Triangle</option></select><select id="p-gui" class="btn ghost small" aria-label="Add a GUI element"><option value="">+ GUI</option><option value="text">Text</option><option value="button">Button</option><option value="frame">Frame</option><option value="image">Image</option></select></div><div class="tgrp"><span class="tgl">Models</span><button id="p-group" class="btn small" type="button">Group</button><button id="p-ungroup" class="btn ghost small" type="button">Ungroup</button><button id="p-union" class="btn small" type="button" title="Ctrl+Shift+G">Union</button><button id="p-split" class="btn ghost small" type="button" title="Ctrl+Alt+U">Split</button></div><div class="tgrp"><span class="tgl">Edit</span><button id="p-copy" class="btn ghost small" type="button">Copy</button><button id="p-paste" class="btn ghost small" type="button">Paste</button><button id="p-dup" class="btn ghost small" type="button">Duplicate</button><button id="p-del" class="btn ghost small" type="button">Delete</button></div><div class="tgrp"><span class="tgl">Rig</span><button id="p-weld" class="btn small" type="button">Weld</button><button id="p-unweld" class="btn ghost small" type="button">Unweld</button><button id="p-rig" class="btn ghost small" type="button" aria-pressed="false">Rig editor</button></div></div>
         <p id="p-msg" class="hint">Weld: select the Torso first, then ctrl-click the parts to weld to it.</p>
         <details class="xhelp"><summary>Building shortcuts</summary><div class="kl"><kbd>P</kbd><span>Add a part in front of you</span><kbd>Ctrl+G</kbd><span>Group into a model</span><kbd>Ctrl+Alt+G</kbd><span>Ungroup</span><kbd>Ctrl+Shift+G</kbd><span>Union into one single part</span><kbd>Ctrl+Alt+U</kbd><span>Split a union back apart</span><kbd>Ctrl+R</kbd><span>Turn the selection 90&deg; (Ctrl+Shift+R the other way)</span><kbd>Ctrl+C / V / D</kbd><span>Copy / paste / duplicate</span><kbd>Backspace</kbd><span>Delete</span><kbd>Ctrl / Shift + click</kbd><span>Add or remove a part or model from the selection (in the 3D view or the Explorer)</span><kbd>Alt+click</kbd><span>Select just one piece of a model (double-click works too)</span><kbd>L</kbd><span>Lock or unlock the selection</span><kbd>Arrow keys</kbd><span>Nudge by the snap size (Shift = 4&times;)</span><kbd>PageUp / PageDown</kbd><span>Move up / down</span><kbd>End</kbd><span>Drop onto whatever is under it</span><kbd>Ctrl+A</kbd><span>Select everything</span></div></details><div class="xbar"><input id="p-find" type="search" placeholder="Search the explorer..." aria-label="Search the explorer" autocomplete="off"><button id="p-exp" class="btn ghost small" type="button" title="Open every folder and model">Expand</button><button id="p-col" class="btn ghost small" type="button" title="Close every folder and model">Collapse</button></div><div id="p-list"></div><div id="p-props"></div>
       </div>
+      <div id="s-tool" class="pnl tbx" hidden=""></div>
       <div id="s-anim" class="pnl anim" hidden="">
         <div class="an-top">
           <select id="a-sel" aria-label="Animation"></select>
@@ -1393,6 +1421,7 @@ async function gpBalance(){
   try{const rr=await sb.from('level_records').select('best_coins').eq('user_id',ME.id);if(!rr.error)(rr.data||[]).forEach(function(x){coins+=+x.best_coins||0})}catch(e){}
   let ge=0;try{const re=await sb.rpc('gamepass_earnings_status');if(!re.error)ge=+(re.data&&re.data.total)||0}catch(e){}
   try{const ra=await sb.rpc('blockbuck_adjustments_status');if(!ra.error)ge+=+(ra.data&&ra.data.total)||0}catch(e){}
+  try{const rt=await sb.rpc('toolbox_earnings_status');if(!rt.error)ge+=+(rt.data&&rt.data.total)||0}catch(e){}/* Toolbox sales */
   const md=await gpMeta(),spent=+((md&&md.avatar&&md.avatar.spent)||0),codeBux=Math.max(0,Math.floor(+((md&&md.avatar&&md.avatar.codeBux)||0)));/* blockbucks from codes live on the avatar */
   let cbx=0;try{const rc=await sb.rpc('my_code_blockbucks');if(!rc.error)cbx=Math.max(0,Math.floor(+(rc.data&&rc.data.total)||0))}catch(e){}
   return coins+w+bonus+ge+cbx-spent-(ME.prem?200:0)}
@@ -3079,6 +3108,64 @@ function stepSound(){if(P.audio.mute||!P.audio.vol)return;try{ac();const t=actx.
   g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vv(.07),t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+.09);
   q.connect(f);f.connect(g);g.connect(actx.destination);q.start(t);q.stop(t+.1)}catch(e){}}
 
+
+/* ===== Animation packs (admins). Right-click an animation (or press the Pack button) > Add to animation pack. Publish them on the BrixBlox website.
+   Players who wear a pack get its walk / idle / jump / fall in games, unless the game turns packs off in its Settings. ===== */
+const PK_ORDER=['walk','idle','jump','fall','hold item','hold item walk','hold item jump'];
+async function pkList(){let rows=[];
+  if(sb){const r=await sb.from('games').select('id,name,data').like('id','sys_anp_%');if(r.error)throw r.error;rows=(r.data||[]).map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,owner:d.owner||'',price:d.price||0,descr:d.descr||'',pub:!!d.pub,sale:d.sale!==false,removed:!!d.removed,anims:d.anims||{}}})}
+  else{try{rows=JSON.parse(store.get('brixblox-packs'))||[]}catch(e){}}
+  return rows.filter(function(p){return !p.removed})}
+async function pkSave(p){
+  if(sb){const r=await sb.from('games').upsert({id:p.id,owner_id:ME.id,owner_name:ME.username,name:p.name,vis:'public',data:JSON.stringify({owner:p.owner,price:p.price||0,descr:p.descr||'',pub:!!p.pub,sale:p.sale!==false,removed:!!p.removed,anims:p.anims||{}}),updated_at:new Date().toISOString()});if(r.error)throw r.error}
+  else{let a=[];try{a=JSON.parse(store.get('brixblox-packs'))||[]}catch(e){}a=a.filter(function(x){return x.id!==p.id});a.push(p);store.set('brixblox-packs',JSON.stringify(a))}}
+function pkBodyParts(){return P.parts.filter(function(p){return p.av&&!p.acc})}
+/* the current animation, saved by body part NAME so it fits any game's character */
+function pkExport(name){const A=P.anims[name];if(!A)return null;const byId={};pkBodyParts().forEach(function(p){byId[p.id]=p.name});
+  const o={len:A.len||1,type:A.type||'other',gs:A.gs,keys:{}};Object.keys(A.keys||{}).forEach(function(id){const nm=byId[id.replace(/^p:/,'')];if(!nm)return;o.keys[(id.indexOf('p:')===0?'p:':'')+nm]=JSON.parse(JSON.stringify(A.keys[id]))});return o}
+function pkImport(a){const byName={};pkBodyParts().forEach(function(p){byName[p.name]=p.id});
+  const o={len:a.len||1,type:a.type||'other',gs:a.gs,keys:{}};Object.keys(a.keys||{}).forEach(function(k){const pre=k.indexOf('p:')===0?'p:':'',id=byName[k.slice(pre.length)];if(id)o.keys[pre+id]=JSON.parse(JSON.stringify(a.keys[k]))});return o}
+function pkAdd(pack,animName){
+  const put=function(slot){const ex=pkExport(animName);if(!ex||!Object.keys(ex.keys).length){say2('That animation has no keyframes on the character yet.');return}
+    pack.anims=pack.anims||{};pack.anims[slot]=ex;pkSave(pack).then(function(){say2('Added "'+animName+'" to the animation pack "'+pack.name+'" as its '+slot+' animation. Publish it on the BrixBlox website (Inventory > Animations).')}).catch(function(e){say2('Could not save the pack: '+String((e&&e.message)||e))})};
+  const low=String(animName).toLowerCase().trim();
+  if(PK_ORDER.indexOf(low)>=0){put(low);return}
+  mdl('Which animation does "'+animName+'" replace?',function(c,close){c.append(el('p','','Pick the part of the player animation this one takes over.'));
+    const r=el('div','tb');PK_ORDER.forEach(function(sl){r.append(mb(sl,'ghost',function(){close();put(sl)}))});r.style.flexWrap='wrap';c.append(r,mb('Cancel','ghost',close))})}
+function say2(t){const h=$('a-hint');if(h)h.textContent=t;try{if(typeof toast==='function')toast(t)}catch(e){}}
+function pkNewDlg(animName){mdl('New animation pack',function(c,close){const i=el('input');i.placeholder='Name';i.maxLength=24;i.style.cssText='padding:8px;border-radius:8px;border:1px solid var(--line)';
+  const go=function(){const nm=i.value.trim().slice(0,24);if(!nm)return;close();pkAdd({id:'sys_anp_'+Date.now().toString(36)+Math.floor(Math.random()*1e3).toString(36),name:nm,owner:ME.username.toLowerCase(),price:0,descr:'',pub:false,sale:true,anims:{}},animName)};
+  i.onkeydown=function(e){if(e.key==='Enter')go()};c.append(i,mb('Create and add','',go),mb('Cancel','ghost',close));setTimeout(function(){i.focus()},30)})}
+async function pkMenu(e){e.preventDefault();
+  if(!amAdmin()){say2('Only admins can make animation packs.');return}
+  const nm=curA;if(!nm||!P.anims[nm]){say2('Make or pick an animation first.');return}
+  let mine=[];try{mine=(await pkList()).filter(function(p){return p.owner===ME.username.toLowerCase()})}catch(err){say2('Could not load your packs: '+String((err&&err.message)||err))}
+  const items=[['\u2795 New animation pack...',function(){pkNewDlg(nm)}]];
+  mine.forEach(function(p){items.push(['Add to "'+p.name+'"'+(p.pub?'':' (draft)'),function(){pkAdd(p,nm)}])});
+  bmenu(e,items)}
+{const pb=el('button','btn ghost small','\u{1F4E6} Add to pack');pb.type='button';pb.id='a-pack';pb.hidden=true;pb.title='Admins: add this animation to an animation pack';pb.onclick=function(e){pkMenu(e)};$('a-del').after(pb);
+  $('a-sel').addEventListener('contextmenu',function(e){if(amAdmin())pkMenu(e)});
+  const tl=$('s-anim');tl.addEventListener('contextmenu',function(e){/* right-click on the animation name bar */if(e.target.closest&&e.target.closest('.an-top')&&!e.target.closest('input,button')&&amAdmin())pkMenu(e)})}
+/* ----- wearing a pack in a game ----- */
+let PKS=0,PKA=null;
+function pkReset(){PKS=0;PKA=null}
+async function pkLoad(){PKS=1;PKA=null;
+  try{if(P.rules&&P.rules.noPack){PKS=2;return}
+    let av=(ME&&ME.av)||{};const md=await gpMeta();if(md&&md.avatar)av=md.avatar;
+    const id=av&&av.anim;if(!id||!/^sys_anp_[a-z0-9]{1,16}$/.test(id)){PKS=2;return}
+    const list=await pkList(),p=list.find(function(x){return x.id===id});
+    if(!p||p.removed){PKS=2;return}
+    const owned=(av.owned||[]).indexOf(id)>=0||(p.owner&&ME&&p.owner===ME.username.toLowerCase());
+    if(!owned||(!p.pub&&!(ME&&p.owner===ME.username.toLowerCase()))){PKS=2;return}
+    const o={};Object.keys(p.anims||{}).forEach(function(sl){const a=pkImport(p.anims[sl]);if(Object.keys(a.keys).length)o[sl]=a});PKA=o}catch(e){PKA=null}
+  PKS=2}
+function pkGet(slot,custom){/* a script that sets the player's animation (set player walk to...) still wins */
+  if(custom)return P.anims[custom];
+  if(P.rules&&P.rules.noPack)return P.anims[slot];
+  if(PKS===0)pkLoad();
+  return (PKA&&PKA[slot])||P.anims[slot]}
+addEventListener('click',function(e){const t=e.target&&e.target.closest&&e.target.closest('#s-play,#s-run');if(t)pkReset()},true);
+
 /* ===== Animation studio: while animating you stand in an empty grey room. A walking animation scrolls the floor grid. ===== */
 const stage=new THREE.Group();let stageTex=null,stageOn=false,stagePrev=null,camSave=null;
 (function(){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');
@@ -3400,7 +3487,7 @@ addEventListener('keydown',function(e){if(e.code==='Escape')closeMenu();
 
 function animUI(){if($('s-anim').hidden)return;fixA();try{animRigsUI()}catch(e){}
   const g=$('a-grid'),sx=g.scrollLeft,sy=g.scrollTop,A=P.anims[curA],s=$('a-sel'),hint=$('a-hint');
-  s.replaceChildren();Object.keys(P.anims).forEach(function(n){const o=el('option','',n);o.value=n;s.append(o)});s.value=curA;
+  s.replaceChildren();Object.keys(P.anims).forEach(function(n){const o=el('option','',n);o.value=n;s.append(o)});s.value=curA;try{const pb=$('a-pack');if(pb)pb.hidden=!amAdmin()}catch(e){}
   {const wk=!!A&&isWalk(A);$('a-type').value=wk?'walk':'other';$('a-type').disabled=!A;$('a-gl').hidden=!wk;$('a-gs').value=A&&A.gs!=null?A.gs:10}$('a-len').value=A?A.len:1;$('a-loop').setAttribute('aria-pressed',String(aLoop));animPlayBtn();
   g.replaceChildren();kelm.clear();valIns={};rowEls={};phEl=null;
   if(!A){hint.textContent='Press + New to make an animation.';return}
@@ -3738,10 +3825,10 @@ function play(dt,f){const SP=(S.fly&&amAdmin()?2.2:1)*(S.speed!=null?S.speed:P.r
   else if(mv){const td=Math.atan2(-wz,wx)*180/Math.PI,df=((td-S.dir+540)%360+360)%360-180;S.dir+=df*(1-Math.exp(-dt*14))}
   if(keys.Space&&!menuEl&&S.gr&&!S.rag){S.vy=(S.jumpP!=null?S.jumpP:P.rules.jump);S.gr=false;S.jt=0;jumpSound()}
   
-  const W=P.anims[S.walkA||'walk'],JA=P.anims[S.jumpA||'jump'],FA=P.anims[S.fallA||'fall'],IA=P.anims[S.idleA||'idle'],air=!S.gr,fall=air&&!!FA&&S.vy<-6,inAir=air&&(!!JA||fall),walking=!air&&!!W&&(mv||Math.hypot(S.pvx,S.pvz)>1.5);let tp={};
+  const W=pkGet('walk',S.walkA),JA=pkGet('jump',S.jumpA),FA=pkGet('fall',S.fallA),IA=pkGet('idle',S.idleA),air=!S.gr,fall=air&&!!FA&&S.vy<-6,inAir=air&&(!!JA||fall),walking=!air&&!!W&&(mv||Math.hypot(S.pvx,S.pvz)>1.5);let tp={};
   if(inAir){S.jt+=dt;S.air=true;if(fall){S.ft=(S.ft||0)+dt;tp=evalPose(FA,S.ft%(FA.len||1))}else{S.ft=0;tp=evalPose(JA,Math.min(S.jt,JA.len))}}
   else{S.ft=0;if(S.air){S.air=false;S.jt=0}if(W&&(mv||Math.hypot(S.pvx,S.pvz)>1.5)){S.wt+=dt*Math.min(1,Math.hypot(S.pvx,S.pvz)/12+.2);const sn=Math.floor(S.wt/(W.len/2));if(S.sn===undefined)S.sn=sn;else if(sn!==S.sn){S.sn=sn;stepSound()}tp=evalPose(W,S.wt%W.len)}else if(IA){S.it=(S.it||0)+dt;tp=evalPose(IA,S.it%IA.len)}}
-  if(S.heldItem&&!S.pa&&!(S.hold&&Object.keys(S.hold).some(function(k){return S.hold[k]>0}))){const HW=P.anims[S.holdWA||'hold item walk'],HA=P.anims[S.holdA||'hold item'],HJ=P.anims['hold item jump'];if(inAir&&HJ)tp=evalPose(HJ,Math.min(S.jt,HJ.len||1));else if(HW&&!air&&(mv||Math.hypot(S.pvx,S.pvz)>1.5))tp=evalPose(HW,S.wt%(HW.len||1));else if(HA)tp=Object.assign({},tp,evalPose(HA,((S.ht=(S.ht||0)+dt))%(HA.len||1)))}
+  if(S.heldItem&&!S.pa&&!(S.hold&&Object.keys(S.hold).some(function(k){return S.hold[k]>0}))){const HW=pkGet('hold item walk',S.holdWA),HA=pkGet('hold item',S.holdA),HJ=pkGet('hold item jump');if(inAir&&HJ)tp=evalPose(HJ,Math.min(S.jt,HJ.len||1));else if(HW&&!air&&(mv||Math.hypot(S.pvx,S.pvz)>1.5))tp=evalPose(HW,S.wt%(HW.len||1));else if(HA)tp=Object.assign({},tp,evalPose(HA,((S.ht=(S.ht||0)+dt))%(HA.len||1)))}
   const ak=(inAir?(fall?'f':'j'):walking?'w':'i')+(S.heldItem?'h':'');if(S.ak!==ak){S.ak=ak;S.bl=.15}S.bl=Math.max(0,(S.bl||0)-dt);const kb=S.bl>0?1-Math.exp(-dt*(air?18:14)):1;P.parts.forEach(function(p){if(p.id===P.avId||!p.av||(S.hold&&S.hold[p.id]>0))return;const t=tp[p.id]||[0,0,0],c=S.bp[p.id]||(S.bp[p.id]=[0,0,0]);for(let i=0;i<3;i++)c[i]+=(t[i]-c[i])*kb;const pk='p:'+p.id,t2=tp[pk]||[0,0,0],c2=S.bp[pk]||(S.bp[pk]=[0,0,0]);for(let i=0;i<3;i++)c2[i]+=(t2[i]-c2[i])*kb});
   applyPose(S.bp,true,S.hold);S.mv=mv;try{ssTick(dt,mv)}catch(e){}}
 function solid(r){return CO[r.id]!==undefined?CO[r.id]:!r.nocol}
@@ -5454,6 +5541,7 @@ function svcProps(d){const s=SV.find(function(x){return x.k===selSvc});if(!s)ret
     slider(d,'Sun strength',P.env,'sun',0,1.5,.05,pct,applyEnv);slider(d,'Fog',P.env,'fog',0,100,1,null,applyEnv);startLightUI(d);lightColorsUI(d);skyBuilderUI(d)}
   else if(s.k==='rules'){slider(d,'Gravity',P.rules,'grav',20,400,5);slider(d,'Jump power',P.rules,'jump',10,120,1);slider(d,'Walk speed',P.rules,'speed',4,40,1);
     slider(d,'Camera distance',P.rules,'cam',4,60,1,null,function(){cdT=P.rules.cam});slider(d,'Field of view',P.rules,'fov',30,120,1);
+    {const pc=el('input');pc.type='checkbox';pc.checked=!P.rules.noPack;pc.onchange=function(){if(pc.checked)delete P.rules.noPack;else P.rules.noPack=true;pkReset();save()};const pl=el('label','','Allow players to use their animation pack ');pl.title='On: animation packs players bought replace their walk, jump and idle in your game. Off: your game always uses its own animations.';pl.append(pc);d.append(pl)}
     const b=el('button','btn ghost small','Reset to defaults');b.type='button';b.style.marginTop='10px';b.onclick=function(){Object.assign(P.rules,{grav:190,jump:48,speed:16,cam:14});save();props()};d.append(b);
     d.append(el('p','note','Default gravity is 190. Lower it for a moon level. Jump height is about jump power squared divided by twice the gravity.'))}
   else if(s.k==='audio'){slider(d,'Volume',P.audio,'vol',0,1,.05,function(v){return Math.round(v*100)+'%'},liveVol);
@@ -5951,14 +6039,199 @@ addEventListener('keyup',function(e){const n=keyNames(e);
   n.forEach(function(k){KP.delete(k)})});
 addEventListener('blur',function(){HL.forEach(function(st){st.down=false})});
 function animOn(){return curTab==='anim'&&!playing}
-function setTab(k){setTab0(k);try{renderGui()}catch(e){}}
+function setTab(k){setTab0(k);try{renderGui()}catch(e){}if(k==='tool'){try{tbShow()}catch(e){console.error(e)}}}
 function setTab0(k){const was=animOn();curTab=k;
-  ['out','code','parts','anim'].forEach(function(j){$('t-'+j).classList.toggle('on',j===k);$('s-'+j).hidden=fsOn?(j==='parts'?false:j!==k):j!==k});
+  ['out','code','parts','anim','tool'].forEach(function(j){$('t-'+j).classList.toggle('on',j===k);$('s-'+j).hidden=fsOn?(j==='parts'?false:j!==k):j!==k});
   $('s-view').value=k;$('s-parts').querySelector('.tb').style.display=k==='anim'?'none':'';$('p-props').style.display=k==='anim'?'none':'';
   if(k==='anim'){if(rigOn)$('p-rig').click();if(!was)camSave={x:cam.x,y:cam.y,z:cam.z,yaw:cam.yaw,pit:cam.pit};const p=sel.length?byId(sel[0]):null;let r=p&&rootOf(p);if(!(r&&kids(r).length)){const av=byId(P.avId);r=av?rootOf(av):null}animSelect(r&&kids(r).length?r:null);preview()}
   else if(was){animHover(null);animT=null;animTs=[];aPlay=false;animPlayBtn();live={};stagePrev=null;stageApply();if(camSave){Object.assign(cam,camSave);camSave=null}preview();buildEdit()}}
-['out','code','parts','anim'].forEach(function(k){$('t-'+k).onclick=function(){setTab(k)}});
+['out','code','parts','anim','tool'].forEach(function(k){$('t-'+k).onclick=function(){setTab(k)}});
 $('s-view').onchange=function(){setTab(this.value)};
+
+/* ===== Toolbox: people upload models they made (parts, models, rigs and every script on them); everyone can browse them, read every script on its own, and insert them into their game ===== */
+const TB_T='toolbox_models',TB_LOCAL='brixblox-toolbox-local';
+let tbMode='all',tbSort='new',tbQ='',tbRows=[],tbBusy=false,tbOpen=null,tbNote='',tbNoteBad=false,tbAt=0,tbSetup=false,tbBought=new Set(),tbNoSale=false;const TB_FEE=50,TB_MAXP=10000;
+function tbMine(r){return !!(r&&(r.local||(ME&&!ME.demo&&r.owner_id===ME.id)))}
+function tbLocalGet(){try{const a=JSON.parse(store.get(TB_LOCAL)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
+function tbLocalSet(a){try{store.set(TB_LOCAL,JSON.stringify(a));return true}catch(e){return false}}
+function tbMissing(e){return /does not exist|schema cache|could not find the table|42P01|PGRST205|PGRST202/i.test(String((e&&(e.message||''))||'')+' '+String((e&&e.code)||''))}
+function tbSay(t,bad){tbNote=t||'';tbNoteBad=!!bad;const m=$('tb-msg');if(m){m.textContent=tbNote;m.className='hint'+(t?(bad?' bad':' ok'):'')}}
+/* Anything that comes from the Toolbox is checked before it is shown or put in a game: only known blocks, sane numbers, no avatar parts */
+function tbClean(c,info){info=info||{};info.dropped=0;
+  if(!c||typeof c!=='object'||!Array.isArray(c.parts))return null;
+  const n3=function(v){return Array.isArray(v)&&v.length===3&&v.every(function(x){return typeof x==='number'&&isFinite(x)&&Math.abs(x)<1e5})};
+  const parts=c.parts.filter(function(p){return p&&typeof p==='object'&&typeof p.id==='string'&&n3(p.pos)&&n3(p.size)&&!p.av}).slice(0,600);
+  if(!parts.length)return null;
+  const ids={};parts.forEach(function(p){ids[p.id]=1;p.name=String(p.name||'Part').slice(0,40)});
+  const models={};Object.keys(c.models&&typeof c.models==='object'?c.models:{}).forEach(function(k){const m=c.models[k];if(m&&typeof m==='object')models[k]={name:String(m.name||'Model').slice(0,40),parent:typeof m.parent==='string'?m.parent:'',up:''}});
+  parts.forEach(function(p){if(p.model&&!models[p.model])delete p.model;if(p.parent&&!ids[p.parent])p.parent=null});
+  const okR=function(nd){return !!nd&&typeof nd==='object'&&(nd.t==='var'||!!BD[nd.t])&&Array.isArray(nd.a)&&(!nd.r||(typeof nd.r==='object'&&Object.keys(nd.r).every(function(k){return okR(nd.r[k])})))};
+  const okB=function(b){if(!b||typeof b!=='object'||!BD[b.t]||!Array.isArray(b.a))return false;if(b.k&&(!Array.isArray(b.k)||!b.k.every(okB)))return false;if(b.r&&(typeof b.r!=='object'||!Object.keys(b.r).every(function(k){return okR(b.r[k])})))return false;return true};
+  const scripts=(Array.isArray(c.scripts)?c.scripts:[]).filter(function(s){const ok=Array.isArray(s)&&s.length>0&&s.length<2000&&s.every(okB)&&!!BD[s[0].t].hat&&typeof s[0].o==='string'&&(ids[s[0].o]||models[s[0].o]);if(!ok)info.dropped++;return ok}).slice(0,100);
+  return {parts:parts,models:models,anims:(c.anims&&typeof c.anims==='object')?c.anims:{},scripts:scripts}}
+/* A little picture of the model (seen from the front) so the Toolbox has thumbnails */
+function tbThumb(c){try{const cv=document.createElement('canvas');cv.width=120;cv.height=90;const g=cv.getContext('2d');g.fillStyle='#dff1ff';g.fillRect(0,0,120,90);
+  const sp=clipSpan(c.parts),w=Math.max(.1,sp.hi[0]-sp.lo[0]),h=Math.max(.1,sp.hi[1]-sp.lo[1]),k=Math.min(104/w,74/h),ox=(120-w*k)/2,oy=(90+h*k)/2;
+  c.parts.slice().sort(function(a,b){return b.pos[2]-a.pos[2]}).forEach(function(p){const x=ox+(p.pos[0]-p.size[0]/2-sp.lo[0])*k,y=oy-(p.pos[1]+p.size[1]/2-sp.lo[1])*k,ww=Math.max(1.5,p.size[0]*k),hh=Math.max(1.5,p.size[1]*k);
+    g.fillStyle=/^#[0-9a-f]{3,8}$/i.test(String(p.color))?p.color:'#b8c0c8';
+    if(p.shape==='sphere'||p.shape==='cyl'){g.beginPath();g.ellipse(x+ww/2,y+hh/2,ww/2,hh/2,0,0,7);g.fill()}else g.fillRect(x,y,ww,hh);
+    g.strokeStyle='rgba(0,0,0,.28)';g.lineWidth=1;g.strokeRect(x,y,ww,hh)});
+  return cv.toDataURL('image/png')}catch(e){return ''}}
+function tbThumbEl(r,cls){const u=typeof r.thumb==='string'&&/^data:image\/png;base64,[A-Za-z0-9+\/=]+$/.test(r.thumb)?r.thumb:'';
+  if(u){const i=el('img',cls);i.src=u;i.alt='';return i}const d=el('div',cls,'\u25A3');return d}
+function tbOwnerOf(c,o){const p=c.parts.find(function(q){return q.id===o});if(p)return p.name;const m=c.models&&c.models[o];return m?m.name+' (model)':'the model'}
+function tbRisky(s){const out={};const walk=function(a){a.forEach(function(b){const D=BD[b.t];if(D&&/\b(ban|kick|admin)\b/i.test(D.l))out[(KW[b.t]||D.l.replace(/ _/g,'')).trim()]=1;if(b.k)walk(b.k)})};walk(s);return Object.keys(out)}
+/* One preview card per script: what part it is on, and all of its blocks, read-only */
+function tbScripts(c,host){const sc=c.scripts||[];
+  if(!sc.length){host.append(el('p','note','This model has no scripts.'));return}
+  const risky={};sc.forEach(function(s){tbRisky(s).forEach(function(x){risky[x]=1})});
+  const rk=Object.keys(risky);if(rk.length)host.append(el('div','tbwarn','Careful: these scripts use powerful blocks ('+rk.join(', ')+'). Read them before you insert.'));
+  sc.forEach(function(s,i){const card=el('div','tbs'),hd=el('div','tbsh'),n=s.length-1;
+    hd.append(el('b','','Script '+(i+1)),el('span','','on '+tbOwnerOf(c,s[0].o)),el('span','note',n+(n===1?' block':' blocks')));
+    const w=tbRisky(s);if(w.length)hd.append(el('span','tbw','\u26A0 '+w.join(', ')));
+    const body=el('div','tbsb');try{body.append(rList(JSON.parse(JSON.stringify(s)),true))}catch(e){body.append(el('p','note','This script could not be previewed.'))}
+    card.append(hd,body);host.append(card)})}
+async function tbLoad(){tbBusy=true;tbSetup=false;tbNoSale=false;tbGrid();let rows=[];
+  if(sb&&ME&&!ME.demo){try{
+    const cols='id,owner_id,owner_name,name,descr,thumb,parts,scripts,inserts,created_at',q=function(c){return withTimeout(sb.from(TB_T).select(c).order('created_at',{ascending:false}).limit(300),15000,'The Toolbox did not answer in time.')};
+    let r=await q(cols+',price,fee_paid');
+    if(r.error){const em=String(r.error.message||'')+' '+String(r.error.code||'');if(/price|fee_paid/i.test(em)&&/column|42703/i.test(em)){tbNoSale=true;r=await q(cols)}}
+    if(r.error)throw r.error;rows=r.data||[];
+    tbBought=new Set();try{const m=await sb.rpc('toolbox_mine');if(!m.error&&Array.isArray(m.data))m.data.forEach(function(x){tbBought.add(String(x))})}catch(e){}
+  }catch(e){if(tbMissing(e))tbSetup=true;else tbSay('Could not load the Toolbox: '+(e.message||e),true)}}
+  tbLocalGet().forEach(function(x){rows.push(Object.assign({},x,{local:true}))});
+  tbRows=rows;tbBusy=false;tbAt=Date.now();tbGrid()}
+function tbShow(){if(tbOpen){tbDraw();return}tbDraw();if(!tbAt||Date.now()-tbAt>30000)tbLoad()}
+function tbDraw(){const R=$('s-tool');if(!R)return;R.replaceChildren();if(tbOpen){tbDetail(R);return}
+  const bar=el('div','tbbar'),up=mb('\u2B06 Upload selected','',tbUpload);up.title='Select a part, model or rig in the Explorer first, then upload it to the Toolbox';
+  const sr=el('input');sr.type='search';sr.placeholder='Search the Toolbox...';sr.value=tbQ;sr.setAttribute('aria-label','Search the Toolbox');sr.oninput=function(){tbQ=sr.value;tbGrid()};
+  const so=el('select');so.setAttribute('aria-label','Sort');[['new','Newest'],['pop','Most inserted'],['scr','Most scripts'],['cheap','Cheapest first']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];so.append(op)});so.value=tbSort;so.onchange=function(){tbSort=so.value;tbGrid()};
+  const md=el('select');md.setAttribute('aria-label','Whose models');[['all','Everyone'],['sale','On sale'],['bought','Bought'],['mine','My models']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];md.append(op)});md.value=tbMode;md.onchange=function(){tbMode=md.value;tbGrid()};
+  const rf=mb('\u21BB','ghost',function(){tbLoad()});rf.title='Refresh the list';
+  bar.append(up,sr,so,md,rf);R.append(bar);
+  const m=el('p','hint');m.id='tb-msg';R.append(m);tbSay(tbNote,tbNoteBad);
+  const g=el('div','tbgrid');g.id='tb-grid';R.append(g);tbGrid()}
+function tbGrid(){const g=$('tb-grid');if(!g)return;g.replaceChildren();
+  if(tbSetup)g.append(el('p','tbwarn','The online Toolbox is not set up yet. The site owner needs to run brixblox-toolbox.sql once in Supabase (SQL Editor). Until then, uploads are kept on this computer only.'));
+  if(tbNoSale)g.append(el('p','note','Selling models is not switched on yet. The site owner needs to run the updated brixblox-toolbox.sql in Supabase.'));
+  if(tbBusy){g.append(el('p','note','Loading the Toolbox...'));return}
+  let rows=tbRows.slice();if(tbMode==='mine')rows=rows.filter(tbMine);if(tbMode==='sale')rows=rows.filter(function(r){return r.price>0});if(tbMode==='bought')rows=rows.filter(function(r){return tbBought.has(String(r.id))});
+  const q=tbQ.trim().toLowerCase();if(q)rows=rows.filter(function(r){return (String(r.name)+' '+String(r.owner_name||'')+' '+String(r.descr||'')).toLowerCase().indexOf(q)>=0});
+  rows.sort(function(a,b){if(tbSort==='pop')return (b.inserts||0)-(a.inserts||0);if(tbSort==='scr')return (b.scripts||0)-(a.scripts||0);if(tbSort==='cheap')return (a.price||0)-(b.price||0);return String(b.created_at||'').localeCompare(String(a.created_at||''))});
+  if(!rows.length){g.append(el('p','note',tbMode==='mine'?'You have not uploaded anything yet. Select a part or model in the Explorer, then press Upload selected.':q?'Nothing matches that search.':'Nothing here yet. Be the first: select a model in the Explorer, then press Upload selected.'));return}
+  rows.forEach(function(r){const c=el('div','tbc'),i=el('div','tbi');c.tabIndex=0;c.setAttribute('role','button');
+    i.append(el('b','',r.name),el('small','','by '+(r.owner_name||'?')+(r.local?' (this computer)':'')),el('small','',(r.parts||0)+' parts \u00B7 '+(r.scripts||0)+(r.scripts===1?' script':' scripts')+(r.inserts?' \u00B7 '+r.inserts+' used':'')));
+    i.append(tbPriceEl(r,false));c.append(tbThumbEl(r,'tbth'),i);const go=function(){tbOpenRow(r)};c.onclick=go;c.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}};g.append(c)})}
+function tbCanUse(r){return !(r.price>0)||tbMine(r)||tbBought.has(String(r.id))||gpIsBB()}
+function tbPriceEl(r,long){const p=r.price||0,mine=tbMine(r),got=tbBought.has(String(r.id));
+  const t=p>0?(mine?(long?'On sale for '+p+' blockbucks':'On sale: '+p+' blockbucks'):got?'Bought':p+' blockbucks'):(long&&mine&&!r.local&&!tbNoSale?'Not on sale':'Free');
+  return el(long?'span':'small','tbp',t)}
+async function tbData(r){let d=r.data;
+  if(!d){if(!sb)throw new Error('This model is not on this computer.');
+    let x=await withTimeout(sb.rpc('toolbox_get',{p_id:r.id}),20000,'The model did not load in time.');
+    if(x.error&&/could not find the function|schema cache|PGRST202/i.test(String(x.error.message||''))){x=await withTimeout(sb.from(TB_T).select('data').eq('id',r.id).maybeSingle(),20000,'The model did not load in time.');if(x.error)throw x.error;d=x.data&&x.data.data}
+    else{if(x.error)throw new Error(/locked/i.test(String(x.error.message||''))?'locked':x.error.message);d=x.data}}
+  if(typeof d==='string')d=JSON.parse(d);const c=tbClean(d);if(!c)throw new Error('This model is broken and cannot be used.');return c}
+/* For something on sale that you have not bought: the server sends only its scripts and part names, so you can read every script but not copy the model */
+async function tbPreview(r){const x=await withTimeout(sb.rpc('toolbox_preview',{p_id:r.id}),20000,'The preview did not load in time.');if(x.error)throw x.error;const d=x.data||{},names=Array.isArray(d.names)?d.names:[];
+  const c=tbClean({parts:names.map(function(n){return {id:String(n.id),name:String(n.name||'Part'),pos:[0,0,0],size:[1,1,1]}}),models:d.models||{},scripts:d.scripts||[]});
+  if(!c)throw new Error('This model is broken and cannot be used.');return c}
+async function tbOpenRow(r){const o={row:r,data:null,err:'',locked:false};tbOpen=o;tbDraw();
+  try{if(tbCanUse(r))o.data=await tbData(r);else{o.locked=true;o.data=await tbPreview(r)}}
+  catch(e){if(/locked/i.test(String(e&&e.message))){try{o.locked=true;o.data=await tbPreview(r)}catch(e2){o.err=String(e2&&e2.message||e2)}}else o.err=String(e&&e.message||e)}
+  if(tbOpen===o)tbDraw()}
+function tbDetail(R){const o=tbOpen,r=o.row,top=el('div','tbbar'),price=r.price||0;
+  top.append(mb('\u2190 Back','ghost',function(){tbOpen=null;tbDraw();if(!tbRows.length)tbLoad()}));R.append(top);
+  const h=el('div','tbhead'),tx=el('div','tbtx');
+  tx.append(el('b','',r.name),el('span','note','by '+(r.owner_name||'?')+(r.local?' (saved on this computer only)':'')+(r.created_at?' \u00B7 '+new Date(r.created_at).toLocaleDateString():'')));
+  if(r.descr)tx.append(el('p','',r.descr));
+  tx.append(el('span','note',(r.parts||0)+' parts \u00B7 '+(r.scripts||0)+(r.scripts===1?' script':' scripts')+(r.inserts?' \u00B7 inserted '+r.inserts+' times':'')));
+  tx.append(tbPriceEl(r,true));
+  const ac=el('div','tbbar');
+  if(o.locked){const b=mb('Buy for '+price+' blockbucks','',function(){tbBuy(o)});b.disabled=!o.data;b.title='You can read every script first. Buying lets you insert it.';ac.append(b)}
+  else{const ins=mb('Insert into my game','',function(){tbInsert(o.data,r)});ins.disabled=!o.data;ins.title='Puts it where you are looking, like pasting';ac.append(ins)}
+  if(tbMine(r)&&!r.local&&!tbNoSale){ac.append(mb(price>0?'Change price':'Put on sale','ghost',function(){tbPriceDlg(o)}));
+    if(price>0)ac.append(mb('Take off sale','ghost',function(){tbSetPrice(o,0).catch(function(e){tbSay(String(e&&e.message||e),true)})}))}
+  if(tbMine(r)||ADMIN)ac.append(mb('\uD83D\uDDD1 Delete','ghost',function(){ask('Delete "'+r.name+'" from the Toolbox for everyone?','Delete',function(){tbDelete(r)})}));
+  tx.append(ac);h.append(tbThumbEl(r,'tbth'),tx);R.append(h);
+  const m=el('p','hint');m.id='tb-msg';R.append(m);tbSay(tbNote,tbNoteBad);
+  if(o.err){R.append(el('p','tbwarn',o.err));return}
+  if(!o.data){R.append(el('p','note','Loading...'));return}
+  const n=o.data.scripts.length;R.append(el('h4','tbh2','Scripts in this model ('+n+')'));
+  R.append(el('p','note',o.locked?'You can read every script before you buy. Each one has its own preview.':'Every script gets its own preview, exactly as it will run. Look through them before you insert.'));
+  tbScripts(o.data,R)}
+/* Selling: putting a model on sale costs 50 blockbucks (once per model). The buyer pays the price, the seller gets all of it. The server keeps the sale records; the price a buyer pays is read from the server, never from this page. */
+async function tbSpend(n){const md=(await gpMeta())||{},av=Object.assign({},md.avatar||ME.av||{});av.spent=(+av.spent||0)+n;
+  const r=await sb.auth.updateUser({data:{avatar:av}});if(r.error)throw r.error;ME.av=av;try{store.set('brixblox-me',JSON.stringify(ME))}catch(e){}}
+function tbNoFn(e){return /could not find the function|schema cache|PGRST202/i.test(String((e&&e.message)||''))}
+async function tbSetPrice(o,p){const r=o.row;if(!sb||!ME||ME.demo)throw new Error('Sign in to an online BrixBlox account to sell.');
+  const fee=p>0&&!r.fee_paid&&!gpIsBB();
+  if(fee){const bal=await gpBalance();if(bal<TB_FEE)throw new Error('Putting something on sale costs '+TB_FEE+' blockbucks. You need '+(TB_FEE-bal)+' more.')}
+  const x=await withTimeout(sb.rpc('toolbox_set_price',{p_id:r.id,p_price:p}),30000,'The server did not answer in time. Try again.');
+  if(x.error)throw new Error(tbNoFn(x.error)?'Selling is not switched on yet. The site owner needs to run the updated brixblox-toolbox.sql in Supabase.':x.error.message);
+  const d=x.data||{};let note='';
+  if(d.new&&fee){try{await tbSpend(TB_FEE)}catch(e){note='It is on sale, but the '+TB_FEE+' blockbuck fee could not be taken: '+(e.message||e)}}
+  r.price=p;r.fee_paid=r.fee_paid||p>0;tbDraw();tbSay(note||(p>0?'On sale for '+p+' blockbucks.'+(d.new&&fee?' The '+TB_FEE+' blockbuck fee was paid.':''):'Taken off sale.'),!!note)}
+function tbPriceDlg(o){const r=o.row;mdl('Put "'+r.name+'" on sale',function(c,close){
+  const first=!r.fee_paid&&!gpIsBB(),fs='min-height:32px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);font:inherit;width:100%;box-sizing:border-box';
+  c.append(el('p','note',first?'Putting this on sale costs '+TB_FEE+' blockbucks, paid once for this model. After that you can change the price or take it off sale for free, and you keep 100% of every sale.':'Choose the price. The '+TB_FEE+' blockbuck fee is already paid for this model, and you keep 100% of every sale.'));
+  const inp=el('input');inp.type='number';inp.min=1;inp.max=TB_MAXP;inp.step=1;inp.value=r.price>0?r.price:'';inp.placeholder='Price in blockbucks (1 to '+TB_MAXP+')';inp.style.cssText=fs;c.append(inp);
+  const st=el('p','hint');c.append(st);const row=el('div','tb');
+  const ok=mb(first?'Pay '+TB_FEE+' and put on sale':'Save price','',async function(){const p=Math.floor(+inp.value);
+    if(!(p>=1&&p<=TB_MAXP)){st.className='hint bad';st.textContent='Enter a whole number from 1 to '+TB_MAXP+'.';return}
+    ok.disabled=true;st.className='hint';st.textContent='Working...';
+    try{await tbSetPrice(o,p);close()}catch(e){ok.disabled=false;st.className='hint bad';st.textContent=String(e&&e.message||e)}});
+  row.append(ok,mb('Cancel','ghost',close));c.append(row);setTimeout(function(){inp.focus()},30)})}
+function tbBuy(o){const r=o.row;if(!sb||!ME||ME.demo){tbSay('Sign in to an online BrixBlox account to buy.',true);return}
+  ask('Buy "'+r.name+'" for '+r.price+' blockbucks?','Buy',async function(){try{tbSay('Checking your blockbucks...');
+    if(!gpIsBB()){const bal=await gpBalance();if(bal<r.price){tbSay('Not enough blockbucks. You need '+(r.price-bal)+' more.',true);return}}
+    const x=await withTimeout(sb.rpc('toolbox_buy',{p_id:r.id}),30000,'The server did not answer in time. Try again.');
+    if(x.error)throw new Error(tbNoFn(x.error)?'Toolbox sales are not switched on yet. The site owner needs to run the updated brixblox-toolbox.sql in Supabase.':x.error.message);
+    const d=x.data||{};if(d.new&&d.price>0&&!gpIsBB())await tbSpend(d.price);
+    tbBought.add(String(r.id));o.locked=false;o.data=await tbData(r);if(tbOpen===o)tbDraw();
+    tbSay(d.new?'You bought "'+r.name+'" for '+d.price+' blockbucks. You can insert it now.':'You already have this one. You can insert it now.')}
+  catch(e){tbSay('Could not buy: '+(e&&e.message||e),true)}})}
+async function tbDelete(r){try{
+  if(r.local){tbLocalSet(tbLocalGet().filter(function(x){return x.id!==r.id}))}
+  else{const x=await withTimeout(sb.from(TB_T).delete().eq('id',r.id),20000,'The server did not answer in time.');if(x.error)throw x.error}
+  tbRows=tbRows.filter(function(x){return x.id!==r.id});tbOpen=null;tbDraw();tbSay('Deleted.')}catch(e){tbSay('Could not delete: '+(e.message||e),true)}}
+function tbInsert(c,r){if(VIEWONLY){tbSay('You cannot build in this view.',true);return}if(!c)return;
+  const cl=JSON.parse(JSON.stringify(c)),sp=clipSpan(cl.parts),cx=(sp.lo[0]+sp.hi[0])/2,cz=(sp.lo[2]+sp.hi[2])/2;
+  const f=fwd(),o=new THREE.Vector3(cam.x,cam.y,cam.z);ray.set(o,new THREE.Vector3(f[0],f[1],f[2]));
+  const hit=ray.intersectObjects(pickable(),false)[0];let x,z,dy=0;
+  if(hit&&hit.distance<60){x=hit.point.x;z=hit.point.z;dy=Math.max(0,hit.point.y)-sp.lo[1]}else{x=o.x+f[0]*10;z=o.z+f[2]*10}
+  const ids=stamp(cl,[round5(x-cx),round5(dy),round5(z-cz)]);lastPaste=null;all();
+  tbSay('Inserted "'+(r&&r.name||'model')+'" ('+ids.length+(ids.length===1?' part':' parts')+', '+cl.scripts.length+(cl.scripts.length===1?' script':' scripts')+'). Its scripts are under each part in the Explorer.');
+  if(r&&!r.local&&sb){r.inserts=(r.inserts||0)+1;try{sb.rpc('toolbox_bump',{p_id:r.id}).then(function(){},function(){})}catch(e){}}}
+function tbUpload(){if(VIEWONLY)return;const raw=grabClip();
+  if(!raw){tbSay(sel.length?'Your character cannot be uploaded.':'Select a part, model or rig in the Explorer first, then press Upload selected.',true);return}
+  const info={},cl=tbClean(JSON.parse(JSON.stringify(raw)),info);if(!cl){tbSay('That selection cannot be uploaded.',true);return}
+  const json=JSON.stringify(cl);if(json.length>3500000){tbSay('That is too big for the Toolbox ('+(json.length/1e6).toFixed(1)+' MB, the limit is 3.5 MB). Try a smaller model or a mesh with fewer textures.',true);return}
+  const m0=Object.keys(cl.models)[0],defName=(m0&&cl.models[m0].name)||cl.parts[0].name||'My model';
+  mdl('Upload to the Toolbox',function(c,close){
+    const fs='min-height:32px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);font:inherit;width:100%;box-sizing:border-box';
+    const nm=el('input');nm.maxLength=40;nm.value=defName;nm.placeholder='Name';nm.style.cssText=fs;
+    const ds=document.createElement('textarea');ds.maxLength=300;ds.rows=3;ds.placeholder='What is it? (optional)';ds.style.cssText=fs+';padding:6px 8px;resize:vertical';
+    c.append(el('p','note','Everyone will be able to see, insert and read every script in this. It has '+cl.parts.length+(cl.parts.length===1?' part':' parts')+' and '+cl.scripts.length+(cl.scripts.length===1?' script':' scripts')+'.'),nm,ds);
+    if(info.dropped)c.append(el('p','note',info.dropped+' script'+(info.dropped===1?'':'s')+' that belong to something that is not part of this selection will not be included.'));
+    const box=el('div');box.style.cssText='display:flex;flex-direction:column;gap:8px;max-height:260px;overflow:auto';c.append(el('b','','Script previews'),box);tbScripts(cl,box);
+    const st=el('p','hint');c.append(st);const r=el('div','tb');
+    const go=mb('Upload','',async function(){const name=nm.value.trim();if(!name){nm.focus();return}go.disabled=true;st.className='hint';st.textContent='Uploading...';
+      try{const res=await tbPublish(cl,name,ds.value.trim(),tbThumb(cl));close();tbOpen=null;tbAt=0;tbMode='mine';tbDraw();tbLoad();
+        tbSay(res.online?'Uploaded "'+name+'" to the Toolbox. Everyone can find it now.':res.setup?'Saved on this computer only: the online Toolbox is not set up yet (run brixblox-toolbox.sql in Supabase once).':'Saved on this computer (sign in to share it with everyone).',!res.online&&!!res.setup)}
+      catch(e){go.disabled=false;st.className='hint bad';st.textContent='Could not upload: '+(e&&e.message||e)}});
+    r.append(go,mb('Cancel','ghost',close));c.append(r)})}
+async function tbPublish(cl,name,descr,thumb){const id='t'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    base={name:name,descr:descr,thumb:thumb||null,data:JSON.stringify(cl),parts:cl.parts.length,scripts:cl.scripts.length};
+  if(sb&&ME&&!ME.demo){const row=Object.assign({id:id,owner_id:ME.id,owner_name:ME.username},base);
+    const r=await withTimeout(sb.from(TB_T).insert(row),40000,'The server did not answer in time. Try again.');
+    if(!r.error)return {online:true};
+    if(!tbMissing(r.error))throw r.error;
+    const a=tbLocalGet();a.unshift(Object.assign({id:'l'+id,owner_id:ME.id,owner_name:ME.username,inserts:0,created_at:new Date().toISOString()},base));
+    if(!tbLocalSet(a))throw new Error('Not enough room on this computer to save it.');return {online:false,setup:true}}
+  const a=tbLocalGet();a.unshift(Object.assign({id:'l'+id,owner_id:ME?ME.id:'',owner_name:ME?ME.username:'me',inserts:0,created_at:new Date().toISOString()},base));
+  if(!tbLocalSet(a))throw new Error('Not enough room on this computer to save it.');return {online:false}}
+
 function setFs(on,fromApi){fsOn=on;$('studio').classList.toggle('fs',on);$('s-fs').textContent=on?'Exit fullscreen':'⛶ Fullscreen';
   if(!fromApi){try{if(on){const r=document.documentElement.requestFullscreen;if(r)r.call(document.documentElement).catch(function(){})}else if(document.fullscreenElement)document.exitFullscreen()}catch(x){}}
   setTab(curTab)}
