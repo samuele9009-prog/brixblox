@@ -2295,7 +2295,7 @@ async function loadPacks(){
 function packOwned(p){return me.av.owned.indexOf(p.id)>=0||(isAdm()&&packMine(p))}
 function packNames(p){return Object.keys(p.anims||{}).sort(function(a,b){return PK_ORDER.indexOf(a)-PK_ORDER.indexOf(b)}).join(', ')||'nothing yet'}
 function packRepaint(){try{if(!$('p-item').hidden&&IV.pack)paintItem();if(!$('p-avatar').hidden&&pv.tab==='anim')paintShop();if(!$('p-catalog').hidden)paintCatalog()}catch(e){}}
-async function packEquip(p){const old=me.av.anim||'';me.av.anim=old===p.id?'':p.id;packRepaint();if(!await saveAv()){me.av.anim=old}else toast(me.av.anim?'Wearing '+p.name+'. It replaces your walk, jump and idle in games.':'Animation pack removed.');packRepaint()}
+async function packEquip(p){const old=me.av.anim||'';me.av.anim=old===p.id?'':p.id;packRepaint();if(!await saveAv()){me.av.anim=old}else toast(me.av.anim?'Wearing '+p.name+'. It replaces your walk, jump and idle in games (except games with their own custom walk animation).':'Animation pack removed.');packRepaint()}
 async function packBuy(p){if(!await refreshAv()){toast('Could not check your account. Try again.');return}
   if(p.sale===false&&!isAdm()){toast('This pack is no longer on sale.');return}
   if(balance()<p.price){toast('Not enough blockbucks. You need '+(p.price-balance())+' more.');return}
