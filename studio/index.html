@@ -3149,8 +3149,21 @@ async function pkMenu(e){e.preventDefault();
 /* ----- wearing a pack in a game ----- */
 let PKS=0,PKA=null;
 function pkReset(){PKS=0;PKA=null}
+/* A game that animates the walk itself (an edited walk animation, or a script that sets the player's walk) keeps its own animations: packs never replace them. */
+function ownWalk(){try{
+  if(JSON.stringify(P.scripts||[]).indexOf('"t":"walkanim"')>=0)return true;
+  const W=P.anims&&P.anims.walk;if(!W)return false;
+  const by=function(n){const q=P.parts.find(function(p){return p.av&&!p.acc&&p.name===n});return q&&q.id};
+  const want={};[['Rarm',1],['Larm',-1],['Rleg',-1],['Lleg',1]].forEach(function(x){const id=by(x[0]);if(id)want[id]=x[1]});
+  const ids=Object.keys(W.keys||{}).filter(function(id){return (W.keys[id]||[]).length});
+  if((W.len||1)!==1||ids.length!==Object.keys(want).length)return true;
+  const T=[[0,0],[.25,35],[.5,0],[.75,-35],[1,0]];
+  return ids.some(function(id){const m=want[id],k=W.keys[id];if(m===undefined||k.length!==T.length)return true;
+    return k.some(function(q,i){return q.p||q.t!==T[i][0]||!q.r||q.r[0]!==T[i][1]*m||q.r[1]||q.r[2]})})
+}catch(e){return false}}
+function pkOff(){return !!(P.rules&&P.rules.noPack)||ownWalk()}
 async function pkLoad(){PKS=1;PKA=null;
-  try{if(P.rules&&P.rules.noPack){PKS=2;return}
+  try{if(pkOff()){PKS=2;return}
     let av=(ME&&ME.av)||{};const md=await gpMeta();if(md&&md.avatar)av=md.avatar;
     const id=av&&av.anim;if(!id||!/^sys_anp_[a-z0-9]{1,16}$/.test(id)){PKS=2;return}
     const list=await pkList(),p=list.find(function(x){return x.id===id});
@@ -3161,7 +3174,7 @@ async function pkLoad(){PKS=1;PKA=null;
   PKS=2}
 function pkGet(slot,custom){/* a script that sets the player's animation (set player walk to...) still wins */
   if(custom)return P.anims[custom];
-  if(P.rules&&P.rules.noPack)return P.anims[slot];
+  if(pkOff())return P.anims[slot];
   if(PKS===0)pkLoad();
   return (PKA&&PKA[slot])||P.anims[slot]}
 addEventListener('click',function(e){const t=e.target&&e.target.closest&&e.target.closest('#s-play,#s-run');if(t)pkReset()},true);
@@ -5541,7 +5554,7 @@ function svcProps(d){const s=SV.find(function(x){return x.k===selSvc});if(!s)ret
     slider(d,'Sun strength',P.env,'sun',0,1.5,.05,pct,applyEnv);slider(d,'Fog',P.env,'fog',0,100,1,null,applyEnv);startLightUI(d);lightColorsUI(d);skyBuilderUI(d)}
   else if(s.k==='rules'){slider(d,'Gravity',P.rules,'grav',20,400,5);slider(d,'Jump power',P.rules,'jump',10,120,1);slider(d,'Walk speed',P.rules,'speed',4,40,1);
     slider(d,'Camera distance',P.rules,'cam',4,60,1,null,function(){cdT=P.rules.cam});slider(d,'Field of view',P.rules,'fov',30,120,1);
-    {const pc=el('input');pc.type='checkbox';pc.checked=!P.rules.noPack;pc.onchange=function(){if(pc.checked)delete P.rules.noPack;else P.rules.noPack=true;pkReset();save()};const pl=el('label','','Allow players to use their animation pack ');pl.title='On: animation packs players bought replace their walk, jump and idle in your game. Off: your game always uses its own animations.';pl.append(pc);d.append(pl)}
+    {const pc=el('input');pc.type='checkbox';pc.checked=!P.rules.noPack;pc.onchange=function(){if(pc.checked)delete P.rules.noPack;else P.rules.noPack=true;pkReset();save()};const pl=el('label','','Allow players to use their animation pack ');pl.title='On: animation packs players bought replace their walk, jump and idle in your game. Off: your game always uses its own animations. Games with their own custom walk animation never use packs.';pl.append(pc);d.append(pl);if(ownWalk()){const nt=el('p','note','This game has its own custom walk animation, so animation packs are turned off automatically. Reset the walk animation to the default (or remove any "set player walk to" block) to let packs work.');d.append(nt)}}
     const b=el('button','btn ghost small','Reset to defaults');b.type='button';b.style.marginTop='10px';b.onclick=function(){Object.assign(P.rules,{grav:190,jump:48,speed:16,cam:14});save();props()};d.append(b);
     d.append(el('p','note','Default gravity is 190. Lower it for a moon level. Jump height is about jump power squared divided by twice the gravity.'))}
   else if(s.k==='audio'){slider(d,'Volume',P.audio,'vol',0,1,.05,function(v){return Math.round(v*100)+'%'},liveVol);
