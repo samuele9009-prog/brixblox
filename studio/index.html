@@ -1029,6 +1029,10 @@ function coGuestG(g){return !!g&&!!g.co&&!!g.owner&&!!ME&&g.owner.id!==ME.id}
   const want=pend==='__new__'?'':(pend||store.get('brixblox-cur')||'');
   if(want&&!/^(acc_|avatar_|sys_)/.test(String(want))&&L[want]&&mineG(L[want])){try{P=JSON.parse(L[want].data);if(!P||!Array.isArray(P.scripts))throw 0;gameId=want;gameVis=L[want].vis||'private';gameDraft=!!L[want].dr;store.set('brixblox-cur',want)}catch(e){P=null;gameId=null}}
   if(!P)P={name:pend==='__new__'?'My new game':'My first BrixBlox game',scripts:starter()}})();
+/* Opened inside the game player but the game never arrived: never show the Studio there. Close the player and tell the site, so Play can be pressed again. */
+if(!VIEWONLY&&window.parent!==window&&/[?&]player=1/.test(location.search)){
+  try{document.documentElement.style.display='none';parent.postMessage({bb:'leave',msg:'The game could not start. Press Play again.'},location.origin)}catch(e){}
+  throw new Error('BrixBlox: the game did not arrive in the player')}
 if(P.name==='My first BricBloc game')P.name='My first BrixBlox game';
 PEND=calcPend();
 /* Real play: always use the copy that is live online, so you see exactly what other players see (not an older/local copy). */
