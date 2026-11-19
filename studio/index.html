@@ -7080,9 +7080,108 @@ setInterval(function(){if(!document.hidden)checkBan()},15000);document.addEventL
 function leaveGame(){skipUnload=true;showLeaving();try{S.stop=true}catch(e){}
   /* wait (briefly) for the goodbye to be sent before the page that holds the connection is closed */
   netLeave().then(function(){if(window.parent!==window)parent.postMessage({bb:'leave'},location.origin);else location.href=SITE_URL})}
+/* ===== Voice chat: Premium members can talk, everyone in the game can hear =====
+   The voices go straight between players (WebRTC). The game channel is only used to set the connections up.
+   A listener only accepts voice from a player whose name is on the Premium list, so players who are not Premium cannot be heard. */
+const VC_STUN=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}];
+/* TURN relay: when two players cannot connect directly (strict school or home networks), their voice goes through a relay server instead, like Discord.
+   Fill in ONE of these two ways (a free Metered account works: https://dashboard.metered.ca):
+   1) app = your Metered app name (the part before .metered.live) and key = the credential API key from the TURN Server page. The key is made to be used in a web page.
+   2) servers = an ICE servers list from any other TURN provider, e.g. [{urls:'turn:host:443?transport=tcp',username:'u',credential:'p'}].
+   Left empty, voice only works when players can connect directly. */
+const VC_TURN={app:'',key:'',servers:null};
+let vcIceP=null,vcIceAt=0;
+function vcIce(){
+  if(vcIceP&&Date.now()-vcIceAt<45*60000)return vcIceP;
+  vcIceAt=Date.now();
+  vcIceP=(async function(){
+    if(Array.isArray(VC_TURN.servers)&&VC_TURN.servers.length)return VC_STUN.concat(VC_TURN.servers);
+    if(VC_TURN.app&&VC_TURN.key&&/^[a-z0-9-]{1,63}$/i.test(VC_TURN.app)){
+      try{const ac=new AbortController(),tm=setTimeout(function(){ac.abort()},4000);
+        const r=await fetch('https://'+VC_TURN.app+'.metered.live/api/v1/turn/credentials?apiKey='+encodeURIComponent(VC_TURN.key),{signal:ac.signal});clearTimeout(tm);
+        const j=await r.json();if(Array.isArray(j)&&j.length)return j}catch(e){}
+      vcIceAt=Date.now()-44*60000;/* the relay could not be reached: use STUN now and try the relay again in a minute */}
+    return VC_STUN})();
+  return vcIceP}
+const VC={mic:null,on:false,busy:false,out:{},inn:{},mute:false,muted:{},ui:null,ann:0};
+function vcPrem(n){return PREMN.has(String(n||'').trim().toLowerCase())}
+function vcLive(){return !!(NET.on&&NET.ch&&(running||playing))}
+function vcSay(t){try{chatSys(t)}catch(e){}}
+function vcSend(to,k,d,r){try{if(NET.ch&&NET.on)NET.ch.send({type:'broadcast',event:'vc',payload:{id:NET.id,n:String(ME.username).slice(0,24),to:to,k:k,d:d,r:r}})}catch(e){}}
+function vcClose(map,id){const e=map[id];if(!e)return;delete map[id];try{e.pc.onicecandidate=e.pc.ontrack=e.pc.onconnectionstatechange=null;e.pc.close()}catch(x){}try{if(e.au){e.au.pause();e.au.srcObject=null}}catch(x){}}
+function vcPeerGone(id){vcClose(VC.out,id);vcClose(VC.inn,id);vcUi()}
+function vcFlush(e){if(!e.pc)return;const q=e.q.splice(0);q.forEach(function(c){e.pc.addIceCandidate(c).catch(function(){})})}
+async function vcStart(){
+  if(VC.on||VC.busy)return;
+  if(!vcLive()){return}
+  if(!vcPrem(ME.username)){vcSay('Everyone can listen to voice chat, but only BrixBlox Premium members can talk in it.');return}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){vcSay('This browser cannot use a microphone here.');return}
+  VC.busy=true;
+  try{VC.mic=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}})}
+  catch(e){VC.busy=false;vcSay('Could not use the microphone. Allow it for this site (the lock icon in the address bar) and try again.');return}
+  VC.busy=false;
+  if(!vcLive()){VC.mic.getTracks().forEach(function(t){t.stop()});VC.mic=null;return}
+  VC.on=true;vcSend('*','on');clearInterval(VC.ann);VC.ann=setInterval(function(){if(VC.on)vcSend('*','on')},5000);vcUi()}
+function vcMicOff(){const was=VC.on;VC.on=false;clearInterval(VC.ann);VC.ann=0;
+  if(VC.mic){VC.mic.getTracks().forEach(function(t){t.stop()});VC.mic=null}
+  Object.keys(VC.out).forEach(function(id){vcClose(VC.out,id)});
+  if(was)vcSend('*','off');vcUi()}
+function vcShutdown(){vcMicOff();Object.keys(VC.inn).forEach(function(id){vcClose(VC.inn,id)});if(VC.ui){VC.ui.remove();VC.ui=null}}
+async function vcOffer(to){
+  if(!VC.on||!VC.mic||VC.out[to]||Object.keys(VC.out).length>=24)return;
+  const e={pc:null,q:[]};VC.out[to]=e;
+  const ice=await vcIce();if(VC.out[to]!==e||!VC.mic)return;
+  const pc=new RTCPeerConnection({iceServers:ice});e.pc=pc;
+  VC.mic.getTracks().forEach(function(t){pc.addTrack(t,VC.mic)});
+  pc.onicecandidate=function(ev){if(ev.candidate)vcSend(to,'ice',ev.candidate.toJSON(),'s')};
+  pc.onconnectionstatechange=function(){if(pc.connectionState==='failed'||pc.connectionState==='closed')vcClose(VC.out,to)};
+  try{const o=await pc.createOffer();await pc.setLocalDescription(o);vcSend(to,'offer',{type:o.type,sdp:o.sdp})}catch(x){vcClose(VC.out,to)}}
+async function vcAnswer(from,name,d){
+  if(!vcPrem(name)||!d||typeof d.sdp!=='string'||d.sdp.length>30000||d.type!=='offer')return;
+  vcClose(VC.inn,from);
+  const e={pc:null,n:name,q:[],au:null};VC.inn[from]=e;
+  const ice=await vcIce();if(VC.inn[from]!==e)return;
+  const pc=new RTCPeerConnection({iceServers:ice});e.pc=pc;
+  pc.onicecandidate=function(ev){if(ev.candidate)vcSend(from,'ice',ev.candidate.toJSON(),'l')};
+  pc.ontrack=function(ev){if(e.au||!ev.streams||!ev.streams[0])return;const au=new Audio();au.autoplay=true;au.srcObject=ev.streams[0];au.muted=VC.mute||!!VC.muted[e.n];e.au=au;au.play().catch(function(){});vcUi()};
+  pc.onconnectionstatechange=function(){if(pc.connectionState==='failed'||pc.connectionState==='closed'){vcClose(VC.inn,from);vcUi()}};
+  try{await pc.setRemoteDescription({type:'offer',sdp:d.sdp});vcFlush(e);const a=await pc.createAnswer();await pc.setLocalDescription(a);vcSend(from,'answer',{type:a.type,sdp:a.sdp})}catch(x){vcClose(VC.inn,from)}}
+function vcRecv(p){
+  if(!p||!p.id||p.id===NET.id||!NET.on||typeof p.k!=='string')return;
+  if(p.to!=='*'&&p.to!==NET.id)return;
+  const nm=String(p.n||'').slice(0,24);
+  switch(p.k){
+    case'on':if(vcPrem(nm)&&!VC.inn[p.id])vcSend(p.id,'want');break;
+    case'off':vcClose(VC.inn,p.id);vcUi();break;
+    case'want':if(VC.on)vcOffer(p.id);break;
+    case'offer':vcAnswer(p.id,nm,p.d);break;
+    case'answer':{const e=VC.out[p.id];if(e&&e.pc&&p.d&&typeof p.d.sdp==='string'&&p.d.sdp.length<30000&&e.pc.signalingState==='have-local-offer')e.pc.setRemoteDescription({type:'answer',sdp:p.d.sdp}).then(function(){vcFlush(e)}).catch(function(){vcClose(VC.out,p.id)});break}
+    case'ice':{const e=p.r==='s'?VC.inn[p.id]:p.r==='l'?VC.out[p.id]:null;if(!e||!p.d||typeof p.d.candidate!=='string'||p.d.candidate.length>600)break;
+      const c={candidate:p.d.candidate,sdpMid:p.d.sdpMid,sdpMLineIndex:p.d.sdpMLineIndex};
+      if(e.pc&&e.pc.remoteDescription)e.pc.addIceCandidate(c).catch(function(){});else if(e.q.length<60)e.q.push(c);break}}}
+function vcUi(){
+  if(!vcLive()){if(VC.ui){VC.ui.remove();VC.ui=null}return}
+  if(!VC.ui){const d=el('div');d.id='vc-ui';d.style.cssText='position:fixed;top:46px;right:10px;z-index:9000;display:flex;flex-direction:column;align-items:flex-end;gap:5px;pointer-events:none';
+    VC.bm=vcBtn();VC.bs=vcBtn();VC.bl=el('div');VC.bl.style.cssText='display:flex;flex-direction:column;align-items:flex-end;gap:3px';
+    VC.bm.onclick=function(){if(VC.on)vcMicOff();else vcStart()};
+    VC.bs.onclick=function(){VC.mute=!VC.mute;Object.keys(VC.inn).forEach(function(id){const e=VC.inn[id];if(e.au)e.au.muted=VC.mute||!!VC.muted[e.n]});vcUi()};
+    d.append(VC.bm,VC.bs,VC.bl);document.body.append(d);VC.ui=d}
+  const prem=vcPrem(ME.username);
+  VC.bm.textContent=VC.on?'\u{1F534} Mic on (click to stop)':prem?'\u{1F3A4} Mic off (click to talk)':'\u{1F512} Voice chat: Premium can talk';
+  VC.bm.title=prem?'Everyone in the game can hear you while the mic is on. Shortcut: the ` key.':'Everyone can listen. Only BrixBlox Premium members can talk.';
+  VC.bm.style.background=VC.on?'rgba(200,30,30,.88)':'rgba(20,22,30,.72)';
+  VC.bs.textContent=VC.mute?'\u{1F507} Voice chat muted':'\u{1F50A} Hearing voice chat';
+  VC.bl.replaceChildren();
+  Object.keys(VC.inn).forEach(function(id){const e=VC.inn[id];if(!e.au)return;const b=vcBtn();b.textContent=(VC.muted[e.n]?'\u{1F507} ':'\u{1F5E3} ')+e.n;b.title='Click to '+(VC.muted[e.n]?'unmute ':'mute ')+e.n;
+    b.onclick=function(){VC.muted[e.n]=!VC.muted[e.n];if(e.au)e.au.muted=VC.mute||!!VC.muted[e.n];vcUi()};VC.bl.append(b)})}
+function vcBtn(){const b=el('button');b.type='button';b.style.cssText='pointer-events:auto;border:0;border-radius:999px;padding:6px 11px;font:600 12px sans-serif;color:#fff;background:rgba(20,22,30,.72);cursor:pointer;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';return b}
+setInterval(function(){try{vcUi();if(!vcLive()&&(VC.on||Object.keys(VC.inn).length||Object.keys(VC.out).length))vcShutdown()}catch(e){}},1500);
+addEventListener('keydown',function(e){if(e.code!=='Backquote'||e.repeat||e.ctrlKey||e.metaKey||e.altKey||!vcLive())return;
+  const t=document.activeElement&&document.activeElement.tagName;if(/INPUT|TEXTAREA|SELECT/.test(t))return;e.preventDefault();if(VC.on)vcMicOff();else vcStart()});
 /* Tell everyone in the game we are gone (a 'bye' message plus leaving the presence list), then close the channels.
    fast=true is for a closing page: it cannot wait, so everything is sent and closed at once. */
 function netLeave(fast){
+  try{vcShutdown()}catch(e){}
   const ch=NET.ch,lob=NET.lob,was=NET.on;NET.on=false;NET.ch=NET.lob=null;
   const jobs=[];
   try{if(ch&&was){jobs.push(ch.send({type:'broadcast',event:'bye',payload:{id:NET.id}}));jobs.push(ch.untrack())}}catch(e){}
@@ -7193,6 +7292,7 @@ async function netJoin(pick){
     ch.on('broadcast',{event:'cmd'},function(m){netCmd(m.payload)});
     ch.on('broadcast',{event:'ss'},function(m){try{ssRecv(m.payload)}catch(e){}});
     ch.on('broadcast',{event:'ar'},function(){if(Date.now()-ADMT>3000)admLoad()});
+    ch.on('broadcast',{event:'vc'},function(m){try{vcRecv(m.payload)}catch(e){}});
     ch.on('broadcast',{event:'gw'},function(m){const p=m.payload;if(!p||p.t!==NET.id||p.id===NET.id||!(running||playing))return;const sl=String(p.s||''),ac=String(p.a||'');
       if(!ACCS[sl]||!/^acc_[a-z0-9]{1,16}$/.test(ac))return;S.xeq=S.xeq||{};
       if(p.m)S.xeq[sl]=ac;else Object.keys(S.xeq).forEach(function(k){if(S.xeq[k]===ac)delete S.xeq[k]});try{accLocal()}catch(e){}});
@@ -7238,7 +7338,7 @@ function netSay(id,t){const e=NP.find(function(n){return n.net===id});if(!e)retu
   if(!e.bub){const c=document.createElement('canvas');c.width=1024;c.height=768;const x=c.getContext('2d');x.scale(2,2);const tx=new THREE.CanvasTexture(c);tx.minFilter=THREE.LinearFilter;tx.generateMipmaps=false;
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthTest:false}));sp.center.set(.5,0);sp.renderOrder=9;sp.visible=false;scene.add(sp);e.bub={x:x,t:tx,sp:sp}}
   e.say=t.slice(0,120);e.sayAt=performance.now();bubPaint(e.say,e.bub.x,e.bub.t)}
-function netDrop(id){const i=NP.findIndex(function(n){return n.net===id});if(i<0)return;const n=NP[i];
+function netDrop(id){try{vcPeerGone(id)}catch(e){}const i=NP.findIndex(function(n){return n.net===id});if(i<0)return;const n=NP[i];
   NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);/* remove them first, so nothing below can stop it */
   chatSys(n.name+' left the game');npFree(n);delete RAG['np:'+n.name];delete RSZ['np:'+n.name];delete SKIN['np:'+n.name];try{renderParts()}catch(e){}gmPlRefresh();firePJ('pleave',n.name)}
 setInterval(function(){if(!NET.on||!(running||playing))return;
