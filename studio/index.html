@@ -3120,10 +3120,16 @@ async function pkSave(p){
   if(sb){const r=await sb.from('games').upsert({id:p.id,owner_id:ME.id,owner_name:ME.username,name:p.name,vis:'public',data:JSON.stringify({owner:p.owner,price:p.price||0,descr:p.descr||'',pub:!!p.pub,sale:p.sale!==false,removed:!!p.removed,anims:p.anims||{}}),updated_at:new Date().toISOString()});if(r.error)throw r.error}
   else{let a=[];try{a=JSON.parse(store.get('brixblox-packs'))||[]}catch(e){}a=a.filter(function(x){return x.id!==p.id});a.push(p);store.set('brixblox-packs',JSON.stringify(a))}}
 function pkBodyParts(){return P.parts.filter(function(p){return p.av&&!p.acc})}
-/* the current animation, saved by body part NAME so it fits any game's character */
-function pkExport(name){const A=P.anims[name];if(!A)return null;const byId={};pkBodyParts().forEach(function(p){byId[p.id]=p.name});
-  const o={len:A.len||1,type:A.type||'other',gs:A.gs,src:name,at:Date.now(),keys:{}};Object.keys(A.keys||{}).forEach(function(id){const nm=byId[id.replace(/^p:/,'')];if(!nm)return;o.keys[(id.indexOf('p:')===0?'p:':'')+nm]=JSON.parse(JSON.stringify(A.keys[id]))});return o}
-function pkImport(a){const byName={};pkBodyParts().forEach(function(p){byName[p.name]=p.id});
+/* The rig whose animation gets uploaded: the one you are animating right now. Without one it falls back to the starter character. */
+function pkCurRig(){const id=animT&&byId(animT)?animT:(animTs.length&&byId(animTs[0])?animTs[0]:'');return id||''}
+function pkRigParts(rigId){const r=rigId?byId(rigId):null;return r?rigParts(r):pkBodyParts()}
+function pkRigName(rigId){const r=rigId?byId(rigId):null;return r?r.name:'Starter character'}
+const PK_JOINTS=['Torso','Head','Larm','Rarm','Lleg','Rleg'];
+/* the animation is saved by body part NAME, taken from that rig only, so it fits any character that has parts with those names */
+function pkExport(name,rigId){const A=P.anims[name];if(!A)return null;const nameOf={};pkRigParts(rigId).forEach(function(p){nameOf[p.id]=p.name});
+  const o={len:A.len||1,type:A.type||'other',gs:A.gs,src:name,at:Date.now(),rig:pkRigName(rigId),keys:{}};
+  Object.keys(A.keys||{}).forEach(function(id){const nm=nameOf[id.replace(/^p:/,'')];if(!nm)return;const k=(id.indexOf('p:')===0?'p:':'')+nm;if(o.keys[k])return;o.keys[k]=JSON.parse(JSON.stringify(A.keys[id]))});return o}
+function pkImport(a,rigId){const byName={};pkRigParts(rigId).forEach(function(p){if(!(p.name in byName))byName[p.name]=p.id});
   const o={len:a.len||1,type:a.type||'other',gs:a.gs,keys:{}};Object.keys(a.keys||{}).forEach(function(k){const pre=k.indexOf('p:')===0?'p:':'',id=byName[k.slice(pre.length)];if(id)o.keys[pre+id]=JSON.parse(JSON.stringify(a.keys[k]))});return o}
 /* ---- Safe saving. Every upload re-reads the NEWEST copy of the pack from the database, changes only the slots you picked, saves, then reads it back
    to check it really stuck. (Before, an old copy of a pack could overwrite a newer one, which is how two packs ended up the same or lost animations.) ---- */
@@ -3145,17 +3151,22 @@ function pkNewId(){return 'sys_anp_'+Date.now().toString(36)+Math.floor(Math.ran
 async function pkCreate(name){
   const p={id:pkNewId(),name:String(name).trim().slice(0,24),owner:ME.username.toLowerCase(),price:0,descr:'',pub:false,sale:true,anims:{}};
   await pkSave(p);const back=await pkFetch(p.id);if(!back)throw new Error('The new pack did not save.');return back}
+function pkHash(a){const k={};Object.keys(a.keys||{}).sort().forEach(function(n){k[n]=a.keys[n]});return JSON.stringify({l:a.len||1,k:k})}
 function pkGuessSlot(n){const low=String(n).toLowerCase().trim();if(PK_ORDER.indexOf(low)>=0)return low;const A=P.anims[n];if(A&&A.type==='walk')return 'walk';if(/idle|stand/i.test(n))return 'idle';if(/jump/i.test(n))return 'jump';if(/fall/i.test(n))return 'fall';if(/walk|run/i.test(n))return 'walk';return 'walk'}
 /* upload one or many [animationName, slot] pairs into one pack in a single safe save */
-async function pkUpload(packId,pairs){
-  const put={},skipped=[];
-  pairs.forEach(function(q){const ex=pkExport(q[0]);if(!ex||!Object.keys(ex.keys).length){skipped.push(q[0]);return}put[q[1]]=ex});
-  if(!Object.keys(put).length)throw new Error('Nothing to upload: '+(skipped.join(', ')||'no animations')+' has no keyframes on the character yet.');
+async function pkUpload(packId,pairs,rigId){
+  const put={},skipped=[],used={};
+  pairs.forEach(function(q){const ex=pkExport(q[0],rigId);if(!ex||!Object.keys(ex.keys).length){skipped.push(q[0]);return}put[q[1]]=ex;Object.keys(ex.keys).forEach(function(k){used[k.replace(/^p:/,'')]=1})});
+  if(!Object.keys(put).length)throw new Error('Nothing to upload: '+(skipped.join(', ')||'no animations')+' has no keyframes on the rig "'+pkRigName(rigId)+'". Pick the rig you animated.');
   const b=await pkPatch(packId,function(f){Object.keys(put).forEach(function(sl){f.anims[sl]=put[sl]})});
-  return {pack:b,slots:Object.keys(put),skipped:skipped}}
+  return {pack:b,slots:Object.keys(put),skipped:skipped,rig:pkRigName(rigId),unmatched:Object.keys(used).filter(function(n){return PK_JOINTS.indexOf(n)<0}),matched:Object.keys(used).filter(function(n){return PK_JOINTS.indexOf(n)>=0})}}
+function pkNote(r){let t='Uploaded '+r.slots.join(', ')+' from the rig "'+r.rig+'" to "'+r.pack.name+'". Saved and checked.';
+  if(!r.matched.length)t+=' WARNING: none of this rig\'s parts are named Torso, Head, Larm, Rarm, Lleg or Rleg, so players\' characters will not move. Rename the rig\'s parts to those names.';
+  else if(r.unmatched.length)t+=' Note: players only move parts named Torso, Head, Larm, Rarm, Lleg and Rleg. Not used: '+r.unmatched.slice(0,8).join(', ')+'.';
+  return t}
 function pkAdd(pack,animName,slotIn){
-  const go=function(slot){say2('Uploading "'+animName+'"...');
-    pkUpload(pack.id,[[animName,slot]]).then(function(r){pack.anims=r.pack.anims;say2('Uploaded "'+animName+'" to "'+r.pack.name+'" as its '+slot+' animation. Saved and checked.')}).catch(function(e){say2('Could not upload: '+String((e&&e.message)||e))})};
+  const go=function(slot){say2('Uploading "'+animName+'" from the rig "'+pkRigName(pkCurRig())+'"...');
+    pkUpload(pack.id,[[animName,slot]],pkCurRig()).then(function(r){pack.anims=r.pack.anims;say2(pkNote(r))}).catch(function(e){say2('Could not upload: '+String((e&&e.message)||e))})};
   if(slotIn){go(slotIn);return}
   const low=String(animName).toLowerCase().trim();
   if(PK_ORDER.indexOf(low)>=0){go(low);return}
@@ -3174,7 +3185,7 @@ async function pkMenu(e){e.preventDefault();
   bmenu(e,items)}
 
 /* ---- The Animation Packs menu: upload your animations into packs, see what is inside each pack, open one back in the Animator, rename or delete drafts ---- */
-function pkOpenSlot(pack,slot){const a=pkImport(pack.anims[slot]);if(!Object.keys(a.keys).length){say2('That animation does not fit this character (no matching body parts).');return}
+function pkOpenSlot(pack,slot){const a=pkImport(pack.anims[slot],pkCurRig());if(!Object.keys(a.keys).length){say2('That animation does not fit the rig "'+pkRigName(pkCurRig())+'" (no parts with matching names).');return}
   let base=(pack.name+'_'+slot).replace(/[^A-Za-z0-9_]/g,'')||'Pack',nm=base,n=1;while(P.anims[nm])nm=base+(++n);
   P.anims[nm]=a;curA=nm;aT=0;aSelKeys=[];save();animUI();preview();say2('Opened "'+nm+'" in the Animator. Edit it, then upload it again to replace the slot.')}
 function pkManager(){
@@ -3182,20 +3193,29 @@ function pkManager(){
   mdl('Animation Packs',function(c,close){
     c.style.width='min(96vw,780px)';
     const body=el('div');body.style.cssText='display:flex;flex-direction:column;gap:14px';c.append(body);
-    let packs=[],busy=false,pick={anim:curA||'',pack:'',slot:''};
+    let packs=[],busy=false,pick={anim:curA||'',pack:'',slot:'',rig:pkCurRig()};
     const sty=function(x){x.style.cssText='padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);min-width:0;max-width:100%';return x};
     const box=function(){const d=el('div');d.style.cssText='border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px';return d};
     const row=function(){const d=el('div');d.style.cssText='display:flex;gap:6px;flex-wrap:wrap;align-items:center';return d};
     const run=async function(label,fn){if(busy)return;busy=true;say2(label);try{await fn()}catch(e){say2('Failed: '+String((e&&e.message)||e))}busy=false;await load()};
     const draw=function(){body.replaceChildren();
-      const names=Object.keys(P.anims).filter(function(n){return P.anims[n]&&Object.keys(P.anims[n].keys||{}).some(function(k){return (P.anims[n].keys[k]||[]).length})});
+      if(pick.rig&&!byId(pick.rig))pick.rig='';
+      const rids={};pkRigParts(pick.rig).forEach(function(q){rids[q.id]=1});
+      const names=Object.keys(P.anims).filter(function(n){const A=P.anims[n];return A&&Object.keys(A.keys||{}).some(function(k){return rids[k.replace(/^p:/,'')]&&(A.keys[k]||[]).length})});
       if(!P.anims[pick.anim]||names.indexOf(pick.anim)<0)pick.anim=names.indexOf(curA)>=0?curA:(names[0]||'');
       if(!pick.slot||pick.animFor!==pick.anim){pick.slot=pkGuessSlot(pick.anim);pick.animFor=pick.anim}
       if(!packs.some(function(p){return p.id===pick.pack}))pick.pack=packs.length?packs[0].id:'';
       /* upload box */
       const up=box();up.append(Object.assign(el('b','','Upload an animation'),{}));
-      up.append(el('p','','Pick one of the animations in this game, the pack to put it in, and which player animation it replaces. Uploading never touches the other animations in the pack.'));
-      if(!names.length){up.append(el('p','','This game has no animations with keyframes yet. Make some in the Animator first.'))}
+      up.append(el('p','','Pick the rig you animated, then one of its animations, the pack to put it in, and which player animation it replaces. Uploading never touches the other animations in the pack.'));
+      {const rr=row(),sr=sty(el('select')),seen={};
+        const addR=function(id,label){if(seen[id])return;seen[id]=1;const o=el('option','',label);o.value=id;sr.append(o)};
+        animTs.forEach(function(id){const q=byId(id);if(q)addR(id,q.name+' (rig being animated)')});
+        rigRoots().forEach(function(q){addR(q.id,q.name+' (rig)')});
+        addR('','Starter character');
+        sr.value=pick.rig;sr.onchange=function(){pick.rig=sr.value;pick.anim='';draw()};
+        rr.append(el('span','','Rig'),sr);up.append(rr)}
+      if(!names.length){up.append(el('p','','The rig "'+pkRigName(pick.rig)+'" has no animations with keyframes yet. Pick another rig above, or animate this one first.'))}
       else{
         const r=row(),sa=sty(el('select')),sp=sty(el('select')),ss=sty(el('select'));
         names.forEach(function(n){const o=el('option','',n);o.value=n;sa.append(o)});sa.value=pick.anim;
@@ -3209,13 +3229,19 @@ function pkManager(){
         r2.append(mb('\u2B06 Upload','',function(){if(!pick.pack){say2('Make a pack first (below).');return}
           const pk=packs.find(function(p){return p.id===pick.pack}),old=pk&&pk.anims&&pk.anims[pick.slot];
           if(old&&old.src&&old.src!==pick.anim&&!confirm('"'+pk.name+'" already has "'+old.src+'" as its '+pick.slot+' animation. Replace it with "'+pick.anim+'"?'))return;
-          run('Uploading "'+pick.anim+'"...',async function(){const res=await pkUpload(pick.pack,[[pick.anim,pick.slot]]);say2('Uploaded "'+pick.anim+'" to "'+res.pack.name+'" as '+pick.slot+'. Saved and checked.')})}));
+          {const ex=pkExport(pick.anim,pick.rig);if(ex){const h=pkHash(ex),twin=[];packs.forEach(function(p2){PK_ORDER.forEach(function(sl2){const a2=p2.anims&&p2.anims[sl2];if(a2&&pkHash(a2)===h&&!(p2.id===pick.pack&&sl2===pick.slot))twin.push(p2.name+' \u203A '+sl2)})});
+            if(twin.length&&!confirm('"'+pick.anim+'" is exactly the same animation as '+twin.join(', ')+'. Upload it anyway? (To make a different pack, edit the animation or pick a different one first.)'))return}}
+          run('Uploading "'+pick.anim+'"...',async function(){const res=await pkUpload(pick.pack,[[pick.anim,pick.slot]],pick.rig);say2(pkNote(res))})}));
         r2.append(mb('\u2B06 Upload every animation named walk / idle / jump / fall / hold item...','ghost',function(){if(!pick.pack){say2('Make a pack first (below).');return}
           const pairs=names.filter(function(n){return PK_ORDER.indexOf(n.toLowerCase().trim())>=0}).map(function(n){return [n,n.toLowerCase().trim()]});
           if(!pairs.length){say2('No animation here is named after a slot (walk, idle, jump, fall, hold item, hold item walk, hold item jump).');return}
-          run('Uploading '+pairs.length+' animations...',async function(){const res=await pkUpload(pick.pack,pairs);say2('Uploaded '+res.slots.join(', ')+' to "'+res.pack.name+'". Saved and checked.')})}));
+          run('Uploading '+pairs.length+' animations...',async function(){const res=await pkUpload(pick.pack,pairs,pick.rig);say2(pkNote(res))})}));
         up.append(r2)}
       body.append(up);
+      /* find packs whose animations are exactly the same as another slot or pack */
+      const hs={};packs.forEach(function(p){PK_ORDER.forEach(function(sl){if(p.anims&&p.anims[sl]){const h=pkHash(p.anims[sl]);(hs[h]=hs[h]||[]).push(p.name+' \u203A '+sl)}})});
+      let dupN=0;Object.keys(hs).forEach(function(h){if(hs[h].length>1)dupN++});
+      if(dupN){const w=el('p','','\u26A0 '+dupN+' animation'+(dupN>1?'s are':' is')+' exactly the same in more than one slot or pack (marked below). That is why they look identical on the website. Re-upload the right animation into those slots.');w.style.cssText='color:#b45309;font-weight:600;margin:0';body.append(w)}
       /* new pack */
       const nb=box();nb.append(el('b','','New pack'));const nr=row(),ni=sty(el('input'));ni.placeholder='Pack name';ni.maxLength=24;
       const mk=function(){const nm=ni.value.trim();if(!nm)return;run('Creating "'+nm+'"...',async function(){const p=await pkCreate(nm);pick.pack=p.id;say2('Created the pack "'+p.name+'". Upload animations into it above.')})};
@@ -3233,6 +3259,7 @@ function pkManager(){
         have.forEach(function(sl){const a=p.anims[sl],r=row();
           const joints=Object.keys(a.keys||{}).length;
           r.append(Object.assign(el('span','',sl+': '),{style:'min-width:110px;font-weight:600'}),el('span','',(a.src?'"'+a.src+'" ':'')+'('+joints+' joints, '+(Math.round((a.len||1)*100)/100)+'s)'));
+          {const same=(hs[pkHash(a)]||[]).filter(function(l){return l!==p.name+' \u203A '+sl});if(same.length){const w=el('span','','\u26A0 same as '+same.join(', '));w.style.cssText='color:#b45309;font-size:.8em';r.append(w)}}
           r.append(mb('Open in Animator','ghost',function(){pkOpenSlot(p,sl);close()}));
           r.append(mb('Remove','ghost',function(){if(!confirm('Remove the '+sl+' animation from "'+p.name+'"?'))return;run('Removing...',async function(){await pkPatch(p.id,function(f){delete f.anims[sl]})})}));
           d.append(r)});
