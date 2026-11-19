@@ -430,6 +430,12 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!importa
 #chat{gap:4px;width:min(78%,380px)}
 #chat-tg{pointer-events:auto;align-self:flex-start;width:28px;height:28px;padding:0;border:0;border-radius:8px;background:rgba(20,22,24,.55);color:#fff;font-size:.9rem;line-height:1;cursor:pointer}
 #chat-tg:hover{background:rgba(20,22,24,.8)}
+#vc-mic,#vc-sp{pointer-events:auto;width:28px;height:28px;padding:0;border:0;border-radius:8px;background:rgba(20,22,24,.55);color:#fff;font-size:.9rem;line-height:1;cursor:pointer}
+#vc-mic:hover,#vc-sp:hover{background:rgba(20,22,24,.8)}
+#vc-mic.on{background:rgba(190,40,40,.9)}#vc-mic.talk{background:#16a34a;box-shadow:0 0 0 2px #86efac}#vc-mic.lock{opacity:.55}
+#vc-pop{position:absolute;left:0;top:34px;z-index:6;min-width:170px;max-width:240px;display:flex;flex-direction:column;gap:4px;padding:7px;border-radius:9px;background:rgba(20,22,24,.88);color:#fff;font-size:.76rem;font-weight:700;pointer-events:auto}
+#vc-pop button{border:0;border-radius:6px;padding:5px 8px;background:rgba(255,255,255,.14);color:#fff;font:inherit;cursor:pointer;text-align:left}
+#vc-pop button:hover{background:rgba(255,255,255,.26)}
 #chat-log{display:block;justify-content:normal;max-height:200px;overflow:hidden;padding:4px 2px;border-radius:10px;background:rgba(20,22,24,0);font-size:.8rem;font-weight:600;color:#fff;text-shadow:0 1px 2px #000,0 0 4px rgba(0,0,0,.6);transition:background .2s;scrollbar-width:thin}
 #chat-log div{background:none;border-radius:0;padding:1px 8px;line-height:1.3;transition:opacity .7s}
 #chat-log .cn{font-weight:800}
@@ -576,7 +582,7 @@ html,body{overscroll-behavior:none;touch-action:manipulation}
   #studio.fs #s-parts{width:min(310px,72vw)}
   #studio.fs #s-out,#studio.fs #s-code,#studio.fs #s-anim{left:8px;right:8px;height:38vh}
   #chat-in{height:34px;font-size:16px}
-  #chat-tg{width:38px;height:38px}
+  #chat-tg,#vc-mic,#vc-sp{width:38px;height:38px}
   .gc .row .btn{min-height:42px}
   #toast{max-width:92vw}
 }
@@ -616,7 +622,7 @@ body{filter:none}
 body.bbplay #gfx-btn,body.bbplay #gfx-panel,#studio.vo #gfx-btn,#studio.vo #gfx-panel{display:none!important}
 #bb-pl{border-radius:12px!important;backdrop-filter:blur(4px)}
 html.mob.bbvo #chat{width:min(50vw,220px)!important;top:max(8px,env(safe-area-inset-top,0px))!important;left:max(8px,env(safe-area-inset-left,0px))!important}
-html.mob.bbvo #chat-tg{width:38px;height:38px}
+html.mob.bbvo #chat-tg,html.mob.bbvo #vc-mic,html.mob.bbvo #vc-sp{width:38px;height:38px}
 html.mob.bbvo #chat-log{max-height:96px;font-size:.7rem}
 html.mob.bbvo #chat-in{height:32px;font-size:16px!important;padding:0 8px}
 html.mob.bbvo #mt-menu{left:calc(max(8px,env(safe-area-inset-left,0px)) + 46px)!important;right:auto!important;top:max(8px,env(safe-area-inset-top,0px))!important;width:38px!important;height:38px!important;font-size:1.05rem;border-radius:10px}
@@ -1839,7 +1845,8 @@ function draw(){const T=byId(P.avId),g=T&&J[T.id];
   if(S.say&&performance.now()-(S.sayAt||0)>BUBMS)S.say='';
   if(S.say!==lastSay){lastSay=S.say;if(S.say)bubPaint(S.say)}
   bub.visible=!!S.say;{const age=performance.now()-(S.sayAt||0),k=S.say?Math.max(0,Math.min(1,(BUBMS-age)/BUBFADE)):1,e=k*k*(3-2*k);
-    bub.material.opacity=e;bub.scale.set(6.6*(.4+.6*e),4.95*(.4+.6*e),1);bub.position.set(g.position.x,g.position.y+4-1*(1-(.4+.6*e))-1.2375*(.4+.6*e),g.position.z)}}
+    bub.material.opacity=e;bub.scale.set(6.6*(.4+.6*e),4.95*(.4+.6*e),1);bub.position.set(g.position.x,g.position.y+4-1*(1-(.4+.6*e))-1.2375*(.4+.6*e),g.position.z)}
+  try{vcSelfBub(g)}catch(e){}}
 
 /* ===== Parts, welds, rig editor, animator ===== */
 P.parts=P.parts||[];P.models=P.models||[];P.anims=P.anims||{};P.nid=P.nid||1;
@@ -2314,6 +2321,7 @@ function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
     if(q.net&&q.tx!=null&&T){const rg0=RAG['np:'+q.name],rag=rg0&&!rg0.gone&&(rg0.dead||rg0.t<rg0.end+RRISE),g=q.g.position,ag=Math.min(.12,(performance.now()-(q.rT||performance.now()))/1000+1/18),lkx=q.tx+(q.nvx||0)*ag,lky=q.ty+(q.nvy||0)*ag,lkh=q.th+(q.air?(q.nvh||0)*Math.min(ag,.08):0),far=Math.hypot(q.tx-g.x,q.th-g.y,-q.ty-g.z)>6,k=far?1:1-Math.exp(-dt*18);if(!rag){g.x+=((far?q.tx:lkx)-g.x)*k;g.y+=((far?q.th:lkh)-g.y)*k;g.z+=(-(far?q.ty:lky)-g.z)*k}/* ag: look-ahead along their speed, so a moving player is drawn where they probably are now */
       {const W=function(x){return x-2*Math.PI*Math.floor((x+Math.PI)/(2*Math.PI))},a=W((q.td-90)*Math.PI/180);/* wrap every angle to -180..180 so a big or negative direction can never make the model whirl round */if(isFinite(a)){if(!isFinite(q.yaw))q.yaw=a;else q.yaw=W(q.yaw+W(a-q.yaw)*k)}}
       q.tag.position.set(T.pos[0]+g.x,q.top+.75+g.y,T.pos[2]+g.z);
+      try{vcNpBub(q,T)}catch(e){}
       if(q.bub){const age=performance.now()-(q.sayAt||0),on=q.say&&age<BUBMS;q.bub.sp.visible=!!on;
         if(on){const k=Math.max(0,Math.min(1,(BUBMS-age)/BUBFADE)),e=k*k*(3-2*k),z=.4+.6*e;q.bub.sp.material.opacity=e;q.bub.sp.scale.set(6.6*z,4.95*z,1);q.bub.sp.position.set(T.pos[0]+g.x,q.top+2.25-(1-z)-1.2375*z+g.y,T.pos[2]+g.z)}}}
     let po={};
@@ -7103,13 +7111,36 @@ function vcIce(){
       vcIceAt=Date.now()-44*60000;/* the relay could not be reached: use STUN now and try the relay again in a minute */}
     return VC_STUN})();
   return vcIceP}
-const VC={mic:null,on:false,busy:false,out:{},inn:{},mute:false,muted:{},ui:null,ann:0};
+const VC={mic:null,on:false,busy:false,out:{},inn:{},mute:false,muted:{},ann:0,ac:null,meter:null,talk:false,tx:{},sps:[],pop:false};
 function vcPrem(n){return PREMN.has(String(n||'').trim().toLowerCase())}
 function vcLive(){return !!(NET.on&&NET.ch&&(running||playing))}
 function vcSay(t){try{chatSys(t)}catch(e){}}
 function vcSend(to,k,d,r){try{if(NET.ch&&NET.on)NET.ch.send({type:'broadcast',event:'vc',payload:{id:NET.id,n:String(ME.username).slice(0,24),to:to,k:k,d:d,r:r}})}catch(e){}}
-function vcClose(map,id){const e=map[id];if(!e)return;delete map[id];try{e.pc.onicecandidate=e.pc.ontrack=e.pc.onconnectionstatechange=null;e.pc.close()}catch(x){}try{if(e.au){e.au.pause();e.au.srcObject=null}}catch(x){}}
-function vcPeerGone(id){vcClose(VC.out,id);vcClose(VC.inn,id);vcUi()}
+function vcClose(map,id){const e=map[id];if(!e)return;delete map[id];try{e.pc.onicecandidate=e.pc.ontrack=e.pc.onconnectionstatechange=null;e.pc.close()}catch(x){}try{if(e.au){e.au.pause();e.au.srcObject=null}}catch(x){}try{if(e.meter)e.meter.src.disconnect()}catch(x){}}
+function vcPeerGone(id){vcClose(VC.out,id);vcClose(VC.inn,id);const n=NP.find(function(x){return x.net===id});if(n&&n.vcb){vcDrop(n.vcb);n.vcb=null}vcUi()}
+/* loudness meter: tells when a voice is really talking (used for the colour of the bubble and the mic button) */
+function vcMeter(stream){try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;if(!VC.ac)VC.ac=new AC();if(VC.ac.state==='suspended')VC.ac.resume().catch(function(){});
+  const src=VC.ac.createMediaStreamSource(stream),an=VC.ac.createAnalyser();an.fftSize=512;src.connect(an);return {src:src,an:an,buf:new Uint8Array(an.fftSize),last:0,talk:false}}catch(e){return null}}
+function vcLevel(m){if(!m)return false;m.an.getByteTimeDomainData(m.buf);let q=0;for(let i=0;i<m.buf.length;i++){const v=(m.buf[i]-128)/128;q+=v*v}
+  const now=performance.now();if(Math.sqrt(q/m.buf.length)>.02)m.last=now;m.talk=now-m.last<300;return m.talk}
+/* the little chat bubble with a microphone above a player's head: grey = mic on but quiet, green = talking */
+function vcTex(talk){const k=talk?'t':'i';if(VC.tx[k])return VC.tx[k];
+  const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');
+  x.fillStyle=talk?'#22c55e':'#6b7686';x.strokeStyle='#fff';x.lineWidth=5;x.lineJoin='round';
+  x.beginPath();x.moveTo(24,8);x.lineTo(104,8);x.quadraticCurveTo(120,8,120,24);x.lineTo(120,76);x.quadraticCurveTo(120,92,104,92);x.lineTo(76,92);x.lineTo(64,118);x.lineTo(52,92);x.lineTo(24,92);x.quadraticCurveTo(8,92,8,76);x.lineTo(8,24);x.quadraticCurveTo(8,8,24,8);x.closePath();x.fill();x.stroke();
+  x.fillStyle='#fff';x.strokeStyle='#fff';x.lineWidth=5;x.lineCap='round';
+  x.beginPath();x.arc(64,34,9,Math.PI,0);x.lineTo(73,50);x.arc(64,50,9,0,Math.PI);x.closePath();x.fill();
+  x.beginPath();x.arc(64,50,17,.1*Math.PI,.9*Math.PI);x.stroke();x.beginPath();x.moveTo(64,67);x.lineTo(64,75);x.moveTo(54,75);x.lineTo(74,75);x.stroke();
+  const t=new THREE.CanvasTexture(c);t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;VC.tx[k]=t;return t}
+function vcSprite(){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:vcTex(false),transparent:true,depthTest:false}));sp.center.set(.5,0);sp.renderOrder=9;sp.visible=false;scene.add(sp);VC.sps.push(sp);return sp}
+function vcDrop(sp){try{scene.remove(sp);sp.material.dispose()}catch(e){}VC.sps=VC.sps.filter(function(x){return x!==sp})}
+function vcShow(sp,talk,x,y,z){sp.visible=true;const tx=vcTex(talk);if(sp.material.map!==tx){sp.material.map=tx;sp.material.needsUpdate=true}const k=talk?1+.1*Math.sin(performance.now()/90):1;sp.scale.set(1.7*k,1.7*k,1);sp.position.set(x,y,z)}
+function vcNpBub(q,T){const e=q.net?VC.inn[q.net]:null;
+  if(!e||!e.au){if(q.vcb)q.vcb.visible=false;return}
+  if(!q.vcb)q.vcb=vcSprite();const g=q.g.position,chat=q.say&&performance.now()-(q.sayAt||0)<BUBMS;
+  vcShow(q.vcb,!!e.talk,T.pos[0]+g.x,q.top+g.y+(chat?6.4:1.55),T.pos[2]+g.z)}
+function vcSelfBub(g){if(!VC.on){if(VC.self)VC.self.visible=false;return}
+  if(!VC.self)VC.self=vcSprite();vcShow(VC.self,VC.talk,g.position.x,g.position.y+(S.say?8.1:2.95),g.position.z)}
 function vcFlush(e){if(!e.pc)return;const q=e.q.splice(0);q.forEach(function(c){e.pc.addIceCandidate(c).catch(function(){})})}
 async function vcStart(){
   if(VC.on||VC.busy)return;
@@ -7121,12 +7152,12 @@ async function vcStart(){
   catch(e){VC.busy=false;vcSay('Could not use the microphone. Allow it for this site (the lock icon in the address bar) and try again.');return}
   VC.busy=false;
   if(!vcLive()){VC.mic.getTracks().forEach(function(t){t.stop()});VC.mic=null;return}
-  VC.on=true;vcSend('*','on');clearInterval(VC.ann);VC.ann=setInterval(function(){if(VC.on)vcSend('*','on')},5000);vcUi()}
-function vcMicOff(){const was=VC.on;VC.on=false;clearInterval(VC.ann);VC.ann=0;
+  VC.on=true;VC.meter=vcMeter(VC.mic);vcSend('*','on');clearInterval(VC.ann);VC.ann=setInterval(function(){if(VC.on)vcSend('*','on')},5000);vcUi()}
+function vcMicOff(){const was=VC.on;VC.on=false;VC.talk=false;try{if(VC.meter)VC.meter.src.disconnect()}catch(e){}VC.meter=null;if(VC.self)VC.self.visible=false;clearInterval(VC.ann);VC.ann=0;
   if(VC.mic){VC.mic.getTracks().forEach(function(t){t.stop()});VC.mic=null}
   Object.keys(VC.out).forEach(function(id){vcClose(VC.out,id)});
   if(was)vcSend('*','off');vcUi()}
-function vcShutdown(){vcMicOff();Object.keys(VC.inn).forEach(function(id){vcClose(VC.inn,id)});if(VC.ui){VC.ui.remove();VC.ui=null}}
+function vcShutdown(){vcMicOff();Object.keys(VC.inn).forEach(function(id){vcClose(VC.inn,id)});VC.sps.slice().forEach(vcDrop);VC.self=null;try{NP.forEach(function(n){n.vcb=null})}catch(e){}VC.pop=false;vcUi()}
 async function vcOffer(to){
   if(!VC.on||!VC.mic||VC.out[to]||Object.keys(VC.out).length>=24)return;
   const e={pc:null,q:[]};VC.out[to]=e;
@@ -7143,7 +7174,7 @@ async function vcAnswer(from,name,d){
   const ice=await vcIce();if(VC.inn[from]!==e)return;
   const pc=new RTCPeerConnection({iceServers:ice});e.pc=pc;
   pc.onicecandidate=function(ev){if(ev.candidate)vcSend(from,'ice',ev.candidate.toJSON(),'l')};
-  pc.ontrack=function(ev){if(e.au||!ev.streams||!ev.streams[0])return;const au=new Audio();au.autoplay=true;au.srcObject=ev.streams[0];au.muted=VC.mute||!!VC.muted[e.n];e.au=au;au.play().catch(function(){});vcUi()};
+  pc.ontrack=function(ev){if(e.au||!ev.streams||!ev.streams[0])return;const au=new Audio();au.autoplay=true;au.srcObject=ev.streams[0];au.muted=VC.mute||!!VC.muted[e.n];e.au=au;e.meter=vcMeter(ev.streams[0]);au.play().catch(function(){});vcUi()};
   pc.onconnectionstatechange=function(){if(pc.connectionState==='failed'||pc.connectionState==='closed'){vcClose(VC.inn,from);vcUi()}};
   try{await pc.setRemoteDescription({type:'offer',sdp:d.sdp});vcFlush(e);const a=await pc.createAnswer();await pc.setLocalDescription(a);vcSend(from,'answer',{type:a.type,sdp:a.sdp})}catch(x){vcClose(VC.inn,from)}}
 function vcRecv(p){
@@ -7159,23 +7190,34 @@ function vcRecv(p){
     case'ice':{const e=p.r==='s'?VC.inn[p.id]:p.r==='l'?VC.out[p.id]:null;if(!e||!p.d||typeof p.d.candidate!=='string'||p.d.candidate.length>600)break;
       const c={candidate:p.d.candidate,sdpMid:p.d.sdpMid,sdpMLineIndex:p.d.sdpMLineIndex};
       if(e.pc&&e.pc.remoteDescription)e.pc.addIceCandidate(c).catch(function(){});else if(e.q.length<60)e.q.push(c);break}}}
+function vcBtns(){const chat=$('chat'),tg=$('chat-tg');if(!chat||!tg)return null;
+  let row=$('chat-row');if(!row){row=el('div');row.id='chat-row';row.style.cssText='display:flex;gap:4px;align-items:flex-start;pointer-events:none';chat.insertBefore(row,tg);row.append(tg)}
+  if(!$('vc-mic')){const m=el('button');m.id='vc-mic';m.type='button';m.textContent='\u{1F3A4}';m.setAttribute('aria-label','Microphone');m.onclick=function(){if(VC.on)vcMicOff();else vcStart()};
+    const sp=el('button');sp.id='vc-sp';sp.type='button';sp.setAttribute('aria-label','Voice chat sound');sp.onclick=function(){VC.pop=!VC.pop;vcUi()};row.append(m,sp)}
+  return row}
 function vcUi(){
-  if(!vcLive()){if(VC.ui){VC.ui.remove();VC.ui=null}return}
-  if(!VC.ui){const d=el('div');d.id='vc-ui';d.style.cssText='position:fixed;top:46px;right:10px;z-index:9000;display:flex;flex-direction:column;align-items:flex-end;gap:5px;pointer-events:none';
-    VC.bm=vcBtn();VC.bs=vcBtn();VC.bl=el('div');VC.bl.style.cssText='display:flex;flex-direction:column;align-items:flex-end;gap:3px';
-    VC.bm.onclick=function(){if(VC.on)vcMicOff();else vcStart()};
-    VC.bs.onclick=function(){VC.mute=!VC.mute;Object.keys(VC.inn).forEach(function(id){const e=VC.inn[id];if(e.au)e.au.muted=VC.mute||!!VC.muted[e.n]});vcUi()};
-    d.append(VC.bm,VC.bs,VC.bl);document.body.append(d);VC.ui=d}
-  const prem=vcPrem(ME.username);
-  VC.bm.textContent=VC.on?'\u{1F534} Mic on (click to stop)':prem?'\u{1F3A4} Mic off (click to talk)':'\u{1F512} Voice chat: Premium can talk';
-  VC.bm.title=prem?'Everyone in the game can hear you while the mic is on. Shortcut: the ` key.':'Everyone can listen. Only BrixBlox Premium members can talk.';
-  VC.bm.style.background=VC.on?'rgba(200,30,30,.88)':'rgba(20,22,30,.72)';
-  VC.bs.textContent=VC.mute?'\u{1F507} Voice chat muted':'\u{1F50A} Hearing voice chat';
-  VC.bl.replaceChildren();
-  Object.keys(VC.inn).forEach(function(id){const e=VC.inn[id];if(!e.au)return;const b=vcBtn();b.textContent=(VC.muted[e.n]?'\u{1F507} ':'\u{1F5E3} ')+e.n;b.title='Click to '+(VC.muted[e.n]?'unmute ':'mute ')+e.n;
-    b.onclick=function(){VC.muted[e.n]=!VC.muted[e.n];if(e.au)e.au.muted=VC.mute||!!VC.muted[e.n];vcUi()};VC.bl.append(b)})}
-function vcBtn(){const b=el('button');b.type='button';b.style.cssText='pointer-events:auto;border:0;border-radius:999px;padding:6px 11px;font:600 12px sans-serif;color:#fff;background:rgba(20,22,30,.72);cursor:pointer;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';return b}
-setInterval(function(){try{vcUi();if(!vcLive()&&(VC.on||Object.keys(VC.inn).length||Object.keys(VC.out).length))vcShutdown()}catch(e){}},1500);
+  const row=vcLive()?vcBtns():null;
+  if(!row){const m=$('vc-mic'),sp=$('vc-sp'),po=$('vc-pop');if(m)m.remove();if(sp)sp.remove();if(po)po.remove();return}
+  const prem=vcPrem(ME.username),m=$('vc-mic'),sp=$('vc-sp');
+  m.className=(VC.on?(VC.talk?'on talk':'on'):'')+(prem?'':' lock');
+  m.title=VC.on?'Microphone on. Everyone in the game can hear you. Click to turn off (shortcut: the ` key).':prem?'Microphone off. Click to talk to everyone in the game (shortcut: the ` key).':'Everyone can listen to voice chat. Only BrixBlox Premium members can talk.';
+  sp.textContent=VC.mute?'\u{1F507}':'\u{1F50A}';sp.title='Voice chat sound: mute people';
+  let po=$('vc-pop');
+  if(!VC.pop){if(po)po.remove();return}
+  if(!po){po=el('div');po.id='vc-pop';$('chat').append(po)}
+  po.replaceChildren();
+  const all=el('button');all.type='button';all.textContent=VC.mute?'\u{1F507} Voice chat muted (click to hear)':'\u{1F50A} Hearing voice chat (click to mute all)';
+  all.onclick=function(){VC.mute=!VC.mute;Object.keys(VC.inn).forEach(function(id){const e=VC.inn[id];if(e.au)e.au.muted=VC.mute||!!VC.muted[e.n]});vcUi()};po.append(all);
+  let n=0;Object.keys(VC.inn).forEach(function(id){const e=VC.inn[id];if(!e.au)return;n++;const b=el('button');b.type='button';b.textContent=(VC.muted[e.n]?'\u{1F507} ':(e.talk?'\u{1F7E2} ':'\u{1F5E3} '))+e.n+(VC.muted[e.n]?' (muted)':'');b.title='Click to '+(VC.muted[e.n]?'unmute ':'mute ')+e.n;
+    b.onclick=function(){VC.muted[e.n]=!VC.muted[e.n];if(e.au)e.au.muted=VC.mute||!!VC.muted[e.n];vcUi()};po.append(b)});
+  if(!n){const t=el('div');t.textContent='No one has their microphone on.';t.style.cssText='opacity:.75;padding:2px 4px';po.append(t)}}
+/* every 0.12s: who is really talking right now (bubble colour, mic button colour); every 1.5s: tidy up */
+let vcTk=0;
+setInterval(function(){try{
+  if(!vcLive()){if(VC.on||Object.keys(VC.inn).length||Object.keys(VC.out).length)vcShutdown();else vcUi();return}
+  let ch=false;const me=VC.on?vcLevel(VC.meter):false;if(me!==VC.talk){VC.talk=me;ch=true}
+  Object.keys(VC.inn).forEach(function(id){const e=VC.inn[id],t=e.meter?vcLevel(e.meter):false;if(t!==!!e.talk){e.talk=t;if(VC.pop)ch=true}});
+  if(ch||++vcTk%12===0)vcUi()}catch(e){}},120);
 addEventListener('keydown',function(e){if(e.code!=='Backquote'||e.repeat||e.ctrlKey||e.metaKey||e.altKey||!vcLive())return;
   const t=document.activeElement&&document.activeElement.tagName;if(/INPUT|TEXTAREA|SELECT/.test(t))return;e.preventDefault();if(VC.on)vcMicOff();else vcStart()});
 /* Tell everyone in the game we are gone (a 'bye' message plus leaving the presence list), then close the channels.
