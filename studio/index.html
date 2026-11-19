@@ -3465,8 +3465,34 @@ function newRig(){const an=animOn();
   const ST=mkPart('Stabilizer',[x,gy+3,z],[.6,.6,.6],'#9aa4ae');ST.stab=true;
   blockBody(ST,true);
   const mid=ensureRigModel(ST);cleanModels();snapRig(ST);
-  if(an){save();rebuildParts();renderParts();animSelect(ST);$('a-hint').textContent='Added a new character-style rig in front of you. Shift+Y turns it into the blocky rig.';return}
-  sel=partsOf(mid).map(function(q){return q.id});selModel=mid;msg('Added a new character-style rig in front of you. Shift+Y turns it into the blocky rig.');all()}
+  const nDef=rigDefaultAnims(ST),dm=nDef?' It already has the default animations (walk, idle, jump, fall, hold item).':'';
+  if(an){save();rebuildParts();renderParts();animSelect(ST);$('a-hint').textContent='Added a new character-style rig in front of you.'+dm+' Shift+Y turns it into the blocky rig.';return}
+  sel=partsOf(mid).map(function(q){return q.id});selModel=mid;msg('Added a new character-style rig in front of you.'+dm+' Shift+Y turns it into the blocky rig.');all()}
+/* Default animations for a rig you made (walk, idle, jump, fall, hold item, hold item walk, hold item jump), found by part NAME: Head, Rarm, Larm, Rleg, Lleg.
+   An animation that has no keyframes yet is replaced by the default one, so its length is reset to the right value (walk 1s, idle 4s, jump 0.5s, fall 1s, hold item 1s).
+   An animation that already has keyframes keeps its own length and the new rig's keyframes are stretched to fit it, so the new rig never runs out too early. */
+function rigDefaultAnims(ST){
+  const ps=rigParts(ST).filter(function(p){return !p.acc}),by=function(n){const q=ps.find(function(p){return p.name===n});return q&&q.id};
+  const R=by('Rarm'),L=by('Larm'),RL=by('Rleg'),LL=by('Lleg'),H=by('Head');
+  if(!R&&!L&&!RL&&!LL&&!H)return 0;
+  const D={};let k;
+  const add=function(n,len,type){D[n]={len:len,keys:{}};if(type)D[n].type=type;return D[n].keys};
+  const ks=function(m){return [[0,0],[.25,35],[.5,0],[.75,-35],[1,0]].map(function(q){return {t:q[0],r:[q[1]*m,0,0]}})};
+  k=add('walk',1);if(R)k[R]=ks(1);if(L)k[L]=ks(-1);if(RL)k[RL]=ks(-1);if(LL)k[LL]=ks(1);
+  k=add('idle',4);const idl=function(id,f){if(id)k[id]=f.map(function(r,i){return {t:i,r:r}})};
+  idl(H,[[0,0,0],[2,9,0],[0,0,0],[2,-9,0],[0,0,0]]);idl(R,[[0,0,2],[4,0,6],[0,0,2],[-4,0,6],[0,0,2]]);idl(L,[[0,0,-2],[-4,0,-6],[0,0,-2],[4,0,-6],[0,0,-2]]);
+  k=add('jump',.5);const j3=function(id,a,b,c){if(id)k[id]=[{t:0,r:[a,0,0]},{t:.25,r:[b,0,0]},{t:.5,r:[c,0,0]}]};j3(R,0,150,40);j3(L,0,150,40);j3(RL,0,25,-10);j3(LL,0,-25,10);
+  k=add('fall',1,'other');const f3=function(id,a,b){if(id)k[id]=[{t:0,r:[a,0,0]},{t:.5,r:[b,0,0]},{t:1,r:[a,0,0]}]};f3(R,150,168);f3(L,150,168);f3(RL,18,28);f3(LL,-18,-28);
+  if(R){k=add('hold item',1,'other');k[R]=[{t:0,r:[80,0,0]},{t:1,r:[80,0,0]}];
+    const hv=function(src,dst,type){const c=JSON.parse(JSON.stringify(D[src]));c.type=type;c.keys[R]=[{t:0,r:[80,0,0]},{t:c.len,r:[80,0,0]}];D[dst]=c};
+    hv('walk','hold item walk','walk');hv('jump','hold item jump','other')}
+  let n=0;
+  Object.keys(D).forEach(function(name){const d=D[name],ex=P.anims[name];
+    const has=!!ex&&Object.keys(ex.keys||{}).some(function(id){return (ex.keys[id]||[]).length});
+    if(!has){P.anims[name]=d;n++;return}
+    const sc=(ex.len||1)/d.len;ex.keys=ex.keys||{};
+    Object.keys(d.keys).forEach(function(id){ex.keys[id]=d.keys[id].map(function(f){return {t:Math.round(f.t*sc*1000)/1000,r:f.r}})});n++});
+  save();return n}
 /* The standard block character: red torso, head, two arms, two legs, all welded under the Stabilizer ST (centered on the torso) */
 function blockBody(ST,smooth){const x=ST.pos[0],y=ST.pos[1],z=ST.pos[2];
   const T=mkPart('Torso',[x,y,z],[1.6,2,.8],'#ff6b57');T.parent=ST.id;T.pivot=defPivot(T);if(smooth)T.sm=true;
