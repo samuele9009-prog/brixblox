@@ -1529,7 +1529,7 @@ async function playGame2(g,srv){const d=await gameData(g);if(!d){bbLoadHide(true
 function openPlayer(){if($('pl-frame'))return;const f=document.createElement('iframe');f.id='pl-frame';
   /* The game is handed to the player two ways: browser storage, and the frame's own name. The second one still arrives when storage is full or blocked (big games, school computers). Before, a missed handoff made the player open the Studio instead of the game. */
   try{const pl=store.get('brixblox-play');if(pl)f.name=JSON.stringify({'bb:brixblox-play':pl})}catch(e){}
-  f.src=STUDIO_URL+'?player=1';f.setAttribute('allow','fullscreen; autoplay');f.onload=function(){bbLoadHide();store.del('brixblox-play')};f.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:60;background:#111';document.body.append(f)}
+  f.src=STUDIO_URL+'?player=1';f.setAttribute('allow','fullscreen; autoplay; microphone');f.onload=function(){bbLoadHide();store.del('brixblox-play')};f.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:60;background:#111';document.body.append(f)}
 function closePlayer(){bbLoadHide(true);const f=$('pl-frame');if(f)f.remove();lockEnd();try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}kbLockTop();const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}if(me){loadBank();loadGames()}}
 
 /* ===== 5d. Billboards: events shown at the top of Home for everyone. Only the brixblox account makes them. ===== */
