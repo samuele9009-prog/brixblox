@@ -2316,6 +2316,16 @@ function spawnPlayer(name,S){const T=byId(P.avId),av=P.parts.filter(function(p){
   let top=0;av.forEach(function(p){top=Math.max(top,p.pos[1]+p.size[1]/2)});tag.position.set(T.pos[0]+dx,top+1.3,T.pos[2]);scene.add(tag);
   NP.push({g:grp,tag:tag,JJ:JJ,MM:MM,t:n*.7,dx:dx,name:nm,top:top});S.oth.push(nm);log(nm+' joined the game');firePJ('pjoin',nm);renderParts();gmPlRefresh()}
 function npAnim(n){return(typeof n==='string'&&n&&Object.prototype.hasOwnProperty.call(P.anims,n))?P.anims[n]:null}
+/* Other players wear their own animation pack. Their game sends the pack's id, this loads the published pack once and plays its walk / idle / jump / fall / hold animations on them.
+   A game that animates the walk itself keeps its own animations for everyone (same rule as for your own character). */
+const NPK={};let NPKL=null,NPKLat=0,NPOFF=false,NPOFFT=-9e9;
+function npPkOff(){const n=performance.now();if(n-NPOFFT>1000){NPOFFT=n;try{NPOFF=pkOff()}catch(e){NPOFF=false}}return NPOFF}
+function npPkLoad(id){if(NPK[id])return;const c=NPK[id]={o:null,at:Date.now()};
+  if(!NPKL||Date.now()-NPKLat>60000){NPKLat=Date.now();NPKL=pkList()}
+  Promise.resolve(NPKL).then(function(list){const p=(list||[]).find(function(x){return x.id===id});
+    if(!p||p.removed||!p.pub){c.o={};return}
+    const o={};Object.keys(p.anims||{}).forEach(function(sl){if(PK_ORDER.indexOf(sl)<0)return;const a=pkImport(p.anims[sl]);if(Object.keys(a.keys).length)o[sl]=a});c.o=o}).catch(function(){delete NPK[id]})}
+function npPk(q,slot){if(!q.pk||npPkOff())return null;const c=NPK[q.pk];if(!c){npPkLoad(q.pk);return null}return c.o&&c.o[slot]||null}
 function npTick(dt){if(!NP.length)return;const T=byId(P.avId);
   NP.forEach(function(q){q.t+=dt;
     if(q.net&&q.tx!=null&&T){const rg0=RAG['np:'+q.name],rag=rg0&&!rg0.gone&&(rg0.dead||rg0.t<rg0.end+RRISE),g=q.g.position,ag=Math.min(.12,(performance.now()-(q.rT||performance.now()))/1000+1/18),lkx=q.tx+(q.nvx||0)*ag,lky=q.ty+(q.nvy||0)*ag,lkh=q.th+(q.air?(q.nvh||0)*Math.min(ag,.08):0),far=Math.hypot(q.tx-g.x,q.th-g.y,-q.ty-g.z)>6,k=far?1:1-Math.exp(-dt*18);if(!rag){g.x+=((far?q.tx:lkx)-g.x)*k;g.y+=((far?q.th:lkh)-g.y)*k;g.z+=(-(far?q.ty:lky)-g.z)*k}/* ag: look-ahead along their speed, so a moving player is drawn where they probably are now */
@@ -3285,8 +3295,8 @@ function pkManager(){
   $('a-sel').addEventListener('contextmenu',function(e){if(amAdmin())pkMenu(e)});
   const tl=$('s-anim');tl.addEventListener('contextmenu',function(e){/* right-click on the animation name bar */if(e.target.closest&&e.target.closest('.an-top')&&!e.target.closest('input,button')&&amAdmin())pkMenu(e)})}
 /* ----- wearing a pack in a game ----- */
-let PKS=0,PKA=null,PKID='';const PKC={};/* PKC: packs of OTHER players, by pack id, so they can be drawn on this screen too */
-function pkReset(){PKS=0;PKA=null;PKID='';Object.keys(PKC).forEach(function(k){delete PKC[k]})}
+let PKS=0,PKA=null,PKID='';
+function pkReset(){PKS=0;PKA=null;PKID=''}
 /* A game that animates the walk itself (an edited walk animation, or a script that sets the player's walk) keeps its own animations: packs never replace them. */
 function ownWalk(){try{
   if(JSON.stringify(P.scripts||[]).indexOf('"t":"walkanim"')>=0)return true;
@@ -3310,11 +3320,6 @@ async function pkLoad(){PKS=1;PKA=null;
     if(!owned||(!p.pub&&!(ME&&p.owner===ME.username.toLowerCase()))){PKS=2;return}
     const o={};Object.keys(p.anims||{}).forEach(function(sl){const a=pkImport(p.anims[sl]);if(Object.keys(a.keys).length)o[sl]=a});PKA=o;PKID=id}catch(e){PKA=null;PKID=''}
   PKS=2}
-/* Another player's pack: fetched once by id, then cached. Only packs that are public (or made by that player) and not removed are used. */
-function npPkLoad(id,who){if(!/^sys_anp_[a-z0-9]{1,16}$/.test(id)||PKC[id]!==undefined)return;PKC[id]=null;
-  pkFetch(id).then(function(p){if(!p||p.removed||(!p.pub&&!(p.owner&&p.owner===String(who||'').toLowerCase()))){PKC[id]=false;return}
-    const o={};Object.keys(p.anims||{}).forEach(function(sl){const a=pkImport(p.anims[sl]);if(Object.keys(a.keys).length)o[sl]=a});PKC[id]=o}).catch(function(){delete PKC[id]})}
-function npPk(q,slot){if(!q.ap||pkOff())return null;const c=PKC[q.ap];if(c===undefined)npPkLoad(q.ap,q.un||q.name);return (c&&c[slot])||null}
 function pkGet(slot,custom){/* a script that sets the player's animation (set player walk to...) still wins */
   if(custom)return P.anims[custom];
   if(pkOff())return P.anims[slot];
@@ -4378,9 +4383,14 @@ function simInit(key,T,e){
   const ord=T.parts.slice().sort(function(a,b){return dep(a)-dep(b)}),idx=new Map(),B=[];
   const org0=[g.position.x+off.x,g.position.y+off.y,g.position.z+off.z];
   ord.forEach(function(p,i){idx.set(p.id,i);const par=p.parent&&idx.has(p.parent)?idx.get(p.parent):-1,pv=piv(p),pb=par>=0?B[par]:null;
-    const c=[p.pos[0]-pv[0],p.pos[1]-pv[1],p.pos[2]-pv[2]],org=pb?(function(){const d=qR(q0,[pv[0]-pb.pv[0],pv[1]-pb.pv[1],pv[2]-pb.pv[2]]);return [pb.org[0]+d[0],pb.org[1]+d[1],pb.org[2]+d[2]]})():org0;
-    const cm=qR(q0,c),sz=p.size,nm=p.name||'',m=Math.max(.2,sz[0]*sz[1]*sz[2]*.5)*(/arm$/i.test(nm)?.35:1);
-    B.push({p:p,par:par,pv:pv,org:org,x:[org[0]+cm[0],org[1]+cm[1],org[2]+cm[2]],q:q0.slice(),xp:null,qp:null,v:[0,0,0],w:[0,0,0],im:1/m,
+    /* the limb starts in the pose it has this very moment (walk, idle, a worn animation pack...), not in the default stand, so the ragdoll never pops from the pack pose into a different pose */
+    let qw=q0.slice();{const gj=pb?T.gs[p.id]:null;if(gj&&gj.quaternion){let ql=[gj.quaternion.x,gj.quaternion.y,gj.quaternion.z,gj.quaternion.w];
+      const lm=/arm$/i.test(p.name||'')?1.5:/leg$/i.test(p.name||'')?1.7:(p.name||'')==='Head'?1.1:(p.name||'')==='Torso'?.35:1.9,ang=2*Math.acos(Math.max(-1,Math.min(1,Math.abs(ql[3]))));
+      if(ang>lm*.9)ql=qS([0,0,0,1],ql,lm*.9/ang);/* never start outside the joint's limit */
+      qw=qm(pb.q,ql)}}
+    const c=[p.pos[0]-pv[0],p.pos[1]-pv[1],p.pos[2]-pv[2]],org=pb?(function(){const d=qR(pb.q,[pv[0]-pb.pv[0],pv[1]-pb.pv[1],pv[2]-pb.pv[2]]);return [pb.org[0]+d[0],pb.org[1]+d[1],pb.org[2]+d[2]]})():org0;
+    const cm=qR(qw,c),sz=p.size,nm=p.name||'',m=Math.max(.2,sz[0]*sz[1]*sz[2]*.5)*(/arm$/i.test(nm)?.35:1);
+    B.push({p:p,par:par,pv:pv,org:org,x:[org[0]+cm[0],org[1]+cm[1],org[2]+cm[2]],q:qw,xp:null,qp:null,v:[0,0,0],w:[0,0,0],im:1/m,
       ii:[12/(m*(sz[1]*sz[1]+sz[2]*sz[2])),12/(m*(sz[0]*sz[0]+sz[2]*sz[2])),12/(m*(sz[0]*sz[0]+sz[1]*sz[1]))],
       c:c,hs:[sz[0]/2,sz[1]/2,sz[2]/2],a1:pb?[pv[0]-pb.p.pos[0],pv[1]-pb.p.pos[1],pv[2]-pb.p.pos[2]]:null,a2:[-c[0],-c[1],-c[2]],
       lim:/arm$/i.test(nm)?1.5:/leg$/i.test(nm)?1.7:nm==='Head'?1.1:nm==='Torso'?.35:1.9,sp:/arm$/i.test(nm)?qE((Math.random()-.5)*.9,0,(/^R/.test(nm)?1:-1)*(.55+Math.random()*.85)):null,fl:-1e9,hit:false})});
@@ -4467,11 +4477,14 @@ function simPose(key,T,e,u,arm){const sm=e.sim,B=sm.bodies,st=u<1?simStand(sm,ar
   B.forEach(function(b){const g=T.gs[b.p.id];if(!g)return;
     if(b.par<0){const o=[b.x[0],b.x[1],b.x[2]],pos=st?[st[0]+(o[0]-st[0])*u,st[1]+(o[1]-st[1])*u,st[2]+(o[2]-st[2])*u]:o,qq=qS(sm.q0,b.q,u);
       g.position.set(pos[0]-sm.off[0],pos[1]-sm.off[1],pos[2]-sm.off[2]);g.quaternion.set(qq[0],qq[1],qq[2],qq[3])}
-    else{const l=qS([0,0,0,1],qm(qc(B[b.par].q),b.q),u);g.quaternion.set(l[0],l[1],l[2],l[3])}});
+    else{/* while getting up, your own character eases into the pose its animation (or worn pack) is in right now; play() has just set it */
+      const ta=(u<1&&key==='main')?[g.quaternion.x,g.quaternion.y,g.quaternion.z,g.quaternion.w]:[0,0,0,1];
+      const l=qS(ta,qm(qc(B[b.par].q),b.q),u);g.quaternion.set(l[0],l[1],l[2],l[3])}});
   if(key==='main'){const r=T.root,o=[rb.x[0]+(st?(st[0]-rb.x[0])*(1-u):0),rb.x[1]+(st?(st[1]-rb.x[1])*(1-u):0),rb.x[2]+(st?(st[2]-rb.x[2])*(1-u):0)];
     S.x=o[0]-r.pos[0];S.y=r.pos[2]-o[2];S.h=o[1]-r.pos[1];S.vy=0;S.pvx=S.pvz=0;S.ix=S.iy=0}}
 function simFinish(key,T,e,arm){const sm=e.sim,st=simStand(sm,arm),r=T.root,g=T.g;
-  limbsRest(T,r);g.rotation.set(sm.rt[0],sm.rt[1],sm.rt[2]);
+  if(key!=='main')limbsRest(T,r);/* your own limbs already hold this frame's animation pose: resetting them showed the default stand for one frame */
+ g.rotation.set(sm.rt[0],sm.rt[1],sm.rt[2]);
   if(key==='main'){S.x=st[0]-r.pos[0];S.y=r.pos[2]-st[2];S.h=st[1]-r.pos[1];S.vy=0;S.gr=false;S.fp=null;S.pvx=S.pvz=0;S.ix=S.iy=0;S.ch=S.h;g.position.set(st[0],st[1],st[2])}
   else if(key.slice(0,4)==='rig:'){RO[r.id]=[st[0]-r.pos[0],st[2]-r.pos[2]];RY[r.id]=st[1]-r.pos[1];delete RV[r.id];g.position.set(st[0],st[1],st[2])}
   else{const n=T.np,q=n.g.position;q.set(st[0]-r.pos[0],st[1]-r.pos[1],st[2]-r.pos[2]);g.position.set(r.pos[0],r.pos[1],r.pos[2]);n.vy=0;n.tp=true;npTag(n)}}
@@ -7360,7 +7373,7 @@ function netRecv(q){if(!q||!q.id||q.id===NET.id||!NET.on||!(running||playing))re
     e.sT=sT;e.rT=nR}
   e.tx=q.x;e.ty=q.y;e.th=q.h;if(!q.m){e.nvx=e.nvy=0}e.td=(q.d!=null&&isFinite(+q.d))?+q.d:(e.td||0);e.mv=q.m;e.seen=performance.now();
   const nm=function(v){return typeof v==='string'?v.slice(0,40):''};
-  e.un=String(q.n||e.name).slice(0,24);{const hi=typeof q.hi==='string'?q.hi.slice(0,40):'';if(hi!==(e.hi||'')){e.hi=hi;netItem(e)}}e.air=!!q.g;e.wa=nm(q.wa);e.ia=nm(q.ia);e.ja=nm(q.ja);e.fa=nm(q.fa);e.ha=nm(q.ha);e.hw=nm(q.hw);{const ap=nm(q.ap);if(ap!==(e.ap||''))e.ap=ap}
+  e.un=String(q.n||e.name).slice(0,24);{const hi=typeof q.hi==='string'?q.hi.slice(0,40):'';if(hi!==(e.hi||'')){e.hi=hi;netItem(e)}}e.air=!!q.g;e.wa=nm(q.wa);e.ia=nm(q.ia);e.ja=nm(q.ja);e.fa=nm(q.fa);e.ha=nm(q.ha);e.hw=nm(q.hw);e.pk=(typeof q.pk==='string'&&/^sys_anp_[a-z0-9]{1,16}$/.test(q.pk))?q.pk:'';
   {const sr=nm(q.sr);if(sr!==(e.srN||'')){e.srN=sr;const k='np:'+e.name;if(!sr)skinClear(k);else{const rr=skinFind(sr);if(rr)skinSet(k,rr.id,sr);else e.srN=''}}}
   {const es=typeof q.e==='string'?q.e.slice(0,320):'';if(es!==e.eqs){e.eqs=es;try{netEq(e,es)}catch(x){}}}
   e.rc=q.rc;if(typeof q.hp==='number'&&isFinite(q.hp))HPM['np:'+e.name]=Math.max(0,Math.min(MAXHP,q.hp));if(q.rg&&typeof q.rg==='object'){const t={};Object.keys(q.rg).forEach(function(id){const a=q.rg[id];if(e.JJ[id]&&Array.isArray(a)&&a.length===4&&a.every(Number.isFinite))t[id]=a});e.rgT=t;e.rgAt=performance.now()}/* they were ragdolled: show it on this screen too (never as a kill, they respawn on their own screen) */
@@ -7389,7 +7402,7 @@ function netDrop(id){try{vcPeerGone(id)}catch(e){}const i=NP.findIndex(function(
   NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);/* remove them first, so nothing below can stop it */
   chatSys(n.name+' left the game');npFree(n);delete RAG['np:'+n.name];delete RSZ['np:'+n.name];delete SKIN['np:'+n.name];try{renderParts()}catch(e){}gmPlRefresh();firePJ('pleave',n.name)}
 setInterval(function(){if(!NET.on||!(running||playing))return;
-  const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',fa:S.fallA||'',ha:S.holdA||'',hw:S.holdWA||'',ap:(PKS===2&&PKA&&!pkOff())?PKID:'',an:NANIM.n,ac:NANIM.c,rc:NRAG.c,hp:Math.round(hpGet('main')),hi:S.heldItem||'',sr:(SKIN.main&&SKIN.main.name)||'',T:Math.round(performance.now()),e:accStr(Object.assign({},(ME&&ME.av&&ME.av.eq)||{},S.xeq||{}))},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.fa,q.ha,q.hw,q.ap,q.an,q.ac,q.rc,q.e,q.hi,q.sr].join()+(rgo?JSON.stringify(rgo):'');
+  const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',fa:S.fallA||'',ha:S.holdA||'',hw:S.holdWA||'',pk:(PKS===2&&PKA&&PKID&&!pkOff()?PKID:''),an:NANIM.n,ac:NANIM.c,rc:NRAG.c,hp:Math.round(hpGet('main')),hi:S.heldItem||'',sr:(SKIN.main&&SKIN.main.name)||'',T:Math.round(performance.now()),e:accStr(Object.assign({},(ME&&ME.av&&ME.av.eq)||{},S.xeq||{}))},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.fa,q.ha,q.hw,q.pk,q.an,q.ac,q.rc,q.e,q.hi,q.sr].join()+(rgo?JSON.stringify(rgo):'');
   const nowT=performance.now();if(j===NET.last&&nowT-(NET.lt||0)<1500)return;NET.last=j;NET.idle=0;NET.lt=nowT;NET.ch.send({type:'broadcast',event:'p',payload:q})},66);
 /* Ghost sweep, runs on every player's own game (so it works even if the player who left has an old version):
    the server's list of who is online is the truth. Someone who is not on it and has gone quiet is removed. */
