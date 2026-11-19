@@ -1526,7 +1526,10 @@ async function playGame2(g,srv){const d=await gameData(g);if(!d){bbLoadHide(true
   try{const k='brixblox-bump:'+g.id,n=Date.now();if(n-(+store.get(k)||0)>3e5){store.set(k,String(n));Promise.resolve(api.bumpPlay(g.id)).catch(function(){})}}catch(e){}/* counts toward Frequently played, once per 5 minutes per game on this device */
   store.set('brixblox-play',JSON.stringify({id:g.id,data:d,owner:g.ownerName,ownerId:g.ownerId,name:g.name,srv:(typeof srv==='string'&&srv)||'auto'}));try{sessionStorage.setItem('bb-thumb',g.thumb||'')}catch(e){}openPlayer()}
 /* Games run right here on BrixBlox in a full-screen player (no Studio buttons). The Studio only saves the game. */
-function openPlayer(){if($('pl-frame'))return;const f=document.createElement('iframe');f.id='pl-frame';f.src=STUDIO_URL+'?player=1';f.setAttribute('allow','fullscreen; autoplay');f.onload=function(){bbLoadHide()};f.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:60;background:#111';document.body.append(f)}
+function openPlayer(){if($('pl-frame'))return;const f=document.createElement('iframe');f.id='pl-frame';
+  /* The game is handed to the player two ways: browser storage, and the frame's own name. The second one still arrives when storage is full or blocked (big games, school computers). Before, a missed handoff made the player open the Studio instead of the game. */
+  try{const pl=store.get('brixblox-play');if(pl)f.name=JSON.stringify({'bb:brixblox-play':pl})}catch(e){}
+  f.src=STUDIO_URL+'?player=1';f.setAttribute('allow','fullscreen; autoplay');f.onload=function(){bbLoadHide();store.del('brixblox-play')};f.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:60;background:#111';document.body.append(f)}
 function closePlayer(){bbLoadHide(true);const f=$('pl-frame');if(f)f.remove();lockEnd();try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}kbLockTop();const nt=store.get('brixblox-notice');if(nt){store.del('brixblox-notice');toast(nt)}if(me){loadBank();loadGames()}}
 
 /* ===== 5d. Billboards: events shown at the top of Home for everyone. Only the brixblox account makes them. ===== */
@@ -1850,7 +1853,7 @@ function kbLockTop(){try{const k=navigator.keyboard,inGame=!!(joining||$('pl-fra
   else if(k&&k.unlock)k.unlock()}catch(e){}}
 document.addEventListener('fullscreenchange',kbLockTop);
 addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.code==='KeyW'&&(joining||$('pl-frame'))){e.preventDefault();e.stopPropagation()}},true);
-addEventListener('message',function(e){if(e.origin!==location.origin||!e.data)return;if(e.data.bb==='leave')closePlayer();else if(e.data.bb==='ready')bbLoadHide()});
+addEventListener('message',function(e){if(e.origin!==location.origin||!e.data)return;if(e.data.bb==='leave'){closePlayer();if(e.data.msg)toast(String(e.data.msg))}else if(e.data.bb==='ready')bbLoadHide()});
 async function editGame(g){const L=localGames();
   if(!L[g.id]){const d=await gameData(g);if(!d){toast('Could not load that game.');return}
     L[g.id]={id:g.id,name:g.name,vis:g.vis,at:Date.now(),owner:{id:me.id,name:me.username},data:d};store.set(GKEY,JSON.stringify(L))}
@@ -2345,6 +2348,7 @@ function pkRun(){if(PKP.raf)return;
     PKP.raf=requestAnimationFrame(step);const dt=Math.min(.1,(now-PKP.t)/1000);if(dt<.032)return;PKP.t=now;
     PKP.list=PKP.list.filter(function(e){return e.c.isConnected});PKP.list.forEach(function(e){e.t+=dt;pkDraw(e)})};
   PKP.raf=requestAnimationFrame(step)}
+function packTwin(p){const f=function(q){const w=q&&q.anims&&q.anims.walk;return w?JSON.stringify([w.len||1,w.keys||{}]):null},h=f(p);if(!h)return null;return PACKS.find(function(q){return q.id!==p.id&&f(q)===h})||null}
 function packCard(p,inCat){
   const owned=packOwned(p),worn=me.av.anim===p.id,d=mkx('div','item'+(worn?' eq':'')+(p.sale===false?' off':'')),sw=mkx('div','sw'),bar=pkPreview(sw,p,false);
   const n=mkx('b','',p.name),pr=mkx('div','pr');pr.innerHTML=owned?'Owned':'<i></i>'+(p.price>0?p.price:'Free');
@@ -2352,7 +2356,9 @@ function packCard(p,inCat){
   const ds=mkx('p','hint',packNames(p));ds.style.cssText='margin:2px 0 6px;font-size:.75rem';
   const row=mkx('div','row');function btn(t,f,ghost,par){const b=mkx('button','btn small'+(ghost?' ghost':''),t);b.type='button';b.onclick=f;(par||row).append(b);return b}
   if(owned)btn(worn?'Remove':'Equip',function(){packEquip(p)});else if(p.pub&&p.sale!==false)btn('Buy',function(){packBuy(p)});
-  d.append(sw,n,pr,ds,row);d.tabIndex=0;d.setAttribute('role','link');d.setAttribute('aria-label',p.name);
+  d.append(sw,n,pr,ds);
+  {const tw=isAdm()?packTwin(p):null;if(tw){const wn=mkx('p','hint','\u26A0 Its walk animation is exactly the same as in "'+tw.name+'". Upload a different animation to it in Studio (Animation Packs).');wn.style.cssText='color:#b45309;font-size:.75rem;margin:0 0 6px';d.append(wn)}}
+  d.append(row);d.tabIndex=0;d.setAttribute('role','link');d.setAttribute('aria-label',p.name);
   sw.style.cursor=n.style.cursor='pointer';sw.onclick=n.onclick=function(){openPack(p.id)};
   row.addEventListener('click',function(e){e.stopPropagation()});
   if(inCat===2&&isAdm()&&(packMine(p)||isBB())){const r2=mkx('div','row');
