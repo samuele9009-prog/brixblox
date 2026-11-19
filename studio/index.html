@@ -3122,28 +3122,127 @@ async function pkSave(p){
 function pkBodyParts(){return P.parts.filter(function(p){return p.av&&!p.acc})}
 /* the current animation, saved by body part NAME so it fits any game's character */
 function pkExport(name){const A=P.anims[name];if(!A)return null;const byId={};pkBodyParts().forEach(function(p){byId[p.id]=p.name});
-  const o={len:A.len||1,type:A.type||'other',gs:A.gs,keys:{}};Object.keys(A.keys||{}).forEach(function(id){const nm=byId[id.replace(/^p:/,'')];if(!nm)return;o.keys[(id.indexOf('p:')===0?'p:':'')+nm]=JSON.parse(JSON.stringify(A.keys[id]))});return o}
+  const o={len:A.len||1,type:A.type||'other',gs:A.gs,src:name,at:Date.now(),keys:{}};Object.keys(A.keys||{}).forEach(function(id){const nm=byId[id.replace(/^p:/,'')];if(!nm)return;o.keys[(id.indexOf('p:')===0?'p:':'')+nm]=JSON.parse(JSON.stringify(A.keys[id]))});return o}
 function pkImport(a){const byName={};pkBodyParts().forEach(function(p){byName[p.name]=p.id});
   const o={len:a.len||1,type:a.type||'other',gs:a.gs,keys:{}};Object.keys(a.keys||{}).forEach(function(k){const pre=k.indexOf('p:')===0?'p:':'',id=byName[k.slice(pre.length)];if(id)o.keys[pre+id]=JSON.parse(JSON.stringify(a.keys[k]))});return o}
-function pkAdd(pack,animName){
-  const put=function(slot){const ex=pkExport(animName);if(!ex||!Object.keys(ex.keys).length){say2('That animation has no keyframes on the character yet.');return}
-    pack.anims=pack.anims||{};pack.anims[slot]=ex;pkSave(pack).then(function(){say2('Added "'+animName+'" to the animation pack "'+pack.name+'" as its '+slot+' animation. Publish it on the BrixBlox website (Inventory > Animations).')}).catch(function(e){say2('Could not save the pack: '+String((e&&e.message)||e))})};
+/* ---- Safe saving. Every upload re-reads the NEWEST copy of the pack from the database, changes only the slots you picked, saves, then reads it back
+   to check it really stuck. (Before, an old copy of a pack could overwrite a newer one, which is how two packs ended up the same or lost animations.) ---- */
+function pkRow(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,owner:d.owner||'',price:d.price||0,descr:d.descr||'',pub:!!d.pub,sale:d.sale!==false,removed:!!d.removed,anims:d.anims||{}}}
+async function pkFetch(id){
+  if(sb){const r=await sb.from('games').select('id,name,data').eq('id',id).maybeSingle();if(r.error)throw r.error;return r.data?pkRow(r.data):null}
+  let a=[];try{a=JSON.parse(store.get('brixblox-packs'))||[]}catch(e){}return a.find(function(x){return x.id===id})||null}
+function pkSig(p){return String(p.name)+'|'+Object.keys(p.anims||{}).sort().map(function(sl){const a=p.anims[sl]||{};return sl+':'+(a.len||1)+':'+Object.keys(a.keys||{}).sort().map(function(k){return k+'='+(a.keys[k]||[]).length}).join(',')}).join(';')}
+async function pkPatch(id,fn){
+  const cur=await pkFetch(id);if(!cur)throw new Error('That pack does not exist any more.');
+  if(cur.owner&&ME&&cur.owner!==ME.username.toLowerCase())throw new Error('That pack belongs to '+cur.owner+'.');
+  const f=JSON.parse(JSON.stringify(cur));f.anims=f.anims||{};fn(f);
+  await pkSave(f);
+  const back=await pkFetch(id);
+  if(!back||pkSig(back)!==pkSig(f))throw new Error('The database did not keep the change. Check that you are still logged in, then try again.');
+  return back}
+function pkMine(list){const me=ME.username.toLowerCase();return list.filter(function(p){return p.owner===me})}
+function pkNewId(){return 'sys_anp_'+Date.now().toString(36)+Math.floor(Math.random()*46656).toString(36)}
+async function pkCreate(name){
+  const p={id:pkNewId(),name:String(name).trim().slice(0,24),owner:ME.username.toLowerCase(),price:0,descr:'',pub:false,sale:true,anims:{}};
+  await pkSave(p);const back=await pkFetch(p.id);if(!back)throw new Error('The new pack did not save.');return back}
+function pkGuessSlot(n){const low=String(n).toLowerCase().trim();if(PK_ORDER.indexOf(low)>=0)return low;const A=P.anims[n];if(A&&A.type==='walk')return 'walk';if(/idle|stand/i.test(n))return 'idle';if(/jump/i.test(n))return 'jump';if(/fall/i.test(n))return 'fall';if(/walk|run/i.test(n))return 'walk';return 'walk'}
+/* upload one or many [animationName, slot] pairs into one pack in a single safe save */
+async function pkUpload(packId,pairs){
+  const put={},skipped=[];
+  pairs.forEach(function(q){const ex=pkExport(q[0]);if(!ex||!Object.keys(ex.keys).length){skipped.push(q[0]);return}put[q[1]]=ex});
+  if(!Object.keys(put).length)throw new Error('Nothing to upload: '+(skipped.join(', ')||'no animations')+' has no keyframes on the character yet.');
+  const b=await pkPatch(packId,function(f){Object.keys(put).forEach(function(sl){f.anims[sl]=put[sl]})});
+  return {pack:b,slots:Object.keys(put),skipped:skipped}}
+function pkAdd(pack,animName,slotIn){
+  const go=function(slot){say2('Uploading "'+animName+'"...');
+    pkUpload(pack.id,[[animName,slot]]).then(function(r){pack.anims=r.pack.anims;say2('Uploaded "'+animName+'" to "'+r.pack.name+'" as its '+slot+' animation. Saved and checked.')}).catch(function(e){say2('Could not upload: '+String((e&&e.message)||e))})};
+  if(slotIn){go(slotIn);return}
   const low=String(animName).toLowerCase().trim();
-  if(PK_ORDER.indexOf(low)>=0){put(low);return}
+  if(PK_ORDER.indexOf(low)>=0){go(low);return}
   mdl('Which animation does "'+animName+'" replace?',function(c,close){c.append(el('p','','Pick the part of the player animation this one takes over.'));
-    const r=el('div','tb');PK_ORDER.forEach(function(sl){r.append(mb(sl,'ghost',function(){close();put(sl)}))});r.style.flexWrap='wrap';c.append(r,mb('Cancel','ghost',close))})}
+    const r=el('div','tb');PK_ORDER.forEach(function(sl){r.append(mb(sl,'ghost',function(){close();go(sl)}))});r.style.flexWrap='wrap';c.append(r,mb('Cancel','ghost',close))})}
 function say2(t){const h=$('a-hint');if(h)h.textContent=t;try{if(typeof toast==='function')toast(t)}catch(e){}}
 function pkNewDlg(animName){mdl('New animation pack',function(c,close){const i=el('input');i.placeholder='Name';i.maxLength=24;i.style.cssText='padding:8px;border-radius:8px;border:1px solid var(--line)';
-  const go=function(){const nm=i.value.trim().slice(0,24);if(!nm)return;close();pkAdd({id:'sys_anp_'+Date.now().toString(36)+Math.floor(Math.random()*1e3).toString(36),name:nm,owner:ME.username.toLowerCase(),price:0,descr:'',pub:false,sale:true,anims:{}},animName)};
+  const go=async function(){const nm=i.value.trim().slice(0,24);if(!nm)return;close();try{const p=await pkCreate(nm);pkAdd(p,animName)}catch(e){say2('Could not create the pack: '+String((e&&e.message)||e))}};
   i.onkeydown=function(e){if(e.key==='Enter')go()};c.append(i,mb('Create and add','',go),mb('Cancel','ghost',close));setTimeout(function(){i.focus()},30)})}
 async function pkMenu(e){e.preventDefault();
   if(!amAdmin()){say2('Only admins can make animation packs.');return}
   const nm=curA;if(!nm||!P.anims[nm]){say2('Make or pick an animation first.');return}
-  let mine=[];try{mine=(await pkList()).filter(function(p){return p.owner===ME.username.toLowerCase()})}catch(err){say2('Could not load your packs: '+String((err&&err.message)||err))}
-  const items=[['\u2795 New animation pack...',function(){pkNewDlg(nm)}]];
+  let mine=[];try{mine=pkMine(await pkList())}catch(err){say2('Could not load your packs: '+String((err&&err.message)||err))}
+  const items=[['\u2795 New animation pack...',function(){pkNewDlg(nm)}],['\u{1F4E6} Open the Animation Packs menu...',function(){pkManager()}]];
   mine.forEach(function(p){items.push(['Add to "'+p.name+'"'+(p.pub?'':' (draft)'),function(){pkAdd(p,nm)}])});
   bmenu(e,items)}
-{const pb=el('button','btn ghost small','\u{1F4E6} Add to pack');pb.type='button';pb.id='a-pack';pb.hidden=true;pb.title='Admins: add this animation to an animation pack';pb.onclick=function(e){pkMenu(e)};$('a-del').after(pb);
+
+/* ---- The Animation Packs menu: upload your animations into packs, see what is inside each pack, open one back in the Animator, rename or delete drafts ---- */
+function pkOpenSlot(pack,slot){const a=pkImport(pack.anims[slot]);if(!Object.keys(a.keys).length){say2('That animation does not fit this character (no matching body parts).');return}
+  let base=(pack.name+'_'+slot).replace(/[^A-Za-z0-9_]/g,'')||'Pack',nm=base,n=1;while(P.anims[nm])nm=base+(++n);
+  P.anims[nm]=a;curA=nm;aT=0;aSelKeys=[];save();animUI();preview();say2('Opened "'+nm+'" in the Animator. Edit it, then upload it again to replace the slot.')}
+function pkManager(){
+  if(!amAdmin()){say2('Only admins can make animation packs.');return}
+  mdl('Animation Packs',function(c,close){
+    c.style.width='min(96vw,780px)';
+    const body=el('div');body.style.cssText='display:flex;flex-direction:column;gap:14px';c.append(body);
+    let packs=[],busy=false,pick={anim:curA||'',pack:'',slot:''};
+    const sty=function(x){x.style.cssText='padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);min-width:0;max-width:100%';return x};
+    const box=function(){const d=el('div');d.style.cssText='border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px';return d};
+    const row=function(){const d=el('div');d.style.cssText='display:flex;gap:6px;flex-wrap:wrap;align-items:center';return d};
+    const run=async function(label,fn){if(busy)return;busy=true;say2(label);try{await fn()}catch(e){say2('Failed: '+String((e&&e.message)||e))}busy=false;await load()};
+    const draw=function(){body.replaceChildren();
+      const names=Object.keys(P.anims).filter(function(n){return P.anims[n]&&Object.keys(P.anims[n].keys||{}).some(function(k){return (P.anims[n].keys[k]||[]).length})});
+      if(!P.anims[pick.anim]||names.indexOf(pick.anim)<0)pick.anim=names.indexOf(curA)>=0?curA:(names[0]||'');
+      if(!pick.slot||pick.animFor!==pick.anim){pick.slot=pkGuessSlot(pick.anim);pick.animFor=pick.anim}
+      if(!packs.some(function(p){return p.id===pick.pack}))pick.pack=packs.length?packs[0].id:'';
+      /* upload box */
+      const up=box();up.append(Object.assign(el('b','','Upload an animation'),{}));
+      up.append(el('p','','Pick one of the animations in this game, the pack to put it in, and which player animation it replaces. Uploading never touches the other animations in the pack.'));
+      if(!names.length){up.append(el('p','','This game has no animations with keyframes yet. Make some in the Animator first.'))}
+      else{
+        const r=row(),sa=sty(el('select')),sp=sty(el('select')),ss=sty(el('select'));
+        names.forEach(function(n){const o=el('option','',n);o.value=n;sa.append(o)});sa.value=pick.anim;
+        packs.forEach(function(p){const o=el('option','',p.name+(p.pub?'':' (draft)'));o.value=p.id;sp.append(o)});
+        if(!packs.length){const o=el('option','','(make a pack first)');o.value='';sp.append(o)}sp.value=pick.pack;
+        PK_ORDER.forEach(function(sl){const o=el('option','',sl);o.value=sl;ss.append(o)});ss.value=pick.slot;
+        sa.onchange=function(){pick.anim=sa.value;pick.slot=pkGuessSlot(pick.anim);pick.animFor=pick.anim;draw()};sp.onchange=function(){pick.pack=sp.value};ss.onchange=function(){pick.slot=ss.value};
+        const l1=el('span','','Animation');const l2=el('span','','Pack');const l3=el('span','','Replaces');
+        r.append(l1,sa,l2,sp,l3,ss);up.append(r);
+        const r2=row();
+        r2.append(mb('\u2B06 Upload','',function(){if(!pick.pack){say2('Make a pack first (below).');return}
+          const pk=packs.find(function(p){return p.id===pick.pack}),old=pk&&pk.anims&&pk.anims[pick.slot];
+          if(old&&old.src&&old.src!==pick.anim&&!confirm('"'+pk.name+'" already has "'+old.src+'" as its '+pick.slot+' animation. Replace it with "'+pick.anim+'"?'))return;
+          run('Uploading "'+pick.anim+'"...',async function(){const res=await pkUpload(pick.pack,[[pick.anim,pick.slot]]);say2('Uploaded "'+pick.anim+'" to "'+res.pack.name+'" as '+pick.slot+'. Saved and checked.')})}));
+        r2.append(mb('\u2B06 Upload every animation named walk / idle / jump / fall / hold item...','ghost',function(){if(!pick.pack){say2('Make a pack first (below).');return}
+          const pairs=names.filter(function(n){return PK_ORDER.indexOf(n.toLowerCase().trim())>=0}).map(function(n){return [n,n.toLowerCase().trim()]});
+          if(!pairs.length){say2('No animation here is named after a slot (walk, idle, jump, fall, hold item, hold item walk, hold item jump).');return}
+          run('Uploading '+pairs.length+' animations...',async function(){const res=await pkUpload(pick.pack,pairs);say2('Uploaded '+res.slots.join(', ')+' to "'+res.pack.name+'". Saved and checked.')})}));
+        up.append(r2)}
+      body.append(up);
+      /* new pack */
+      const nb=box();nb.append(el('b','','New pack'));const nr=row(),ni=sty(el('input'));ni.placeholder='Pack name';ni.maxLength=24;
+      const mk=function(){const nm=ni.value.trim();if(!nm)return;run('Creating "'+nm+'"...',async function(){const p=await pkCreate(nm);pick.pack=p.id;say2('Created the pack "'+p.name+'". Upload animations into it above.')})};
+      ni.onkeydown=function(e){e.stopPropagation();if(e.key==='Enter')mk()};nr.append(ni,mb('Create pack','',mk));nb.append(nr);body.append(nb);
+      /* my packs */
+      const h=el('b','','Your packs ('+packs.length+')');body.append(h);
+      if(!packs.length)body.append(el('p','','You have no packs yet.'));
+      packs.forEach(function(p){const d=box();
+        const top=row();const t=el('b','',p.name);top.append(t,el('span','',p.pub?'\u2705 Published':'\u{1F4DD} Draft'));
+        top.append(mb('Rename','ghost',function(){const v=prompt('New name for this pack',p.name);if(v===null)return;const nm=v.trim().slice(0,24);if(!nm)return;run('Renaming...',async function(){await pkPatch(p.id,function(f){f.name=nm})})}));
+        if(!p.pub)top.append(mb('Delete draft','ghost',function(){if(!confirm('Delete the draft pack "'+p.name+'"?'))return;run('Deleting...',async function(){await pkPatch(p.id,function(f){f.removed=true;f.pub=false})})}));
+        d.append(top);
+        const have=PK_ORDER.filter(function(sl){return p.anims&&p.anims[sl]});
+        if(!have.length)d.append(el('p','','Empty. Upload an animation into it above.'));
+        have.forEach(function(sl){const a=p.anims[sl],r=row();
+          const joints=Object.keys(a.keys||{}).length;
+          r.append(Object.assign(el('span','',sl+': '),{style:'min-width:110px;font-weight:600'}),el('span','',(a.src?'"'+a.src+'" ':'')+'('+joints+' joints, '+(Math.round((a.len||1)*100)/100)+'s)'));
+          r.append(mb('Open in Animator','ghost',function(){pkOpenSlot(p,sl);close()}));
+          r.append(mb('Remove','ghost',function(){if(!confirm('Remove the '+sl+' animation from "'+p.name+'"?'))return;run('Removing...',async function(){await pkPatch(p.id,function(f){delete f.anims[sl]})})}));
+          d.append(r)});
+        if(!p.pub)d.append(el('p','','Publish it on the BrixBlox website (Inventory > Animations) when it is ready.'));
+        body.append(d)});
+    };
+    const load=async function(){try{packs=pkMine(await pkList())}catch(e){say2('Could not load your packs: '+String((e&&e.message)||e))}draw()};
+    c.append(mb('Close','ghost',close));
+    body.append(el('p','','Loading your packs...'));load()})}
+{const pb=el('button','btn ghost small','\u{1F4E6} Animation Packs');pb.type='button';pb.id='a-pack';pb.hidden=true;pb.title='Admins: upload animations into animation packs';pb.onclick=function(e){pkManager()};$('a-del').after(pb);
   $('a-sel').addEventListener('contextmenu',function(e){if(amAdmin())pkMenu(e)});
   const tl=$('s-anim');tl.addEventListener('contextmenu',function(e){/* right-click on the animation name bar */if(e.target.closest&&e.target.closest('.an-top')&&!e.target.closest('input,button')&&amAdmin())pkMenu(e)})}
 /* ----- wearing a pack in a game ----- */
