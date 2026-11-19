@@ -3837,7 +3837,7 @@ function dropLook(){if(!look)return;look=false;if(document.pointerLockElement===
 addEventListener('blur',dropLook);document.addEventListener('visibilitychange',function(){if(document.hidden)dropLook()});
 addEventListener('mouseup',function(e){if(e.button===2)dropLook()},true);
 cv.onpointermove=function(e){if(gd&&gd.mv){gd.le={clientX:e.clientX,clientY:e.clientY,altKey:e.altKey};if((e.buttons&2)&&!look){look=true;lockPtr()}}if(playing&&!look)playHover(e);const pl=document.pointerLockElement===cv,big=pl&&(Math.abs(e.movementX)>250||Math.abs(e.movementY)>250),dx=big?0:pl?e.movementX:e.clientX-lx,dy=big?0:pl?e.movementY:e.clientY-ly;lx=e.clientX;ly=e.clientY;
-  if(look||(lockMode()&&pl)){cam.yaw+=dx*.005*(S.sens||1);cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.005*(S.sens||1)));if(gd&&gd.mv&&look)rmoveDrag(e)}
+  if(look||(lockMode()&&pl)){cam.yaw+=dx*.005*(S.sens||1)*USENS;cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.005*(S.sens||1)*USENS));if(gd&&gd.mv&&look)rmoveDrag(e)}
   else if(gd&&gd.rm)rmoveDrag(e);
   else if(gd&&gd.an)animDrag(e,dx,dy);
   else if(gd&&gd.rg)rotDrag(e);
@@ -3964,6 +3964,8 @@ addEventListener('pointerdown',function(e){edArea=!(e.target&&e.target.closest&&
 
 /* ===== Studio-style building tools: snap size, arrow-key nudging, select all, drop to ground (End), align ===== */
 let CAMSP=1;try{const cv0=parseFloat(localStorage.getItem('bbCamSp'));if(isFinite(cv0)&&cv0>0)CAMSP=cv0}catch(x){}
+/* Camera sensitivity, set by each player in Settings and kept on this device. It multiplies how fast the mouse (or a finger) turns the camera, on top of a game's own "set mouse sensitivity" block. */
+let USENS=1;try{const sv0=parseFloat(localStorage.getItem('bbSens'));if(isFinite(sv0)&&sv0>=.1&&sv0<=3)USENS=sv0}catch(x){}
 let SNP=.5;try{const sv=parseFloat(localStorage.getItem('bbSnap'));if(isFinite(sv)&&sv>=0)SNP=sv}catch(x){}
 function snapV(v,free){return free||!SNP?v:Math.round(v/SNP)*SNP}
 function stOk(){return !playing&&!running&&!animOn()&&!rigOn&&!VIEWONLY&&edArea&&$('studio').getClientRects().length>0&&curTab!=='code'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&!(document.activeElement&&document.activeElement.isContentEditable)}
@@ -5079,6 +5081,9 @@ function openGM(){if(menuEl||!(running||playing))return;for(const k in keys)keys
   const sp=pages.settings;
   const mt=el('input');mt.type='checkbox';mt.checked=P.audio.mute;mt.onchange=function(){P.audio.mute=mt.checked;save();liveVol();vIcon()};sp.append(lab('Mute all sounds',mt));
   slider(sp,'Camera distance',P.rules,'cam',4,60,1,null,function(){cdT=P.rules.cam});slider(sp,'Field of view',P.rules,'fov',30,120,1);
+  {const l=el('label','','Camera sensitivity'),b=el('b','',USENS.toFixed(2)+'\u00D7'),r=el('input');r.type='range';r.min=.1;r.max=3;r.step=.05;r.value=USENS;r.title='How fast the mouse turns the camera. Double-click to reset to 1\u00D7.';l.append(b,r);
+    const setS=function(v){USENS=Math.max(.1,Math.min(3,v));b.textContent=USENS.toFixed(2)+'\u00D7';r.value=USENS;try{localStorage.setItem('bbSens',String(USENS))}catch(x){}};
+    r.oninput=function(){setS(+r.value)};r.ondblclick=function(){setS(1)};sp.append(l)}
   const ct=el('input');ct.type='checkbox';ct.checked=!$('chat').classList.contains('min');ct.onchange=function(){$('chat').classList.toggle('min',!ct.checked)};sp.append(lab('Show chat',ct));
   {const gs=el('select');[['auto','Automatic'],['lowest','Lowest'],['low','Low'],['medium','Medium'],['high','High'],['ultra','Ultra']].forEach(function(q){const op=el('option','',q[1]);op.value=q[0];gs.append(op)});gs.value=GFXL;gs.onchange=function(){gfxSet(this.value)};sp.append(lab('Graphics',gs))}
   const fb=mb(fsOn?'Exit fullscreen':'Fullscreen','ghost',function(){$('s-fs').click();closeGM()});fb.style.marginTop='6px';sp.append(fb);
@@ -7755,7 +7760,7 @@ setInterval(function(){const w=document.getElementById('bb-who');if(w)w.textCont
     }
     if(playing){
       e.stopImmediatePropagation();e.preventDefault();
-      cam.yaw+=dx*.0055;cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.0055));
+      cam.yaw+=dx*.0055*USENS;cam.pit=Math.max(-1.5,Math.min(1.5,cam.pit-dy*.0055*USENS));
     }
   }
   function onUp(e){
