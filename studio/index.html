@@ -3726,6 +3726,13 @@ addEventListener('keydown',function(e){if(e.code!=='KeyB'||!(e.ctrlKey||e.metaKe
 /* The old blue hover box around the whole rig (it also boxed the hidden stabilizer down at the feet) is gone: only the selected parts get an outline now. */
 function animBox(){abox.visible=false}
 
+/* A key with no turn direction of its own (Reset, New Clear Keys, Paste) is stored as the equivalent angle nearest the key before it, so 200 then reset is 360 rather than 0:
+   the part carries on round the short way instead of swinging back through the side it came from. Keys you drag already keep the way you turned them. Later keys move by the same whole turns, so nothing after them changes. */
+function keyShift(A,id,t,r){const k=A.keys[id]||[];let pv=null;k.forEach(function(x){if(x.t<t-.001&&(!pv||x.t>pv.t))pv=x});
+  return r.map(function(v,j){if(!pv)return 0;const d=v-pv.r[j];return (d>180||d<-180)?-360*Math.round(d/360):0})}
+function turnAdd(r,s){return r.map(function(v,j){return s[j]?Math.round((v+s[j])*1000)/1000:v})}
+function keyLater(A,id,t,s){if(!s.some(function(z){return z}))return;(A.keys[id]||[]).forEach(function(x){if(x.t>t+.001)x.r=turnAdd(x.r,s)})}
+function setKeyNear(A,id,t,r,p){const s=keyShift(A,id,t,r);keyLater(A,id,t,s);setKey(A,id,t,turnAdd(r,s),p)}
 /* Setting a position keyframe also pins the part's position on its other keyframes (and at the start), so frames before the new one keep their old position instead of snapping to it */
 function setKey(A,id,t,r,p){const k=A.keys[id]=A.keys[id]||[],e=k.find(function(x){return Math.abs(x.t-t)<.001});
   if(p){const old=function(tm){return (evalPose(A,tm)['p:'+id]||[0,0,0]).slice()},fill=k.filter(function(x){return x!==e&&!x.p});
@@ -3771,13 +3778,15 @@ function keyDown(e,id,k,d){e.stopPropagation();e.preventDefault();if(e.button!==
 function delKeys(){const A=P.anims[curA];if(!A)return;aSelKeys.forEach(function(q){const a=A.keys[q.id];if(a)A.keys[q.id]=a.filter(function(x){return x!==q.k})});aSelKeys=[];save();animUI();preview()}
 function copyKeys(){if(!aSelKeys.length)return;const A0=P.anims[curA];const t0=Math.min.apply(null,aSelKeys.map(function(q){return q.k.t}));aClip=aSelKeys.map(function(q){return {id:q.id,dt:q.k.t-t0,r:q.k.r.slice(),p:q.k.p?q.k.p.slice():((A0&&(A0.keys[q.id]||[]).some(function(x){return x.p}))?(evalPose(A0,q.k.t)['p:'+q.id]||[0,0,0]).slice():null)}})}
 function pasteKeys(t){const A=P.anims[curA];if(!A||!aClip.length)return;aSelKeys=[];
-  aClip.forEach(function(c){const tt=Math.min(A.len,+(t+c.dt).toFixed(3));setKey(A,c.id,tt,c.r.slice(),c.p?c.p.slice():null);aSelKeys.push({id:c.id,k:A.keys[c.id].find(function(x){return Math.abs(x.t-tt)<.001})})});save();animUI();preview()}
+  const sh={},lastT={};aClip.slice().sort(function(a,b){return a.dt-b.dt}).forEach(function(c){const tt=Math.min(A.len,+(t+c.dt).toFixed(3));if(!sh[c.id])sh[c.id]=keyShift(A,c.id,tt,c.r);lastT[c.id]=tt});
+  aClip.forEach(function(c){const tt=Math.min(A.len,+(t+c.dt).toFixed(3));setKey(A,c.id,tt,turnAdd(c.r,sh[c.id]),c.p?c.p.slice():null);aSelKeys.push({id:c.id,k:A.keys[c.id].find(function(x){return Math.abs(x.t-tt)<.001})})});
+  for(const id in sh)keyLater(A,id,lastT[id],sh[id]);save();animUI();preview()}
 function closeMenu(){if(animMenu){animMenu.remove();animMenu=null}}
 /* Right-click menu: puts a keyframe on every joint of the rig at this time, so you do not have to add them one row at a time.
    New Clear Keys = every joint reset to its start rotation and position. New Keys = every joint keeps the pose it has at this time. */
 function allKeys(A,t,clear){const po=evalPose(A,t),rd=function(v){return Math.round(v*10)/10};
   rigJoints().forEach(function(j){const id=j.p.id,hasP=(A.keys[id]||[]).some(function(x){return x.p});
-    if(clear)setKey(A,id,t,[0,0,0],hasP?[0,0,0]:undefined);
+    if(clear)setKeyNear(A,id,t,[0,0,0],hasP?[0,0,0]:undefined);
     else setKey(A,id,t,(po[id]||[0,0,0]).map(rd),hasP&&po['p:'+id]?po['p:'+id].map(rd):undefined)});
   save();animUI();preview()}
 function amenu(e,id,t){closeMenu();const A=P.anims[curA],j=id||aJ,m=el('div','an-menu'),js=rigJoints();
@@ -3787,7 +3796,7 @@ function amenu(e,id,t){closeMenu();const A=P.anims[curA],j=id||aJ,m=el('div','an
   item('Delete Selected',aSelKeys.length>0,delKeys);
   item('Copy Selected',aSelKeys.length>0,copyKeys);
   item('Paste Keyframes',aClip.length>0,function(){pasteKeys(aT)});
-  item('Add Reset Keyframe Here',!!j,function(){setKey(A,j,t,[0,0,0],[0,0,0]);save();animUI();preview()});
+  item('Add Reset Keyframe Here',!!j,function(){setKeyNear(A,j,t,[0,0,0],[0,0,0]);save();animUI();preview()});
   item('New Clear Keys',js.length>0,function(){allKeys(A,t,true)});
   item('New Keys',js.length>0,function(){allKeys(A,t,false)});
   document.body.append(m);animMenu=m;{const r=m.getBoundingClientRect();m.style.top=Math.max(4,Math.min(e.clientY,innerHeight-r.height-6))+'px'}}
@@ -4258,7 +4267,7 @@ function play(dt,f){const SP=(S.fly&&amAdmin()?2.2:1)*(S.speed!=null?S.speed:P.r
   if(inAir){S.jt+=dt;S.air=true;if(fall){S.ft=(S.ft||0)+dt;tp=evalPose(FA,S.ft%(FA.len||1))}else{S.ft=0;tp=evalPose(JA,Math.min(S.jt,JA.len))}}
   else{S.ft=0;if(S.air){S.air=false;S.jt=0}if(W&&(mv||Math.hypot(S.pvx,S.pvz)>1.5)){S.wt+=dt*Math.min(1,Math.hypot(S.pvx,S.pvz)/12+.2);const sn=Math.floor(S.wt/(W.len/2));if(S.sn===undefined)S.sn=sn;else if(sn!==S.sn){S.sn=sn;stepSound()}tp=evalPose(W,S.wt%W.len)}else if(IA){S.it=(S.it||0)+dt;tp=evalPose(IA,S.it%IA.len)}}
   if(S.heldItem&&!S.pa&&!(S.hold&&Object.keys(S.hold).some(function(k){return S.hold[k]>0}))){const HW=pkGet('hold item walk',S.holdWA),HA=pkGet('hold item',S.holdA),HJ=pkGet('hold item jump');if(inAir&&HJ)tp=evalPose(HJ,Math.min(S.jt,HJ.len||1));else if(HW&&!air&&(mv||Math.hypot(S.pvx,S.pvz)>1.5))tp=evalPose(HW,S.wt%(HW.len||1));else if(HA)tp=Object.assign({},tp,evalPose(HA,((S.ht=(S.ht||0)+dt))%(HA.len||1)))}
-  const ak=(inAir?(fall?'f':'j'):walking?'w':'i')+(S.heldItem?'h':'');if(S.ak!==ak){S.ak=ak;S.bl=.15}S.bl=Math.max(0,(S.bl||0)-dt);const kb=S.bl>0?1-Math.exp(-dt*(air?18:14)):1;P.parts.forEach(function(p){if(p.id===P.avId||!p.av||(S.hold&&S.hold[p.id]>0))return;const t=tp[p.id]||[0,0,0],c=S.bp[p.id]||(S.bp[p.id]=[0,0,0]);for(let i=0;i<3;i++)c[i]+=(t[i]-c[i])*kb;const pk='p:'+p.id,t2=tp[pk]||[0,0,0],c2=S.bp[pk]||(S.bp[pk]=[0,0,0]);for(let i=0;i<3;i++)c2[i]+=(t2[i]-c2[i])*kb});
+  const ak=(inAir?(fall?'f':'j'):walking?'w':'i')+(S.heldItem?'h':'');if(S.ak!==ak){S.ak=ak;S.bl=.15}S.bl=Math.max(0,(S.bl||0)-dt);const kb=S.bl>0?1-Math.exp(-dt*(air?18:14)):1;P.parts.forEach(function(p){if(p.id===P.avId||!p.av||(S.hold&&S.hold[p.id]>0))return;const t=tp[p.id]||[0,0,0],c=S.bp[p.id]||(S.bp[p.id]=[0,0,0]);for(let i=0;i<3;i++){let d=t[i]-c[i];if(d>180||d<-180)d-=360*Math.round(d/360);c[i]+=d*kb}const pk='p:'+p.id,t2=tp[pk]||[0,0,0],c2=S.bp[pk]||(S.bp[pk]=[0,0,0]);for(let i=0;i<3;i++)c2[i]+=(t2[i]-c2[i])*kb});
   applyPose(S.bp,true,S.hold);S.mv=mv;try{ssTick(dt,mv)}catch(e){}}
 function solid(r){return CO[r.id]!==undefined?CO[r.id]:!r.nocol}
 function collide(){const T=byId(P.avId);if(!T)return;const R=1.1,fy=feet0()+S.h;
