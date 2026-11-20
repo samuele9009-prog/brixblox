@@ -3143,10 +3143,13 @@ async function genMesh(){
   const ld=meshLoading();let fin=false;
   try{
     /* No local Premium check: the saved sign-in info can be old. The server checks Premium for real and answers 'premium'. */
-    const r=await sb.functions.invoke('groq-mesh',{body:{prompt:d.trim().slice(0,200)}});
-    if(r.error){let j=null,st=0;try{st=+(r.error.context&&r.error.context.status)||0}catch(e){}try{j=await r.error.context.json()}catch(e){}const c=j&&(j.error||j.message||j.msg);
+    let ses=null;try{const g=await sb.auth.getSession();ses=g&&g.data&&g.data.session}catch(e){}
+    if(ses&&ses.expires_at&&ses.expires_at*1000-Date.now()<60000){try{const rf=await sb.auth.refreshSession();if(rf&&rf.data&&rf.data.session)ses=rf.data.session}catch(e){}}
+    if(!ses||!ses.access_token)throw new Error('No active BrixBlox login session in this browser (you may be in demo mode or your login expired). Sign out, sign back in, then try again.');
+    const r=await sb.functions.invoke('groq-mesh',{body:{prompt:d.trim().slice(0,200)},headers:{Authorization:'Bearer '+ses.access_token}});
+    if(r.error){let j=null,st=0;try{st=+(r.error.context&&r.error.context.status)||0}catch(e){}try{j=await r.error.context.json()}catch(e){}const c=j&&(j.error||j.message||j.msg),dt=j&&j.detail;
       if(c==='premium'){ld.done();fin=true;msg('Generating meshes needs BrixBlox Premium.');meshUpsell();return}
-      if(c==='signin'||st===401)throw new Error('Not signed in, or your login was rejected (HTTP '+(st||401)+'). Sign out and back in, then try again.'+(c&&c!=='signin'?' ['+c+']':''));
+      if(c==='signin'||st===401)throw new Error('Not signed in, or your login was rejected (HTTP '+(st||401)+'). Sign out and back in, then try again.'+(c&&c!=='signin'?' ['+c+']':'')+(dt?' ['+dt+']':''));
       if(st===404)throw new Error('The groq-mesh function is not deployed on Supabase yet (HTTP 404). Deploy it, then try again.');
       throw new Error((c?String(c):'The AI service failed')+(st?' (HTTP '+st+')':''))}
     const parts=genClean(r.data&&r.data.parts),o=genObj(parts);
