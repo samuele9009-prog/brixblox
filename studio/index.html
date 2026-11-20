@@ -3122,22 +3122,37 @@ function meshUpsell(){const ov=el('div');ov.style.cssText='position:fixed;inset:
   const row=el('div','tb');const go=el('button','btn small','Get Premium');go.type='button';const cl=el('button','btn ghost small','Not now');cl.type='button';cl.onclick=close;
   go.onclick=function(){try{store.set('brixblox-gopremium','1')}catch(e){}location.href=SITE_URL};
   row.append(go,cl);bx.append(h,p,row);ov.append(bx);document.body.append(ov)}
+function meshLoading(){
+  if(!document.getElementById('gm-css')){const st=document.createElement('style');st.id='gm-css';st.textContent='@keyframes gmspin{to{transform:rotate(360deg)}}@keyframes gmfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}';document.head.append(st)}
+  const ov=el('div');ov.style.cssText='position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+  const bx=el('div');bx.style.cssText='width:min(380px,100%);background:#232527;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:26px 22px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center';
+  const sp=el('div');sp.style.cssText='width:46px;height:46px;border-radius:50%;border:5px solid rgba(255,255,255,.18);border-top-color:#ffc233;animation:gmspin .9s linear infinite';
+  const h=el('div','','Creating your mesh');h.style.cssText='font-weight:800;font-size:1.25rem';
+  const ln=el('div','','Connecting all the triangles...');ln.style.cssText='min-height:1.4em;opacity:.85;font-weight:600';
+  const row=el('div','tb');row.hidden=true;row.style.justifyContent='center';
+  bx.append(sp,h,ln,row);ov.append(bx);document.body.append(ov);
+  const L=['Connecting all the triangles...','Shaping the mesh up','Sharpening up all the edges','Polishing every corner...','Stacking the vertices neatly','Smoothing out the bumps','Giving it a fresh coat of color','Measuring twice, building once','Welding the last few pieces','Teaching the polygons to behave','Checking that everything lines up','Adding the finishing touches...'];let i=Math.floor(Math.random()*0);
+  const tm=setInterval(function(){i=(i+1)%L.length;ln.textContent=L[i];ln.style.animation='gmfade .35s'},1800);
+  return {done:function(){clearInterval(tm);ov.remove()},
+    fail:function(t){clearInterval(tm);sp.remove();h.textContent='Could not create the mesh';ln.textContent=t;ln.style.color='#ff8a7a';
+      const c=el('button','btn small','Close');c.type='button';c.onclick=function(){ov.remove()};row.append(c);row.hidden=false}}}
 async function genMesh(){
   if(!ME||!sb){msg('Sign in to BrixBlox to generate meshes.');return}
   const d=prompt('Describe the mesh (a simple low-poly game prop), e.g. "blocky wooden sword", "kitchen knife", "treasure chest":');
   if(!d||!d.trim())return;
-  msg('Generating mesh with AI...');
+  const ld=meshLoading();let fin=false;
   try{
     /* No local Premium check: the saved sign-in info can be old. The server checks Premium for real and answers 'premium'. */
     const r=await sb.functions.invoke('groq-mesh',{body:{prompt:d.trim().slice(0,200)}});
     if(r.error){let j=null;try{j=await r.error.context.json()}catch(e){}const c=j&&j.error;
-      if(c==='premium'){msg('Generating meshes needs BrixBlox Premium.');meshUpsell();return}
-      if(c==='signin'){msg('Sign in to BrixBlox to generate meshes.');return}
+      if(c==='premium'){ld.done();fin=true;msg('Generating meshes needs BrixBlox Premium.');meshUpsell();return}
+      if(c==='signin'){throw new Error('Sign in to BrixBlox to generate meshes.')}
       throw new Error(c||(r.error&&r.error.message)||'the AI service failed (is the groq-mesh function deployed?)')}
     const parts=genClean(r.data&&r.data.parts),o=genObj(parts);
     const base=(d.trim().replace(/[^A-Za-z0-9]/g,'').slice(0,14)||'AiMesh');
     await importMesh([new File([o.obj],base+'.obj',{type:'text/plain'}),new File([o.mtl],base+'.mtl',{type:'text/plain'})]);
-  }catch(e){msg('Could not generate that mesh: '+((e&&e.message)||e))}}
+    ld.done();fin=true;
+  }catch(e){const t=String((e&&e.message)||e);if(!fin)ld.fail(t);msg('Could not generate that mesh: '+t)}}
 function pickMesh(){const i=document.createElement('input');i.type='file';i.multiple=true;i.accept='.obj,.mtl,.fbx,.glb,.png,.jpg,.jpeg,.webp,.gif,.bmp,image/*';
   i.onchange=function(){if(i.files&&i.files.length)importMesh(Array.from(i.files))};i.click()}
 async function importMesh(fs){
