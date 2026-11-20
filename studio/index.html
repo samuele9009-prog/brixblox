@@ -5295,7 +5295,7 @@ function rigBodyCollide(){const T=byId(P.avId);if(!T)return;const fy=feet0()+S.h
   P.parts.forEach(function(r){if(r.parent||r.av||r.stab||r.movable||!kids(r).length||(r.svc||'world')!=='world'||!solid(r)||gone(r))return;
     const h=humRig(r);if(!h||RAG['rig:'+r.id])return;
     const s=RSZ['rig:'+r.id]||1,o=RO[r.id]||[0,0],y0=RY[r.id]||0,bot=h.lo+y0,top=h.lo+(h.hi-h.lo)*s+y0;
-    if(fy>=top-STEP||fy+5<=bot)return;/* standing on top of it, or well above or below it */
+    if(fy>=top-.4||fy+5<=bot)return;/* standing on top of it, or well above or below it */
     const px=T.pos[0]+S.x,pz=T.pos[2]-S.y;let dx=px-(h.cx+o[0]),dz=pz-(h.cz+o[1]);const d=Math.hypot(dx,dz),m=1.1+1.1*s;
     if(d>=m)return;if(d<1e-4){dx=1;dz=0}else{dx/=d;dz/=d}const pen=m-d;S.x+=dx*pen;S.y-=dz*pen})}
 function sendChat(txt){txt=String(txt).trim().slice(0,120);if(!txt||!(running||playing))return;let rawTxt=txt;{const raw=txt;txt=filt(raw);if(txt===raw&&crossBad(raw))txt=censor();logChat(raw,txt);CHATRAW=raw;rawTxt=raw}chatLine(P.player.name,txt);AILAST=txt;AILASTN++;netChat(txt,rawTxt);sayBubble(txt);const low=txt.toLowerCase();
