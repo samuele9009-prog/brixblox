@@ -3570,7 +3570,7 @@ function animDrag(e,dx,dy){const t=byId(gd.id);if(!t)return;
   if(par){const q=par.getWorldQuaternion(new THREE.Quaternion()).invert();dw.applyQuaternion(q)}
   moveBy(t,[dw.x,dw.y,dw.z]);quickSync()}
 function animRotEnd(g){const A=P.anims[curA];
-  if(A&&g.rs){live={};for(const id in g.rs)setKey(A,id,aT,g.rs[id].map(function(v){return Math.round(v*10)/10}))}
+  if(A&&g.rs){live={};for(const id in g.rs)setKeyNear(A,id,aT,g.rs[id].map(function(v){return Math.round(v*10)/10}))}
   else if(A&&g.ps){const rr={};for(const id in g.ps)rr[id]=(evalPose(A,aT)[id]||[0,0,0]).slice();live={};
     for(const id in g.ps)setKey(A,id,aT,rr[id],g.ps[id].map(function(v){return Math.round(v*100)/100}))}
   else live={};animUI();preview()}
