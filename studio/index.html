@@ -3144,10 +3144,11 @@ async function genMesh(){
   try{
     /* No local Premium check: the saved sign-in info can be old. The server checks Premium for real and answers 'premium'. */
     const r=await sb.functions.invoke('groq-mesh',{body:{prompt:d.trim().slice(0,200)}});
-    if(r.error){let j=null;try{j=await r.error.context.json()}catch(e){}const c=j&&j.error;
+    if(r.error){let j=null,st=0;try{st=+(r.error.context&&r.error.context.status)||0}catch(e){}try{j=await r.error.context.json()}catch(e){}const c=j&&(j.error||j.message||j.msg);
       if(c==='premium'){ld.done();fin=true;msg('Generating meshes needs BrixBlox Premium.');meshUpsell();return}
-      if(c==='signin'){throw new Error('Sign in to BrixBlox to generate meshes.')}
-      throw new Error(c||(r.error&&r.error.message)||'the AI service failed (is the groq-mesh function deployed?)')}
+      if(c==='signin'||st===401)throw new Error('Not signed in, or your login was rejected (HTTP '+(st||401)+'). Sign out and back in, then try again.'+(c&&c!=='signin'?' ['+c+']':''));
+      if(st===404)throw new Error('The groq-mesh function is not deployed on Supabase yet (HTTP 404). Deploy it, then try again.');
+      throw new Error((c?String(c):'The AI service failed')+(st?' (HTTP '+st+')':''))}
     const parts=genClean(r.data&&r.data.parts),o=genObj(parts);
     const base=(d.trim().replace(/[^A-Za-z0-9]/g,'').slice(0,14)||'AiMesh');
     await importMesh([new File([o.obj],base+'.obj',{type:'text/plain'}),new File([o.mtl],base+'.mtl',{type:'text/plain'})]);
