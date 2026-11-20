@@ -3069,17 +3069,36 @@ function fileText(f){return new Promise(function(res,rej){const r=new FileReader
 /* Big pictures are shrunk to 1024 pixels so a mesh stays small enough to save and send online */
 function texPack(f){return fileURL(f).then(function(u){return new Promise(function(res){const i=new Image();i.onload=function(){try{const mx=Math.max(i.width,i.height);if(mx<=1024){res(u);return}const k=1024/mx,c=document.createElement('canvas');c.width=Math.max(1,Math.round(i.width*k));c.height=Math.max(1,Math.round(i.height*k));c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL(/png|gif/i.test(f.type||f.name)?'image/png':'image/jpeg',.9))}catch(e){res(u)}};i.onerror=function(){res(u)};i.src=u})})}
 function meshBytes(){let n=0;Object.keys(P.assets.meshes||{}).forEach(function(k){const v=P.assets.meshes[k];n+=bigRef(v)?bigSize(v):v.length});return n}
-/* ===== AI mesh generator (Groq via a Supabase Edge Function that holds the key) ===== */
-const GEN_URL=SB_URL+'/functions/v1/groq-mesh';
+/* ===== AI mesh generator (TRELLIS via a Supabase Edge Function 'trellis-mesh' that holds the Replicate key) ===== */
+const GEN_URL=SB_URL+'/functions/v1/trellis-mesh';
+function genUnwrap(a){/* the AI answer can arrive as text, wrapped in code fences, or as {parts:[...]} */
+  for(let i=0;i<4&&a!=null;i++){
+    if(typeof a==='string'){let t=a.trim().replace(/^```(?:json)?\s*/i,'').replace(/```\s*$/,'').trim();const m=t.match(/[\[{][\s\S]*[\]}]/);try{a=JSON.parse(m?m[0]:t)}catch(e){return null}}
+    else if(Array.isArray(a))return a;
+    else if(typeof a==='object'){const k=['parts','mesh','shapes','objects','data','result'].find(function(k){return a[k]!=null});if(k)a=a[k];else return null}
+    else return null}
+  return Array.isArray(a)?a:null}
+function genVec(v,d){if(Array.isArray(v))return v;if(v&&typeof v==='object'){const k=['x','y','z'].map(function(c){return v[c]!=null?v[c]:v[c.toUpperCase()]});if(k.some(function(x){return x!=null}))return k.map(function(x,i){return x!=null?x:d[i]})}if(typeof v==='number')return [v,v,v];return d}
+function genShape(x){x=String(x||'').toLowerCase().trim();
+  if(x==='box'||x==='cube'||x==='block'||x==='cuboid'||x==='rect'||x==='rectangle'||x==='brick'||x==='plane')return 'box';
+  if(x==='cyl'||x==='cylinder'||x==='tube'||x==='pole'||x==='cone')return 'cyl';
+  if(x==='sphere'||x==='ball'||x==='orb'||x==='ellipsoid')return 'sphere';
+  if(x==='wedge'||x==='triangle'||x==='ramp'||x==='prism'||x==='pyramid')return 'wedge';
+  return ''}
+function genColor(c){c=String(c||'').trim();if(/^[0-9a-f]{3}$/i.test(c)||/^[0-9a-f]{6}$/i.test(c))c='#'+c;
+  if(/^#[0-9a-f]{3}$/i.test(c))c='#'+c[1]+c[1]+c[2]+c[2]+c[3]+c[3];
+  return /^#[0-9a-f]{6}$/i.test(c)?c.toLowerCase():'#aaaaaa'}
 function genClean(a){
+  a=genUnwrap(a);
   if(!Array.isArray(a))throw new Error('The AI did not return a list of parts.');
   const num=function(v,lo,hi,d){v=+v;return isFinite(v)?Math.max(lo,Math.min(hi,v)):d};
   const out=[];
   a.slice(0,60).forEach(function(p){
-    if(!p||['box','cyl','sphere','wedge'].indexOf(p.shape)<0)return;
-    const s=Array.isArray(p.size)?p.size:[1,1,1],q=Array.isArray(p.pos)?p.pos:[0,0,0],r=Array.isArray(p.rot)?p.rot:[0,0,0];
-    out.push({shape:p.shape,size:[0,1,2].map(function(i){return num(s[i],.02,20,1)}),pos:[0,1,2].map(function(i){return num(q[i],-20,20,0)}),
-      rot:[0,1,2].map(function(i){return num(r[i],-360,360,0)}),color:/^#[0-9a-f]{6}$/i.test(p.color)?p.color:'#aaaaaa'})});
+    if(!p||typeof p!=='object')return;
+    const shp=genShape(p.shape||p.type||p.kind);if(!shp)return;
+    const s=genVec(p.size!=null?p.size:p.scale,[1,1,1]),q=genVec(p.pos!=null?p.pos:p.position,[0,0,0]),r=genVec(p.rot!=null?p.rot:p.rotation,[0,0,0]);
+    out.push({shape:shp,size:[0,1,2].map(function(i){return num(s[i],.02,20,1)}),pos:[0,1,2].map(function(i){return num(q[i],-20,20,0)}),
+      rot:[0,1,2].map(function(i){return num(r[i],-360,360,0)}),color:genColor(p.color)})});
   if(!out.length)throw new Error('The AI returned no usable parts. Try describing it differently.');
   return out}
 function genPrim(sh){
@@ -3142,7 +3161,6 @@ async function genMesh(){
   if(!d||!d.trim())return;
   const ld=meshLoading();let fin=false;
   try{
-    /* No local Premium check: the saved sign-in info can be old. The server checks Premium for real and answers 'premium'. */
     let ses=null;try{const g=await sb.auth.getSession();ses=g&&g.data&&g.data.session}catch(e){}
     if(ses&&ses.expires_at&&ses.expires_at*1000-Date.now()<60000){try{const rf=await sb.auth.refreshSession();if(rf&&rf.data&&rf.data.session)ses=rf.data.session}catch(e){}}
     if(!ses||!ses.access_token)throw new Error('No active BrixBlox login session in this browser (you may be in demo mode or your login expired). Sign out, sign back in, then try again.');
@@ -3151,12 +3169,48 @@ async function genMesh(){
       if(c==='premium'){ld.done();fin=true;msg('Generating meshes needs BrixBlox Premium.');meshUpsell();return}
       if(c==='signin'||st===401)throw new Error('Not signed in, or your login was rejected (HTTP '+(st||401)+'). Sign out and back in, then try again.'+(c&&c!=='signin'?' ['+c+']':'')+(dt?' ['+dt+']':''));
       if(st===404)throw new Error('The groq-mesh function is not deployed on Supabase yet (HTTP 404). Deploy it, then try again.');
-      throw new Error((c?String(c):'The AI service failed')+(st?' (HTTP '+st+')':''))}
-    const parts=genClean(r.data&&r.data.parts),o=genObj(parts);
+      throw new Error((c?String(c):(st?'The AI service failed':'Could not reach the AI service ('+(r.error.message||'network error')+'). Check your connection, then try again.'))+(st?' (HTTP '+st+')':'')+(dt?' ['+dt+']':''))}
+    const parts=genClean(r.data&&r.data.parts!=null?r.data.parts:r.data),o=genObj(parts);
     const base=(d.trim().replace(/[^A-Za-z0-9]/g,'').slice(0,14)||'AiMesh');
     await importMesh([new File([o.obj],base+'.obj',{type:'text/plain'}),new File([o.mtl],base+'.mtl',{type:'text/plain'})]);
     ld.done();fin=true;
   }catch(e){const t=String((e&&e.message)||e);if(!fin)ld.fail(t);msg('Could not generate that mesh: '+t)}}
+/* TRELLIS version (costs money per run via fal.ai). Not used right now: to switch back, rename it to genMesh and the Groq one below to genMeshGroq. */
+async function genMeshTrellis(){
+  if(!ME||!sb){msg('Sign in to BrixBlox to generate meshes.');return}
+  const d=prompt('Describe the 3D model you want (one object), e.g. "wooden treasure chest", "red sports car", "cartoon dragon":');
+  if(!d||!d.trim())return;
+  const ld=meshLoading();let fin=false;
+  try{
+    let ses=null;try{const g=await sb.auth.getSession();ses=g&&g.data&&g.data.session}catch(e){}
+    if(ses&&ses.expires_at&&ses.expires_at*1000-Date.now()<60000){try{const rf=await sb.auth.refreshSession();if(rf&&rf.data&&rf.data.session)ses=rf.data.session}catch(e){}}
+    if(!ses||!ses.access_token)throw new Error('No active BrixBlox login session in this browser (you may be in demo mode or your login expired). Sign out, sign back in, then try again.');
+    const call=async function(body){/* one call to the trellis-mesh function; turns every kind of failure into a readable error */
+      const r=await sb.functions.invoke('trellis-mesh',{body:body,headers:{Authorization:'Bearer '+ses.access_token}});
+      if(r.error){let j=null,st=0;try{st=+(r.error.context&&r.error.context.status)||0}catch(e){}try{j=await r.error.context.json()}catch(e){}
+        const c=j&&(j.error||j.message||j.msg),dt=j&&j.detail;
+        if(c==='premium'){const e=new Error('premium');e.prem=true;throw e}
+        if(c==='signin'||st===401)throw new Error('Not signed in, or your login was rejected (HTTP '+(st||401)+'). Sign out and back in, then try again.'+(dt?' ['+dt+']':''));
+        if(st===404)throw new Error('The trellis-mesh function is not deployed on Supabase yet (HTTP 404). Deploy it, then try again.');
+        throw new Error((c?String(c):(st?'The AI service failed':'Could not reach the AI service ('+(r.error.message||'network error')+'). Check your connection, then try again.'))+(st?' (HTTP '+st+')':'')+(dt?' ['+dt+']':''))}
+      return r.data};
+    const st0=await call({action:'start',prompt:d.trim().slice(0,200)});
+    if(!st0||!st0.id)throw new Error('The AI service did not start a job.');
+    const t0=Date.now();let done=false;
+    while(!done){/* TRELLIS takes a while: check every 3 seconds, give up after 5 minutes */
+      if(Date.now()-t0>300000)throw new Error('This is taking too long (over 5 minutes). Try again, or try a simpler description.');
+      await new Promise(function(r){setTimeout(r,3000)});
+      const s1=await call({action:'status',id:st0.id});
+      if(s1&&s1.status==='succeeded')done=true;
+      else if(s1&&(s1.status==='failed'||s1.status==='canceled'))throw new Error((s1.error||'TRELLIS could not make that model')+'. Try describing it differently.')}
+    const blob=await call({action:'file',id:st0.id});
+    if(!(blob instanceof Blob)||!blob.size)throw new Error('The model file came back empty.');
+    const base=(d.trim().replace(/[^A-Za-z0-9]/g,'').slice(0,14)||'AiMesh');
+    await importMesh([new File([blob],base+'.glb',{type:'model/gltf-binary'})]);
+    ld.done();fin=true;
+  }catch(e){
+    if(e&&e.prem){ld.done();fin=true;msg('Generating meshes needs BrixBlox Premium.');meshUpsell();return}
+    const t=String((e&&e.message)||e);if(!fin)ld.fail(t);msg('Could not generate that mesh: '+t)}}
 function pickMesh(){const i=document.createElement('input');i.type='file';i.multiple=true;i.accept='.obj,.mtl,.fbx,.glb,.png,.jpg,.jpeg,.webp,.gif,.bmp,image/*';
   i.onchange=function(){if(i.files&&i.files.length)importMesh(Array.from(i.files))};i.click()}
 async function importMesh(fs){
@@ -4277,7 +4331,7 @@ function collide(){const T=byId(P.avId);if(!T)return;const R=1.1,fy=feet0()+S.h;
     if(!r.movable&&humRig(r))return;/* a person-shaped rig that is not movable is one round body: see rigBodyCollide */
     /* far-away parts are skipped before any of the expensive work (the part's size box always contains the whole shape) */
     {const o0=RO[r.id]||[0,0],sz=q.size,rad=Math.abs(sz[0])+Math.abs(sz[1])+Math.abs(sz[2])+R+3;if(Math.abs(T.pos[0]+S.x-(q.pos[0]+o0[0]))>rad||Math.abs(T.pos[2]-S.y-(q.pos[2]+o0[1]))>rad)return}
-    const eq=eh(q),hx=eq[0],hy=eq[1],hz=eq[2],qy=q.pos[1]+(RY[r.id]||0);if(qy+hy<=fy+STEP||qy-hy>=fy+6)return;
+    const eq=eh(q),hx=eq[0],hy=eq[1],hz=eq[2],qy=q.pos[1]+(RY[r.id]||0);if(qy+hy<=fy+(humRig(r)?.4:STEP)||qy-hy>=fy+6)return;/* a person-shaped rig is never a stair: its arms and legs are not stepped over */
     const o=RO[r.id]||[0,0],cx=T.pos[0]+S.x,cz=T.pos[2]-S.y,bx=q.pos[0]+o[0],bz=q.pos[2]+o[1],L=colsOf(q);
     if(L){if(!colNear(q,L,o,cx,cz,R+.5))return;const pp=colPush(q,L,o,cx,fy,cz);if(pp){if(r.movable)RO[r.id]=[o[0]-pp[0],o[1]-pp[1]];else{S.x+=pp[0];S.y-=pp[1]}}return}/* round shapes and unions */
     if(hasRot(q)){const pp=rotPush(q,o,cx,fy,cz);if(pp){if(r.movable)RO[r.id]=[o[0]-pp[0],o[1]-pp[1]];else{S.x+=pp[0];S.y-=pp[1]}}return}
@@ -4328,7 +4382,7 @@ function rotSeg(q,o,x,z){const m=rotM(q),c0=q.pos[0]+o[0],c2=q.pos[2]+o[1],c1=q.
     else{let a=(-h-oi)/di,b=(h-oi)/di;if(a>b){const t=a;a=b;b=t}if(a>t0)t0=a;if(b<t1)t1=b;if(t0>t1)return null}}
   return [c1+t0,c1+t1]}
 /* Highest surface of a rotated part under (cx,cz) that is no more than STEP above fy (a few nearby points are checked, so ledges feel like they do for plain boxes) */
-function rotTop(q,o,cx,cz,fy){let best=null;[[0,0],[.6,0],[-.6,0],[0,.6],[0,-.6]].forEach(function(a){const sg=rotSeg(q,o,cx+a[0],cz+a[1]);if(sg&&sg[1]<=fy+STEP&&(best===null||sg[1]>best))best=sg[1]});return best}
+function rotTop(q,o,cx,cz,fy,st){if(st===undefined)st=STEP;let best=null;[[0,0],[.6,0],[-.6,0],[0,.6],[0,-.6]].forEach(function(a){const sg=rotSeg(q,o,cx+a[0],cz+a[1]);if(sg&&sg[1]<=fy+st&&(best===null||sg[1]>best))best=sg[1]});return best}
 /* A sphere against a box (m = the box's rotation, or null for an unrotated box). Returns {n: push direction (world), pen: how deep} or null. */
 function boxSph(c0,c1,c2,h,m,x,y,z,R){const wx=x-c0,wy=y-c1,wz=z-c2,l=m?[m[0]*wx+m[1]*wy+m[2]*wz,m[4]*wx+m[5]*wy+m[6]*wz,m[8]*wx+m[9]*wy+m[10]*wz]:[wx,wy,wz];
   const cl=[Math.max(-h[0],Math.min(h[0],l[0])),Math.max(-h[1],Math.min(h[1],l[1])),Math.max(-h[2],Math.min(h[2],l[2]))];
@@ -4453,7 +4507,7 @@ function colNear(q,L,o,x,z,m){const dx=x-(q.pos[0]+o[0]),dz=z-(q.pos[2]+o[1]);re
 function colSegs(q,L,o,x,z,out){const rv=RY[rootOf(q).id]||0;L.forEach(function(cl){const lo=m4pt(cl.inv,x-o[0],0,z-o[1]),d=m4dir(cl.inv,0,1,0);if(cl.mc){meshSegs(cl.mc,lo,d,rv,out);return}const r=cSeg(cl.s,cl.z,cl.ry,lo,d);if(r)out.push([r[0]+rv,r[1]+rv])});return out}
 const COLS=[[0,0],[.6,0],[-.6,0],[0,.6],[0,-.6]];
 /* Highest surface of the real shape under the feet that is no more than STEP above them */
-function colTop(q,L,o,cx,cz,fy){let best=null;COLS.forEach(function(a){colSegs(q,L,o,cx+a[0],cz+a[1],[]).forEach(function(sg){if(sg[1]<=fy+STEP&&(best===null||sg[1]>best))best=sg[1]})});return best}
+function colTop(q,L,o,cx,cz,fy,st){if(st===undefined)st=STEP;let best=null;COLS.forEach(function(a){colSegs(q,L,o,cx+a[0],cz+a[1],[]).forEach(function(sg){if(sg[1]<=fy+st&&(best===null||sg[1]>best))best=sg[1]})});return best}
 /* Lowest underside above the head (for the head bump) */
 function colUnder(q,L,o,cx,cz,head0){let bb=Infinity;[[0,0],[.7,0],[-.7,0],[0,.7],[0,-.7]].forEach(function(a){colSegs(q,L,o,cx+a[0],cz+a[1],[]).forEach(function(sg){if(sg[0]>=head0-.05&&sg[0]<bb)bb=sg[0]})});return bb}
 /* Sideways push out of the real shape (the player is two stacked balls); the deepest piece wins for each ball so a union of many pieces does not push several times */
@@ -4470,12 +4524,12 @@ function colTouch(q,L,o,x,z,fy,R){const out=[];[[0,0]].concat([0,1,2,3,4,5,6,7].
   return out.some(function(sg){return sg[1]>=fy-.2&&sg[0]<=fy+6})}
 /* Highest surface under the feet that is no more than STEP above them */
 function groundAt(cx,cz,fy,skipId){let best=-1e9;GAQ=null;
-  P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;const rq=rootOf(q);if(!solid(rq)||(skipId&&rq.id===skipId))return;const o=RO[rq.id]||[0,0],L=colsOf(q);
-    if(L){if(colNear(q,L,o,cx,cz,.9)){const t=colTop(q,L,o,cx,cz,fy);if(t!==null&&t>best){best=t;GAQ=q}}return}/* round shapes and unions: the real surface */
+  P.parts.forEach(function(q){if(q.av||!inW(q)||gone(q))return;const rq=rootOf(q);if(!solid(rq)||(skipId&&rq.id===skipId))return;const o=RO[rq.id]||[0,0],L=colsOf(q),st=humRig(rq)?.4:STEP;/* person-shaped rigs: you can land on them but never walk up their limbs like stairs */
+    if(L){if(colNear(q,L,o,cx,cz,.9)){const t=colTop(q,L,o,cx,cz,fy,st);if(t!==null&&t>best){best=t;GAQ=q}}return}/* round shapes and unions: the real surface */
     const eq=eh(q);
     if(Math.abs(cx-(q.pos[0]+o[0]))>eq[0]+.6||Math.abs(cz-(q.pos[2]+o[1]))>eq[2]+.6)return;
-    if(hasRot(q)){const t=rotTop(q,o,cx,cz,fy);if(t!==null&&t>best){best=t;GAQ=q}return}/* tilted parts: the real surface, so ramps work */
-    const top=q.pos[1]+(RY[rq.id]||0)+eq[1];if(top>fy+STEP)return;
+    if(hasRot(q)){const t=rotTop(q,o,cx,cz,fy,st);if(t!==null&&t>best){best=t;GAQ=q}return}/* tilted parts: the real surface, so ramps work */
+    const top=q.pos[1]+(RY[rq.id]||0)+eq[1];if(top>fy+st)return;
     if(top>best){best=top;GAQ=q}});
   return best}
 /* Head bump: a solid part above you stops your head instead of being treated as a wall (which threw you sideways to its edge).
