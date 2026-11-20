@@ -3114,14 +3114,27 @@ function genObj(parts){
   const M=[];Object.keys(mats).forEach(function(k){const h=mats[k],r=parseInt(h.slice(1,3),16)/255,gg=parseInt(h.slice(3,5),16)/255,b=parseInt(h.slice(5,7),16)/255;
     M.push('newmtl '+k,'Kd '+r.toFixed(3)+' '+gg.toFixed(3)+' '+b.toFixed(3),'Ka 0 0 0','Ks 0.2 0.2 0.2','Ns 30','d 1','')});
   return {obj:L.join('\n'),mtl:M.join('\n')}}
+function meshUpsell(){const ov=el('div');ov.style.cssText='position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+  const close=function(){ov.remove()};ov.onpointerdown=function(e){if(e.target===ov)close()};
+  const bx=el('div');bx.style.cssText='width:min(460px,100%);background:#232527;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px';
+  const h=el('div','','\u2728 AI mesh generation is a Premium feature');h.style.cssText='font-weight:800;font-size:1.1rem';
+  const p=el('p','','With BrixBlox Premium you can describe a prop (a sword, a chest, a lamp) and have the AI build a mesh for you, ready to place in your game.');p.style.cssText='margin:0;line-height:1.4';
+  const row=el('div','tb');const go=el('button','btn small','Get Premium');go.type='button';const cl=el('button','btn ghost small','Not now');cl.type='button';cl.onclick=close;
+  go.onclick=function(){try{store.set('brixblox-gopremium','1')}catch(e){}location.href=SITE_URL};
+  row.append(go,cl);bx.append(h,p,row);ov.append(bx);document.body.append(ov)}
 async function genMesh(){
+  if(!ME||!sb){msg('Sign in to BrixBlox to generate meshes.');return}
   const d=prompt('Describe the mesh (a simple low-poly game prop), e.g. "blocky wooden sword", "kitchen knife", "treasure chest":');
   if(!d||!d.trim())return;
   msg('Generating mesh with AI...');
   try{
-    const r=await fetch(GEN_URL,{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+SB_KEY},body:JSON.stringify({prompt:d.trim().slice(0,200)})});
-    if(!r.ok)throw new Error('the AI service answered '+r.status+' (is the groq-mesh function deployed?)');
-    const j=await r.json(),parts=genClean(j.parts),o=genObj(parts);
+    /* No local Premium check: the saved sign-in info can be old. The server checks Premium for real and answers 'premium'. */
+    const r=await sb.functions.invoke('groq-mesh',{body:{prompt:d.trim().slice(0,200)}});
+    if(r.error){let j=null;try{j=await r.error.context.json()}catch(e){}const c=j&&j.error;
+      if(c==='premium'){msg('Generating meshes needs BrixBlox Premium.');meshUpsell();return}
+      if(c==='signin'){msg('Sign in to BrixBlox to generate meshes.');return}
+      throw new Error(c||(r.error&&r.error.message)||'the AI service failed (is the groq-mesh function deployed?)')}
+    const parts=genClean(r.data&&r.data.parts),o=genObj(parts);
     const base=(d.trim().replace(/[^A-Za-z0-9]/g,'').slice(0,14)||'AiMesh');
     await importMesh([new File([o.obj],base+'.obj',{type:'text/plain'}),new File([o.mtl],base+'.mtl',{type:'text/plain'})]);
   }catch(e){msg('Could not generate that mesh: '+((e&&e.message)||e))}}
@@ -5972,7 +5985,7 @@ function svcProps(d){const s=SV.find(function(x){return x.k===selSvc});if(!s)ret
   else if(s.k==='scripts'){P.scripts.forEach(function(sc){const h=sc[0],D=BD[h.t];d.append(el('p','note',(D.hat?(KW[h.t]||h.t)+' '+h.a.join(' '):'Loose blocks')+'  —  '+(sc.length-(D.hat?1:0))+' block(s)'))});
     if(!P.scripts.length)d.append(el('p','empty','No scripts yet.'))}
   else if(s.k==='itemservice'){d.append(el('p','note','All your items live here. To make one, go to Assets, right-click a mesh and press Create item. Give it to a player with the "give item" block.'));itemRows(d)}
-  else if(s.k==='assets'){const r=el('div','tb');r.append(mb('Upload image','',function(){pickFile('image')}),mb('Upload audio','',function(){pickFile('audio')}),mb('Sound effects','',function(){sfxOpen=!sfxOpen;renderParts()}),mb('Import mesh','',pickMesh),mb('✨ Generate mesh','',genMesh));d.append(r);if(sfxOpen)sfxPanel(d);
+  else if(s.k==='assets'){const r=el('div','tb');r.append(mb('Upload image','',function(){pickFile('image')}),mb('Upload audio','',function(){pickFile('audio')}),mb('Sound effects','',function(){sfxOpen=!sfxOpen;renderParts()}),mb('Import mesh','',pickMesh),mb('\u2728 Generate mesh'+(ME&&ME.prem?'':' \uD83D\uDD12'),'',genMesh));d.append(r);if(sfxOpen)sfxPanel(d);
     d.append(el('p','note','Meshes: pick a .obj, .fbx or .glb file together with its texture pictures (png or jpg) in one go. For an .obj also pick its .mtl file. Up to 24 MB per mesh. Big pictures are shrunk to 1024 pixels. Press Place in game to add it, then change its Texture in the part properties.'));
     d.append(el('p','note','Images: up to 2 MB each. Audio: up to 200 MB per file and about 1000 MB per game (online storage may allow less, see your Supabase storage limit). Play sounds with the blocks "play _" (loops), "play _ once until done" and "stop audio _". Name an image Sun or Moon to change the sun or moon in the sky (the clouds are fixed and cannot be replaced). Other images are stored for objects and GUIs later. Sounds are sent online with the game when it is saved so you can hear them on other computers (big sounds need the one-time Supabase storage bucket named game-audio).'));
     const rows=function(col,kind){const ks=Object.keys(P.assets[col]);if(!ks.length)d.append(el('p','empty','Nothing here yet.'));
