@@ -3093,7 +3093,7 @@ function genClean(a){
   if(!Array.isArray(a))throw new Error('The AI did not return a list of parts.');
   const num=function(v,lo,hi,d){v=+v;return isFinite(v)?Math.max(lo,Math.min(hi,v)):d};
   const out=[];
-  a.slice(0,60).forEach(function(p){
+  a.slice(0,150).forEach(function(p){
     if(!p||typeof p!=='object')return;
     const shp=genShape(p.shape||p.type||p.kind);if(!shp)return;
     const s=genVec(p.size!=null?p.size:p.scale,[1,1,1]),q=genVec(p.pos!=null?p.pos:p.position,[0,0,0]),r=genVec(p.rot!=null?p.rot:p.rotation,[0,0,0]);
@@ -3155,16 +3155,39 @@ function meshLoading(){
   return {done:function(){clearInterval(tm);ov.remove()},
     fail:function(t){clearInterval(tm);sp.remove();h.textContent='Could not create the mesh';ln.textContent=t;ln.style.color='#ff8a7a';
       const c=el('button','btn small','Close');c.type='button';c.onclick=function(){ov.remove()};row.append(c);row.hidden=false}}}
+function genImg(file){/* shrinks a picture to a small jpeg so it is quick to send */
+  return new Promise(function(res,rej){const fr=new FileReader();fr.onerror=function(){rej(new Error('Could not read that picture.'))};
+    fr.onload=function(){const im=new Image();im.onerror=function(){rej(new Error('That picture could not be opened. Use a png, jpg or webp.'))};
+      im.onload=function(){const k=Math.min(1,768/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));
+        const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.82))};
+      im.src=fr.result};fr.readAsDataURL(file)})}
+function genAsk(){/* small window: describe it, and optionally add a reference picture. Resolves {text,img} or null */
+  return new Promise(function(done){
+    const ov=el('div');ov.style.cssText='position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+    const bx=el('div');bx.style.cssText='width:min(460px,100%);background:#232527;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px';
+    const h=el('div','','\u2728 Generate a mesh');h.style.cssText='font-weight:800;font-size:1.1rem';
+    const p=el('p','','Describe what you want, and/or add a picture for the AI to copy. The AI builds it out of lots of blocks.');p.style.cssText='margin:0;line-height:1.4;opacity:.85;font-size:.9rem';
+    const inp=el('input');inp.type='text';inp.maxLength=200;inp.placeholder='e.g. kitchen knife with a wooden handle';inp.style.cssText='width:100%;min-height:40px;padding:0 10px;border-radius:8px;border:1px solid #555;background:#191b1d;color:#fff;font:inherit';
+    let img=null;const pv=el('div','','No picture added');pv.style.cssText='font-size:.85rem;opacity:.8';
+    const pb=el('button','btn ghost small','Add a reference picture');pb.type='button';
+    pb.onclick=function(){const f=document.createElement('input');f.type='file';f.accept='image/png,image/jpeg,image/webp';
+      f.onchange=function(){const fl=f.files&&f.files[0];if(!fl)return;pv.textContent='Reading picture...';genImg(fl).then(function(u){img=u;pv.textContent='Picture added: '+fl.name}).catch(function(e){img=null;pv.textContent=String(e.message||e)})};f.click()};
+    const row=el('div','tb');const go=el('button','btn small','Generate');go.type='button';const cl=el('button','btn ghost small','Cancel');cl.type='button';
+    const fin=function(v){ov.remove();done(v)};
+    cl.onclick=function(){fin(null)};ov.onpointerdown=function(e){if(e.target===ov)fin(null)};
+    go.onclick=function(){const t=inp.value.trim();if(!t&&!img){pv.textContent='Type a description or add a picture first.';return}fin({text:t,img:img})};
+    inp.onkeydown=function(e){e.stopPropagation();if(e.key==='Enter')go.onclick()};
+    row.append(go,cl);bx.append(h,p,inp,pb,pv,row);ov.append(bx);document.body.append(ov);setTimeout(function(){inp.focus()},50)})}
 async function genMesh(){
   if(!ME||!sb){msg('Sign in to BrixBlox to generate meshes.');return}
-  const d=prompt('Describe the mesh (a simple low-poly game prop), e.g. "blocky wooden sword", "kitchen knife", "treasure chest":');
-  if(!d||!d.trim())return;
+  const ask=await genAsk();if(!ask)return;
+  const d=ask.text||'';
   const ld=meshLoading();let fin=false;
   try{
     let ses=null;try{const g=await sb.auth.getSession();ses=g&&g.data&&g.data.session}catch(e){}
     if(ses&&ses.expires_at&&ses.expires_at*1000-Date.now()<60000){try{const rf=await sb.auth.refreshSession();if(rf&&rf.data&&rf.data.session)ses=rf.data.session}catch(e){}}
     if(!ses||!ses.access_token)throw new Error('No active BrixBlox login session in this browser (you may be in demo mode or your login expired). Sign out, sign back in, then try again.');
-    const r=await sb.functions.invoke('groq-mesh',{body:{prompt:d.trim().slice(0,200)},headers:{Authorization:'Bearer '+ses.access_token}});
+    const r=await sb.functions.invoke('groq-mesh',{body:{prompt:d.trim().slice(0,200),image:ask.img||undefined},headers:{Authorization:'Bearer '+ses.access_token}});
     if(r.error){let j=null,st=0;try{st=+(r.error.context&&r.error.context.status)||0}catch(e){}try{j=await r.error.context.json()}catch(e){}const c=j&&(j.error||j.message||j.msg),dt=j&&j.detail;
       if(c==='premium'){ld.done();fin=true;msg('Generating meshes needs BrixBlox Premium.');meshUpsell();return}
       if(c==='signin'||st===401)throw new Error('Not signed in, or your login was rejected (HTTP '+(st||401)+'). Sign out and back in, then try again.'+(c&&c!=='signin'?' ['+c+']':'')+(dt?' ['+dt+']':''));
