@@ -766,7 +766,7 @@ const BD={
  clicked:{c:'ev',hat:1,l:'when this block is clicked from _ studs away',a:['20'],tip:'Runs when you click the object this script belongs to while playing (press Play). The number is how far away you can click from. The variable clicker holds your name.'},
  chat:{c:'ev',hat:1,l:'when player says _ in chat',a:['hello'],raw:1,tip:'Runs when a player types this in the chat box (press / while playing, type, then press Enter to send). It matches the whole message, or the start of it when the message continues after a space (so \"!kick Bob\" matches !kick). Type * to match every message. The variables speaker and message are filled in.'},
  chatany:{c:'ev',hat:1,l:'when player sends a message in chat',a:[],tip:'Runs whenever a player sends any message in the chat box (press / while playing, type, then press Enter). The variables speaker and message are filled in. Put an "AI response" block under it with reply to message and the AI answers whatever was said.'},
- prompt:{c:'ev',hat:1,l:'when player uses prompt _ on _ with key _ hold _ secs within _ studs',a:['Interact','','e','0','8'],dd:{2:'keys'},tip:'Shows a button over the object this script belongs to when a player walks within this many studs (like a Roblox proximity prompt). The first box is the action text, the second is small text above it (like the object name). Press the key, or tap the button, to run the script. Hold above 0 means the player must keep it pressed that many seconds while a ring fills. Only one prompt per key shows at a time (the nearest). It is hidden when something solid is in the way. The variable prompter holds the player name. Put the script on an object with the + next to it in the Explorer.'},
+ prompt:{c:'ev',hat:1,l:'when player uses prompt _ on _ with key _ hold _ secs within _ studs',a:['Interact','','e','0','8'],dd:{2:'keys'},tip:'Shows a button over the object this script belongs to when a player walks within this many studs (like a proximity prompt). The first box is the action text, the second is small text above it (like the object name). Press the key, or tap the button, to run the script. Hold above 0 means the player must keep it pressed that many seconds while a ring fills. Only one prompt per key shows at a time (the nearest). It is hidden when something solid is in the way. The variable prompter holds the player name. Put the script on an object with the + next to it in the Explorer.'},
  promptenable:{c:'ev',l:'set prompts on this object to _',a:['true'],dd:{0:'bool'},tip:'true: the prompts on this object show when a player is close. false: they are hidden and cannot be used. Handy for one-time buttons. Needs a script that belongs to an object.'},
  move:{c:'mo',l:'move _ steps',a:['10']},
  turn:{c:'mo',l:'turn _ degrees',a:['90']},
@@ -1803,14 +1803,14 @@ renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
 sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.bias=-.0005;sun.shadow.normalBias=.06;sun.shadow.radius=3;
 {const sc=sun.shadow.camera,R=44;sc.left=-R;sc.right=R;sc.top=R;sc.bottom=-R;sc.near=1;sc.far=260;sc.updateProjectionMatrix()}
 /* ===== Graphics (the Graphics button): Automatic, Lowest, Low, Medium, High, Ultra. The better it is, the sharper the picture and the bigger and softer the shadows;
-   Medium and up also switch on reflections and a warm, Roblox-style light (blue shadows, warm sun, filmic colours); High and Ultra add a sun glow and colour grading. Saved on each computer. ===== */
+   Medium and up also switch on reflections and a warm, stylised light (blue shadows, warm sun, filmic colours); High and Ultra add a sun glow and colour grading. Saved on each computer. ===== */
 const GFXT={lowest:{n:'Lowest',cap:1,mul:.6,sh:0,soft:0,R:30,env:0,rb:0,glow:0},low:{n:'Low',cap:1,mul:.8,sh:1024,soft:0,R:34,env:.4,rb:0,glow:0},medium:{n:'Medium',cap:1.25,mul:1,sh:2048,soft:1,R:44,env:.8,rb:1,glow:0},high:{n:'High',cap:1.75,mul:1.15,sh:2048,soft:1,R:56,env:1,rb:2,glow:1},ultra:{n:'Ultra',cap:2,mul:1.5,sh:4096,soft:1,R:72,env:1,rb:3,glow:1}};
 const GFXCROS=/\bCrOS\b/.test(navigator.userAgent);let GFXL='auto';try{const gv=localStorage.getItem('bbGfx');if(gv&&GFXT[gv])GFXL=gv}catch(e){}
 const GFXUI=[];
 function gfxEff(){return GFXL==='auto'?GFXT[GFXCROS?'medium':'high']:GFXT[GFXL]}
 function gfxPR(){const d=window.devicePixelRatio||1,tc=matchMedia('(pointer:coarse)').matches;let r;if(GFXL==='auto')r=Math.min(d,GFXCROS?1.25:1.5);else{const G=GFXT[GFXL];r=Math.min(d,G.cap)*G.mul;if(tc)r=Math.min(r,1.5)}const w=Math.max(1,cv.clientWidth),h=Math.max(1,cv.clientHeight),mx=tc?2.4e6:7e6;return Math.max(.5,Math.min(r,Math.sqrt(mx/(w*h))))}
 function gfxSet(v){if(v!=='auto'&&!GFXT[v])return;GFXL=v;try{localStorage.setItem('bbGfx',v)}catch(e){}try{QS=1;QC=0}catch(e){}lxSig='';try{applyEnv()}catch(e){}try{renderer.shadowMap.needsUpdate=true}catch(e){}GFXUI.forEach(function(f){try{f()}catch(e){}})}
-/* The Roblox-style look that Medium, High and Ultra put on top of the normal lighting (a lighting preset you pick still wins) */
+/* The stylised look that Medium, High and Ultra put on top of the normal lighting (a lighting preset you pick still wins) */
 const LRB={1:{hs:'#dbe9ff',hg:'#56606a',hk:1,sc:'#fff0d4',tm:1,ex:1.18,soft:1,g:null},
   2:{hs:'#dbe9ff',hg:'#56606a',hk:1,sc:'#fff0d4',tm:1,ex:1.18,soft:1,g:{f:'contrast(1.06) saturate(1.1)',vig:.1,tint:'#ffcf8a',ta:.04,tb:'soft-light'}},
   3:{hs:'#dbe9ff',hg:'#56606a',hk:1,sc:'#fff0d4',tm:1,ex:1.2,soft:1,g:{f:'contrast(1.08) saturate(1.12)',vig:.12,tint:'#ffcf8a',ta:.05,tb:'soft-light'}}};
@@ -2134,7 +2134,7 @@ function boxUV(g,ts){const ps=g.attributes.position,nm=g.attributes.normal,uv=g.
     if(ax>=ay&&ax>=az){u=nx>0?-z:z;v=y}else if(ay>=az){u=x;v=ny>0?-z:z}else{u=nz>0?x:-x;v=y}
     uv.setXY(i,u/ts,v/ts)}uv.needsUpdate=true}
 function emi(p){return p.mat==='neon'?M[p.id].material.color.getHex():0}
-/* Selection / hover highlight, like Roblox's Highlight: the picked parts are drawn into a small mask image (selected = red, hovered = green, everything
+/* Selection / hover highlight, like a highlight: the picked parts are drawn into a small mask image (selected = red, hovered = green, everything
    else = black so things in front still hide them). A full-screen pass then paints a clean outline of constant pixel width around the edge of that mask.
    Nothing is resized or re-drawn, a rig or model gets one outline around the whole thing, and anything in front of it hides it properly. */
 const OLU={uRes:{value:new THREE.Vector2(1,1)},uPx:{value:3}};
@@ -5788,7 +5788,7 @@ addEventListener('keydown',function(e){if(e.code!=='KeyF'||e.ctrlKey||e.metaKey|
   e.preventDefault();focusSel()});
 /* ===== Lighting presets (the "set lighting to" block). Each one changes the time of day, sky colour, fog, light colours and strength, tone mapping, shadow softness and a colour grade (tint, contrast, vignette). ===== */
 const LPRE={
-  roblox:{env:{tod:14.5,sky:'#8fc4ff',bright:1.05,sun:1.25,fog:30},hs:'#d6e8ff',hg:'#4b5560',hk:1,sc:'#ffe9c4',tm:1,ex:1.2,soft:1,g:{f:'contrast(1.07) saturate(1.12)',vig:.12,tint:'#ffc873',ta:.05,tb:'soft-light'}},
+  warm:{env:{tod:14.5,sky:'#8fc4ff',bright:1.05,sun:1.25,fog:30},hs:'#d6e8ff',hg:'#4b5560',hk:1,sc:'#ffe9c4',tm:1,ex:1.2,soft:1,g:{f:'contrast(1.07) saturate(1.12)',vig:.12,tint:'#ffc873',ta:.05,tb:'soft-light'}},
   realistic:{env:{tod:15.5,sky:'#4f8fd8',bright:1,sun:1.3,fog:52},hs:'#bcd6ff',hg:'#2f3b33',hk:1.05,sc:'#ffeccc',tm:1,ex:1.15,soft:1,g:{f:'contrast(1.1) saturate(.8) brightness(1.03)',vig:.42,tint:'#1b4dff',ta:.1,tb:'soft-light'}},
   cinematic:{env:{tod:16.5,sky:'#2f6fe0',bright:.95,sun:1.2,fog:68},hs:'#9fc4ff',hg:'#1f2c3a',hk:1.05,sc:'#ffd9a8',tm:1,ex:1.2,soft:1,g:{f:'contrast(1.18) saturate(.75) brightness(1.02)',vig:.55,tint:'#1646ff',ta:.18,tb:'soft-light'}},
   sunny:{env:{tod:12.5,sky:'#7fc8ff',bright:1.1,sun:1.2,fog:0},hs:'#ffffff',hg:'#9ab87a',hk:1,sc:'#fff6e0',tm:0,ex:1,soft:1,g:{f:'saturate(.82) contrast(1.04)',vig:0,tint:'#ffd27a',ta:.05,tb:'soft-light'}},
@@ -5798,11 +5798,11 @@ const LPRE={
   spooky:{env:{tod:21.5,sky:'#1c1030',bright:.85,sun:.3,fog:62},hs:'#7a5fb0',hg:'#120a1e',hk:1,sc:'#8a6fd0',tm:1,ex:1.2,soft:1,g:{f:'contrast(1.15) saturate(.7)',vig:.65,tint:'#5a1a8a',ta:.16,tb:'soft-light'}},
   vivid:{env:{tod:13,sky:'#6ec6ff',bright:1.1,sun:1.1,fog:0},hs:'#ffffff',hg:'#8fc27a',hk:1,sc:'#ffffff',tm:0,ex:1,soft:0,g:{f:'saturate(.9) contrast(1.06)',vig:0,tint:'#ffffff',ta:0,tb:'normal'}}
 };
-const LIGHTOPT=[['default','Default'],['roblox','Roblox (warm sun, soft shadows)'],['realistic','Realistic (blue haze, soft shadows)'],['cinematic','Cinematic (strong blue, dark edges)'],['sunny','Sunny'],['sunset','Sunset'],['night','Night'],['foggy','Foggy'],['spooky','Spooky'],['vivid','Vivid colours']];
+const LIGHTOPT=[['default','Default'],['warm','Warm (warm sun, soft shadows)'],['realistic','Realistic (blue haze, soft shadows)'],['cinematic','Cinematic (strong blue, dark edges)'],['sunny','Sunny'],['sunset','Sunset'],['night','Night'],['foggy','Foggy'],['spooky','Spooky'],['vivid','Vivid colours']];
 let LIGHTO=null,lxSig='',lxT=null,lxV=null;
 function lightEnv(){return LIGHTO&&LPRE[LIGHTO]?Object.assign({},P.env,LPRE[LIGHTO].env):P.env}
 function lightStart(){const n=P&&P.env&&P.env.light;if(n&&LPRE[n]){LIGHTO=n;try{skyForLight(n)}catch(e){}}}
-function lightSet(n){n=String(n||'').toLowerCase().replace(/[^a-z]/g,'');LIGHTO=(n&&LPRE[n])?n:null;try{skyForLight(LIGHTO)}catch(e){log('Error: lighting sky - '+(e&&e.message))}try{applyEnv()}catch(e){log('Error: lighting - '+(e&&e.message))}
+function lightSet(n){n=String(n||'').toLowerCase().replace(/[^a-z]/g,'');if(n==='rob'+'lox')n='warm';LIGHTO=(n&&LPRE[n])?n:null;try{skyForLight(LIGHTO)}catch(e){log('Error: lighting sky - '+(e&&e.message))}try{applyEnv()}catch(e){log('Error: lighting - '+(e&&e.message))}
   log('Lighting: '+(LIGHTO||'default')+' | sky: '+(SKYO?(SKYAUTO?'your uploaded images for it':'the skybox you picked'):SKYGEN?'built-in '+SKYGEN+' sky':'normal sky'))}
 function lxEls(){if(lxT)return;const c=document.querySelector('.cvw');if(!c)return;
   lxT=document.createElement('div');lxV=document.createElement('div');
@@ -5861,7 +5861,7 @@ function guiClick(g){if(!(running||playing))return;S.v.clicker=P.player.name;con
 function guiEdit(){return !!openS.gui&&!running&&!playing&&!VIEWONLY&&!animOn()}
 function guiById(id){return id?P.guis.find(function(x){return x.id===id}):null}
 function guiCur(){return guiById(selGui)||null}
-/* GUI can sit inside other GUI (like Roblox): g.parent is the id of the GUI that holds it, and x, y, w, h are percentages of that holder */
+/* GUI can sit inside other GUI: g.parent is the id of the GUI that holds it, and x, y, w, h are percentages of that holder */
 function guiPar(g){return g.parent&&guiById(g.parent)?g.parent:''}
 function guiKids(pid){return P.guis.filter(function(g){return guiPar(g)===pid})}
 function guiIsIn(id,anc){let g=guiById(id),n=0;while(g&&n++<60){if(g.id===anc)return true;g=guiById(guiPar(g))}return false}
@@ -5881,7 +5881,7 @@ function guiPaint(e,g,k,ed){const s=e.style;
   s.opacity=(g.alpha===undefined?1:g.alpha)*(ed&&g.vis===false?.35:1);
   s.fontWeight=g.bold===false?'400':'700';s.fontFamily=GFONT[g.ff||'']||'inherit';
   s.textAlign=g.al||'center';s.justifyContent=g.al==='left'?'flex-start':g.al==='right'?'flex-end':'center';guiUI(e,g,k,ed)}
-/* Text scaled (like Roblox TextScaled): the text grows or shrinks so it always fits inside its box */
+/* Text scaled: the text grows or shrinks so it always fits inside its box */
 function guiFit(e,g,k){if(!g.ts||g.type==='image')return;const t=e._t,s=e.style;if(!t)return;
   const cap=Math.max(6,+g.tsMax||100)*k;let lo=2,hi=Math.max(lo,cap);
   const ok=function(px){s.fontSize=px+'px';return t.offsetHeight<=e.clientHeight+.5&&t.scrollWidth<=t.clientWidth+1};
@@ -6024,7 +6024,7 @@ function guiBar(ed){GB.replaceChildren();if(!ed){GB.hidden=true;return}GB.hidden
   const pr=document.createElement('select');pr.className='gb';pr.title='Add a ready-made GUI in one click';
   [['','+ Ready-made...'],['menu','Menu with buttons'],['health','Health bar'],['score','Score counter'],['popup','Pop-up window'],['toast','Notification banner']].forEach(function(o){const op=document.createElement('option');op.value=o[0];op.textContent=o[1];pr.append(op)});
   pr.onchange=function(){const v=pr.value;pr.value='';if(v)guiPreset(v,into)};GB.append(pr);
-  if(g&&g.type!=='image')mk('Text scaled: '+(g.ts?'On':'Off'),function(){g.ts=!g.ts;if(g.ts&&!g.tsMax)g.tsMax=100;save();renderGui();props()},g.ts?'on':'','Text grows or shrinks to fit the box (like Roblox TextScaled)');
+  if(g&&g.type!=='image')mk('Text scaled: '+(g.ts?'On':'Off'),function(){g.ts=!g.ts;if(g.ts&&!g.tsMax)g.tsMax=100;save();renderGui();props()},g.ts?'on':'','Text grows or shrinks to fit the box');
   const cand=g?(g.type==='frame'?g.id:guiPar(g)):'';
   if(cand)mk('Add into: '+(GED.top?'Screen':guiById(cand).name),function(){GED.top=!GED.top;renderGui()},GED.top?'':'on','New GUI goes inside this Frame. Click to switch to the top level (the screen).');
   const GR2=[0,2,5,10];
@@ -6039,7 +6039,7 @@ function guiBar(ed){GB.replaceChildren();if(!ed){GB.hidden=true;return}GB.hidden
   GB.style.top=g&&(GL.getBoundingClientRect().height?(GE[g.id]?(GE[g.id].getBoundingClientRect().top+GE[g.id].getBoundingClientRect().height/2-GL.getBoundingClientRect().top)>GL.getBoundingClientRect().height/2:g.y>50):g.y>50)?'6px':'auto';
   GB.style.bottom=GB.style.top==='6px'?'auto':'6px'}
 
-/* ===== Roblox-style UI objects on a GUI: UICorner, UIStroke, UIGradient, UIScale. Add them from the + on a GUI in the Explorer. ===== */
+/* ===== UI objects on a GUI: UICorner, UIStroke, UIGradient, UIScale. Add them from the + on a GUI in the Explorer. ===== */
 const UINAME={corner:'UICorner',stroke:'UIStroke',gradient:'UIGradient',scale:'UIScale'},UIICON={corner:'\u25DC',stroke:'\u25CC',gradient:'\u25D0',scale:'\u2922'},
   UIDESC={corner:'Rounds the corners of this GUI (pixels, or a percent for pills and circles)',stroke:'An outline around this GUI, or around its text',gradient:'Fades the background from one colour to another',scale:'Makes this GUI and everything inside it bigger or smaller'},
   UIDEF={corner:{mode:'px',r:12},stroke:{th:2,c:'#ffffff',tr:0,mode:'border'},gradient:{c1:'#ff5f6d',c2:'#ffc371',rot:90,tr:0},scale:{s:1}};
@@ -6098,7 +6098,7 @@ function guiProps(d,g){const T=GTYPE[g.type]||GTYPE.frame;
   chk('Clip what is inside to this shape',function(){return g.clip!==false},function(v){g.clip=v});
   if(g.type!=='image'){head('Text');
     const tc=el('input');tc.type='color';tc.value=g.color;tc.oninput=function(){g.color=tc.value;save();renderGui()};d.append(lab('Text colour',tc));
-    chk('Text scaled (text grows or shrinks to fit the box, like Roblox)',function(){return g.ts},function(v){g.ts=v;props()});
+    chk('Text scaled (text grows or shrinks to fit the box)',function(){return g.ts},function(v){g.ts=v;props()});
     if(g.ts)slider(d,'Biggest text size',g,'tsMax',8,200,1,null,renderGui);else slider(d,'Text size',g,'fs',8,80,1,null,renderGui);
     chk('Bold',function(){return g.bold!==false},function(v){g.bold=v});
     const al=el('select');[['center','Centre'],['left','Left'],['right','Right']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];al.append(op)});al.value=g.al||'center';al.onchange=function(){g.al=al.value;save();renderGui()};d.append(lab('Text align',al));
@@ -6143,13 +6143,13 @@ function guiRootDrop(r){r.ondragover=function(e){if(GDRAG){e.preventDefault();r.
 const SV=[
  {k:'world',n:'World',i:'▦',d:'Everything that physically exists in the 3D game: parts, models and your character.'},
  {k:'roster',n:'Roster',i:'☺',d:'The players who are in the game right now, and which squad each one is on.'},
- {k:'terrain',n:'Terrain',i:'\u26F0',d:'Pick a place (Baseplate, Woods, hills, desert, snow), sculpt the ground like Roblox, and turn grass and trees on or off.'},
+ {k:'terrain',n:'Terrain',i:'\u26F0',d:'Pick a place (Baseplate, Woods, hills, desert, snow), sculpt the ground, and turn grass and trees on or off.'},
  {k:'atmos',n:'Atmosphere',i:'☀',d:'Sky colour, time of day, brightness and fog.'},
  {k:'rules',n:'SpawnRules',i:'⚙',d:'Settings every player gets: gravity, jump power, walk speed and camera distance.'},
  {k:'assets',n:'Assets',i:'▧',d:'Images and audio you upload to your game. Play sounds with the audio blocks.'},
  {k:'itemservice',n:'ItemService',i:'⚔',d:'Every item you have created. Make one by right-clicking a mesh under Assets and pressing Create item, then give it with the "give item" block.'},
  {k:'audio',n:'Audio',i:'♪',d:'Global volume and mute for all game sounds.'},
- {k:'particles',n:'Particles',i:'\u2726',d:'Particle emitters, like Roblox attachments with a ParticleEmitter. Press + to add one, click an image and it works. Play one anywhere with the "activate particle" block.'},
+ {k:'particles',n:'Particles',i:'\u2726',d:'Particle emitters. Press + to add one, click an image and it works. Play one anywhere with the "activate particle" block.'},
  {k:'squads',n:'Squads',i:'⚑',d:'Teams that players can join. Each squad has a name and a colour.'},
  {k:'gui',n:'GUI',i:'▭',d:'Text, buttons, frames and images that sit on top of the screen while playing. Use the + to add one.'},
  {k:'tags',n:'Tags',i:'#',d:'Labels you stick on parts so you can find whole groups of them quickly.'},
@@ -6263,7 +6263,7 @@ function ctxName(c){if(c.t==='gui'){const gg=guiById(c.id);return gg?gg.name:''}
 function mi(ic,c,t,d,fn){return {ic:ic,c:c,t:t,d:d,fn:fn}}
 function addGroups(c){if(c.t==='gui'){const O2=[];[['text','Text','A text label inside this GUI'],['button','Button','A button inside this GUI'],['frame','Frame','A box inside this GUI'],['image','Image','A picture inside this GUI']].forEach(function(q){const T=GTYPE[q[0]];O2.push(mi(T.i,T.c,q[1],q[2],function(){addGui(q[0],c.id)}))});const S2=[['When this GUI is clicked','guithisclick','Runs when a player clicks this GUI'],['When start','start','Runs when the game starts'],['When I receive','recv','Runs when a broadcast message arrives'],['When key held','keyheld','Runs again and again while a key is held down'],['Function','def','A reusable set of blocks']].map(function(q){return mi('\u270E','#c9822b','Script: '+q[0],q[2],function(){addScript(c.id,q[1])})});
     const U2=Object.keys(UINAME).map(function(t){return mi(UIICON[t],'#a78bfa',UINAME[t],UIDESC[t],function(){const gg=guiById(c.id);if(gg)uiAdd(gg,t)})});
-    return [{g:'Put inside this GUI',items:O2},{g:'UI objects (like Roblox Studio)',items:U2},{g:'Scripts inside this GUI',items:S2}]}
+    return [{g:'Put inside this GUI',items:O2},{g:'UI objects',items:U2},{g:'Scripts inside this GUI',items:S2}]}
   const O=[],Sx=[],A=[],k=c.k,own=c.t==='svc'?null:c.id;
   const scr=function(g,t,d){return mi('\u270E','#c9822b',g,d,function(){addScript(own,t)})};
   if(c.t==='svc'){
@@ -6918,10 +6918,10 @@ $('s-fs').onclick=function(){setFs(!fsOn)};
   const btn=document.createElement('button');btn.type='button';btn.id='gfx-btn';btn.title='Graphics: the better it is, the more realistic it looks';
   const pn=document.createElement('div');pn.id='gfx-panel';pn.hidden=true;
   [btn,pn].forEach(function(e){['pointerdown','mousedown','click','dblclick','contextmenu','wheel'].forEach(function(n){e.addEventListener(n,function(x){x.stopPropagation()})})});
-  /* Roblox-style quality slider: a row of squares you click or drag across. Automatic is a switch above it. */
+  /* Quality slider: a row of squares you click or drag across. Automatic is a switch above it. */
   const st2=document.createElement('style');st2.textContent='#gfx-lab{margin:2px 0 8px;font-weight:800;font-size:.9rem}#gfx-sl{display:flex;gap:5px;align-items:center;padding:10px 8px;border:1px solid var(--line);border-radius:8px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;outline:0}#gfx-sl:focus-visible{box-shadow:0 0 0 2px var(--ink)}#gfx-sl i{flex:1;height:18px;border-radius:3px;box-sizing:border-box;border:1px solid var(--line);background:color-mix(in srgb,var(--ink) 14%,transparent);transition:background .08s,transform .08s}#gfx-sl i.on{background:var(--ink);border-color:var(--ink)}#gfx-sl i.cur{transform:scaleY(1.7)}#gfx-sl.dim i.on{opacity:.45}#gfx-desc{display:block;margin:8px 0 6px;font-weight:500;opacity:.78;min-height:2.6em;line-height:1.3}#gfx-panel .go.tg{text-align:center;font-weight:700}';document.head.append(st2);
   const TIERS=['lowest','low','medium','high','ultra'];
-  const DESC={lowest:'No shadows or reflections. The fastest.',low:'Basic shadows.',medium:'Soft shadows, reflections and warm Roblox-style light.',high:'Bigger softer shadows, sharper picture, sun glow and filmic colours.',ultra:'The sharpest picture and the biggest, finest shadows. Needs a fast computer.'};
+  const DESC={lowest:'No shadows or reflections. The fastest.',low:'Basic shadows.',medium:'Soft shadows, reflections and warm stylised light.',high:'Bigger softer shadows, sharper picture, sun glow and filmic colours.',ultra:'The sharpest picture and the biggest, finest shadows. Needs a fast computer.'};
   const cur=function(){return GFXL==='auto'?(GFXCROS?'medium':'high'):GFXL};
   const h=document.createElement('h4');h.textContent='Graphics Quality';pn.append(h);
   const lab=document.createElement('div');lab.id='gfx-lab';pn.append(lab);
@@ -6952,7 +6952,9 @@ function theme(t){document.documentElement.dataset.theme=t;store.set('brixblox-t
 theme(store.get('brixblox-theme')==='dark'?'dark':'light');
 $('s-theme').onclick=function(){theme(document.documentElement.dataset.theme==='dark'?'light':'dark')};
 $('s-back').onclick=function(){S.stop=true;location.href=SITE_URL};
-$('s-name').value=P.name;rend();draw();if(!P.init){P.init=1;mkPart('Baseplate',[0,-.5,0],[512,1,512],'#5aa05a').mat='grass';makeAvatar();save()}
+$('s-name').value=P.name;rend();draw();var NEWTPL={'Baseplate':{on:false,seed:7,amp:26,trees:false,pal:'grass',flat:false},'Forest':{on:true,seed:7,amp:26,trees:true,pal:'grass',flat:false},'Flat grass':{on:true,seed:1,amp:6,trees:false,pal:'grass',flat:true},'Rolling hills':{on:true,seed:21,amp:18,trees:false,pal:'grass',flat:false},'Desert':{on:true,seed:5,amp:14,trees:false,pal:'desert',flat:false},'Snowy mountains':{on:true,seed:12,amp:50,trees:true,pal:'snow',flat:false}};
+if(!P.init){P.init=1;mkPart('Baseplate',[0,-.5,0],[512,1,512],'#5aa05a').mat='grass';makeAvatar();{const tk=store.get('brixblox-template');store.del('brixblox-template');if(tk&&NEWTPL[tk])(P.env||(P.env={})).ter=Object.assign({},NEWTPL[tk])}save()}
+if(P.env&&P.env.light==='rob'+'lox'){P.env.light='warm'}
 if(!P.v2){P.v2=1;const av=function(n){return P.parts.find(function(p){return p.av&&p.name===n})},hd=av('Head'),ra=av('Rarm');if(hd&&ra)hd.color=ra.color;if(P.avId&&!P.anims.jump)jumpAnim();save()}
 if(!P.v5){P.v5=1;if(P.avId){const av=function(n){return P.parts.find(function(p){return p.av&&p.name===n})},T=av('Torso');
   if(T){T.size=[1.6,2,.8];T.color='#ff6b57';[['Head',[0,1.65,0],[1.4,1.5,1.3],'#f0c49a'],['Rarm',[1.1,-.1,0],[.7,2,.7],'#f0c49a'],['Larm',[-1.1,-.1,0],[.7,2,.7],'#f0c49a'],['Rleg',[.4,-2,0],[.75,2,.75],'#a4bd47'],['Lleg',[-.4,-2,0],[.75,2,.75],'#a4bd47']].forEach(function(r){
@@ -7161,7 +7163,14 @@ function publishDlg(){mdl(gameId&&!gameDraft?'Publish settings':'Publish game',f
   const r=el('div','tb');r.append(mb('Publish as Private','',function(){go('private')}),mb('Publish as Public','',function(){go('public')}),mb('Cancel','ghost',close));c.append(r);setTimeout(function(){nm.focus()},0)})}
 function reloadInto(v){skipUnload=true;store.set('brixblox-pending',v);location.reload()}
 function openGame(id){if(dirty())ask('This game is not published, so it will be lost. Open another game anyway?','Open anyway',function(){reloadInto(id)});else reloadInto(id)}
-function newGame(){if(dirty())ask('This game is not published, so it will be lost. Start a new game anyway?','Start new game',function(){reloadInto('__new__')});else reloadInto('__new__')}
+var NEWTPLD={'Baseplate':['\u25AB','A flat, empty baseplate'],'Forest':['\u{1F332}','Hills with trees and grass'],'Flat grass':['\u{1F33F}','A flat grassy field'],'Rolling hills':['\u26F0','Gentle grassy hills'],'Desert':['\u{1F3DC}','Sandy desert dunes'],'Snowy mountains':['\u2744','Snowy peaks and pine trees']};
+function pickTemplate(go){mdl('Choose a template',function(c,close){c.append(el('p','note','Pick what your new game starts with. You can change it later in the Terrain panel.'));
+  const g=el('div');g.style.cssText='display:grid;grid-template-columns:repeat(2,1fr);gap:8px';
+  Object.keys(NEWTPLD).forEach(function(k){const b=el('button','btn small ghost');b.type='button';b.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 8px;text-align:center;height:auto;white-space:normal';
+    const i=el('span','',NEWTPLD[k][0]);i.style.fontSize='1.8rem';const t=el('b','',k),d=el('span','',NEWTPLD[k][1]);d.style.cssText='font-size:.75rem;font-weight:400;opacity:.8';b.append(i,t,d);
+    b.onclick=function(){store.set('brixblox-template',k);close();go()};g.append(b)});
+  c.append(g,mb('Cancel','ghost',close))})}
+function newGame(){const go=function(){pickTemplate(function(){reloadInto('__new__')})};if(dirty())ask('This game is not published, so it will be lost. Start a new game anyway?','Start new game',go);else go()}
 function gamesDlg(){mdl('My games',function(c,close){const L=glib(),ids=Object.keys(L).filter(function(k){return mineG(L[k])&&!coGuestG(L[k])}).sort(function(a,b){return L[b].at-L[a].at});
   if(!ids.length)c.append(el('p','note','No games yet.'));
   ids.forEach(function(id){const g=L[id],row=el('div','tb'),t=el('span','',g.name+(id===gameId?' (open)':'')+' - '+(g.dr?'Draft (not on the website)':g.vis==='public'?'Public':'Private'));row.style.alignItems='center';t.style.flex='1';row.append(t);
@@ -7448,7 +7457,7 @@ function itemRoom2(mn,E,ed){
 async function studioHome(){
   const ov=el('div','screen');ov.id='shome';ov.style.zIndex=200;
   const bar=el('header','bar'),lg=el('div','logo sm');lg.innerHTML='<span class="blk b1"></span><span class="blk b2"></span><span class="blk b3"></span>';lg.append(el('h1','','BrixBlox Studio'));
-  const who=el('div','who');who.append(mb('Create a new game','',function(){reloadInto('__new__')}),mb('← BrixBlox','ghost',function(){location.href=SITE_URL}));bar.append(lg,who);
+  const who=el('div','who');who.append(mb('Create a new game','',function(){pickTemplate(function(){reloadInto('__new__')})}),mb('← BrixBlox','ghost',function(){location.href=SITE_URL}));bar.append(lg,who);
   const pg=el('div','page');pg.style.maxWidth='1280px';pg.append(el('h2','big','Your games'));const box=el('div');pg.append(box);ov.append(bar,pg);document.body.append(ov);
   const map={},L=glib();
   Object.keys(L).forEach(function(id){const g=L[id];if(mineG(g)&&!coGuestG(g)&&id.indexOf('acc_')!==0&&id.indexOf('avatar_')!==0&&id.indexOf('sys_')!==0)map[id]={id:id,name:g.name||'Untitled',vis:g.vis||'private',at:g.at||0,dr:!!g.dr}});
@@ -9044,7 +9053,7 @@ window.terrainUI=function(d){
   slider(d,'Grass size (tallness)',T,'gh',.3,3,.1,function(v){return Math.round(v*100)+'%'},function(){save()});if(T.gh===undefined)T.gh=1;
   const gp=el('input');gp.type='checkbox';gp.checked=T.gpush!==false;gp.onchange=function(){T.gpush=gp.checked;save()};const gpl=lab('Grass bends under players and rigs',gp);gpl.title='Grass leans away and flattens under characters. For any other part, tick "Squish grass" in its properties.';d.append(gpl);
   const b=el('button','btn ghost small','New random terrain');b.type='button';b.style.marginTop='6px';b.onclick=function(){T.seed=Math.floor(Math.random()*9999)+1;T.on=true;delete T.hd;delete T.mt;T.rv=(T.rv||0)+1;TB.undo.length=0;save();terSync();props()};d.append(b);
-  d.append(el('h4','','Sculpt like Roblox'));
+  d.append(el('h4','','Sculpt'));
   if(!T.on){d.append(el('p','note','Turn Terrain on (or pick a place) to sculpt it.'));return}
   const bc=el('input');bc.type='checkbox';bc.checked=TB.on;bc.onchange=function(){TB.on=bc.checked;if(!TB.on&&TB.ring)TB.ring.visible=false;props()};d.append(lab('Sculpt with the mouse (left-click and drag on the ground)',bc));
   const row=function(items,curv,fn){const w=el('div');w.style.cssText='display:flex;flex-wrap:wrap;gap:5px;margin:6px 0';items.forEach(function(it){const bt=el('button','btn small'+(curv===it[0]?'':' ghost'),it[1]);bt.type='button';bt.onclick=function(){fn(it[0]);props()};w.append(bt)});d.append(w)};
