@@ -6422,7 +6422,12 @@ function camScript(dt,f){const c=S.cm;if(!c)return;
   if(c.mode==='player'&&c.u>=1)S.cm=null}
 /* Play camera: it never goes through solid parts (it slides in at once and eases back out), and zooming all the way in is first person */
 const CLd=new THREE.Vector3(),CLr=new THREE.Vector3(),CLo=new THREE.Vector3(),CLg=new THREE.Vector3(),CLu=new THREE.Vector3(0,1,0),CLs=new THREE.Sphere(),CLn=[],CLh=[],CL0=[0,0],CLA=[[0,0],[1,0],[-1,0],[0,1],[0,-1]];
-function camLimit(fx,fy,fz,f,want){
+/* the camera also stops at the terrain (the part test below knows nothing about it) */
+function camLimit(fx,fy,fz,f,want){let b=camLimit0(fx,fy,fz,f,want);
+  if(TER.on&&b>0){const l=Math.hypot(f[0],f[1],f[2])||1,dx=-f[0]/l,dy=-f[1]/l,dz=-f[2]/l,st=Math.max(.4,b/70),hit=function(t){const h=terH(fx+dx*t,fz+dz*t);return h>-1e8&&h>fy+dy*t-.7};
+    let prev=0;for(let t=st;;t+=st){const tt=Math.min(t,b);if(hit(tt)){let lo=prev,hi=tt;for(let k=0;k<6;k++){const m=(lo+hi)/2;if(hit(m))hi=m;else lo=m}b=Math.max(0,lo);break}prev=tt;if(tt>=b)break}}
+  return b}
+function camLimit0(fx,fy,fz,f,want){
   if(--CAMN<=0){CAMN=15;const ok=Object.keys(M).filter(function(k){const p=byId(k);if(!p||p.av||p.stab||!inW(p)||gone(p)||!solid(rootOf(p)))return false;if((MATS[p.mat]||MATS.plastic).op)return false;const mt=M[k]&&M[k].material;return !(mt&&mt.opacity<.75)});
     /* meshes whose real shape is known are tested against their real triangles; everything else against its box */
     CAMX=[];CAMM=[];ok.forEach(function(k){const p=byId(k);let L=null;if(p.shape==='mesh'){try{L=colsOf(p)}catch(e){L=null}}if(L&&L[0]&&L[0].mc)CAMX.push(p);else CAMM.push(M[k])})}
@@ -8955,12 +8960,14 @@ function terTrees(g,cfg){terCellsReset(g);if(TER.veg){g.remove(TER.veg);TER.veg.
   mkI(new THREE.IcosahedronGeometry(2.6,1),lm,round,5.2,[.25,.55,.3])}
 function buildTerrain(cfg){
   const nk=Math.max(1,Math.min(6,(+cfg.sz||100)/100));terSetSize(nk);if((cfg.hd||cfg.mt)&&(cfg.szs||1)!==nk)terResize(cfg,cfg.szs||1,nk);cfg.szs=nk;
-  const b0=cfg.flat?function(){return 0}:terrainFn(cfg.seed,cfg.amp),base=(cfg.mo||cfg.hl)?terExtra(b0,cfg):b0,NV=TNV*TNV;TER.cfg=cfg;TER.B=base;TER.N2=mkNoise(cfg.seed+99);
+  const b0=cfg.flat?function(){return 0}:terrainFn(cfg.seed,cfg.amp),base1=(cfg.mo||cfg.hl)?terExtra(b0,cfg):b0,base=function(x,z){const e=HS-Math.max(Math.abs(x),Math.abs(z)),h=base1(x,z);if(e>=60)return h;const t=sm(0,60,e);return h*t-8*(1-t)},NV=TNV*TNV;TER.cfg=cfg;TER.B=base;TER.N2=mkNoise(cfg.seed+99);
   TER.hg=new Float32Array(NV);TER.hv=new Uint8Array(NV);TER.D=new Float32Array(NV);TER.M=new Uint8Array(NV);TER.cg=new Float32Array(NV*3);TER.ge=new Float32Array(NV);
   terDec(cfg.hd,TER.D,.1);terDec(cfg.mt,TER.M,1);TER.edited=TER.D.some(function(v){return v!==0});
   TER.H=function(x,z){return base(x,z)+terD(x,z)};
   const g=new THREE.Group();TER.g=g;TER.tiles={};TER.tl=[];TER.mat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.96,metalness:0,map:detailTex()});TER.mat.onBeforeCompile=terFakeGrass;
   if(NT===8){for(let tz=0;tz<8;tz++)for(let tx=0;tx<8;tx++)terTile(tx,tz)}else terStream(0,0,240,1e9);/* big plates are built in pieces around you as you move */
+  {const sk=new THREE.MeshStandardMaterial({color:0x4a3b2a,roughness:1,side:THREE.DoubleSide}),wh=60,add=function(w,h,x,y,z,ry,rx){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),sk);m.position.set(x,y,z);if(ry)m.rotation.y=ry;if(rx)m.rotation.x=rx;g.add(m)};
+    add(TSZ,wh,0,-8-wh/2+.05,HS,0);add(TSZ,wh,0,-8-wh/2+.05,-HS,0);add(TSZ,wh,HS,-8-wh/2+.05,0,Math.PI/2);add(TSZ,wh,-HS,-8-wh/2+.05,0,Math.PI/2);add(TSZ,TSZ,0,-8-wh,0,0,Math.PI/2)}
   const wg=new THREE.PlaneGeometry(Math.max(1600,TSZ+1200),Math.max(1600,TSZ+1200));wg.rotateX(-Math.PI/2);
   const wm=new THREE.Mesh(wg,new THREE.MeshPhongMaterial({color:0x2f86c8,transparent:true,opacity:.74,shininess:140,specular:0xcfe8ff,depthWrite:false}));wm.position.y=-.35;g.add(wm);
   terTrees(g,cfg);return g}
