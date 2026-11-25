@@ -8976,7 +8976,7 @@ function grassPush(cx,cz){const c=[],ps=TER.cfg.gpush!==false;
 function grassClear(){GR.tiles.forEach(function(m){if(m.geometry&&m.geometry.dispose)m.geometry.dispose();if(GR.g)GR.g.remove(m)});GR.tiles.clear()}
 function grassMat(){if(GR.mat)return GR.mat;const m=new THREE.MeshLambertMaterial({vertexColors:true});
   const wind=function(sh){sh.uniforms.uT=GR.t;sh.uniforms.uC=GR.c;sh.uniforms.uF=GR.f;sh.uniforms.uP=GR.push;sh.vertexShader='attribute float tw;attribute float by;uniform float uT;uniform vec4 uP[12];uniform vec3 uC;uniform vec2 uF;\n'+sh.vertexShader.replace('#include <begin_vertex>','vec3 transformed=vec3(position);float ws=sin(uT*1.7+position.x*.35+position.z*.27)*.6+sin(uT*3.1+position.x*.9+position.z*.5)*.25;transformed.x+=ws*tw*.16;transformed.z+=ws*tw*.1;for(int i=0;i<12;i++){vec4 pp=uP[i];if(pp.z>0.0){vec2 dv=position.xz-pp.xy;float f=(1.0-smoothstep(pp.z*.35,pp.z,length(dv)))*(1.0-smoothstep(1.0,3.0,pp.w-by))*tw;transformed.xz+=normalize(dv+vec2(.001))*f*.55;transformed.y=mix(transformed.y,by+.08,f*.75);}}transformed.y=mix(by,transformed.y,1.0-smoothstep(uF.x,uF.y,length(position.xz-uC.xz)));')};m.onBeforeCompile=wind;m.shadowSide=THREE.DoubleSide;/* the shadow pass uses the same sway and bending as the blades, so the shadows move with them */GR.dep=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,side:THREE.DoubleSide});GR.dep.onBeforeCompile=wind;return GR.mat=m}
-function grassBuild(gx,gz,dens,lod){lod=lod||0;const S=32,x0=gx*S,z0=gz*S,n=Math.round(S*S*.32*dens*[1,.55,.3][lod]),LW=[1,1.7,2.6][lod],LH=[1,1.12,1.25][lod];let q=((gx*73856093)^(gz*19349663)^(TER.cfg.seed*83492791))>>>0||1;
+function grassBuild(gx,gz,dens,lod){lod=lod||0;const S=32,x0=gx*S,z0=gz*S,n=Math.round(S*S*.32*dens*[1,.65,.45,.32][lod]),LW=[1,2,3.4,5][lod],LH=[1,1.4,1.9,2.5][lod];let q=((gx*73856093)^(gz*19349663)^(TER.cfg.seed*83492791))>>>0||1;
   const rnd=function(){q^=q<<13;q>>>=0;q^=q>>>17;q^=q<<5;q>>>=0;return q/4294967296},PS=[],CS=[],TW=[],BY=[],IX=[];let vc=0;
   for(let t=0;t<n;t++){const x=x0+rnd()*S,z=z0+rnd()*S,r1=rnd(),r2=rnd(),r3=rnd(),r4=rnd();if(x<-HS+2||x>HS-2||z<-HS+2||z>HS-2)continue;
     const i0=Math.max(0,Math.min(TSEG,Math.round((z+HS)/TCELL)))*TNV+Math.max(0,Math.min(TSEG,Math.round((x+HS)/TCELL))),e=TER.ge[i0];if(e<=.02||r1>e)continue;
@@ -8994,9 +8994,9 @@ window.terTick=function(dt){
   if(!GR.g){GR.g=new THREE.Group();scene.add(GR.g)}
   const sg=dens+'|'+(cfg.gh||1)+'|'+TER.sig;if(sg!==GR.sig){GR.sig=sg;grassClear()}
   GR.g.visible=dens>0;GR.t.value+=dt;if(dens<=0)return;try{grassPush(camera.position.x,camera.position.z)}catch(e){}
-  const cx=camera.position.x,cz=camera.position.z,R=Math.max(40,Math.min(260,+cfg.gr||140)),S=32;GR.c.value.set(cx,0,cz);GR.f.value.set(R*.55,R*.88);
+  const cx=camera.position.x,cz=camera.position.z,R=Math.max(40,Math.min(260,+cfg.gr||140)),S=32;GR.c.value.set(cx,0,cz);GR.f.value.set(R*.8,R*.97);
   GR.tiles.forEach(function(m,k){const c=m.userData.c;if(Math.hypot(c[0]-cx,c[1]-cz)>R+50){if(m.geometry&&m.geometry.dispose)m.geometry.dispose();GR.g.remove(m);GR.tiles.delete(k)}});
-  const lodOf=function(d){return d<R*.36?0:d<R*.68?1:2};
+  const lodOf=function(d){return d<R*.2?0:d<R*.4?1:d<R*.65?2:3};
   const list=[];for(let gx=Math.floor((cx-R)/S);gx<=Math.floor((cx+R)/S);gx++)for(let gz=Math.floor((cz-R)/S);gz<=Math.floor((cz+R)/S);gz++){const k=gx+','+gz,old=GR.tiles.get(k);
     const c=[gx*S+S/2,gz*S+S/2],d=Math.hypot(c[0]-cx,c[1]-cz);if(d>R+S*.7)continue;const lo=lodOf(d);if(old&&old.userData.lod===lo)continue;list.push([d,gx,gz,k,c,lo,old])}
   list.sort(function(a,b){return a[0]-b[0]});
