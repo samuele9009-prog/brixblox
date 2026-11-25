@@ -8963,11 +8963,9 @@ function buildTerrain(cfg){
   terDec(cfg.hd,TER.D,.1);terDec(cfg.mt,TER.M,1);TER.edited=TER.D.some(function(v){return v!==0});
   TER.H=function(x,z){return base(x,z)+terD(x,z)};
   const g=new THREE.Group();TER.g=g;TER.tiles={};TER.tl=[];TER.mat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.96,metalness:0,map:detailTex()});TER.mat.onBeforeCompile=terFakeGrass;
-  if(NT===8){for(let tz=0;tz<8;tz++)for(let tx=0;tx<8;tx++)terTile(tx,tz)}else terStream(0,0,240,1e9);/* big plates are built in pieces around you as you move */
+  if(NT===8){for(let tz=0;tz<8;tz++)for(let tx=0;tx<8;tx++)terTile(tx,tz)}else terStream(0,0,600,1e9);/* big plates are built in pieces around you as you move */
   {const sk=new THREE.MeshStandardMaterial({color:0x4a3b2a,roughness:1,side:THREE.DoubleSide}),wh=60,add=function(w,h,x,y,z,ry,rx){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),sk);m.position.set(x,y,z);if(ry)m.rotation.y=ry;if(rx)m.rotation.x=rx;g.add(m)};
     add(TSZ,wh,0,-8-wh/2+.05,HS,0);add(TSZ,wh,0,-8-wh/2+.05,-HS,0);add(TSZ,wh,HS,-8-wh/2+.05,0,Math.PI/2);add(TSZ,wh,-HS,-8-wh/2+.05,0,Math.PI/2);add(TSZ,TSZ,0,-8-wh,0,0,Math.PI/2)}
-  const wg=new THREE.PlaneGeometry(Math.max(1600,TSZ+1200),Math.max(1600,TSZ+1200));wg.rotateX(-Math.PI/2);
-  const wm=new THREE.Mesh(wg,new THREE.MeshPhongMaterial({color:0x2f86c8,transparent:true,opacity:.74,shininess:140,specular:0xcfe8ff,depthWrite:false}));wm.position.y=-.35;g.add(wm);
   terTrees(g,cfg);return g}
 function terSync(){let cfg;try{cfg=terCfg()}catch(e){return}
   const sig=[cfg.on?1:0,cfg.seed,cfg.amp,cfg.trees?1:0,cfg.pal||'grass',cfg.flat?1:0,cfg.rv||0,cfg.sz||100,cfg.mo||0,cfg.hl||0].join('|');
@@ -8999,7 +8997,7 @@ function grassBuild(gx,gz,dens,lod){lod=lod||0;const S=32,x0=gx*S,z0=gz*S,n=Math
   const m=new THREE.Mesh(geo,grassMat());m.receiveShadow=true;m.castShadow=lod===0;m.customDepthMaterial=GR.dep;m.userData.lod=lod;return m}
 window.terTick=function(dt){
   if(!TER.on||!TER.g||!TER.hg){if(GR.g)GR.g.visible=false;return}
-  try{terStream(camera.position.x,camera.position.z,330,5)}catch(e){}
+  try{terStream(camera.position.x,camera.position.z,720,8)}catch(e){}
   const cfg=TER.cfg,ge=gfxEff(),lv=ge===GFXT.lowest?0:ge===GFXT.low?.55:1,dens=(cfg.grass===false?0:(cfg.gd||1))*lv;
   if(!GR.g){GR.g=new THREE.Group();scene.add(GR.g)}
   const sg=dens+'|'+(cfg.gh||1)+'|'+TER.sig;if(sg!==GR.sig){GR.sig=sg;grassClear()}
