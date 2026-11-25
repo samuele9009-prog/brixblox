@@ -6424,7 +6424,7 @@ function camScript(dt,f){const c=S.cm;if(!c)return;
 const CLd=new THREE.Vector3(),CLr=new THREE.Vector3(),CLo=new THREE.Vector3(),CLg=new THREE.Vector3(),CLu=new THREE.Vector3(0,1,0),CLs=new THREE.Sphere(),CLn=[],CLh=[],CL0=[0,0],CLA=[[0,0],[1,0],[-1,0],[0,1],[0,-1]];
 /* the camera also stops at the terrain (the part test below knows nothing about it) */
 function camLimit(fx,fy,fz,f,want){let b=camLimit0(fx,fy,fz,f,want);
-  if(TER.on&&b>0){const l=Math.hypot(f[0],f[1],f[2])||1,dx=-f[0]/l,dy=-f[1]/l,dz=-f[2]/l,st=Math.max(.4,b/70),hit=function(t){const h=terH(fx+dx*t,fz+dz*t);return h>-1e8&&h>fy+dy*t-.7};
+  if(typeof terOn==='function'&&terOn()&&b>0){const l=Math.hypot(f[0],f[1],f[2])||1,dx=-f[0]/l,dy=-f[1]/l,dz=-f[2]/l,st=Math.max(.4,b/70),hit=function(t){const h=terH(fx+dx*t,fz+dz*t);return h>-1e8&&h>fy+dy*t-.7};
     let prev=0;for(let t=st;;t+=st){const tt=Math.min(t,b);if(hit(tt)){let lo=prev,hi=tt;for(let k=0;k<6;k++){const m=(lo+hi)/2;if(hit(m))hi=m;else lo=m}b=Math.max(0,lo);break}prev=tt;if(tt>=b)break}}
   return b}
 function camLimit0(fx,fy,fz,f,want){
@@ -8860,6 +8860,7 @@ function terrainFn(seed,amp){const N=mkNoise(seed);TER.N=N;
 function terCfg(){const E=P.env||(P.env={});
   if(E.ter===undefined){if(!P.init)return{on:false,seed:7,amp:26,trees:true};const custom=P.parts.some(function(p){return !p.av&&!p.parent&&p.name!=='Baseplate'});E.ter={on:!custom,seed:7,amp:26,trees:true}}
   return E.ter}
+window.terOn=function(){return !!TER.on};
 window.terH=function(x,z){if(!TER.on||!TER.H||Math.abs(x)>HS||Math.abs(z)>HS)return -1e9;return TER.H(x,z)};
 /* far away the ground itself is painted to look like grass (light and dark tufts); close up the real blades grow in over it, so the two blend without anything popping */
 function terFakeGrass(sh){sh.uniforms.uC=GR.c;sh.uniforms.uF2=GR.f2;sh.uniforms.uK=GR.k;
