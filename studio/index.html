@@ -7121,7 +7121,14 @@ function netCmd(p){if(!p||p.t!==NET.id||p.id===NET.id||!(running||playing)||!ONL
 
 /* Undo / redo: Ctrl+Z undoes, Ctrl+Shift+Z or Ctrl+Y redoes (parts, models and animations) */
 const hist=[],redoS=[];let histLast=null,histT=0,histBusy=false;const saveRaw=save;
-function snapState(){return JSON.stringify({parts:P.parts,models:P.models,anims:P.anims,guis:P.guis,folders:P.folders||[],nid:P.nid,avId:P.avId})}
+/* Terrain (size, place, hills, trees, sculpting, paint...) is part of the undo history too. The sculpted chunks (ter.ch) are never edited in place, so each version is kept by reference and the history only stores a small token for it. */
+const tchId=new Map(),tchObj=new Map();let tchN=0;
+function terForSnap(){const t=P.env&&P.env.ter;if(!t||typeof t!=='object')return undefined;const o=Object.assign({},t);
+  if(o.ch&&typeof o.ch==='object'){let id=tchId.get(t.ch);if(!id){id=++tchN;tchId.set(t.ch,id);tchObj.set(id,t.ch);if(tchObj.size>120){const k=tchObj.keys().next().value;tchId.delete(tchObj.get(k));tchObj.delete(k)}}o.ch='#'+id}return o}
+function terFromSnap(st){if(!('ter' in st)){if(P.env&&P.env.ter){delete P.env.ter;try{window.terForce&&window.terForce()}catch(e){}}return}
+  const t=st.ter;if(!t||typeof t!=='object')return;if(typeof t.ch==='string'){const o=tchObj.get(+t.ch.slice(1));if(o)t.ch=o;else delete t.ch}
+  (P.env||(P.env={})).ter=t;try{window.terForce&&window.terForce()}catch(e){}}
+function snapState(){return JSON.stringify({parts:P.parts,models:P.models,anims:P.anims,guis:P.guis,folders:P.folders||[],nid:P.nid,avId:P.avId,ter:terForSnap()})}
 /* In co-op, Ctrl+Z only takes back YOUR changes. Anything the other person changed last stays the way they left it. */
 function coUndoMerge(st){if(typeof COP==='undefined'||!COP||!COP.on||COP.joining)return st;
   try{coDiff()}catch(e){}
@@ -7137,13 +7144,14 @@ histLast=snapState();
 save=function(){saveRaw();if(histBusy)return;const cur=snapState();if(cur===histLast)return;const now=performance.now();
   if(!hist.length||now-histT>500){hist.push(histLast);if(hist.length>40)hist.shift()}
   histT=now;histLast=cur;redoS.length=0};
-function histApply(str){histBusy=true;try{const st=coUndoMerge(JSON.parse(str));P.parts=st.parts;P.models=st.models;P.anims=st.anims;P.folders=st.folders||[];if(selFold&&!foldBy(selFold))selFold=null;if(st.guis){P.guis=st.guis;if(selGui&&!P.guis.some(function(g){return g.id===selGui}))selGui=null}P.nid=st.nid;P.avId=st.avId;
+function histApply(str){histBusy=true;try{const st=coUndoMerge(JSON.parse(str));P.parts=st.parts;P.models=st.models;P.anims=st.anims;P.folders=st.folders||[];if(selFold&&!foldBy(selFold))selFold=null;if(st.guis){P.guis=st.guis;if(selGui&&!P.guis.some(function(g){return g.id===selGui}))selGui=null}P.nid=st.nid;P.avId=st.avId;terFromSnap(st);
   sel=sel.filter(function(id){return byId(id)});if(selModel&&!byModel(selModel))selModel=null;if(selJ&&!byId(selJ))selJ=null;
   aSelKeys=[];live={};fixA();aJFix();
   rebuildParts();renderParts();
   if(animOn()){const r=animT&&byId(animT);animSelect(r&&kids(r).length?r:null,animTs.length>1);animUI()}else props();
   histLast=snapState();saveRaw()}finally{histBusy=false}}
 function undoRedo(redo){const say=function(t){if(animOn()){const h=$('a-hint');if(h)h.textContent=t}else msg(t)};
+  if(!redo&&delGameUndo())return;
   if(redo){if(!redoS.length){say('Nothing to redo.');return}hist.push(histLast);histApply(redoS.pop());say('Redid.')}
   else{if(!hist.length){say('Nothing to undo.');return}redoS.push(histLast);histApply(hist.pop());say('Undid.')}histT=0}
 addEventListener('keydown',function(e){if(!(e.ctrlKey||e.metaKey)||e.altKey)return;const z=e.code==='KeyZ',y=e.code==='KeyY'&&!e.shiftKey;if(!z&&!y)return;
@@ -7184,12 +7192,20 @@ function pickTemplate(go){mdl('Choose a template',function(c,close){c.append(el(
     b.onclick=function(){store.set('brixblox-template',k);close();go()};g.append(b)});
   c.append(g,mb('Cancel','ghost',close))})}
 function newGame(){const go=function(){pickTemplate(function(){reloadInto('__new__')})};if(dirty())ask('This game is not published, so it will be lost. Start a new game anyway?','Start new game',go);else go()}
+/* Deleted games are kept in memory for this session so Ctrl+Z (or the Undo button in My games) can bring them back. Their sounds/meshes are only wiped when the entry is pushed out or the page closes. */
+const DELG=[];let delAt=0;
+function delGameStash(id,rec,open){DELG.push({id:id,rec:rec,open:open,cur:store.get('brixblox-cur')===id});delAt=performance.now();while(DELG.length>8){const o=DELG.shift();if(!o.open)dropGameBig(o.rec)}}
+function delGameUndo(force){if(!DELG.length||!(force||delAt>=histT))return false;const e=DELG.pop();const L=glib();if(L[e.id]){DELG.push(e);return false}
+  L[e.id]=e.rec;store.set(GKEY,JSON.stringify(L));if(e.cur&&!store.get('brixblox-cur')&&!gameId)store.set('brixblox-cur',e.id);try{cloudPush(e.id,true)}catch(x){}
+  msg('Brought back "'+e.rec.name+'"'+(e.open?' (open it from My games).':'.'));return true}
+addEventListener('pagehide',function(){DELG.forEach(function(o){if(!o.open)try{dropGameBig(o.rec)}catch(e){}})});
 function gamesDlg(){mdl('My games',function(c,close){const L=glib(),ids=Object.keys(L).filter(function(k){return mineG(L[k])&&!coGuestG(L[k])}).sort(function(a,b){return L[b].at-L[a].at});
+  if(DELG.length)c.append(mb('Undo delete: "'+DELG[DELG.length-1].rec.name+'" (Ctrl+Z)','ghost',function(){close();delGameUndo(true);gamesDlg()}));
   if(!ids.length)c.append(el('p','note','No games yet.'));
   ids.forEach(function(id){const g=L[id],row=el('div','tb'),t=el('span','',g.name+(id===gameId?' (open)':'')+' - '+(g.dr?'Draft (not on the website)':g.vis==='public'?'Public':'Private'));row.style.alignItems='center';t.style.flex='1';row.append(t);
     if(id!==gameId)row.append(mb('Open','',function(){close();openGame(id)}));
     if(!g.dr)row.append(mb(g.vis==='public'?'Make private':'Make public','ghost',function(){const L2=glib();if(!L2[id])return;L2[id].vis=g.vis==='public'?'private':'public';store.set(GKEY,JSON.stringify(L2));cloudVis(id,L2[id].vis);if(id===gameId){gameVis=L2[id].vis;updateStat()}close();gamesDlg()}));
-    row.append(mb('Delete','ghost',function(){ask('Delete "'+g.name+'"? This cannot be undone.','Delete',function(){const L2=glib();if(id!==gameId&&L2[id])dropGameBig(L2[id]);delete L2[id];store.set(GKEY,JSON.stringify(L2));cloudDel(id);if(store.get('brixblox-cur')===id)store.del('brixblox-cur');if(id===gameId){gameId=null;gameVis=null;gameDraft=false;baseStr=JSON.stringify(P);updateStat()}gamesDlg()})}));
+    row.append(mb('Delete','ghost',function(){ask('Delete "'+g.name+'"? You can undo this with Ctrl+Z.','Delete',function(){const L2=glib();if(L2[id])delGameStash(id,L2[id],id===gameId);delete L2[id];store.set(GKEY,JSON.stringify(L2));cloudDel(id);if(store.get('brixblox-cur')===id)store.del('brixblox-cur');if(id===gameId){gameId=null;gameVis=null;gameDraft=false;baseStr=JSON.stringify(P);updateStat()}gamesDlg()})}));
     c.append(row)});
   c.append(mb('New game (Shift+N, G)','',function(){close();newGame()}),mb('Close','ghost',close))})}
 {const bk=$('s-back'),pb=mb('Publish','',publishDlg),gb=mb('My games','ghost',gamesDlg);upBtn=mb('Update','',updateLive);upBtn.title='Send your latest changes to normal BrixBlox. Until you press this, changes only save here in BrixBlox Studio.';upBtn.hidden=true;$('s-name').insertAdjacentElement('afterend',statEl);bk.parentNode.insertBefore(pb,bk);bk.parentNode.insertBefore(upBtn,bk);bk.parentNode.insertBefore(gb,bk)}
@@ -9008,7 +9024,7 @@ function terSync(){let cfg;try{cfg=terCfg()}catch(e){return}
   if(sig!==TER.sig){TER.sig=sig;disposeTer();TER.on=!!cfg.on;TER.amp=cfg.amp;
     if(cfg.on){try{TER.g=buildTerrain(cfg);scene.add(TER.g)}catch(e){TER.on=false;TER.H=null;log('Error: terrain - '+(e&&e.message))}}else TER.H=null}
   const bp=P.parts.find(function(p){return p.name==='Baseplate'&&!p.av});if(bp&&M[bp.id])M[bp.id].visible=!TER.on}
-window.terSync=terSync;
+window.terSync=terSync;window.terForce=function(){TER.sig='';terSync()};
 /* ---- grass blades: 32x32 stud tiles built near the camera only, never cast shadows, wave in the wind ---- */
 const GR={g:null,tiles:new Map(),mat:null,t:{value:0},sig:'',c:{value:new THREE.Vector3()},f:{value:new THREE.Vector2(62,95)},f2:{value:new THREE.Vector2(30,85)},k:{value:1},push:{value:[0,1,2,3,4,5,6,7,8,9,10,11].map(function(){return new THREE.Vector4()})}};
 const _gbx=new THREE.Box3(),_gbv=new THREE.Vector3();
@@ -9055,7 +9071,7 @@ const TB={on:false,tool:'raise',mat:1,size:14,str:5,down:false,pt:null,y0:0,undo
 function terPick(e){if(!TER.g||!TER.tl||!TER.tl.length)return null;ray.setFromCamera(ndc(e),camera);return ray.intersectObjects(TER.tl,false)[0]||null}
 function terCursor(p){if(!TB.ring){TB.ring=new THREE.Mesh(new THREE.RingGeometry(.93,1,48),new THREE.MeshBasicMaterial({color:0x00ffa0,transparent:true,opacity:.85,depthTest:false,side:THREE.DoubleSide}));TB.ring.rotation.x=-Math.PI/2;TB.ring.renderOrder=20;scene.add(TB.ring)}
   TB.ring.visible=!!p&&TB.on&&!playing;if(p){TB.ring.position.set(p.x,p.y+.25,p.z);TB.ring.scale.setScalar(TB.size)}}
-function terSnap(){TB.cur=new Map();TB.undo.push(TB.cur);if(TB.undo.length>14)TB.undo.shift()}
+function terSnap(){TB.cur=null}/* Ctrl+Z for sculpting now goes through the normal undo history */
 function terCommit(){const c=terCfg();terSaveEdits(c);TER.edited=TER.E.size>0;TB.cur=null;save();try{terTrees(TER.g,TER.cfg)}catch(e){}grassClear()}
 function terUndo(){const u=TB.undo.pop();if(!u||!TER.g)return;TB.cur=null;let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;
   u.forEach(function(old,k){const cx=Math.floor(k/65536)-32768,cz=k%65536-32768;if(old)TER.E.set(k,{D:old.D,M:old.M,cx:cx,cz:cz});else TER.E.delete(k);TER.C.delete(k);
@@ -9074,7 +9090,6 @@ cv.addEventListener('pointerdown',function(e){if(!TB.on||playing||e.button!==0||
   TB.down=true;TB.pt=h.point.clone();TB.y0=h.point.y;terSnap();TB.timer=setInterval(terBrushTick,30);terBrushTick()},true);
 cv.addEventListener('pointermove',function(e){if(!TB.on||playing){if(TB.ring)TB.ring.visible=false;return}const h=terPick(e);if(h){TB.pt=h.point.clone();terCursor(h.point)}else terCursor(null);if(TB.down)e.stopImmediatePropagation()},true);
 window.addEventListener('pointerup',function(e){if(!TB.down)return;TB.down=false;clearInterval(TB.timer);e.stopPropagation();terCommit()},true);
-window.addEventListener('keydown',function(e){if(TB.on&&!playing&&TB.undo.length&&(e.ctrlKey||e.metaKey)&&!e.shiftKey&&(e.key||'').toLowerCase()==='z'&&!/^(INPUT|TEXTAREA|SELECT)$/.test((e.target||{}).tagName||'')){e.preventDefault();e.stopImmediatePropagation();terUndo()}},true);
 /* walk on the terrain, and the baseplate stops being solid while the terrain is on */
 const _gAt=groundAt;groundAt=function(cx,cz,fy,skipId){const b=_gAt.apply(this,arguments);if(TER.on){const h=terH(cx,cz);if(h>-1e8&&h<=fy+2.4&&h>b)return h}return b};
 const _solid=solid;solid=function(r){if(TER.on&&r&&r.name==='Baseplate'&&!r.av)return false;return _solid.apply(this,arguments)};
@@ -9165,7 +9180,7 @@ window.terrainUI=function(d){
   row([['raise','Raise'],['lower','Lower'],['smooth','Smooth'],['flatten','Flatten'],['paint','Paint']],TB.tool,function(v){TB.tool=v});
   if(TB.tool==='paint')row(TMATS,TB.mat,function(v){TB.mat=v});
   slider(d,'Brush size',TB,'size',2,60,1);slider(d,'Strength',TB,'str',1,10,1);
-  const u=el('button','btn ghost small','Undo stroke (Ctrl+Z)');u.type='button';u.onclick=function(){terUndo()};
+  const u=el('button','btn ghost small','Undo stroke (Ctrl+Z)');u.type='button';u.onclick=function(){undoRedo(false)};
   const rs=el('button','btn ghost small','Reset sculpting');rs.type='button';rs.style.marginLeft='6px';rs.onclick=function(){delete T.hd;delete T.mt;delete T.ch;T.rv=(T.rv||0)+1;TB.undo.length=0;save();terSync();props()};d.append(u,rs);
   d.append(el('p','note','Raise and Lower build hills and dig lakes. Smooth softens bumps. Flatten levels the ground to where you first click. Paint colours the ground (Grass, Sand, Rock, Snow, Dirt, Mud); grass blades only grow on grass. Sculpting is saved with your game.'))};
 try{applyEnv()}catch(e){}try{terSync()}catch(e){}
