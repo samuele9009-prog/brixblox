@@ -6952,7 +6952,7 @@ function theme(t){document.documentElement.dataset.theme=t;store.set('brixblox-t
 theme(store.get('brixblox-theme')==='dark'?'dark':'light');
 $('s-theme').onclick=function(){theme(document.documentElement.dataset.theme==='dark'?'light':'dark')};
 $('s-back').onclick=function(){S.stop=true;location.href=SITE_URL};
-$('s-name').value=P.name;rend();draw();var NEWTPL={'Baseplate':{on:false,seed:7,amp:26,trees:false,pal:'grass',flat:false},'Forest':{on:true,seed:7,amp:26,trees:true,pal:'grass',flat:false},'Flat grass':{on:true,seed:1,amp:6,trees:false,pal:'grass',flat:true},'Rolling hills':{on:true,seed:21,amp:18,trees:false,pal:'grass',flat:false},'Desert':{on:true,seed:5,amp:14,trees:false,pal:'desert',flat:false},'Snowy mountains':{on:true,seed:12,amp:50,trees:true,pal:'snow',flat:false}};
+$('s-name').value=P.name;rend();draw();var NEWTPL={'Baseplate':{on:false,seed:7,amp:26,trees:false,pal:'grass',flat:false},'Forest':{on:true,seed:7,amp:26,trees:true,pal:'grass',flat:false},'Mountains':{on:true,seed:33,amp:26,trees:true,pal:'grass',flat:false,mo:70,hl:35},'Flat grass':{on:true,seed:1,amp:6,trees:false,pal:'grass',flat:true},'Rolling hills':{on:true,seed:21,amp:18,trees:false,pal:'grass',flat:false},'Desert':{on:true,seed:5,amp:14,trees:false,pal:'desert',flat:false},'Snowy mountains':{on:true,seed:12,amp:50,trees:true,pal:'snow',flat:false}};
 if(!P.init){P.init=1;mkPart('Baseplate',[0,-.5,0],[512,1,512],'#5aa05a').mat='grass';makeAvatar();{const tk=store.get('brixblox-template');store.del('brixblox-template');if(tk&&NEWTPL[tk])(P.env||(P.env={})).ter=Object.assign({},NEWTPL[tk])}save()}
 if(P.env&&P.env.light==='rob'+'lox'){P.env.light='warm'}
 if(!P.v2){P.v2=1;const av=function(n){return P.parts.find(function(p){return p.av&&p.name===n})},hd=av('Head'),ra=av('Rarm');if(hd&&ra)hd.color=ra.color;if(P.avId&&!P.anims.jump)jumpAnim();save()}
@@ -7163,7 +7163,7 @@ function publishDlg(){mdl(gameId&&!gameDraft?'Publish settings':'Publish game',f
   const r=el('div','tb');r.append(mb('Publish as Private','',function(){go('private')}),mb('Publish as Public','',function(){go('public')}),mb('Cancel','ghost',close));c.append(r);setTimeout(function(){nm.focus()},0)})}
 function reloadInto(v){skipUnload=true;store.set('brixblox-pending',v);location.reload()}
 function openGame(id){if(dirty())ask('This game is not published, so it will be lost. Open another game anyway?','Open anyway',function(){reloadInto(id)});else reloadInto(id)}
-var NEWTPLD={'Baseplate':['\u25AB','A flat, empty baseplate'],'Forest':['\u{1F332}','Hills with trees and grass'],'Flat grass':['\u{1F33F}','A flat grassy field'],'Rolling hills':['\u26F0','Gentle grassy hills'],'Desert':['\u{1F3DC}','Sandy desert dunes'],'Snowy mountains':['\u2744','Snowy peaks and pine trees']};
+var NEWTPLD={'Baseplate':['\u25AB','A flat, empty baseplate'],'Forest':['\u{1F332}','Hills with trees and grass'],'Mountains':['\u{1F3D4}','Tall mountain ranges and hills'],'Flat grass':['\u{1F33F}','A flat grassy field'],'Rolling hills':['\u26F0','Gentle grassy hills'],'Desert':['\u{1F3DC}','Sandy desert dunes'],'Snowy mountains':['\u2744','Snowy peaks and pine trees']};
 function pickTemplate(go){mdl('Choose a template',function(c,close){c.append(el('p','note','Pick what your new game starts with. You can change it later in the Terrain panel.'));
   const g=el('div');g.style.cssText='display:grid;grid-template-columns:repeat(2,1fr);gap:8px';
   Object.keys(NEWTPLD).forEach(function(k){const b=el('button','btn small ghost');b.type='button';b.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 8px;text-align:center;height:auto;white-space:normal';
@@ -8847,7 +8847,7 @@ function terrainFn(seed,amp){const N=mkNoise(seed);TER.N=N;
 function terCfg(){const E=P.env||(P.env={});
   if(E.ter===undefined){if(!P.init)return{on:false,seed:7,amp:26,trees:true};const custom=P.parts.some(function(p){return !p.av&&!p.parent&&p.name!=='Baseplate'});E.ter={on:!custom,seed:7,amp:26,trees:true}}
   return E.ter}
-window.terH=function(x,z){if(!TER.on||!TER.H||Math.abs(x)>256||Math.abs(z)>256)return -1e9;return TER.H(x,z)};
+window.terH=function(x,z){if(!TER.on||!TER.H||Math.abs(x)>HS||Math.abs(z)>HS)return -1e9;return TER.H(x,z)};
 function disposeTer(){try{grassClear()}catch(e){}if(TER.g){scene.remove(TER.g);TER.g.traverse(function(o){if(o.geometry)o.geometry.dispose();if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose()}});TER.g=null}}
 function detailTex(){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d'),im=x.createImageData(128,128);
   for(let i=0;i<128*128;i++){const v=205+Math.random()*50;im.data[i*4]=v;im.data[i*4+1]=v;im.data[i*4+2]=v;im.data[i*4+3]=255}x.putImageData(im,0,0);
@@ -8855,20 +8855,21 @@ function detailTex(){const c=document.createElement('canvas');c.width=c.height=1
 /* ===== Terrain v2: height grid (177x177) split into 8x8 tiles (each tile is frustum-culled, so far-away hills cost nothing in the camera AND the shadow pass),
    sculpt brush (raise/lower/smooth/flatten/paint), place presets (TPLACE), and grass blades (GR) that only exist near the camera.
    Saved in P.env.ter: seed, amp, trees, pal, flat, grass, gd (grass density), rv (bump to force a rebuild), hd (height edits, run-length text), mt (painted materials). ===== */
-const TSZ=512,TSEG=176,TTS=22,TNV=TSEG+1,TCELL=TSZ/TSEG;
+let TSZ=512,TSEG=176,NT=8,TNV=177,HS=256;const TTS=22,TCELL=512/176;/* the plate size: the ground always has the same cell size, a bigger size just has more of it (NT x NT tiles) */
+function terSetSize(k){NT=Math.round(8*k);TSEG=176*NT/8;TSZ=512*NT/8;TNV=TSEG+1;HS=TSZ/2}
 const TMATS=[[1,'Grass'],[2,'Sand'],[3,'Rock'],[4,'Snow'],[5,'Dirt'],[6,'Mud']];
 const TMCOL={1:[.26,.58,.18],2:[.86,.79,.54],3:[.52,.50,.47],4:[.95,.97,1],5:[.46,.34,.2],6:[.28,.2,.13]};
 const TPAL={grass:{a:[.21,.49,.15],b:[.46,.72,.27],c:[.30,.62,.22],shore:1,gr:1,snow:1},desert:{a:[.84,.70,.42],b:[.93,.80,.52],c:[.78,.62,.36],shore:0,gr:0,snow:0},snow:{a:[.88,.92,.97],b:[.97,.98,1],c:[.80,.86,.94],shore:0,gr:0,snow:0}};
-const TPLACE={'Baseplate':{on:false},'Woods':{on:true,seed:7,amp:26,trees:true,pal:'grass'},'Flat grass':{on:true,seed:1,amp:6,trees:false,pal:'grass',flat:true},'Rolling hills':{on:true,seed:21,amp:18,trees:false,pal:'grass'},'Desert':{on:true,seed:5,amp:14,trees:false,pal:'desert'},'Snowy mountains':{on:true,seed:12,amp:50,trees:true,pal:'snow'}};
+const TPLACE={'Baseplate':{on:false},'Mountains':{on:true,seed:33,amp:26,trees:true,pal:'grass',mo:70,hl:35},'Woods':{on:true,seed:7,amp:26,trees:true,pal:'grass'},'Flat grass':{on:true,seed:1,amp:6,trees:false,pal:'grass',flat:true},'Rolling hills':{on:true,seed:21,amp:18,trees:false,pal:'grass'},'Desert':{on:true,seed:5,amp:14,trees:false,pal:'desert'},'Snowy mountains':{on:true,seed:12,amp:50,trees:true,pal:'snow'}};
 const TC_SAND=[.86,.79,.54],TC_ROCK=[.52,.50,.47],TC_ROCK2=[.38,.36,.35],TC_SNOW=[.95,.97,1],TC_DIRT=[.46,.34,.2];
 const tmix=function(a,b,t){return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t]};
 function terEnc(a,q){const o=[];let z=0;for(let i=0;i<a.length;i++){const v=Math.round(a[i]/q);if(v===0)z++;else{if(z){o.push('z'+z);z=0}o.push(v)}}if(z)o.push('z'+z);return o.join(',')}
 function terDec(t,a,q){a.fill(0);if(!t||typeof t!=='string')return;let i=0;t.split(',').forEach(function(k){if(k[0]==='z')i+=(+k.slice(1))||0;else if(i<a.length)a[i++]=((+k)||0)*q})}
-function terD(x,z){const D=TER.D;if(!D||!TER.edited)return 0;const u=(x+256)/TCELL,v=(z+256)/TCELL;if(u<0||v<0||u>=TSEG||v>=TSEG)return 0;const i=u|0,j=v|0,fu=u-i,fv=v-j,k=j*TNV+i;return(D[k]*(1-fu)+D[k+1]*fu)*(1-fv)+(D[k+TNV]*(1-fu)+D[k+TNV+1]*fu)*fv}
-function terHG(x,z){const u=(x+256)/TCELL,v=(z+256)/TCELL,i=Math.max(0,Math.min(TSEG-1,u|0)),j=Math.max(0,Math.min(TSEG-1,v|0)),fu=u-i,fv=v-j,k=j*TNV+i,h=TER.hg;return(h[k]*(1-fu)+h[k+1]*fu)*(1-fv)+(h[k+TNV]*(1-fu)+h[k+TNV+1]*fu)*fv}
-function terMatAt(x,z){const i=Math.max(0,Math.min(TSEG,Math.round((z+256)/TCELL)))*TNV+Math.max(0,Math.min(TSEG,Math.round((x+256)/TCELL)));return TER.M[i]}
+function terD(x,z){const D=TER.D;if(!D||!TER.edited)return 0;const u=(x+HS)/TCELL,v=(z+HS)/TCELL;if(u<0||v<0||u>=TSEG||v>=TSEG)return 0;const i=u|0,j=v|0,fu=u-i,fv=v-j,k=j*TNV+i;return(D[k]*(1-fu)+D[k+1]*fu)*(1-fv)+(D[k+TNV]*(1-fu)+D[k+TNV+1]*fu)*fv}
+function terHG(x,z){const u=(x+HS)/TCELL,v=(z+HS)/TCELL,i=Math.max(0,Math.min(TSEG-1,u|0)),j=Math.max(0,Math.min(TSEG-1,v|0)),fu=u-i,fv=v-j,k=j*TNV+i,h=TER.hg;return(h[k]*(1-fu)+h[k+1]*fu)*(1-fv)+(h[k+TNV]*(1-fu)+h[k+TNV+1]*fu)*fv}
+function terMatAt(x,z){const i=Math.max(0,Math.min(TSEG,Math.round((z+HS)/TCELL)))*TNV+Math.max(0,Math.min(TSEG,Math.round((x+HS)/TCELL)));return TER.M[i]}
 /* colour, normal and "grass allowed" of one vertex: o = [r,g,b,ny,nx,nz,grass] */
-function terCol(i,o){const xi=i%TNV,zi=(i/TNV)|0,x=-256+xi*TCELL,z=-256+zi*TCELL,hg=TER.hg,cfg=TER.cfg,P0=TPAL[cfg.pal]||TPAL.grass,N2=TER.N2,amp=cfg.amp,y=hg[i],
+function terCol(i,o){const xi=i%TNV,zi=(i/TNV)|0,x=-HS+xi*TCELL,z=-HS+zi*TCELL,hg=TER.hg,cfg=TER.cfg,P0=TPAL[cfg.pal]||TPAL.grass,N2=TER.N2,amp=cfg.amp,y=hg[i],
   hx=hg[zi*TNV+Math.min(TSEG,xi+1)]-hg[zi*TNV+Math.max(0,xi-1)],hz=hg[Math.min(TSEG,zi+1)*TNV+xi]-hg[Math.max(0,zi-1)*TNV+xi],
   ny=1/Math.sqrt(1+(hx*hx+hz*hz)/(4*TCELL*TCELL)),slope=1-ny,nz=N2(x*.05,z*.05)*.5+.5,n2=N2(x*.2,z*.2)*.5+.5,mt=TER.M[i];let c,ge;
   if(mt>0){const b=TMCOL[mt];c=tmix(b,[b[0]*.85,b[1]*.85,b[2]*.85],n2*.6);ge=mt===1?1:0}
@@ -8879,18 +8880,59 @@ function terCol(i,o){const xi=i%TNV,zi=(i/TNV)|0,x=-256+xi*TCELL,z=-256+zi*TCELL
     if(P0.snow){const sn=sm(amp*.95,amp*1.2,y+n2*3)*(1-sm(.3,.55,slope));c=tmix(c,TC_SNOW,sn);ge*=1-sm(amp*.7,amp*.9,y)}}
   ge*=1-sm(.2,.32,slope);
   const j=.94+N2(x*.9,z*.9)*.06;o[0]=c[0]*j;o[1]=c[1]*j;o[2]=c[2]*j;o[3]=ny;o[4]=-hx/(2*TCELL)*ny;o[5]=-hz/(2*TCELL)*ny;o[6]=ge}
-function terTile(tx,tz){const n=TTS+1,key=tz*8+tx;let m=TER.tiles[key];
+function terFill(x0,x1,z0,z1){x0=Math.max(0,x0);z0=Math.max(0,z0);x1=Math.min(TSEG,x1);z1=Math.min(TSEG,z1);const hv=TER.hv,hg=TER.hg,D=TER.D,B=TER.B;
+  for(let zi=z0;zi<=z1;zi++)for(let xi=x0;xi<=x1;xi++){const i=zi*TNV+xi;if(hv[i])continue;hv[i]=1;hg[i]=B(-HS+xi*TCELL,-HS+zi*TCELL)+D[i]}}
+function terTile(tx,tz){const n=TTS+1,key=tz*NT+tx;let m=TER.tiles[key];terFill(tx*TTS-1,tx*TTS+TTS+1,tz*TTS-1,tz*TTS+TTS+1);
   if(!m){const geo=new THREE.BufferGeometry();['position','normal','color'].forEach(function(k){geo.setAttribute(k,new THREE.BufferAttribute(new Float32Array(n*n*3),3))});geo.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(n*n*2),2));
     const ix=[];for(let r=0;r<TTS;r++)for(let c=0;c<TTS;c++){const a=r*n+c,b=a+1,d=a+n,e=d+1;ix.push(a,d,b,b,d,e)}geo.setIndex(ix);
-    m=new THREE.Mesh(geo,TER.mat);m.receiveShadow=true;m.castShadow=true;TER.g.add(m);TER.tiles[key]=m}
+    m=new THREE.Mesh(geo,TER.mat);m.receiveShadow=true;m.castShadow=true;m.userData.tk=key;TER.g.add(m);TER.tiles[key]=m;TER.tl.push(m)}
   const A=m.geometry.attributes,o=[0,0,0,0,0,0,0];
   for(let r=0;r<n;r++)for(let c=0;c<n;c++){const xi=tx*TTS+c,zi=tz*TTS+r,i=zi*TNV+xi,k=r*n+c;terCol(i,o);
-    A.position.setXYZ(k,-256+xi*TCELL,TER.hg[i],-256+zi*TCELL);A.normal.setXYZ(k,o[4],o[3],o[5]);A.color.setXYZ(k,o[0],o[1],o[2]);A.uv.setXY(k,xi/TSEG,1-zi/TSEG);
+    A.position.setXYZ(k,-HS+xi*TCELL,TER.hg[i],-HS+zi*TCELL);A.normal.setXYZ(k,o[4],o[3],o[5]);A.color.setXYZ(k,o[0],o[1],o[2]);A.uv.setXY(k,xi/TSEG,1-zi/TSEG);
     TER.cg[i*3]=o[0];TER.cg[i*3+1]=o[1];TER.cg[i*3+2]=o[2];TER.ge[i]=o[6]}
   A.position.needsUpdate=A.normal.needsUpdate=A.color.needsUpdate=true;m.geometry.computeBoundingSphere()}
-function terRefresh(x0,x1,z0,z1){const a=Math.max(0,Math.floor(Math.max(0,x0-1)/TTS)-1),b=Math.min(7,Math.floor(Math.min(TSEG,x1+1)/TTS)),c=Math.max(0,Math.floor(Math.max(0,z0-1)/TTS)-1),e=Math.min(7,Math.floor(Math.min(TSEG,z1+1)/TTS));
+function terRefresh(x0,x1,z0,z1){const a=Math.max(0,Math.floor(Math.max(0,x0-1)/TTS)-1),b=Math.min(NT-1,Math.floor(Math.min(TSEG,x1+1)/TTS)),c=Math.max(0,Math.floor(Math.max(0,z0-1)/TTS)-1),e=Math.min(NT-1,Math.floor(Math.min(TSEG,z1+1)/TTS));
   for(let tz=c;tz<=e;tz++)for(let tx=a;tx<=b;tx++)terTile(tx,tz)}
-function terTrees(g,cfg){if(TER.veg){g.remove(TER.veg);TER.veg.traverse(function(o){if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose()});TER.veg=null}
+/* extra mountains (ridged peaks in ranges) and rolling hills on top of the normal ground; both 0 = exactly the old terrain */
+function terExtra(b0,cfg){const Nm=mkNoise(cfg.seed+500),Nh=mkNoise(cfg.seed+700),Nd=mkNoise(cfg.seed+900),mo=(cfg.mo||0)/100,hl=(cfg.hl||0)/100;
+  return function(x,z){let h=b0(x,z);const d=Math.hypot(x,z);
+    if(hl>0)h+=(Nh(x*.011,z*.011)*.65+Nh(x*.03,z*.03)*.25)*hl*30*sm(30,115,d);
+    if(mo>0){const m=sm(.18,.7,Nm(x*.004,z*.004)*.5+.5),r=1-Math.abs(Nm(x*.009+11,z*.009)),rr=r*r*r;h+=m*(rr*140+Nd(x*.03,z*.03)*10+Nd(x*.1,z*.1)*3)*mo*sm(70,190,d)}
+    return h}}
+/* keep sculpting when the plate size changes (the ground stays centred, so every saved cell just moves over) */
+function terResize(T,ok,nk){const oS=Math.round(176*ok),oN=oS+1,nS=Math.round(176*nk),nN=nS+1,sh=Math.round((nS-oS)/2);
+  ['hd','mt'].forEach(function(f){if(!T[f])return;const q=f==='hd'?.1:1,oa=f==='hd'?new Float32Array(oN*oN):new Uint8Array(oN*oN),na=f==='hd'?new Float32Array(nN*nN):new Uint8Array(nN*nN);terDec(T[f],oa,q);
+    for(let zi=0;zi<oN;zi++)for(let xi=0;xi<oN;xi++){const v=oa[zi*oN+xi];if(!v)continue;const X=xi+sh,Z=zi+sh;if(X<0||Z<0||X>=nN||Z>=nN)continue;na[Z*nN+X]=v}
+    T[f]=terEnc(na,q)})}
+/* trees for the part of a big plate outside the original 512 area: made per 128x128 cell, only near you, and dropped again when you walk away */
+var TREEG=null;
+function terCell(cx,cz){const cfg=TER.cfg,H=TER.H,N2=TER.N2,amp=cfg.amp,pts=[],S=128,x0=cx*S,z0=cz*S,id=(cx+60)*211+(cz+60)*37,
+    rr=function(t,k){const q=Math.sin((t+id*257)*127.1+k*311.7+cfg.seed*74.7)*43758.5453;return q-Math.floor(q)};
+  for(let t=0;t<200;t++){const x=x0+rr(t,1)*S,z=z0+rr(t,2)*S;if(Math.abs(x)<=235&&Math.abs(z)<=235)continue;if(Math.abs(x)>HS-14||Math.abs(z)>HS-14)continue;const y=H(x,z);if(y<1.2||y>amp*.8)continue;
+    const e=2,sl=Math.hypot(H(x+e,z)-H(x-e,z),H(x,z+e)-H(x,z-e))/(2*e);if(sl>.45)continue;if(N2(x*.02+3,z*.02)<-.15)continue;const mi=terMatAt(x,z);if(mi>=2&&mi<=4)continue;pts.push([x,y,z,.8+rr(t,3)*.9,rr(t,4)])}
+  if(!pts.length)return null;
+  if(!TREEG)TREEG={tg:new THREE.CylinderGeometry(.35,.55,3,6),c1:new THREE.ConeGeometry(2.8,5.5,8),c2:new THREE.ConeGeometry(2.0,4.5,8),ic:new THREE.IcosahedronGeometry(2.6,1),tm:new THREE.MeshStandardMaterial({color:0x6b4a2b,roughness:1}),lm:new THREE.MeshStandardMaterial({color:0xffffff,roughness:.9})};
+  const G=TREEG,vg=new THREE.Group(),pine=pts.filter(function(p){return p[4]<.6}),round=pts.filter(function(p){return p[4]>=.6});
+  const mkI=function(geo,m,list,dy,tint){if(!list.length)return;const im=new THREE.InstancedMesh(geo,m,list.length),d=new THREE.Object3D(),cc=new THREE.Color();
+    list.forEach(function(p,i){d.position.set(p[0],p[1]+dy*p[3],p[2]);d.scale.set(p[3],p[3],p[3]);d.rotation.y=p[4]*40;d.updateMatrix();im.setMatrixAt(i,d.matrix);
+      if(tint){cc.setHSL(tint[0]+(p[4]*7%1)*.06,tint[1],tint[2]+(p[4]*13%1)*.12);im.setColorAt(i,cc)}});
+    im.castShadow=true;im.receiveShadow=true;im.frustumCulled=false;im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;vg.add(im)};
+  mkI(G.tg,G.tm,pts,1.5,null);mkI(G.c1,G.lm,pine,5,[.36,.55,.2]);mkI(G.c2,G.lm,pine,8,[.37,.55,.24]);mkI(G.ic,G.lm,round,5.2,[.25,.55,.3]);return vg}
+function terCellsReset(g){if(TER.cg2&&TER.cg2.parent)TER.cg2.parent.remove(TER.cg2);TER.cg2=null;TER.cells={};g=g||TER.g;if(g){TER.cg2=new THREE.Group();g.add(TER.cg2)}}
+/* builds the ground (and trees) near (cx,cz) that does not exist yet, nearest first, for at most `budget` ms, and drops pieces that are far away */
+function terStream(cx,cz,Rg,budget){const t0=performance.now(),TW=TTS*TCELL,a=Math.max(0,Math.floor((cx-Rg+HS)/TW)),b=Math.min(NT-1,Math.floor((cx+Rg+HS)/TW)),c=Math.max(0,Math.floor((cz-Rg+HS)/TW)),e=Math.min(NT-1,Math.floor((cz+Rg+HS)/TW)),list=[];
+  for(let tz=c;tz<=e;tz++)for(let tx=a;tx<=b;tx++){if(TER.tiles[tz*NT+tx])continue;const d=Math.hypot(-HS+(tx+.5)*TW-cx,-HS+(tz+.5)*TW-cz);if(d<Rg+TW*.7)list.push([d,tx,tz])}
+  list.sort(function(p,q){return p[0]-q[0]});
+  for(let i=0;i<list.length;i++){terTile(list[i][1],list[i][2]);if(performance.now()-t0>budget)return}
+  if(NT<=8)return;
+  TER.tl.slice().forEach(function(m){const k=m.userData.tk,tx=k%NT,tz=(k-tx)/NT;if(Math.hypot(-HS+(tx+.5)*TW-cx,-HS+(tz+.5)*TW-cz)>Rg+320){TER.g.remove(m);m.geometry.dispose();delete TER.tiles[k];TER.tl.splice(TER.tl.indexOf(m),1)}});
+  if(!TER.cfg.trees||!TER.cg2)return;
+  const S=128;let best=null,bd=1e9;
+  Object.keys(TER.cells).forEach(function(k){const q=TER.cells[k];if(Math.hypot(q.x-cx,q.z-cz)>Rg+420){if(q.g){TER.cg2.remove(q.g);q.g.children.forEach(function(im){im.dispose&&im.dispose()})}delete TER.cells[k]}});
+  for(let gx=Math.floor((cx-Rg)/S);gx<=Math.floor((cx+Rg)/S);gx++)for(let gz=Math.floor((cz-Rg)/S);gz<=Math.floor((cz+Rg)/S);gz++){const k=gx+','+gz;if(TER.cells[k])continue;
+    const mx=(gx+.5)*S,mz=(gz+.5)*S,d=Math.hypot(mx-cx,mz-cz);if(d<Rg&&d<bd){bd=d;best=[gx,gz,k,mx,mz]}}
+  if(best){const g=terCell(best[0],best[1]);if(g)TER.cg2.add(g);TER.cells[best[2]]={g:g,x:best[3],z:best[4]}}}
+function terTrees(g,cfg){terCellsReset(g);if(TER.veg){g.remove(TER.veg);TER.veg.traverse(function(o){if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose()});TER.veg=null}
   if(!cfg.trees)return;const vg=new THREE.Group();TER.veg=vg;g.add(vg);const H=TER.H,N2=TER.N2,amp=cfg.amp,pts=[],rr=function(t,k){const q=Math.sin(t*127.1+k*311.7+cfg.seed*74.7)*43758.5453;return q-Math.floor(q)};
   for(let t=0;t<2600&&pts.length<900;t++){const x=(rr(t,1)-.5)*470,z=(rr(t,2)-.5)*470;if(Math.hypot(x,z)<42)continue;const y=H(x,z);if(y<1.2||y>amp*.8)continue;
     const e=2,sl=Math.hypot(H(x+e,z)-H(x-e,z),H(x,z+e)-H(x,z-e))/(2*e);if(sl>.45)continue;if(N2(x*.02+3,z*.02)<-.15)continue;const mi=terMatAt(x,z);if(mi>=2&&mi<=4)continue;pts.push([x,y,z,.8+rr(t,3)*.9,rr(t,4)])}
@@ -8904,24 +8946,24 @@ function terTrees(g,cfg){if(TER.veg){g.remove(TER.veg);TER.veg.traverse(function
   mkI(new THREE.ConeGeometry(2.8,5.5,8),lm,pine,5,[.36,.55,.2]);mkI(new THREE.ConeGeometry(2.0,4.5,8),lm,pine,8,[.37,.55,.24]);
   mkI(new THREE.IcosahedronGeometry(2.6,1),lm,round,5.2,[.25,.55,.3])}
 function buildTerrain(cfg){
-  const base=cfg.flat?function(){return 0}:terrainFn(cfg.seed,cfg.amp),NV=TNV*TNV;TER.cfg=cfg;TER.B=base;TER.N2=mkNoise(cfg.seed+99);
-  TER.hg=new Float32Array(NV);TER.D=new Float32Array(NV);TER.M=new Uint8Array(NV);TER.cg=new Float32Array(NV*3);TER.ge=new Float32Array(NV);
+  const nk=Math.max(1,Math.min(6,(+cfg.sz||100)/100));terSetSize(nk);if((cfg.hd||cfg.mt)&&(cfg.szs||1)!==nk)terResize(cfg,cfg.szs||1,nk);cfg.szs=nk;
+  const b0=cfg.flat?function(){return 0}:terrainFn(cfg.seed,cfg.amp),base=(cfg.mo||cfg.hl)?terExtra(b0,cfg):b0,NV=TNV*TNV;TER.cfg=cfg;TER.B=base;TER.N2=mkNoise(cfg.seed+99);
+  TER.hg=new Float32Array(NV);TER.hv=new Uint8Array(NV);TER.D=new Float32Array(NV);TER.M=new Uint8Array(NV);TER.cg=new Float32Array(NV*3);TER.ge=new Float32Array(NV);
   terDec(cfg.hd,TER.D,.1);terDec(cfg.mt,TER.M,1);TER.edited=TER.D.some(function(v){return v!==0});
   TER.H=function(x,z){return base(x,z)+terD(x,z)};
-  for(let zi=0;zi<TNV;zi++)for(let xi=0;xi<TNV;xi++){const i=zi*TNV+xi;TER.hg[i]=base(-256+xi*TCELL,-256+zi*TCELL)+TER.D[i]}
-  const g=new THREE.Group();TER.g=g;TER.tiles=[];TER.mat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.96,metalness:0,map:detailTex()});
-  for(let tz=0;tz<8;tz++)for(let tx=0;tx<8;tx++)terTile(tx,tz);
-  const wg=new THREE.PlaneGeometry(1600,1600);wg.rotateX(-Math.PI/2);
+  const g=new THREE.Group();TER.g=g;TER.tiles={};TER.tl=[];TER.mat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.96,metalness:0,map:detailTex()});
+  if(NT===8){for(let tz=0;tz<8;tz++)for(let tx=0;tx<8;tx++)terTile(tx,tz)}else terStream(0,0,240,1e9);/* big plates are built in pieces around you as you move */
+  const wg=new THREE.PlaneGeometry(Math.max(1600,TSZ+1200),Math.max(1600,TSZ+1200));wg.rotateX(-Math.PI/2);
   const wm=new THREE.Mesh(wg,new THREE.MeshPhongMaterial({color:0x2f86c8,transparent:true,opacity:.74,shininess:140,specular:0xcfe8ff,depthWrite:false}));wm.position.y=-.35;g.add(wm);
   terTrees(g,cfg);return g}
 function terSync(){let cfg;try{cfg=terCfg()}catch(e){return}
-  const sig=[cfg.on?1:0,cfg.seed,cfg.amp,cfg.trees?1:0,cfg.pal||'grass',cfg.flat?1:0,cfg.rv||0].join('|');
+  const sig=[cfg.on?1:0,cfg.seed,cfg.amp,cfg.trees?1:0,cfg.pal||'grass',cfg.flat?1:0,cfg.rv||0,cfg.sz||100,cfg.mo||0,cfg.hl||0].join('|');
   if(sig!==TER.sig){TER.sig=sig;disposeTer();TER.on=!!cfg.on;TER.amp=cfg.amp;
     if(cfg.on){try{TER.g=buildTerrain(cfg);scene.add(TER.g)}catch(e){TER.on=false;TER.H=null;log('Error: terrain - '+(e&&e.message))}}else TER.H=null}
   const bp=P.parts.find(function(p){return p.name==='Baseplate'&&!p.av});if(bp&&M[bp.id])M[bp.id].visible=!TER.on}
 window.terSync=terSync;
 /* ---- grass blades: 32x32 stud tiles built near the camera only, never cast shadows, wave in the wind ---- */
-const GR={g:null,tiles:new Map(),mat:null,t:{value:0},sig:'',push:{value:[0,1,2,3,4,5,6,7,8,9,10,11].map(function(){return new THREE.Vector4()})}};
+const GR={g:null,tiles:new Map(),mat:null,t:{value:0},sig:'',c:{value:new THREE.Vector3()},push:{value:[0,1,2,3,4,5,6,7,8,9,10,11].map(function(){return new THREE.Vector4()})}};
 const _gbx=new THREE.Box3(),_gbv=new THREE.Vector3();
 /* the 12 nearest squishers: parts ticked "Squish grass" plus rig/player torsos (unless turned off in Terrain) -> shader (x,z,radius,bottomY) */
 function grassPush(cx,cz){const c=[],ps=TER.cfg.gpush!==false;
@@ -8930,11 +8972,11 @@ function grassPush(cx,cz){const c=[],ps=TER.cfg.gpush!==false;
   c.sort(function(a,b){return a[0]-b[0]});const A=GR.push.value;for(let i=0;i<12;i++){const q=c[i];if(q)A[i].set(q[1],q[2],q[3],q[4]);else A[i].set(0,0,0,0)}}
 function grassClear(){GR.tiles.forEach(function(m){if(m.geometry&&m.geometry.dispose)m.geometry.dispose();if(GR.g)GR.g.remove(m)});GR.tiles.clear()}
 function grassMat(){if(GR.mat)return GR.mat;const m=new THREE.MeshLambertMaterial({vertexColors:true});
-  const wind=function(sh){sh.uniforms.uT=GR.t;sh.uniforms.uP=GR.push;sh.vertexShader='attribute float tw;attribute float by;uniform float uT;uniform vec4 uP[12];\n'+sh.vertexShader.replace('#include <begin_vertex>','vec3 transformed=vec3(position);float ws=sin(uT*1.7+position.x*.35+position.z*.27)*.6+sin(uT*3.1+position.x*.9+position.z*.5)*.25;transformed.x+=ws*tw*.16;transformed.z+=ws*tw*.1;for(int i=0;i<12;i++){vec4 pp=uP[i];if(pp.z>0.0){vec2 dv=position.xz-pp.xy;float f=(1.0-smoothstep(pp.z*.35,pp.z,length(dv)))*(1.0-smoothstep(1.0,3.0,pp.w-by))*tw;transformed.xz+=normalize(dv+vec2(.001))*f*.55;transformed.y=mix(transformed.y,by+.08,f*.75);}}')};m.onBeforeCompile=wind;m.shadowSide=THREE.DoubleSide;/* the shadow pass uses the same sway and bending as the blades, so the shadows move with them */GR.dep=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,side:THREE.DoubleSide});GR.dep.onBeforeCompile=wind;return GR.mat=m}
+  const wind=function(sh){sh.uniforms.uT=GR.t;sh.uniforms.uC=GR.c;sh.uniforms.uP=GR.push;sh.vertexShader='attribute float tw;attribute float by;uniform float uT;uniform vec4 uP[12];uniform vec3 uC;\n'+sh.vertexShader.replace('#include <begin_vertex>','vec3 transformed=vec3(position);float ws=sin(uT*1.7+position.x*.35+position.z*.27)*.6+sin(uT*3.1+position.x*.9+position.z*.5)*.25;transformed.x+=ws*tw*.16;transformed.z+=ws*tw*.1;for(int i=0;i<12;i++){vec4 pp=uP[i];if(pp.z>0.0){vec2 dv=position.xz-pp.xy;float f=(1.0-smoothstep(pp.z*.35,pp.z,length(dv)))*(1.0-smoothstep(1.0,3.0,pp.w-by))*tw;transformed.xz+=normalize(dv+vec2(.001))*f*.55;transformed.y=mix(transformed.y,by+.08,f*.75);}}transformed.y=mix(by,transformed.y,1.0-smoothstep(42.0,68.0,length(position.xz-uC.xz)));')};m.onBeforeCompile=wind;m.shadowSide=THREE.DoubleSide;/* the shadow pass uses the same sway and bending as the blades, so the shadows move with them */GR.dep=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,side:THREE.DoubleSide});GR.dep.onBeforeCompile=wind;return GR.mat=m}
 function grassBuild(gx,gz,dens){const S=32,x0=gx*S,z0=gz*S,n=Math.round(S*S*.32*dens);let q=((gx*73856093)^(gz*19349663)^(TER.cfg.seed*83492791))>>>0||1;
   const rnd=function(){q^=q<<13;q>>>=0;q^=q>>>17;q^=q<<5;q>>>=0;return q/4294967296},PS=[],CS=[],TW=[],BY=[],IX=[];let vc=0;
-  for(let t=0;t<n;t++){const x=x0+rnd()*S,z=z0+rnd()*S,r1=rnd(),r2=rnd(),r3=rnd(),r4=rnd();if(x<-254||x>254||z<-254||z>254)continue;
-    const i0=Math.max(0,Math.min(TSEG,Math.round((z+256)/TCELL)))*TNV+Math.max(0,Math.min(TSEG,Math.round((x+256)/TCELL))),e=TER.ge[i0];if(e<=.02||r1>e)continue;
+  for(let t=0;t<n;t++){const x=x0+rnd()*S,z=z0+rnd()*S,r1=rnd(),r2=rnd(),r3=rnd(),r4=rnd();if(x<-HS+2||x>HS-2||z<-HS+2||z>HS-2)continue;
+    const i0=Math.max(0,Math.min(TSEG,Math.round((z+HS)/TCELL)))*TNV+Math.max(0,Math.min(TSEG,Math.round((x+HS)/TCELL))),e=TER.ge[i0];if(e<=.02||r1>e)continue;
     const y=terHG(x,z),cr=TER.cg[i0*3],cg=TER.cg[i0*3+1],cb=TER.cg[i0*3+2],hh=(.5+r2*.7)*(.7+.3*e)*(TER.cfg.gh||1),lt=1.05+r2*.25;
     for(let k=0;k<3;k++){const a=r3*6.28+k*2.09,ca=Math.cos(a),sa=Math.sin(a),w=(.07+r4*.03)*Math.sqrt(TER.cfg.gh||1),ox=(rnd()-.5)*.5*hh,oz=(rnd()-.5)*.5*hh,jx=(rnd()-.5)*.5,jz=(rnd()-.5)*.5;
       PS.push(x+jx-ca*w,y-.05,z+jz-sa*w,x+jx+ca*w,y-.05,z+jz+sa*w,x+jx+ox,y+hh,z+jz+oz);
@@ -8944,28 +8986,29 @@ function grassBuild(gx,gz,dens){const S=32,x0=gx*S,z0=gz*S,n=Math.round(S*S*.32*
   const m=new THREE.Mesh(geo,grassMat());m.receiveShadow=true;m.castShadow=true;m.customDepthMaterial=GR.dep;return m}
 window.terTick=function(dt){
   if(!TER.on||!TER.g||!TER.hg){if(GR.g)GR.g.visible=false;return}
+  try{terStream(camera.position.x,camera.position.z,300,5)}catch(e){}
   const cfg=TER.cfg,ge=gfxEff(),lv=ge===GFXT.lowest?0:ge===GFXT.low?.55:1,dens=(cfg.grass===false?0:(cfg.gd||1))*lv;
   if(!GR.g){GR.g=new THREE.Group();scene.add(GR.g)}
   const sg=dens+'|'+(cfg.gh||1)+'|'+TER.sig;if(sg!==GR.sig){GR.sig=sg;grassClear()}
   GR.g.visible=dens>0;GR.t.value+=dt;if(dens<=0)return;try{grassPush(camera.position.x,camera.position.z)}catch(e){}
-  const cx=camera.position.x,cz=camera.position.z,R=76,S=32;
+  const cx=camera.position.x,cz=camera.position.z,R=76,S=32;GR.c.value.set(cx,0,cz);
   GR.tiles.forEach(function(m,k){const c=m.userData.c;if(Math.hypot(c[0]-cx,c[1]-cz)>R+50){if(m.geometry&&m.geometry.dispose)m.geometry.dispose();GR.g.remove(m);GR.tiles.delete(k)}});
   const list=[];for(let gx=Math.floor((cx-R)/S);gx<=Math.floor((cx+R)/S);gx++)for(let gz=Math.floor((cz-R)/S);gz<=Math.floor((cz+R)/S);gz++){const k=gx+','+gz;if(GR.tiles.has(k))continue;
     const c=[gx*S+S/2,gz*S+S/2],d=Math.hypot(c[0]-cx,c[1]-cz);if(d>R+S*.7)continue;list.push([d,gx,gz,k,c])}
   list.sort(function(a,b){return a[0]-b[0]});
-  for(let i=0;i<list.length&&i<2;i++){const L=list[i];let m=null;try{m=grassBuild(L[1],L[2],dens)}catch(e){m=null}
+  for(let i=0;i<list.length&&i<3;i++){const L=list[i];let m=null;try{m=grassBuild(L[1],L[2],dens)}catch(e){m=null}
     if(m){m.userData.c=L[4];GR.g.add(m)}else m={userData:{c:L[4]},geometry:null};GR.tiles.set(L[3],m)}};
 /* ---- sculpt brush ---- */
 const TB={on:false,tool:'raise',mat:1,size:14,str:5,down:false,pt:null,y0:0,undo:[],timer:0,ring:null};
-function terPick(e){if(!TER.g||!TER.tiles.length)return null;ray.setFromCamera(ndc(e),camera);return ray.intersectObjects(TER.tiles,false)[0]||null}
+function terPick(e){if(!TER.g||!TER.tl||!TER.tl.length)return null;ray.setFromCamera(ndc(e),camera);return ray.intersectObjects(TER.tl,false)[0]||null}
 function terCursor(p){if(!TB.ring){TB.ring=new THREE.Mesh(new THREE.RingGeometry(.93,1,48),new THREE.MeshBasicMaterial({color:0x00ffa0,transparent:true,opacity:.85,depthTest:false,side:THREE.DoubleSide}));TB.ring.rotation.x=-Math.PI/2;TB.ring.renderOrder=20;scene.add(TB.ring)}
   TB.ring.visible=!!p&&TB.on&&!playing;if(p){TB.ring.position.set(p.x,p.y+.25,p.z);TB.ring.scale.setScalar(TB.size)}}
-function terSnap(){TB.undo.push({D:TER.D.slice(),M:TER.M.slice(),hg:TER.hg.slice()});if(TB.undo.length>10)TB.undo.shift()}
-function terCommit(){const c=terCfg();if(TER.edited)c.hd=terEnc(TER.D,.1);c.mt=terEnc(TER.M,1);save();try{terTrees(TER.g,TER.cfg)}catch(e){}grassClear()}
-function terUndo(){const u=TB.undo.pop();if(!u||!TER.g)return;TER.D.set(u.D);TER.M.set(u.M);TER.hg.set(u.hg);TER.edited=TER.D.some(function(v){return v!==0});for(let tz=0;tz<8;tz++)for(let tx=0;tx<8;tx++)terTile(tx,tz);terCommit()}
+function terSnap(){TB.undo.push({D:TER.D.slice(),M:TER.M.slice(),hg:TER.hg.slice(),hv:TER.hv.slice()});if(TB.undo.length>Math.max(2,Math.floor(10*8/NT)))TB.undo.shift()}
+function terCommit(){const c=terCfg();if(TER.edited)c.hd=terEnc(TER.D,.1);c.mt=terEnc(TER.M,1);c.szs=TSEG/176;save();try{terTrees(TER.g,TER.cfg)}catch(e){}grassClear()}
+function terUndo(){const u=TB.undo.pop();if(!u||!TER.g)return;TER.D.set(u.D);TER.M.set(u.M);TER.hg.set(u.hg);TER.hv.set(u.hv);TER.edited=TER.D.some(function(v){return v!==0});TER.tl.slice().forEach(function(m){const k=m.userData.tk,tx=k%NT;terTile(tx,(k-tx)/NT)});terCommit()}
 function terBrushTick(){const h=TB.pt;if(!h||!TER.g||!TER.hg)return;const r=TB.size,s=TB.str,D=TER.D,hg=TER.hg,Mt=TER.M,tool=TB.tool,
-    x0=Math.max(0,Math.floor((h.x-r+256)/TCELL)),x1=Math.min(TSEG,Math.ceil((h.x+r+256)/TCELL)),z0=Math.max(0,Math.floor((h.z-r+256)/TCELL)),z1=Math.min(TSEG,Math.ceil((h.z+r+256)/TCELL)),idx=[],w=[];
-  for(let zi=z0;zi<=z1;zi++)for(let xi=x0;xi<=x1;xi++){const d=Math.hypot(-256+xi*TCELL-h.x,-256+zi*TCELL-h.z);if(d>=r)continue;const t=1-d/r;idx.push(zi*TNV+xi);w.push(t*t*(3-2*t))}
+    x0=Math.max(0,Math.floor((h.x-r+HS)/TCELL)),x1=Math.min(TSEG,Math.ceil((h.x+r+HS)/TCELL)),z0=Math.max(0,Math.floor((h.z-r+HS)/TCELL)),z1=Math.min(TSEG,Math.ceil((h.z+r+HS)/TCELL)),idx=[],w=[];terFill(x0-1,x1+1,z0-1,z1+1);
+  for(let zi=z0;zi<=z1;zi++)for(let xi=x0;xi<=x1;xi++){const d=Math.hypot(-HS+xi*TCELL-h.x,-HS+zi*TCELL-h.z);if(d>=r)continue;const t=1-d/r;idx.push(zi*TNV+xi);w.push(t*t*(3-2*t))}
   if(tool==='raise'||tool==='lower'){const k=(tool==='raise'?1:-1)*s*.025;idx.forEach(function(i,j){D[i]=Math.max(-150,Math.min(150,D[i]+k*w[j]));hg[i]+=k*w[j]})}
   else if(tool==='smooth'){const nh=idx.map(function(i){const xi=i%TNV,zi=(i/TNV)|0;return(hg[zi*TNV+Math.max(0,xi-1)]+hg[zi*TNV+Math.min(TSEG,xi+1)]+hg[Math.max(0,zi-1)*TNV+xi]+hg[Math.min(TSEG,zi+1)*TNV+xi])/4});
     idx.forEach(function(i,j){const dd=(nh[j]-hg[i])*Math.min(1,w[j]*s*.12);D[i]+=dd;hg[i]+=dd})}
@@ -9041,15 +9084,20 @@ window.realismUI=function(d){
 window.terrainUI=function(d){
   const T=terCfg();
   const ps=el('select');Object.keys(TPLACE).forEach(function(k){const o=el('option','',k);o.value=k;ps.append(o)});const oc=el('option','','Custom');oc.value='';ps.append(oc);
-  const cur=Object.keys(TPLACE).find(function(k){const p=TPLACE[k];return !T.on?k==='Baseplate':(p.on&&p.seed===T.seed&&p.amp===T.amp&&!!p.trees===!!T.trees&&(p.pal||'grass')===(T.pal||'grass')&&!!p.flat===!!T.flat)});ps.value=cur||'';
-  ps.onchange=function(){const p=TPLACE[ps.value];if(!p)return;Object.assign(T,{on:p.on,seed:p.seed||T.seed,amp:p.amp||T.amp,trees:!!p.trees,pal:p.pal||'grass',flat:!!p.flat});delete T.hd;delete T.mt;T.rv=(T.rv||0)+1;TB.undo.length=0;save();terSync();props()};
-  d.append(lab('Place',ps));d.append(el('p','note','Pick a starting place: a flat Baseplate, the Woods, hills, desert or snowy mountains. Changing it replaces your terrain sculpting.'));
+  const cur=Object.keys(TPLACE).find(function(k){const p=TPLACE[k];return !T.on?k==='Baseplate':(p.on&&p.seed===T.seed&&p.amp===T.amp&&!!p.trees===!!T.trees&&(p.pal||'grass')===(T.pal||'grass')&&!!p.flat===!!T.flat&&(p.mo||0)===(T.mo||0)&&(p.hl||0)===(T.hl||0))});ps.value=cur||'';
+  ps.onchange=function(){const p=TPLACE[ps.value];if(!p)return;Object.assign(T,{on:p.on,seed:p.seed||T.seed,amp:p.amp||T.amp,trees:!!p.trees,pal:p.pal||'grass',flat:!!p.flat,mo:p.mo||0,hl:p.hl||0});delete T.hd;delete T.mt;T.rv=(T.rv||0)+1;TB.undo.length=0;save();terSync();props()};
+  d.append(lab('Place',ps));d.append(el('p','note','Pick a starting place: a flat Baseplate, the Woods, mountains, hills, desert or snowy mountains. Changing it replaces your terrain sculpting.'));
   const c=el('input');c.type='checkbox';c.checked=!!T.on;c.onchange=function(){T.on=c.checked;save();terSync();props()};
   const l=lab('Terrain (hills, lakes, rocks, trees)',c);l.title='Smooth rolling terrain you can walk on. The area around the start stays flat.';d.append(l);
   slider(d,'Hill height',T,'amp',6,60,1,null,function(){save();terSync()});
+  if(T.hl===undefined)T.hl=0;if(T.mo===undefined)T.mo=0;if(T.sz===undefined)T.sz=100;
+  slider(d,'Hills (gentle, rolling)',T,'hl',0,100,1,function(v){return Math.round(v||0)+'%'},function(){save();terSync()});
+  slider(d,'Mountains (tall ranges)',T,'mo',0,100,1,function(v){return Math.round(v||0)+'%'},function(){save();terSync()});
+  slider(d,'Terrain size',T,'sz',100,600,50,function(v){return Math.round(v||100)+'%'},function(){save();terSync()});
+  d.append(el('p','note','Size 100% is the normal plate. Bigger sizes build the ground (and trees) in pieces around you as you move, so they stay smooth, and the land looks the same as it does now. Hills and Mountains add bigger shapes on top. Your sculpting is kept when you change the size.'));
   const tc=el('input');tc.type='checkbox';tc.checked=!!T.trees;tc.onchange=function(){T.trees=tc.checked;save();terSync()};d.append(lab('Trees',tc));
   const gc=el('input');gc.type='checkbox';gc.checked=T.grass!==false;gc.onchange=function(){T.grass=gc.checked;save()};d.append(lab('Grass blades',gc));
-  slider(d,'Grass amount',T,'gd',.3,1.6,.1,function(v){return Math.round(v*100)+'%'},function(){save()});if(T.gd===undefined)T.gd=1;
+  slider(d,'Grass amount',T,'gd',.3,2.5,.1,function(v){return Math.round(v*100)+'%'},function(){save()});if(T.gd===undefined)T.gd=1;
   slider(d,'Grass size (tallness)',T,'gh',.3,3,.1,function(v){return Math.round(v*100)+'%'},function(){save()});if(T.gh===undefined)T.gh=1;
   const gp=el('input');gp.type='checkbox';gp.checked=T.gpush!==false;gp.onchange=function(){T.gpush=gp.checked;save()};const gpl=lab('Grass bends under players and rigs',gp);gpl.title='Grass leans away and flattens under characters. For any other part, tick "Squish grass" in its properties.';d.append(gpl);
   const b=el('button','btn ghost small','New random terrain');b.type='button';b.style.marginTop='6px';b.onclick=function(){T.seed=Math.floor(Math.random()*9999)+1;T.on=true;delete T.hd;delete T.mt;T.rv=(T.rv||0)+1;TB.undo.length=0;save();terSync();props()};d.append(b);
