@@ -8997,12 +8997,6 @@ function grassBuild(gx,gz,dens,lod){lod=lod||0;const S=32,x0=gx*S,z0=gz*S,n=Math
 window.terTick=function(dt){
   if(!TER.on||!TER.g||!TER.hg){if(GR.g)GR.g.visible=false;return}
   try{terStream(camera.position.x,camera.position.z,TER.cfg&&TER.cfg.inf?1200:700,TER.cfg&&TER.cfg.inf?5:4)}catch(e){}
-  /* Infinite render: fade the ground into the sky colour before generation stops, so the far edge is never visible (only when the game has no fog of its own) */
-  try{const inf=!!(TER.cfg&&TER.cfg.inf);
-    if(inf){if(!scene.fog){if(!TER.infFog)TER.infFog=new THREE.Fog(0xbfdcf5,350,1050);let h=null;try{h=skyFogHex()}catch(e){}
-        if(h!==null)TER.infFog.color.setHex(h);else if(scene.background&&scene.background.isColor)TER.infFog.color.copy(scene.background);
-        scene.fog=TER.infFog}}
-    else if(TER.infFog&&scene.fog===TER.infFog)scene.fog=null}catch(e){}
   const cfg=TER.cfg,ge=gfxEff(),lv=ge===GFXT.lowest?0:ge===GFXT.low?.55:1,dens=(cfg.grass===false?0:(cfg.gd||1))*lv;
   if(!GR.g){GR.g=new THREE.Group();scene.add(GR.g)}
   const sg=dens+'|'+(cfg.gh||1)+'|'+TER.sig;if(sg!==GR.sig){GR.sig=sg;grassClear()}
