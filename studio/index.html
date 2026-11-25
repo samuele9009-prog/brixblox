@@ -1700,6 +1700,7 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
     case'promptenable':{const v=String(val(a[0],S)).trim().toLowerCase(),on=!(v==='false'||v==='0'||v==='off'||v==='no'),rs=roots(o);
       if(!rs.length){log('Error: "set prompts" must be in a script that belongs to an object. Use the + next to an object in the Explorer.');break}
       rs.forEach(function(r){if(on)delete PPOFF[r.id];else PPOFF[r.id]=true});break}
+    /* Lua twin: activateParticle(name,x,y,z,secs) in hostApi */
     case'actpart':{const nm=String(val(a[0],S)).trim().toLowerCase(),e=(P.particles||[]).find(function(q){return q.name.toLowerCase()===nm});
       if(!e){log('Error: no particle emitter named "'+a[0]+'". Make one under Particles in the Explorer.');break}
       ptActivate(e,new THREE.Vector3(n(1),n(2),n(3)),Math.max(.05,n(4)));break}
@@ -1875,7 +1876,8 @@ function draw(){const T=byId(P.avId),g=T&&J[T.id];
     bub.material.opacity=e;bub.scale.set(6.6*(.4+.6*e),4.95*(.4+.6*e),1);bub.position.set(g.position.x,g.position.y+4-1*(1-(.4+.6*e))-1.2375*(.4+.6*e),g.position.z)}
   try{vcSelfBub(g)}catch(e){}}
 
-/* ===== Particles: emitters (P.particles), built-in images, the "activate particle" block ===== */
+/* ===== Particles: emitters (P.particles), built-in images, the "activate particle" block =====
+   Lua twin of the block: activateParticle(name,x,y,z,secs) / particle(...) (see the NOTE above hostApi). Keep both in sync. */
 const PTN=['Spark','Soft glow','Circle','Star','Smoke','Fire','Heart','Ring','Plus','Snowflake','Bubble','Lightning','Square','Leaf'];
 const PT={ps:[],run:[],acc:{}},PTG={},PTC={},PTX={},_pv=new THREE.Vector3();let selPE='';
 function ptDraw(n){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.translate(32,32);x.fillStyle=x.strokeStyle='#fff';x.lineCap=x.lineJoin='round';
@@ -8710,6 +8712,15 @@ const E=window.LuaEngine;
 
 /* ---------- Lua bridge ---------- */
 function hsv(h,s,v){const i=Math.floor(h*6)%6,f=h*6-Math.floor(h*6),p=v*(1-s),q=v*(1-f*s),t=v*(1-(1-f)*s);return[[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]][i]}
+/* ===== NOTE FOR FUTURE AIs / DEVELOPERS: keeping blocks and Lua in sync =====
+   The owner wants EVERY new BricBloc block (an entry in BD) that does something to also be callable from the Lua "Code snippet" block.
+   When you add a block: 1) add it to BD (+ a KW entry), 2) add its executor case in the block runner (near case'teleport'),
+   3) add a matching Lua global below with g.set('name',function(...){...}) inside hostApi (search "g.set('say'"), 4) add it to the list here.
+   Lua globals that exist now (Lua function -> block it matches):
+     say(text) -> say | lighting(name) -> set lighting to | part(name)/getPart/findPart -> part objects | game, workspace, Lighting, Workspace, me, player, script, BrickColor
+     activateParticle(emitterName, x, y, z, secs) and particle(...) -> "activate particle _ at x _ y _ z _ for _ secs" (block id actpart)
+   Particles: emitters live in P.particles (made in the Explorer under Particles; the code is the "Particles" section, search ptStep/ptActivate/ptUI).
+   Not in Lua yet: changing an emitter's colour/size/image, other blocks that were added before this note. Add them when asked. */
 const hostApi={
   log:function(m){log(String(m))},
   sleep:function(ms){return sl(ms)},
@@ -8788,6 +8799,10 @@ const hostApi={
       if(key==='getservice')return function(self,n){n=String(n).toLowerCase();return n==='workspace'?workspace:n==='lighting'?lighting:undefined};return undefined},null,'Game'));
     g.set('part',getPart);g.set('getPart',getPart);g.set('findPart',getPart);
     g.set('say',function(t){sayBubble(String(t))});
+    const actP=function(nm,x,y,z,secs){const k=String(nm==null?'':nm).trim().toLowerCase(),e=(P.particles||[]).find(function(q){return q.name.toLowerCase()===k});
+      if(!e){log('Error: no particle emitter named "'+nm+'". Make one under Particles in the Explorer.');return}
+      ptActivate(e,new THREE.Vector3(Number(x)||0,Number(y)||0,Number(z)||0),Math.max(.05,Number(secs)||2))};
+    g.set('activateParticle',actP);g.set('particle',actP);
     g.set('lighting',function(n){lightSet(String(n))});
   }};
 window.runLua=async function(src,S,o){
