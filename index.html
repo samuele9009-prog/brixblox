@@ -760,6 +760,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
   </div>
   <div id="p-settings" class="page" hidden="">
     <section class="panel"><h2>Settings</h2><h3>Theme</h3><div class="seg"><button id="th-light" class="btn ghost" type="button">Light</button><button id="th-dark" class="btn ghost" type="button">Dark</button></div><h3>Account</h3><form id="f-acct"><label for="s-mail">Email (optional)</label><input id="s-mail" type="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="you@example.com"><p class="hint">Not needed to play. We email you a link to confirm it.</p><label for="s-age">Age</label><input id="s-age" type="number" inputmode="numeric" min="5" max="120" step="1" placeholder="Your age"><p class="hint">Between 5 and 120. Leave empty to clear it.</p><button id="b-acct" class="btn" type="submit">Save</button><p id="s-msg" class="msg" role="status"></p></form></section>
+    <section class="panel"><h3>Where you're logged in</h3><p class="hint">Devices signed in to your account, with the nearest city. Not you? Remove it, then change your password. We never store your IP address.</p><div id="s-sess"></div><h3>Admin access to your account</h3><p class="hint">Shown whenever a BrixBlox admin signs in to help fix a problem.</p><div id="s-fixlog"></div></section>
   </div>
   <div id="p-friends" class="page" hidden="">
     <section class="panel"><h2>Add a friend</h2>
@@ -1028,8 +1029,19 @@ function makeSupa(){
   async function profile(id,user){const r=await sb.from('profiles').select('id,username,avatar_color').eq('id',id).single();if(r.error)throw r.error;const md=(user&&user.user_metadata)||{};const em=(user&&user.email)||'';return {id:r.data.id,username:r.data.username,color:r.data.avatar_color,av:normAv(md.avatar),email:em.endsWith('@'+MAIL_DOMAIN)?'':em,pending:(user&&user.new_email)||'',age:md.age||null}}
   async function call(body){const r=await fetch(SUPABASE_URL+'/functions/v1/account',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY},body:JSON.stringify(body)});let j={};try{j=await r.json()}catch(e){}if(!r.ok||j.error)throw new Error(j.error||(r.status===404?'ACCOUNT_FN_MISSING':'Something went wrong.'));return j}
   async function viaFn(body){const d=await call(body);const r=await sb.auth.setSession({access_token:d.access_token,refresh_token:d.refresh_token});if(r.error)throw r.error;return {profile:await profile(r.data.user.id,r.data.user)}}
+  async function fixCall(body,tok){const r=await fetch(SUPABASE_URL+'/functions/v1/admin-fix',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+tok},body:JSON.stringify(body)});let j={};try{j=await r.json()}catch(e){}if(!r.ok||j.error)throw new Error(j.error||(r.status===404?'The admin-fix function is not deployed yet.':'Something went wrong.'));return j}
   return {
     demo:false,sbc:sb,
+    async fixStart(targetId){const g=await sb.auth.getSession();const ses=g&&g.data&&g.data.session;if(!ses)throw new Error('Sign in again first.');
+      const j=await fixCall({action:'start',target_id:targetId},ses.access_token);
+      store.set('brixblox-fix',JSON.stringify({adminAccess:ses.access_token,adminRefresh:ses.refresh_token,adminMe:store.get('brixblox-me'),adminName:me.username,target:j.target_id,targetName:j.username,log:j.log_id}));
+      const r=await sb.auth.verifyOtp({token_hash:j.token_hash,type:'magiclink'});if(r.error){store.del('brixblox-fix');throw r.error}
+      return {profile:await profile(r.data.user.id,r.data.user)}},
+    async fixEnd(){let m=null;try{m=JSON.parse(store.get('brixblox-fix'))}catch(e){}if(!m)return null;
+      const r=await sb.auth.setSession({access_token:m.adminAccess,refresh_token:m.adminRefresh});if(r.error)throw r.error;
+      try{await fixCall({action:'end',log_id:m.log},r.data.session.access_token)}catch(e){}
+      store.del('brixblox-fix');return {profile:await profile(r.data.user.id,r.data.user)}},
+    async myFixLog(){const x=await sb.rpc('my_fix_log');if(x.error)throw x.error;return x.data||[]},
     async checkUsername(n){const p=nameProblem(n);if(p)return p;const r=await sb.rpc('check_username',{p_name:n});if(r.error)throw r.error;return r.data.ok?null:r.data.reason},
     async signUp(f){const p=nameProblem(f.username);if(p)throw new Error(p);return viaFn({action:'signup',username:f.username,password:f.password})},
     async logIn(f){if(f.username.indexOf('@')>=0){const r=await sb.auth.signInWithPassword({email:f.username,password:f.password});if(r.error)throw r.error;return {profile:await profile(r.data.user.id,r.data.user)}}return viaFn({action:'login',username:f.username,password:f.password})},
@@ -1095,6 +1107,9 @@ function makeSupa(){
     async savePack(p){/* keep the newest animations from the database, so a stale copy in this page can never wipe or swap a pack's animations */let anims=p.anims||{};try{const c=await sb.from('games').select('data').eq('id',p.id).maybeSingle();if(!c.error&&c.data){let d=c.data.data;if(typeof d==='string')d=JSON.parse(d);if(d&&d.anims)anims=d.anims}}catch(e){}const r=await sb.from('games').upsert({id:p.id,owner_id:me.id,owner_name:me.username,name:p.name,vis:'public',data:JSON.stringify({owner:p.owner,price:p.price||0,descr:p.descr||'',pub:!!p.pub,sale:p.sale!==false,removed:!!p.removed,anims:anims}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
     async delAcc(id){const r=await sb.from('games').delete().eq('id',id);if(r.error)throw r.error},
     async logOut(){await sb.auth.signOut()},
+    async recordSession(sid,dev,c,r,k){const x=await sb.rpc('record_login_session',{p_sid:sid,p_device:dev,p_city:c,p_region:r,p_country:k});if(x.error)throw x.error;return x.data||{}},
+    async mySessions(){const x=await sb.rpc('my_login_sessions');if(x.error)throw x.error;return x.data||[]},
+    async removeSession(id){const x=await sb.rpc('remove_login_session',{p_id:id});if(x.error)throw x.error},
     async dmSend(id,to,body){const r=await sb.rpc('dm_send',{p_to:to,p_body:body});if(r.error)throw r.error;return r.data},
     async dmThread(id,name){const r=await sb.rpc('dm_thread',{p_with:name});if(r.error)throw r.error;return r.data||[]},
     async dmUnread(id){const r=await sb.rpc('dm_unread');if(r.error)throw r.error;return r.data||[]},
@@ -1130,6 +1145,39 @@ function makeSupa(){
 }
 const useSupa=!!(SUPABASE_URL&&SUPABASE_ANON_KEY&&window.supabase);
 const api=useSupa?makeSupa():makeDemo();
+
+/* ===== Logged-in devices: browser, device and nearest city only. The IP address is used once to find the city and is never saved. ===== */
+function devName(){const u=navigator.userAgent;let b='Browser',o='device';
+  if(/Edg\//.test(u))b='Edge';else if(/OPR\//.test(u))b='Opera';else if(/Firefox\//.test(u))b='Firefox';else if(/Chrome\//.test(u))b='Chrome';else if(/Safari\//.test(u))b='Safari';
+  if(/Windows/.test(u))o='Windows';else if(/Android/.test(u))o='Android';else if(/iPhone|iPad|iPod/.test(u))o='iOS';else if(/CrOS/.test(u))o='ChromeOS';else if(/Mac OS X/.test(u))o='Mac';else if(/Linux/.test(u))o='Linux';
+  return b+' on '+o}
+function mySid(){let k=store.get('brixblox-sid');if(!k){k=Math.random().toString(36).slice(2)+Date.now().toString(36);store.set('brixblox-sid',k)}return k}
+async function geoPlace(){try{const c=new AbortController(),t=setTimeout(function(){c.abort()},4000);const r=await fetch('https://get.geojs.io/v1/ip/geo.json',{signal:c.signal});clearTimeout(t);const j=await r.json();return {city:j.city||'',region:j.region||'',country:j.country||''}}catch(e){return {city:'',region:'',country:''}}}
+async function trackSession(){if(!api.recordSession||!me||me.demo||store.get('brixblox-fix'))return;
+  const g=await geoPlace();const r=await api.recordSession(mySid(),devName(),g.city,g.region,g.country);
+  if(r&&r.revoked){try{presStop();dmClose()}catch(e){}try{await api.logOut()}catch(e){}store.del('brixblox-me');store.del('brixblox-sid');store.del('brixblox-fix');me=null;recs={};show('auth');tab(false);toast('You were signed out from the Settings of another device.')}}
+async function paintSessions(){const el=$('s-sess');if(!el)return;if(!api.mySessions||!me||me.demo){el.textContent='Not available in demo mode.';return}
+  let rows=[];try{rows=await api.mySessions()}catch(e){el.textContent='Could not load your devices yet. Run login-sessions.sql in Supabase.';return}
+  el.textContent='';const mine=mySid();
+  rows.forEach(function(x){const d=document.createElement('div');d.style.cssText='display:flex;align-items:center;gap:10px;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)';
+    const t=document.createElement('div');const place=[x.city,x.region,x.country].filter(Boolean).join(', ')||'Location unknown';
+    const a=document.createElement('b');a.textContent=x.device||'Device';const b=document.createElement('div');b.className='hint';b.textContent=place+' \u00b7 '+(x.sid===mine?'This device':'Active '+new Date(x.last_seen).toLocaleString());
+    t.append(a,b);d.append(t);
+    if(x.sid!==mine){const bt=document.createElement('button');bt.type='button';bt.className='btn ghost small';bt.textContent='Remove';bt.onclick=async function(){bt.disabled=true;try{await api.removeSession(x.id);paintSessions()}catch(e){toast('Could not remove it.');bt.disabled=false}};d.append(bt)}
+    el.append(d)});
+  if(!rows.length)el.textContent='No devices yet.'}
+
+/* ===== Account fix sessions: an admin signed in as a player (see admin-fix function). A purple bar stays on screen until it is ended. ===== */
+function readFix(){try{return JSON.parse(store.get('brixblox-fix'))}catch(e){return null}}
+function fixGuard(p){const m=readFix();if(m&&(!p||p.id!==m.target))store.del('brixblox-fix')}
+function paintFixBar(){let b=$('fixbar');const m=readFix();if(!m){if(b)b.remove();return}
+  if(!b){b=document.createElement('div');b.id='fixbar';b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99998;background:#7a4cff;color:#fff;display:flex;gap:12px;align-items:center;justify-content:center;padding:8px 12px;font:700 .9rem Montserrat,system-ui,sans-serif';document.body.append(b)}
+  b.textContent='';const t=document.createElement('span');t.textContent='Account fix session: you are in '+m.targetName+'\u2019s account';
+  const e=document.createElement('button');e.type='button';e.className='btn small';e.textContent='End Account Fix Session';e.onclick=endFix;b.append(t,e)}
+async function endFix(){try{const r=await api.fixEnd();try{presStop();dmClose()}catch(e){}if(r)await enter(r.profile);paintFixBar();toast('Fix session ended. You are back in your own account.')}catch(e){toast(errText(e))}}
+async function paintFixLog(){const el=$('s-fixlog');if(!el)return;el.textContent='';if(!api.myFixLog||!me||me.demo)return;let rows=[];try{rows=await api.myFixLog()}catch(e){return}
+  if(!rows.length){el.textContent='No admin has accessed your account.';return}
+  rows.forEach(function(x){const d=document.createElement('div');d.className='hint';d.textContent=x.admin_name+' \u00B7 '+new Date(x.started_at).toLocaleString()+(x.ended_at?' to '+new Date(x.ended_at).toLocaleTimeString():' (still open)');el.append(d)})}
 
 /* ===== 5. Screens ===== */
 const $=function(id){return document.getElementById(id)};
@@ -1214,7 +1262,7 @@ async function codeMigrate(){
       else await refreshAv()}
     else{av.codeReset=1;await saveAv()}}
   catch(e){console.warn('Code clean up',e)}}
-async function enter(p){me=p;syncMe();$('a-msg').textContent='';$('f-up').reset();$('f-in').reset();nameOk=false;updUp();
+async function enter(p){me=p;syncMe();try{fixGuard(p);paintFixBar()}catch(e){}try{trackSession()}catch(e){}$('a-msg').textContent='';$('f-up').reset();$('f-in').reset();nameOk=false;updUp();
   try{recs=await api.records(me.id)}catch(e){recs={};toast('Could not load your times.')}
   await loadPrem();
   await loadBank();
@@ -1300,7 +1348,7 @@ $('f-acct').addEventListener('submit',async function(e){e.preventDefault();
   $('b-acct').disabled=true;sMsg('Saving...',true);
   try{const r=await api.setAccount(me.id,{email:email,age:age},me.email);me.age=age;if(r.pending){me.pending=email;sMsg('Saved. We sent a confirmation link to '+email+'. Open it to finish adding your email.',true)}else{if(api.demo)me.email=email;sMsg('Saved.',true)}}catch(er){sMsg(errText(er))}
   $('b-acct').disabled=false});
-$('n-avatar').onclick=function(){nav('avatar');openAvatarPage()};$('n-profile').onclick=function(){openProfile(me.username)};$('n-catalog').onclick=function(){nav('catalog');paintCatalog();loadBank().then(function(){if(!$('p-catalog').hidden)paintCatalog()})};$('n-bank').onclick=function(){nav('bank');loadBank()};$('n-codes').onclick=function(){nav('codes');paintCodes()};$('n-premium').onclick=function(){nav('premium');paintPrem();refreshMoney().then(function(){if(!$('p-premium').hidden)paintPrem()})};$('n-settings').onclick=function(){nav('settings')};$('n-admin').onclick=function(){openAdmin()};$('n-bill').onclick=function(){openBBMgr()};
+$('n-avatar').onclick=function(){nav('avatar');openAvatarPage()};$('n-profile').onclick=function(){openProfile(me.username)};$('n-catalog').onclick=function(){nav('catalog');paintCatalog();loadBank().then(function(){if(!$('p-catalog').hidden)paintCatalog()})};$('n-bank').onclick=function(){nav('bank');loadBank()};$('n-codes').onclick=function(){nav('codes');paintCodes()};$('n-premium').onclick=function(){nav('premium');paintPrem();refreshMoney().then(function(){if(!$('p-premium').hidden)paintPrem()})};$('n-settings').onclick=function(){nav('settings');paintSessions();paintFixLog()};$('n-admin').onclick=function(){openAdmin()};$('n-bill').onclick=function(){openBBMgr()};
 $('n-home').onclick=function(){nav('home');loadGames()};$('n-discover').onclick=function(){nav('discover');loadGames()};$('n-friends').onclick=function(){nav('friends');loadFriends()};
 /* Friend avatars: draw the real 3D avatar (same makeAvatar as the Avatar page) into a small picture */
 const FAV={r:null,sc:null,cam:null,fail:false,cache:{}};
@@ -1340,7 +1388,7 @@ async function loadFriends(){
   catch(e){$('n-badge').hidden=true;const p=document.createElement('p');p.className='empty';p.textContent=errText(e);$('f-req').replaceChildren(p);$('f-list').replaceChildren()}}
 $('f-add').addEventListener('submit',async function(e){e.preventDefault();const n=$('f-name').value.trim(),m=$('f-msg');if(!n)return;
   try{const r=await api.addFriend(me.id,n);m.className='hint '+(r.ok?'ok':'bad');m.textContent=r.ok?r.msg:r.reason;if(r.ok)$('f-name').value='';loadFriends()}catch(er){m.className='hint bad';m.textContent=errText(er)}});
-$('b-out').onclick=async function(){try{presStop();dmClose()}catch(e){}try{await api.logOut()}catch(e){}store.del('brixblox-me');me=null;recs={};show('auth');tab(false)};
+$('b-out').onclick=async function(){try{presStop();dmClose()}catch(e){}try{await api.logOut()}catch(e){}store.del('brixblox-me');store.del('brixblox-sid');store.del('brixblox-fix');me=null;recs={};show('auth');tab(false)};
 
 /* ===== Servers (chosen here, the game then opens at once in that server) and private servers ===== */
 const SV={ch:null,code:null},PSPRICE=100;
@@ -1593,6 +1641,8 @@ function openAdmin(){if(!isAdm())return;closeAdmin();
       else if(canAct)mk('Ban',async function(){const r=await modDialog('ban',p);if(!r)return;await api.adminBan(p.id,true,r.reason);return p.username+(r.until?' is banned until '+new Date(r.until).toLocaleString()+'.':' is permanently banned.')});
       mk('Balance',async function(){const r=await api.adminBalance(p.id);let cb=0,inc=typeof r.codes!=='undefined';if(inc)cb=r.codes|0;else{try{cb=await api.adminCodeBux(p.id)}catch(e){}}alert(p.username+' has '+((r.balance|0)+(inc?0:cb))+' blockbucks.\n\nCoins from games: '+(r.coins|0)+'\nWallet: '+(r.wallet|0)+'\nPremium visit bonus: '+(r.bonus|0)+'\nGamepass sales: '+(r.gamepass|0)+'\nSpent in shop: -'+(r.spent|0)+(r.premium?'\nPremium price: -200':'')+'\nBlockbucks from codes: '+cb+'\nTaken by admins: -'+(r.taken|0));return null});
       if(canAct)mk('Take blockbucks',async function(){const cur=await api.adminBalance(p.id);const a=prompt(p.username+' has '+(cur.balance|0)+' blockbucks.\nHow many do you want to take?');if(a===null)return null;const n=Math.floor(+a);if(!(n>=1))throw new Error('Enter a whole number of 1 or more.');const why=prompt('Reason (the player will see this in their blockbucks log):','')||'';if(!confirm('Take '+n+' blockbucks from '+p.username+'?'))return null;const r=await api.adminTake(p.id,n,why);return 'Took '+n+' from '+p.username+'. They now have '+(r.balance|0)+'.'});
+      if(canAct&&api.fixStart)mk('Run account fix session',async function(){if(!confirm('Sign in as '+p.username+' to fix a problem?\n\nYou will be in their account on the site and in Studio until you press End Account Fix Session. It is logged, and the player can see that an admin accessed their account.'))return null;
+        const r=await api.fixStart(p.id);try{presStop();dmClose()}catch(e){}closeAdmin();await enter(r.profile);return null});
       if(isBB())mk('Remove games',async function(){const n=await gamePicker(p);return n?n+' game'+(n===1?'':'s')+' removed.':null});
       if(isBB()){const d=mk('Delete account',async function(){if(prompt('This permanently deletes '+p.username+' and their games. Type their name to confirm:')!==p.username)return;await api.adminDelete(p.id);return 'Account deleted.'});d.style.color='#d33'}
       row.append(bt);list.append(row)})}
