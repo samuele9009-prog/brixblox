@@ -2031,7 +2031,6 @@ gravel:function(x,S,r){x.fillStyle=gy(.3);x.fillRect(0,0,S,S);for(let i=0;i<260;
 sand:function(x,S,r){speck(x,S,r,.9,.14);for(let i=0;i<5;i++)wave(x,S,(i+.5)*S/5,5,2,i,gy(0,.05),6)},
 snow:function(x,S,r){speck(x,S,r,.95,.05);for(let i=0;i<30;i++)blob(x,S,r()*S,r()*S,20+r()*30,r()<.5?0:1,.035)},
 ice:function(x,S,r){speck(x,S,r,.92,.04);for(let i=0;i<22;i++)blob(x,S,r()*S,r()*S,20+r()*40,r()<.5?0:1,.05+r()*.05);for(let i=0;i<12;i++){let px=r()*S,py=r()*S,a=r()*6.28;const pts=[[px,py]];for(let k=0;k<7;k++){a+=(r()-.5)*1.2;px+=Math.cos(a)*14;py+=Math.sin(a)*14;pts.push([px,py])}x.strokeStyle=gy(i%2?1:.4,.4);x.lineWidth=1+r();x.beginPath();pts.forEach(function(q,k){k?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1])});x.stroke()}},
-water:function(x,S,r){speck(x,S,r,.9,.04);for(let i=0;i<14;i++){const y=r()*S,A=3+r()*6,k=2+Math.floor(r()*3),ph=r()*6.28,v=r()<.5?1:0;wr(x,S,S/2,y,A+3,function(){wave(x,S,y,A,k,ph,gy(v,.18),2)})}},
 fabric:function(x,S,r){x.fillStyle=gy(.82);x.fillRect(0,0,S,S);for(let j=0;j<S;j+=4)for(let i=0;i<S;i+=4){const h=((i+j)/4)%2===0;x.fillStyle=gy(h?.96:.74,.9);if(h)x.fillRect(i,j+.5,4,2.5);else x.fillRect(i+.5,j,2.5,4)}for(let i=0;i<1500;i++){x.fillStyle=gy(r()<.5?0:1,.05);x.fillRect(r()*S,r()*S,1,1)}}
 };
 /* n = name, c = default colour, ts = studs per texture tile, sh/sp = shininess/specular, op = opacity */
@@ -2058,7 +2057,6 @@ gravel:{n:'Gravel',c:'#8e8a84',ts:6,sh:5,sp:'#111111'},
 sand:{n:'Sand',c:'#e0cb94',ts:8,sh:4,sp:'#111111'},
 snow:{n:'Snow',c:'#f3f7fb',ts:8,sh:25,sp:'#444444'},
 ice:{n:'Ice',c:'#bfe6f5',ts:8,sh:120,sp:'#ffffff',op:.75},
-water:{n:'Water',c:'#3b8fd1',ts:8,sh:110,sp:'#ffffff',op:.65},
 glass:{n:'Glass',c:'#cfe9f5',sh:120,sp:'#ffffff',op:.3},
 fabric:{n:'Fabric',c:'#b0506f',ts:3,sh:2,sp:'#000000'},
 neon:{n:'Neon',c:'#00f0ff',sh:0,sp:'#000000'}};
@@ -2066,14 +2064,14 @@ neon:{n:'Neon',c:'#00f0ff',sh:0,sp:'#000000'}};
 /* Physically based settings per material: [roughness, metalness, bump depth, reflection strength] (negative bump = light lines are raised) */
 const PBR={plastic:[.4,0,0,.45],wood:[.75,0,.02,.3],planks:[.7,0,.04,.3],brick:[.9,0,-.07,.2],cobble:[.88,0,.12,.25],slate:[.7,0,.07,.35],concrete:[.93,0,.04,.2],asphalt:[.95,0,.05,.15],
 tile:[.14,0,.03,.8],marble:[.12,0,.012,.85],granite:[.35,0,.03,.6],metal:[.32,.9,.01,1],diamond:[.4,.85,.05,1],corrugated:[.45,.85,.07,1],rust:[.9,.3,.05,.3],grass:[.95,0,.07,.15],
-foliage:[.8,0,.05,.25],dirt:[.97,0,.07,.1],gravel:[.92,0,.1,.2],sand:[.96,0,.025,.15],snow:[.7,0,.03,.4],ice:[.08,0,.01,1],water:[.04,0,.02,1],glass:[.02,0,0,1],fabric:[.95,0,.015,.15],neon:[.5,0,0,.5]};
+foliage:[.8,0,.05,.25],dirt:[.97,0,.07,.1],gravel:[.92,0,.1,.2],sand:[.96,0,.025,.15],snow:[.7,0,.03,.4],ice:[.08,0,.01,1],glass:[.02,0,0,1],fabric:[.95,0,.015,.15],neon:[.5,0,0,.5]};
 /* Tileable noise: gives every material large patches of colour variation, baked crevice shading, real surface height and uneven shininess */
 function vno(S,cells,r){const g=new Float32Array(cells*cells);for(let i=0;i<g.length;i++)g[i]=r();const o=new Float32Array(S*S);
   for(let y=0;y<S;y++){const fy=y/S*cells,y0=Math.floor(fy),ty=fy-y0,sy=ty*ty*(3-2*ty),ya=(y0%cells)*cells,yb=((y0+1)%cells)*cells;
     for(let x=0;x<S;x++){const fx=x/S*cells,x0=Math.floor(fx),tx=fx-x0,sx=tx*tx*(3-2*tx),xa=x0%cells,xb=(x0+1)%cells,A=g[ya+xa],B=g[ya+xb],C=g[yb+xa],D=g[yb+xb];o[y*S+x]=A+(B-A)*sx+(C-A)*sy+(A-B-C+D)*sx*sy}}return o}
 function fbm(S,r){const W=[[3,.4],[6,.3],[12,.2],[24,.1]],o=new Float32Array(S*S);W.forEach(function(w){const n=vno(S,w[0],r);for(let i=0;i<o.length;i++)o[i]+=n[i]*w[1]});return o}
 /* [crevice shading, colour variation, how much of the height is noise] */
-const TPD=[.35,.14,.35],TP={tile:[.12,.05,.15],marble:[.1,.08,.2],metal:[.12,.07,.2],diamond:[.15,.07,.2],corrugated:[.15,.08,.2],granite:[.3,.12,.3],ice:[.05,.05,.2],water:[.05,.04,.25],snow:[.25,.06,.3],
+const TPD=[.35,.14,.35],TP={tile:[.12,.05,.15],marble:[.1,.08,.2],metal:[.12,.07,.2],diamond:[.15,.07,.2],corrugated:[.15,.08,.2],granite:[.3,.12,.3],ice:[.05,.05,.2],snow:[.25,.06,.3],
 brick:[.45,.2,.3],cobble:[.5,.2,.3],concrete:[.35,.2,.45],asphalt:[.35,.18,.5],grass:[.55,.22,.5],foliage:[.5,.2,.4],dirt:[.55,.22,.55],gravel:[.5,.2,.4],sand:[.3,.14,.45],wood:[.4,.18,.3],planks:[.4,.18,.3],rust:[.45,.3,.5],fabric:[.3,.1,.3],slate:[.4,.16,.3]};
 const TC={},TCH={},TCR={};
 function texBuild(k){let h=0;for(let i=0;i<k.length;i++)h=h*31+k.charCodeAt(i);
