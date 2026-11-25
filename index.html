@@ -1042,6 +1042,7 @@ function makeSupa(){
       try{await fixCall({action:'end',log_id:m.log},r.data.session.access_token)}catch(e){}
       store.del('brixblox-fix');return {profile:await profile(r.data.user.id,r.data.user)}},
     async adminPlaces(ids){const r=await sb.rpc('admin_player_places',{p_ids:ids});if(r.error)throw r.error;return r.data||[]},
+    async adminWhere(id){const g=await sb.auth.getSession();const ses=g&&g.data&&g.data.session;if(!ses)throw new Error('Sign in again first.');return fixCall({action:'where',target_id:id},ses.access_token)},
     async myFixLog(){const x=await sb.rpc('my_fix_log');if(x.error)throw x.error;return x.data||[]},
     async checkUsername(n){const p=nameProblem(n);if(p)return p;const r=await sb.rpc('check_username',{p_name:n});if(r.error)throw r.error;return r.data.ok?null:r.data.reason},
     async signUp(f){const p=nameProblem(f.username);if(p)throw new Error(p);return viaFn({action:'signup',username:f.username,password:f.password})},
@@ -1635,7 +1636,8 @@ function openAdmin(){if(!isAdm())return;closeAdmin();
     rows.forEach(function(p){
       const row=mkx('div','adr');row.style.cssText='border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;display:flex;flex-direction:column;gap:6px';
       const nm=mkx('strong','',p.username);row.append(nm);
-      const pl=places[p.id];row.append(mkx('small','',pl?'Last login near '+([pl.city,pl.region,pl.country].filter(Boolean).join(', ')||'an unknown place')+' \u00B7 '+new Date(pl.seen).toLocaleDateString():'Location: not recorded yet (they have not logged in since the update)'));
+      const pl=places[p.id];const ls=mkx('small','',pl?'Last login near '+([pl.city,pl.region,pl.country].filter(Boolean).join(', ')||'an unknown place')+' \u00B7 '+new Date(pl.seen).toLocaleDateString():'Location not recorded yet.');row.append(ls);
+      if(!pl&&api.adminWhere){const lb=mkx('button','btn ghost small','Look up from last sign-in');lb.type='button';lb.onclick=async function(){lb.disabled=true;try{const r=await api.adminWhere(p.id);const w=[r.city,r.region,r.country].filter(Boolean).join(', ');ls.textContent=w?'Last sign-in near '+w:'No location found for this player.';lb.remove()}catch(e){lb.disabled=false;toast(errText(e))}};row.append(lb)}
       const inf=mkx('small','','Joined '+(p.created_at?new Date(p.created_at).toLocaleDateString():'?')+' \u00B7 '+(p.warns|0)+' warning(s) \u00B7 '+(p.games|0)+' game(s)'+(p.banned?(function(){const b=banParse(p.ban_reason);return ' \u00B7 BANNED'+(b.until?' until '+new Date(b.until).toLocaleString():' (permanent)')+(b.text?': '+b.text:'')})():''));row.append(inf);
       const bt=mkx('div','bb-adm'),lo=String(p.username).toLowerCase(),canAct=isBB()||(lo!=='brixblox'&&ADMS.indexOf(lo)<0&&(!me||p.id!==me.id));
       if(!canAct)row.append(mkx('small','','You cannot moderate this account.'));
