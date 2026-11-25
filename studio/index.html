@@ -8957,18 +8957,16 @@ function terTrees(g,cfg){terCellsReset(g);if(TER.veg){g.remove(TER.veg);TER.veg.
   mkI(new THREE.ConeGeometry(2.8,5.5,8),lm,pine,5,[.36,.55,.2]);mkI(new THREE.ConeGeometry(2.0,4.5,8),lm,pine,8,[.37,.55,.24]);
   mkI(new THREE.IcosahedronGeometry(2.6,1),lm,round,5.2,[.25,.55,.3])}
 function buildTerrain(cfg){
-  const nk=Math.max(1,Math.min(6,(+cfg.sz||100)/100));terSetSize(nk);if((cfg.hd||cfg.mt)&&(cfg.szs||1)!==nk)terResize(cfg,cfg.szs||1,nk);cfg.szs=nk;
+  const nk=Math.max(1,Math.min(6,(+cfg.sz||600)/100));terSetSize(nk);if((cfg.hd||cfg.mt)&&(cfg.szs||1)!==nk)terResize(cfg,cfg.szs||1,nk);cfg.szs=nk;
   const b0=cfg.flat?function(){return 0}:terrainFn(cfg.seed,cfg.amp),base1=(cfg.mo||cfg.hl)?terExtra(b0,cfg):b0,base=function(x,z){const e=HS-Math.max(Math.abs(x),Math.abs(z)),h=base1(x,z);if(e>=60)return h;const t=sm(0,60,e);return h*t-8*(1-t)},NV=TNV*TNV;TER.cfg=cfg;TER.B=base;TER.N2=mkNoise(cfg.seed+99);
   TER.hg=new Float32Array(NV);TER.hv=new Uint8Array(NV);TER.D=new Float32Array(NV);TER.M=new Uint8Array(NV);TER.cg=new Float32Array(NV*3);TER.ge=new Float32Array(NV);
   terDec(cfg.hd,TER.D,.1);terDec(cfg.mt,TER.M,1);TER.edited=TER.D.some(function(v){return v!==0});
   TER.H=function(x,z){return base(x,z)+terD(x,z)};
   const g=new THREE.Group();TER.g=g;TER.tiles={};TER.tl=[];TER.mat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.96,metalness:0,map:detailTex()});TER.mat.onBeforeCompile=terFakeGrass;
-  if(NT===8){for(let tz=0;tz<8;tz++)for(let tx=0;tx<8;tx++)terTile(tx,tz)}else terStream(0,0,600,1e9);/* big plates are built in pieces around you as you move */
-  {const sk=new THREE.MeshStandardMaterial({color:0x4a3b2a,roughness:1,side:THREE.DoubleSide}),wh=60,add=function(w,h,x,y,z,ry,rx){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),sk);m.position.set(x,y,z);if(ry)m.rotation.y=ry;if(rx)m.rotation.x=rx;g.add(m)};
-    add(TSZ,wh,0,-8-wh/2+.05,HS,0);add(TSZ,wh,0,-8-wh/2+.05,-HS,0);add(TSZ,wh,HS,-8-wh/2+.05,0,Math.PI/2);add(TSZ,wh,-HS,-8-wh/2+.05,0,Math.PI/2);add(TSZ,TSZ,0,-8-wh,0,0,Math.PI/2)}
+  if(NT===8){for(let tz=0;tz<8;tz++)for(let tx=0;tx<8;tx++)terTile(tx,tz)}else terStream(0,0,450,1e9);/* big plates are built in pieces around you as you move */
   terTrees(g,cfg);return g}
 function terSync(){let cfg;try{cfg=terCfg()}catch(e){return}
-  const sig=[cfg.on?1:0,cfg.seed,cfg.amp,cfg.trees?1:0,cfg.pal||'grass',cfg.flat?1:0,cfg.rv||0,cfg.sz||100,cfg.mo||0,cfg.hl||0].join('|');
+  const sig=[cfg.on?1:0,cfg.seed,cfg.amp,cfg.trees?1:0,cfg.pal||'grass',cfg.flat?1:0,cfg.rv||0,cfg.sz||600,cfg.mo||0,cfg.hl||0].join('|');
   if(sig!==TER.sig){TER.sig=sig;disposeTer();TER.on=!!cfg.on;TER.amp=cfg.amp;
     if(cfg.on){try{TER.g=buildTerrain(cfg);scene.add(TER.g)}catch(e){TER.on=false;TER.H=null;log('Error: terrain - '+(e&&e.message))}}else TER.H=null}
   const bp=P.parts.find(function(p){return p.name==='Baseplate'&&!p.av});if(bp&&M[bp.id])M[bp.id].visible=!TER.on}
@@ -8997,7 +8995,7 @@ function grassBuild(gx,gz,dens,lod){lod=lod||0;const S=32,x0=gx*S,z0=gz*S,n=Math
   const m=new THREE.Mesh(geo,grassMat());m.receiveShadow=true;m.castShadow=lod===0;m.customDepthMaterial=GR.dep;m.userData.lod=lod;return m}
 window.terTick=function(dt){
   if(!TER.on||!TER.g||!TER.hg){if(GR.g)GR.g.visible=false;return}
-  try{terStream(camera.position.x,camera.position.z,720,8)}catch(e){}
+  try{terStream(camera.position.x,camera.position.z,800,4)}catch(e){}
   const cfg=TER.cfg,ge=gfxEff(),lv=ge===GFXT.lowest?0:ge===GFXT.low?.55:1,dens=(cfg.grass===false?0:(cfg.gd||1))*lv;
   if(!GR.g){GR.g=new THREE.Group();scene.add(GR.g)}
   const sg=dens+'|'+(cfg.gh||1)+'|'+TER.sig;if(sg!==GR.sig){GR.sig=sg;grassClear()}
@@ -9106,7 +9104,7 @@ window.terrainUI=function(d){
   if(T.hl===undefined)T.hl=0;if(T.mo===undefined)T.mo=0;if(T.sz===undefined)T.sz=100;
   slider(d,'Hills (gentle, rolling)',T,'hl',0,100,1,function(v){return Math.round(v||0)+'%'},function(){save();terSync()});
   slider(d,'Mountains (tall ranges)',T,'mo',0,100,1,function(v){return Math.round(v||0)+'%'},function(){save();terSync()});
-  slider(d,'Terrain size',T,'sz',100,600,50,function(v){return Math.round(v||100)+'%'},function(){save();terSync()});
+  slider(d,'Terrain size',T,'sz',100,600,50,function(v){return Math.round(v||600)+'%'},function(){save();terSync()});
   d.append(el('p','note','Size 100% is the normal plate. Bigger sizes build the ground (and trees) in pieces around you as you move, so they stay smooth, and the land looks the same as it does now. Hills and Mountains add bigger shapes on top. Your sculpting is kept when you change the size.'));
   const tc=el('input');tc.type='checkbox';tc.checked=!!T.trees;tc.onchange=function(){T.trees=tc.checked;save();terSync()};d.append(lab('Trees',tc));
   const gc=el('input');gc.type='checkbox';gc.checked=T.grass!==false;gc.onchange=function(){T.grass=gc.checked;save()};d.append(lab('Grass blades',gc));
