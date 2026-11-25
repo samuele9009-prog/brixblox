@@ -8856,5 +8856,18 @@ try{applyEnv()}catch(e){}try{terSync()}catch(e){}
 })();
 
 </script>
+<script>
+/* Account fix session bar: shown in Studio while an admin is signed in as a player. Ending it signs the admin back in to their own account. */
+(function(){let m=null;try{m=JSON.parse(store.get('brixblox-fix'))}catch(e){}
+  if(!m||!ME||ME.demo||ME.id!==m.target||!sb)return;
+  function go(){const b=document.createElement('div');b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99998;background:#7a4cff;color:#fff;display:flex;gap:12px;align-items:center;justify-content:center;padding:8px 12px;font:700 .9rem Montserrat,system-ui,sans-serif';
+    const t=document.createElement('span');t.textContent='Account fix session: you are in '+m.targetName+'\u2019s account';
+    const e=document.createElement('button');e.type='button';e.textContent='End Account Fix Session';e.style.cssText='font:inherit;padding:5px 12px;border-radius:8px;border:0;cursor:pointer';
+    e.onclick=async function(){e.disabled=true;try{const r=await sb.auth.setSession({access_token:m.adminAccess,refresh_token:m.adminRefresh});if(r.error)throw r.error;
+      try{await fetch(SB_URL+'/functions/v1/admin-fix',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+r.data.session.access_token},body:JSON.stringify({action:'end',log_id:m.log})})}catch(x){}
+      store.del('brixblox-fix');if(m.adminMe)store.set('brixblox-me',m.adminMe);skipUnload=true;(window.top||window).location.replace(SITE_URL)}catch(x){e.disabled=false;alert('Could not end the session: '+(x&&x.message||x))}};
+    b.append(t,e);document.body.append(b)}
+  if(document.body)go();else document.addEventListener('DOMContentLoaded',go)})();
+</script>
 </body>
 </html>
