@@ -1084,7 +1084,7 @@ function clean(){P.scripts=P.scripts.filter(function(s){return s.length})}
 function inside(b,arr){return !!b.k&&(b.k===arr||b.k.some(function(x){return inside(x,arr)}))}
 /* ===== Code snippet block: write Lua (up to 10,000 characters). Click off it or press Enter and it folds down to one short line so it never lags. ===== */
 (function(){const st=document.createElement('style');st.textContent='.luab{display:inline-flex;flex-direction:column;max-width:100%}.luap{border-radius:6px;background:rgba(0,0,0,.3);color:#fff;border:1px solid rgba(255,255,255,.35);font:700 .74rem ui-monospace,Consolas,monospace;padding:3px 9px;cursor:text;text-align:left;max-width:280px;overflow:hidden;white-space:nowrap}.luat{width:min(540px,72vw);height:250px;resize:both;font:12px/1.45 ui-monospace,Consolas,monospace;background:#14161c;color:#d8f0ff;border:1px solid #4a4c4e;border-radius:8px;padding:8px;tab-size:2;white-space:pre;overflow:auto}';document.head.appendChild(st)})();
-BD.luacode={c:'ct',l:'Code snippet _',a:['-- Lua\nprint("hello from Lua")'],tip:'Write Lua code (up to 10,000 characters). Click the block to edit. Click off it or press Enter and it folds into one short line (Shift+Enter makes a new line). Examples: me.Color = "red"  |  part("Baseplate").Color = Color3.fromRGB(255,80,0)  |  me.Position = Vector3.new(0,10,0)  |  wait(1)  |  print("hi")  |  lighting("sunset"). me / script.Parent is the object this script belongs to; part("Name") or workspace.Name finds any part.'};
+BD.luacode={c:'ct',l:'Code snippet _',a:['-- Lua\nprint("hello from Lua")'],tip:'Write Lua code (up to 10,000 characters). Click the block to edit. Click off it or press Enter and it folds into one short line (Shift+Enter makes a new line). Examples: me.Color = "red"  |  part("Baseplate").Color = Color3.fromRGB(255,80,0)  |  me.Position = Vector3.new(0,10,0)  |  wait(1)  |  print("hi")  |  lighting("sunset"). me / script.Parent is the object this script belongs to; part("Name") or workspace.Name finds any part. More: Instance.new("Part") | player.Position / .Health / .WalkSpeed | game.Players:GetPlayers() | part.Touched:Connect(function(plr) end) | tween(part,{Position=Vector3.new(0,10,0)},2) | onKey("e",function() end) | Debris:AddItem(part,3) | part:Clone() | block("damageplayer","Bob",10) runs ANY block (ids are the names in the block list) | me.Touched:Connect(function(plr) end) works on editor parts too | onChat(function(plr,msg) end) | game.Players.PlayerAdded:Connect(fn) | RunService.Heartbeat:Connect(function(dt) end) | gui("Name").Text = "hi" | player:GetData("coins") / :SetData / :ChangeData / :SaveData | part:SetAttribute("k",v) | nearestPlayer(pos,range) | Random.new():NextInteger(1,6).'};
 function luaBox(b,ro){const w=el('span','luab'),prev=el('button','luap'),ta=el('textarea','luat');prev.type='button';ta.maxLength=10000;ta.value=String(b.a[0]||'').slice(0,10000);ta.spellcheck=false;ta.placeholder='-- Lua code (up to 10000 characters)';
   let svT=0;const sh=function(){const t=ta.value.replace(/\s+/g,' ').trim();prev.textContent=(t.length>24?t.slice(0,24)+'\u2026':(t||'(empty)'))+'  \u00b7  '+ta.value.length+' chars'};
   const fold=function(){b.a[0]=ta.value.slice(0,10000);sh();ta.style.display='none';prev.style.display='';clearTimeout(svT);save();try{view()}catch(e){}};
@@ -8796,7 +8796,7 @@ function makeInterp(S,owner,hostApi){
     _VERSION:'Lua 5.4 (BrixBlox)'};
   for(const k in G)root.v.set(k,G[k]);
   root.v.set('_G',new Host(k=>root.v.get(k),(k,v)=>root.v.set(k,v),'_G'));
-  hostApi.install(root.v,{LuaTable,Host,Multi,callF,T,num,str,truthy,LuaError,typeOf,tostrSync,owner});
+  hostApi.install(root.v,{LuaTable,Host,Multi,callF,T,num,str,truthy,LuaError,typeOf,tostrSync,owner,S});
   return{async run(ast){const sc=new Scope(root);const sg=await block(ast,sc);return sg}}}
 function fmtErr(e){if(e instanceof LuaError){const m=typeof e.v==='string'?e.v:tostrSync(e.v);return/^line \d+:/.test(m)?m:(e.line?'line '+e.line+': ':'')+m}return String(e&&e.message||e)}
 G0.LuaEngine={parse,makeInterp,LuaStop,LuaError,fmtErr,cache};
@@ -8816,9 +8816,51 @@ function hsv(h,s,v){const i=Math.floor(h*6)%6,f=h*6-Math.floor(h*6),p=v*(1-s),q=
    Lua globals that exist now (Lua function -> block it matches):
      say(text) -> say | lighting(name) -> set lighting to | part(name)/getPart/findPart -> part objects | game, workspace, Lighting, Workspace, me, player, script, BrickColor
      Lighting.Realism and Lighting.SunFlare (true/false) -> the Atmosphere checkboxes "Realism" and "Sun lens flare" (settings, no block)
+     (batch 2) me.Touched/TouchEnded also on editor parts, onChat, player.Chatted, Players.PlayerAdded/PlayerRemoving, RunService.Heartbeat, gui(name) .Text/.Visible/:Show/:Hide/:Toggle, player:GetData/SetData/ChangeData/SaveData, :GetAttribute/:SetAttribute, nearestPlayer, playersNear, Random.new, table.clone, string.split
+     block("id", args...) runs ANY block from Lua (so new blocks are reachable automatically), getVar/setVar, broadcast, playSound, stopSound, tween(obj,{props},secs), onKey(key,fn), Debris:AddItem, part.Touched/TouchEnded:Connect, part:Clone(), part:GetTouchingPlayers(), player.Health/MaxHealth/WalkSpeed/:Damage/:Heal/:Teleport, game.Players:GetPlayers(), Vector3 .Unit :Dot :Cross :Lerp :Distance
+     Instance.new("Part") (+ .Name .Size .Position/.CFrame .Color .Transparency .Parent .Destroy() :IsTouchingPlayer()), CFrame.new, player.Position, player.Character.HumanoidRootPart, game.Players.LocalPlayer (parts made in Lua are not solid yet)
      activateParticle(emitterName, x, y, z, secs) and particle(...) -> "activate particle _ at x _ y _ z _ for _ secs" (block id actpart)
    Particles: emitters live in P.particles (made in the Explorer under Particles; the code is the "Particles" section, search ptStep/ptActivate/ptUI).
    Not in Lua yet: changing an emitter's colour/size/image, other blocks that were added before this note. Add them when asked. */
+/* ---------- Lua-made parts (Instance.new("Part")). They live in their own group, are removed when the game stops, and are NOT solid (players walk through them). ---------- */
+const LPG=new THREE.Group(),LPL=[],LPN=new Map();let LPin=false,LPwarned=false,LPuid=0;
+function lpAdd(st){if(!LPin){scene.add(LPG);LPin=true}if(!st.mesh.parent)LPG.add(st.mesh)}
+const LPK=[],LPC=[],LPJ=[],LPQ=[],LPH=[],ETL=new Map(),LATT=new Map();
+function lpClear(){LPL.splice(0).forEach(function(q){if(q.mesh.parent)q.mesh.parent.remove(q.mesh);q.mesh.geometry.dispose();q.mesh.material.dispose();q.dead=true;q.onTouch.length=0;q.onEnd.length=0});LPN.clear();LPK.length=0;LPC.length=0;LPJ.length=0;LPQ.length=0;LPH.length=0;ETL.clear();LATT.clear()}
+function lpHit(st,m){const q=st.mesh;return Math.abs(m.x-q.position.x)<=q.scale.x/2+1&&Math.abs(m.z-q.position.z)<=q.scale.z/2+1&&Math.abs(m.y-q.position.y)<=q.scale.y/2+3}
+/* touch events for Lua-made parts: checked ~16 times a second while the game runs */
+setInterval(function(){try{if(!(running||playing))return;
+  LPL.forEach(function(st){if(st.dead||!st.mesh.parent||!(st.onTouch.length||st.onEnd.length)||!st.fire)return;
+    const now=new Set();plist().forEach(function(m){if(lpHit(st,m))now.add(m.key)});
+    now.forEach(function(k){if(!st.inside.has(k))st.onTouch.slice().forEach(function(f){st.fire(f,k)})});
+    st.inside.forEach(function(k){if(!now.has(k))st.onEnd.slice().forEach(function(f){st.fire(f,k)})});st.inside=now})}catch(e){}},60);
+/* Touched events for parts built in the editor: same hit test as the \"when this block touched\" block */
+function etlTick(){if(!ETL.size||!(running||playing))return;const T=byId(P.avId);if(!T)return;
+  const R=1.15,f0=feet0(),ents=[{key:'main',x:T.pos[0]+S.x,z:T.pos[2]-S.y,fy:f0+S.h}];
+  NP.forEach(function(n){if(n.net||goneKey('np:'+n.name))return;const q=n.g.position;ents.push({key:'np:'+n.name,x:T.pos[0]+q.x,z:T.pos[2]+q.z,fy:f0+q.y})});
+  ETL.forEach(function(rec){if(!rec.on.length&&!rec.end.length)return;
+    const ps=[];roots(rec.o,true).forEach(function(r){if(r.av||!inW(r)||goneKey('rig:'+r.id))return;rigParts(r).forEach(function(q){if(!q.stab)ps.push(q)})});
+    if(!ps.length)return;
+    ents.forEach(function(e){let hit=false;
+      for(let i=0;i<ps.length&&!hit;i++){const q=ps[i],r0=rootOf(q),o=RO[r0.id]||[0,0],L=colsOf(q);if(L){if(colNear(q,L,o,e.x,e.z,R+.5)&&colTouch(q,L,o,e.x,e.z,e.fy,R))hit=true;continue}
+        const eq=eh(q),hx=eq[0],hy=eq[1],hz=eq[2],bx=q.pos[0]+o[0],bz=q.pos[2]+o[1],by=q.pos[1]+(RY[r0.id]||0);
+        if(by+hy<e.fy-.2||by-hy>e.fy+6)continue;
+        const dx=e.x-Math.max(bx-hx,Math.min(bx+hx,e.x)),dz=e.z-Math.max(bz-hz,Math.min(bz+hz,e.z));if(dx*dx+dz*dz<=R*R)hit=true}
+      if(hit&&!rec.set.has(e.key)){rec.set.add(e.key);rec.on.slice().forEach(function(f){f.fire(e.key)})}
+      else if(!hit&&rec.set.has(e.key)){rec.set.delete(e.key);rec.end.slice().forEach(function(f){f.fire(e.key)})}})})}
+setInterval(function(){try{etlTick()}catch(e){}},60);
+/* RunService.Heartbeat: every frame while playing */
+let hbLast=performance.now();
+setInterval(function(){try{const now=performance.now(),dt=(now-hbLast)/1000;hbLast=now;if(!(running||playing)||!LPH.length)return;LPH.slice().forEach(function(q){q.fire(dt)})}catch(e){}},16);
+/* joins, leaves and chat are told to Lua listeners (the original game code still runs first/as before) */
+try{const _pj=window.firePJ;if(typeof _pj==='function'){window.firePJ=function(kind,name){try{if(running||playing)(kind==='pjoin'?LPJ:LPQ).slice().forEach(function(q){q.fire('np:'+name)})}catch(e){}return _pj.apply(this,arguments)}}}catch(e){}
+try{const _sc=window.sendChat;if(typeof _sc==='function'){window.sendChat=function(txt){const r=_sc.apply(this,arguments);
+  try{if(running||playing){const raw=String(txt).trim().slice(0,120);if(raw){let m=filt(raw);if(m===raw&&crossBad(raw))m=censor();LPC.slice().forEach(function(q){q.fire('main',m)})}}}catch(e){}return r}}}catch(e){}
+/* onKey(...) listeners */
+window.addEventListener('keydown',function(e){try{if(!(running||playing)||e.repeat)return;const t=e.target&&e.target.tagName;if(t==='INPUT'||t==='TEXTAREA')return;
+  let k=String(e.key).toLowerCase();if(k===' ')k='space';LPK.slice().forEach(function(q){if(q.key===k&&!q.off)q.fire()})}catch(err){}});
+try{const _rw=window.resetWorld;if(typeof _rw==='function'){window.resetWorld=function(){try{lpClear()}catch(e){}return _rw.apply(this,arguments)}}}catch(e){}
+setInterval(function(){try{if((LPL.length||LPK.length||LPC.length||LPJ.length||LPQ.length||LPH.length||ETL.size)&&S&&S.stop)lpClear()}catch(e){}},400);
 const hostApi={
   log:function(m){log(String(m))},
   sleep:function(ms){return sl(ms)},
@@ -8868,6 +8910,9 @@ const hostApi={
           case'moveto':return function(self,v){const p=vx(v),I2=info();setPos(I2.rs,p[0],p[1],p[2])};
           case'hide':return function(){info().ps.forEach(function(q){const m=mesh(q);if(m)m.visible=false})};
           case'show':return function(){info().ps.forEach(function(q){const m=mesh(q);if(m&&!q.stab)m.visible=true})};
+          case'getattribute':case'setattribute':return attrFor('p:'+String(o),key);
+          case'touched':case'touchended':{let rec=ETL.get(o);if(!rec){rec={o:o,on:[],end:[],set:new Set()};ETL.set(o,rec)}
+            return mkEvent(key==='touched'?rec.on:rec.end,function(fn){return{fire:function(pk){runCb(fn,[playerOf(pk)])}}})}
         }return undefined},
       function(k,v){
         const key=String(k).toLowerCase(),I=info();
@@ -8880,7 +8925,7 @@ const hostApi={
         }throw new LuaError("cannot set '"+String(k)+"' (try Color, Position, Size, Transparency or Visible)",0)},
       'Part');
       hosts.set(o,h);return h};
-    const getPart=function(n){const t=targetByName(n);return t?partHost(t):undefined};
+    const getPart=function(n){const t=targetByName(n);if(t)return partHost(t);const lp=LPN.get(String(n).toLowerCase());return lp?lp.h:undefined};
     const player=new Host(function(k){const key=String(k).toLowerCase();if(key==='name')return P.player&&P.player.name||'Player';return undefined},null,'Player');
     const me=owner?partHost(owner):player;
     const lighting=new Host(function(k){const key=String(k).toLowerCase();
@@ -8903,6 +8948,196 @@ const hostApi={
       ptActivate(e,new THREE.Vector3(Number(x)||0,Number(y)||0,Number(z)||0),Math.max(.05,Number(secs)||2))};
     g.set('activateParticle',actP);g.set('particle',actP);
     g.set('lighting',function(n){lightSet(String(n))});
+    /* ----- players: position, health, speed, teleport (one Lua object per player) ----- */
+    const SS=c.S||S,callF=c.callF,Multi=c.Multi;
+    const runCb=function(f,args){return callF(f,args).catch(function(e){if(e instanceof E.LuaStop)return;log('Error: Lua '+E.fmtErr(e))})};
+    const plEntry=function(key){const a=plist();for(let i=0;i<a.length;i++)if(a[i].key===key)return a[i];return null};
+    const plPosOf=function(key){const m=plEntry(key);return m?V3(m.x,m.y,m.z):V3(0,0,0)};
+    const toXYZ=function(v,y,z){return v instanceof LuaTable?vx(v):[num(v,0),num(y,0),num(z,0)]};
+    const attrFor=function(id,q){
+      if(q==='getattribute')return function(self,n){const m=LATT.get(id);return m?m.get(String(n)):undefined};
+      if(q==='setattribute')return function(self,n,v){let m=LATT.get(id);if(!m){m=new Map();LATT.set(id,m)}m.set(String(n),(v instanceof LuaTable)?undefined:v)};
+      return undefined};
+    const hrpC={},chC={},plC={};
+    const posSet=function(key){return function(k,v){const q=String(k).toLowerCase();if(q==='position'||q==='cframe'){const p=vx(v);teleKey(key,p[0],p[1],p[2]);return}throw new LuaError("cannot set '"+String(k)+"' (try Position)",0)}};
+    const hrpOf=function(key){return hrpC[key]||(hrpC[key]=new Host(function(k){const q=String(k).toLowerCase();
+      if(q==='position'||q==='cframe')return plPosOf(key);if(q==='name')return 'HumanoidRootPart';if(q==='parent')return workspace;return undefined},posSet(key),'Part'))};
+    const charOf=function(key){return chC[key]||(chC[key]=new Host(function(k){const q=String(k).toLowerCase();
+      if(q==='humanoidrootpart'||q==='primarypart'||q==='root')return hrpOf(key);
+      if(q==='position'||q==='cframe')return plPosOf(key);if(q==='name'){const m=plEntry(key);return m?m.name:'Player'}if(q==='parent')return workspace;return undefined},posSet(key),'Model'))};
+    const playerOf=function(key){return plC[key]||(plC[key]=new Host(function(k){const q=String(k).toLowerCase();
+      switch(q){
+        case'name':{const m=plEntry(key);return m?m.name:'Player'}
+        case'position':case'cframe':return plPosOf(key);
+        case'character':return charOf(key);case'humanoidrootpart':return hrpOf(key);
+        case'health':return hpGet(key);case'maxhealth':return MAXHP;
+        case'walkspeed':return key==='main'?(SS.speed!=null?SS.speed:P.rules.speed):undefined;
+        case'damage':case'takedamage':return function(self,n){hpPut(key,hpGet(key)-Math.max(0,num(n,0)))};
+        case'heal':return function(self,n){hpPut(key,hpGet(key)+Math.max(0,num(n,0)))};
+        case'moveto':case'teleport':return function(self,v,y,z){const p=toXYZ(v,y,z);teleKey(key,p[0],p[1],p[2])};
+        case'waitforchild':case'findfirstchild':return function(self,n){return String(n).toLowerCase()==='humanoidrootpart'?hrpOf(key):undefined};
+        case'getattribute':case'setattribute':return attrFor('pl:'+key,q);
+        case'chatted':return mkEvent(LPC,function(fn){return{key:key,fire:function(k,msg){if(k===key)runCb(fn,[msg])}}});
+        /* saved data (the same data the "player saved data" blocks use). These wait for the data to load, so call them like: local coins = player:GetData("coins") */
+        case'getdata':return async function(self,n){const m=plEntry(key);return runBlock('pdget',[m?m.name:'',n,'__pd'])};
+        case'setdata':return async function(self,n,v){const m=plEntry(key);await runBlock('pdset',[m?m.name:'',n,v])};
+        case'changedata':return async function(self,n,v){const m=plEntry(key);await runBlock('pdchange',[m?m.name:'',n,v])};
+        case'savedata':return async function(){const m=plEntry(key);await runBlock('pdsave',[m?m.name:''])};
+      }return undefined},
+      function(k,v){const q=String(k).toLowerCase();
+        if(q==='position'||q==='cframe'){const p=vx(v);teleKey(key,p[0],p[1],p[2]);return}
+        if(q==='health'){hpPut(key,num(v,0));return}
+        if(q==='walkspeed'&&key==='main'){SS.speed=Math.max(0,Math.min(120,num(v,0)));return}
+        throw new LuaError("cannot set '"+String(k)+"' on a player (try Health, WalkSpeed or Position)",0)},'Player'))};
+    const player2=playerOf('main');
+    g.set('player',player2);if(!owner)g.set('me',player2);
+    const playersH=new Host(function(k){const q=String(k).toLowerCase();
+      if(q==='localplayer')return player2;
+      if(q==='getplayers')return function(){const t=new LuaTable();plist().forEach(function(m,i){t.set(i+1,playerOf(m.key))});return t};
+      if(q==='getplayerbyname'||q==='findfirstchild')return function(self,n){const m=plist().find(function(x){return String(x.name).toLowerCase()===String(n).toLowerCase()});return m?playerOf(m.key):undefined};
+      if(q==='playeradded')return mkEvent(LPJ,function(fn){return{fire:function(key){runCb(fn,[playerOf(key)])}}});
+      if(q==='playerremoving')return mkEvent(LPQ,function(fn){return{fire:function(key){runCb(fn,[playerOf(key)])}}});
+      return undefined},null,'Players');
+    g.set('Players',playersH);
+    const runSvc=new Host(function(k){const q=String(k).toLowerCase();
+      if(q==='heartbeat'||q==='renderstepped'||q==='stepped')return mkEvent(LPH,function(fn){return{busy:false,fire:function(dt){if(this.busy)return;const me3=this;me3.busy=true;runCb(fn,[dt]).then(function(){me3.busy=false})}}});
+      if(q==='isrunning')return function(){return true};return undefined},null,'RunService');
+    g.set('RunService',runSvc);
+    const debris=new Host(function(k){if(String(k).toLowerCase()==='additem')return function(self,obj,secs){secs=Math.max(0,num(secs,1));
+      setTimeout(function(){try{if(obj&&obj.g){const d=obj.g('destroy');if(typeof d==='function')d(obj)}}catch(e){}},secs*1000)};return undefined},null,'Debris');
+    g.set('Debris',debris);
+    g.set('game',new Host(function(k){const key=String(k).toLowerCase();
+      if(key==='workspace')return workspace;if(key==='lighting')return lighting;if(key==='players')return playersH;if(key==='debris')return debris;if(key==='runservice')return runSvc;
+      if(key==='getservice')return function(self,n){n=String(n).toLowerCase();return n==='workspace'?workspace:n==='lighting'?lighting:n==='players'?playersH:n==='debris'?debris:n==='runservice'?runSvc:undefined};return undefined},null,'Game'));
+    g.set('CFrame',T({new:function(x,y,z){return V3(num(x,0),num(y,0),num(z,0))}}));
+    const mkEvent=function(list,wrap){return new Host(function(k){if(String(k).toLowerCase()!=='connect')return undefined;
+      return function(self,fn){if(fn===undefined)throw new LuaError('Connect needs a function, like part.Touched:Connect(function(plr) ... end)',0);const item=wrap?wrap(fn):fn;list.push(item);
+        return new Host(function(k2){const q=String(k2).toLowerCase();if(q==='disconnect')return function(){const i=list.indexOf(item);if(i>=0)list.splice(i,1)};if(q==='connected')return list.indexOf(item)>=0;return undefined},null,'Connection')}},null,'Event')};
+    const mkLuaPart=function(cls,par){
+      cls=String(cls==null?'':cls);
+      if(!/^part$/i.test(cls))throw new LuaError('Instance.new can only make a "Part" right now (not "'+cls+'")',0);
+      const st={name:'Part',bag:{cancollide:true,anchored:true},dead:false,h:null,onTouch:[],onEnd:[],inside:new Set()};
+      st.fire=function(f,key){runCb(f,[playerOf(key)])};st.uid='lp'+(++LPuid);
+      st.mesh=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshStandardMaterial({color:0xa3a2a5,roughness:.85,metalness:0,transparent:true,opacity:1}));
+      st.mesh.scale.set(4,1,2);LPL.push(st);
+      const reg=function(){LPN.forEach(function(q,k){if(q===st)LPN.delete(k)});if(st.mesh.parent)LPN.set(String(st.name).toLowerCase(),st)};
+      const setParent=function(v){if(st.dead)return;
+        if(v===undefined||v===null||v===false){if(st.mesh.parent)st.mesh.parent.remove(st.mesh);reg();return}
+        lpAdd(st);reg();
+        if(st.bag.cancollide!==false&&!LPwarned){LPwarned=true;log('Note: parts made with Instance.new are not solid yet - players walk through them.')}};
+      const h=new Host(function(k){const key=String(k).toLowerCase(),m=st.mesh;
+        switch(key){
+          case'name':return st.name;case'classname':case'class':return 'Part';
+          case'position':case'cframe':return V3(m.position.x,m.position.y,m.position.z);
+          case'size':return V3(m.scale.x,m.scale.y,m.scale.z);
+          case'transparency':return 1-m.material.opacity;
+          case'color':case'colour':case'brickcolor':return fromThree(m.material.color);
+          case'visible':return m.visible;
+          case'parent':return m.parent?workspace:undefined;
+          case'destroy':case'remove':return function(){if(st.dead)return;st.onTouch.length=0;st.onEnd.length=0;if(m.parent)m.parent.remove(m);reg();m.geometry.dispose();m.material.dispose();st.dead=true;const i=LPL.indexOf(st);if(i>=0)LPL.splice(i,1)};
+          case'moveto':return function(self,v){const p=vx(v);m.position.set(p[0],p[1],p[2])};
+          case'hide':return function(){m.visible=false};case'show':return function(){m.visible=true};
+          case'getattribute':case'setattribute':return attrFor('lp:'+st.uid,key);
+          case'touched':return mkEvent(st.onTouch);case'touchended':return mkEvent(st.onEnd);
+          case'gettouchingplayers':return function(){const t=new LuaTable();let i=0;if(m.parent&&!st.dead)plist().forEach(function(e){if(lpHit(st,e))t.set(++i,playerOf(e.key))});return t};
+          case'clone':return function(){const q=mkLuaPart('Part');q.st.name=st.name;q.st.mesh.scale.copy?q.st.mesh.scale.copy(m.scale):q.st.mesh.scale.set(m.scale.x,m.scale.y,m.scale.z);
+            q.st.mesh.position.set(m.position.x,m.position.y,m.position.z);q.st.mesh.material.color.copy(m.material.color);q.st.mesh.material.opacity=m.material.opacity;q.st.mesh.visible=m.visible;
+            Object.keys(st.bag).forEach(function(b){q.st.bag[b]=st.bag[b]});return q};
+          case'istouchingplayer':case'touchingplayer':return function(){const a=plist(),pl=a&&a[0];if(!pl||!m.parent||st.dead)return false;
+            return Math.abs(pl.x-m.position.x)<=m.scale.x/2+1&&Math.abs(pl.z-m.position.z)<=m.scale.z/2+1&&Math.abs(pl.y-m.position.y)<=m.scale.y/2+3};
+        }return st.bag[key]},
+      function(k,v){if(st.dead)return;const key=String(k).toLowerCase(),m=st.mesh;
+        switch(key){
+          case'name':st.name=String(v);reg();return;
+          case'position':case'cframe':{const p=vx(v);m.position.set(p[0],p[1],p[2]);return}
+          case'size':{const q=vx(v);m.scale.set(Math.max(.05,q[0]),Math.max(.05,q[1]),Math.max(.05,q[2]));return}
+          case'transparency':m.material.opacity=1-Math.min(1,Math.max(0,num(v,0)));return;
+          case'color':case'colour':case'brickcolor':m.material.color.copy(toColor(v));return;
+          case'visible':m.visible=truthy(v);return;
+          case'parent':setParent(v);return;
+        }st.bag[key]=v},'Part');
+      st.h=h;h.st=st;if(par!==undefined)setParent(par);return h};
+    /* ----- Vector3 extras: v.Unit, v:Dot(b), v:Cross(b), v:Lerp(b,t), v:Distance(b), lowercase .x .y .z ----- */
+    vecMT.set('__index',function(t,k){const key=String(k).toLowerCase(),p=vx(t);
+      switch(key){
+        case'x':return p[0];case'y':return p[1];case'z':return p[2];
+        case'unit':{const m=Math.hypot(p[0],p[1],p[2])||1;return V3(p[0]/m,p[1]/m,p[2]/m)}
+        case'dot':return function(self,o){const q=vx(o);return p[0]*q[0]+p[1]*q[1]+p[2]*q[2]};
+        case'cross':return function(self,o){const q=vx(o);return V3(p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0])};
+        case'lerp':return function(self,o,a){const q=vx(o);a=num(a,0);return V3(p[0]+(q[0]-p[0])*a,p[1]+(q[1]-p[1])*a,p[2]+(q[2]-p[2])*a)};
+        case'distance':return function(self,o){const q=vx(o);return Math.hypot(p[0]-q[0],p[1]-q[1],p[2]-q[2])};
+      }return undefined});
+    /* ----- tween(obj, {Position=..., Transparency=..., Color=..., Size=...}, secs [, wait]) ----- */
+    const lerpAny=function(a,b,t){
+      if(typeof a==='number'&&typeof b==='number')return a+(b-a)*t;
+      if(a instanceof LuaTable&&b instanceof LuaTable){
+        if(a.get('X')!==undefined)return V3(num(a.get('X'),0)+(num(b.get('X'),0)-num(a.get('X'),0))*t,num(a.get('Y'),0)+(num(b.get('Y'),0)-num(a.get('Y'),0))*t,num(a.get('Z'),0)+(num(b.get('Z'),0)-num(a.get('Z'),0))*t);
+        if(a.get('R')!==undefined)return C3(num(a.get('R'),0)+(num(b.get('R'),0)-num(a.get('R'),0))*t,num(a.get('G'),0)+(num(b.get('G'),0)-num(a.get('G'),0))*t,num(a.get('B'),0)+(num(b.get('B'),0)-num(a.get('B'),0))*t)}
+      return t>=1?b:a};
+    g.set('tween',async function(obj,props,secs,wait){
+      if(!(obj instanceof Host)||!obj.s)throw new LuaError('tween: the first thing must be a part, like me or part("Name")',0);
+      if(!(props instanceof LuaTable))throw new LuaError('tween: the second thing must be a table, like {Position = Vector3.new(0,10,0)}',0);
+      secs=Math.max(.01,num(secs,1));const jobs=[];
+      props.h.forEach(function(v,k){let from=obj.g(k);if(from===undefined)throw new LuaError("tween: cannot read '"+String(k)+"' (try Position, Size, Transparency or Color)",0);
+        if(typeof v==='string')v=fromThree(toColor(v));jobs.push([k,from,v])});
+      const done=new Promise(function(res){const t0=performance.now();
+        const step=function(){if(SS.stop){res();return}const t=Math.min(1,(performance.now()-t0)/(secs*1000)),e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+          try{jobs.forEach(function(j){obj.s(j[0],lerpAny(j[1],j[2],e))})}catch(err){res();log('Error: tween - '+(err&&err.v||err&&err.message||err));return}
+          if(t<1)setTimeout(step,16);else res()};step()});
+      if(wait===false)return;await done});
+    /* ----- onKey("e", function() ... end): runs while the game is playing ----- */
+    g.set('onKey',function(key,fn){if(fn===undefined)throw new LuaError('onKey needs a key and a function, like onKey("e", function() say("hi") end)',0);
+      let k=String(key).toLowerCase();if(k===' ')k='space';const q={key:k,off:false,fire:function(){runCb(fn,[])}};LPK.push(q);
+      return new Host(function(k2){if(String(k2).toLowerCase()==='disconnect')return function(){q.off=true};return undefined},null,'Connection')});
+    /* ----- block("id", ...) runs ANY BrixBlox block from Lua. Blocks that say "into _" put the answer in a variable; block() also returns it. ----- */
+    const toArg=function(v,raw){if(raw)return String(v==null?'':v);
+      if(typeof v==='number')return Number.isFinite(v)?(/e/i.test(String(v))?v.toFixed(6):String(v)):'0';
+      if(typeof v==='boolean')return v?'true':'false';if(v==null)return '';
+      if(typeof v==='string')return '"'+v.replace(/"/g,"'")+'"';
+      throw new LuaError('block: arguments must be numbers, text or true/false',0)};
+    const runBlock=async function(id,args){
+      id=String(id==null?'':id).trim();const d=BD[id];
+      if(!d){const q=id.toLowerCase(),sug=Object.keys(BD).filter(function(k){return q&&(k.indexOf(q)>=0||q.indexOf(k)>=0)}).slice(0,8);
+        throw new LuaError('block: no block called "'+id+'"'+(sug.length?'. Did you mean: '+sug.join(', ')+'?':'. Ids look like damageplayer, teleport, playaud, tweenmove (see the block list).'),0)}
+      if(d.hat||d.k||d.rep)throw new LuaError('block: "'+id+'" is an event, container or value block, so it cannot run on its own from Lua',0);
+      const lbl=String(d.l||''),ii=lbl.indexOf(' into '),cut=ii>=0?(lbl.slice(0,ii).match(/_/g)||[]).length:Infinity;
+      const a=args.map(function(v,i){return toArg(v,(d.raw&&i===0)||i>=cut)});
+      const full=d.a.map(function(def,i){return i<a.length?a[i]:def}).concat(a.slice(d.a.length));
+      await ex([mk(id,full)],SS,owner);
+      const outs=[];for(let i=cut;i<args.length;i++)outs.push(SS.v[String(args[i]).trim()]);
+      if(outs.length===1)return outs[0];if(outs.length>1){const m=new Multi();outs.forEach(function(x){m.push(x)});return m}};
+    g.set('block',async function(id){return runBlock(id,Array.prototype.slice.call(arguments,1))});
+    g.set('getVar',function(n){return SS.v[String(n)]});
+    g.set('setVar',function(n,v){SS.v[String(n)]=(v instanceof LuaTable)?undefined:v});
+    g.set('broadcast',function(m){return runBlock('broadcast',[m])});
+    g.set('playSound',function(n){return runBlock('playaud',[n])});
+    g.set('stopSound',function(n){return runBlock('stopaud',[n])});
+    /* ----- onChat, gui(), nearest players, Random, extra table/string helpers ----- */
+    g.set('onChat',function(fn){if(fn===undefined)throw new LuaError('onChat needs a function, like onChat(function(plr, msg) ... end)',0);
+      const item={fire:function(k,msg){runCb(fn,[playerOf(k),msg])}};LPC.push(item);
+      return new Host(function(k2){if(String(k2).toLowerCase()==='disconnect')return function(){const i=LPC.indexOf(item);if(i>=0)LPC.splice(i,1)};return undefined},null,'Connection')});
+    const bg=function(id,args){runBlock(id,args).catch(function(e){log('Error: Lua '+(e&&e.v!==undefined?e.v:(e&&e.message)||e))})};
+    g.set('gui',function(name){name=String(name);return new Host(function(k){const q=String(k).toLowerCase();
+      if(q==='show')return function(){bg('guishow',[name])};if(q==='hide')return function(){bg('guihide',[name])};if(q==='toggle')return function(){bg('guitoggle',[name])};
+      if(q==='name')return name;return undefined},
+      function(k,v){const q=String(k).toLowerCase();
+        if(q==='text'){bg('guitext',[name,v==null?'':String(v)]);return}
+        if(q==='visible'){bg('guivis',[name,truthy(v)]);return}
+        throw new LuaError("cannot set '"+String(k)+"' on a gui (try Text or Visible, or use :Show() :Hide() :Toggle())",0)},'Gui')});
+    const near=function(pos,range){const p=vx(pos),r=num(range,1e9),out=[];
+      plist().forEach(function(m){const d=Math.hypot(m.x-p[0],m.y-p[1],m.z-p[2]);if(d<=r)out.push([d,m.key])});out.sort(function(a,b){return a[0]-b[0]});return out};
+    g.set('nearestPlayer',function(pos,range){const r=near(pos,range);return r.length?playerOf(r[0][1]):undefined});
+    g.set('playersNear',function(pos,range){const t=new LuaTable();near(pos,range).forEach(function(e,i){t.set(i+1,playerOf(e[1]))});return t});
+    g.set('Random',T({new:function(seed){let a=(seed===undefined?Math.floor(Math.random()*4294967296):Math.floor(num(seed,0)))>>>0;
+      const rnd=function(){a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296};
+      return new Host(function(k){const q=String(k).toLowerCase();
+        if(q==='nextnumber')return function(self,lo,hi){return lo===undefined?rnd():num(lo,0)+rnd()*(num(hi,1)-num(lo,0))};
+        if(q==='nextinteger')return function(self,lo,hi){lo=Math.floor(num(lo,1));hi=Math.floor(num(hi,lo));return lo+Math.floor(rnd()*(hi-lo+1))};
+        return undefined},null,'Random')}}));
+    {const tb=g.get('table');if(tb instanceof LuaTable&&tb.get('clone')===undefined)tb.set('clone',function(t){if(!(t instanceof LuaTable))throw new LuaError('table.clone: table expected',0);
+        const n=new LuaTable();t.arr.forEach(function(v,i){n.set(i+1,v)});t.h.forEach(function(v,k){n.set(k,v)});n.mt=t.mt;return n});
+      const st=g.get('string');if(st instanceof LuaTable&&st.get('split')===undefined)st.set('split',function(str,sep){str=String(str);sep=sep===undefined?',':String(sep);const n=new LuaTable();str.split(sep).forEach(function(x,i){n.set(i+1,x)});return n})}
+    g.set('Instance',T({new:mkLuaPart}));
   }};
 window.runLua=async function(src,S,o){
   src=String(src==null?'':src).slice(0,10000);let ast=E.cache.get(src);
