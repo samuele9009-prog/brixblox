@@ -2243,12 +2243,14 @@ function preview(){if(rigOn)return;const A=P.anims[curA];applyPose(animOn()?Obje
 async function playAnim(name,S,only){let A=P.anims[name];if(!A){log('Error: no animation named "'+name+'"');return}
   if(only){const fk={};for(const id in A.keys)if(only[id])fk[id]=A.keys[id];A=Object.assign({},A,{keys:fk})}
   /* Your own character is also posed by the walk / idle / jump animations every frame. Hold its parts while this one plays so they do not fight. */
-  const hid=Object.keys(A.keys).filter(function(id){const q=byId(id);return q&&q.av&&id!==P.avId});S.hold=S.hold||{};hid.forEach(function(id){S.hold[id]=(S.hold[id]||0)+1});
-  const pa=Object.keys(A.keys).some(function(id){const q=byId(id);return q&&q.av});if(pa)S.pa=(S.pa||0)+1;
+  /* A joint with no keyframes at all (never keyed, or all its keys were deleted) is NOT owned by this animation, so the walk / idle / jump animation keeps playing on it. */
+  const kyd=Object.keys(A.keys).filter(function(id){return Array.isArray(A.keys[id])&&A.keys[id].length>0});
+  const hid=kyd.filter(function(id){const q=byId(id.replace(/^p:/,''));return q&&q.av&&id.slice(0,2)!=='p:'&&id!==P.avId});S.hold=S.hold||{};hid.forEach(function(id){S.hold[id]=(S.hold[id]||0)+1});
+  const pa=kyd.some(function(id){const q=byId(id);return q&&q.av});if(pa)S.pa=(S.pa||0)+1;
   if(hid.length||pa){NANIM.c++;NANIM.n=name}
-  const gk=Object.keys(A.keys).filter(function(id){return !!byId(id)});gk.forEach(function(id){RBUSY[id]=(RBUSY[id]||0)+1;RDONE[id]=1});
+  const gk=kyd.filter(function(id){return !!byId(id)});gk.forEach(function(id){RBUSY[id]=(RBUSY[id]||0)+1;RDONE[id]=1});
   /* Each body part obeys one animation at a time: the newest one to start owns it, so two animations can no longer fight over (mix on) the same part. */
-  const tok=++ATOK,mine=Object.keys(A.keys);mine.forEach(function(id){RTOK[id]=tok});
+  const tok=++ATOK,mine=kyd.slice();mine.forEach(function(id){RTOK[id]=tok});
   try{const t0=performance.now();let t=0;while(t<A.len&&!S.stop){t=(performance.now()-t0)/1000;const po=evalPose(A,Math.min(t,A.len)),fo={};for(const k in po){if(RTOK[k.replace(/^p:/,'')]===tok)fo[k]=po[k]}applyKeyed(fo);await sl(16)}}
   finally{mine.forEach(function(id){if(RTOK[id]===tok)delete RTOK[id]});gk.forEach(function(id){RBUSY[id]=Math.max(0,(RBUSY[id]||1)-1)});if(pa)S.pa=Math.max(0,(S.pa||1)-1);hid.forEach(function(id){S.hold[id]=Math.max(0,(S.hold[id]||1)-1);if(!S.hold[id]){const g=J[id],bs=g&&g.userData.base,D=180/Math.PI;
       if(g){S.bp[id]=[g.rotation.x*D,(g.rotation.y-(g.userData.gry||0))*D,g.rotation.z*D];if(bs)S.bp['p:'+id]=[g.position.x-bs.x,g.position.y-bs.y,g.position.z-bs.z]}}});
@@ -3968,7 +3970,7 @@ function keyDown(e,id,k,d){e.stopPropagation();e.preventDefault();if(e.button!==
   d.onpointermove=function(ev){if(Math.abs(ev.clientX-x0)>2)moved=true;if(!moved)return;const A=P.anims[curA],lo=Math.min.apply(null,orig),hi=Math.max.apply(null,orig),sh=Math.max(-lo,Math.min(A.len-hi,(ev.clientX-x0)/pps));
     aSelKeys.forEach(function(q,i){q.k.t=Math.round((orig[i]+sh)*100)/100;kelm.get(q.k).style.left=(q.k.t*pps)+'px'});preview()};
   d.onpointerup=function(){d.onpointermove=d.onpointerup=null;if(moved)save();else if(aSelKeys.length===1)aT=k.t;animUI();preview()}}
-function delKeys(){const A=P.anims[curA];if(!A)return;aSelKeys.forEach(function(q){const a=A.keys[q.id];if(a)A.keys[q.id]=a.filter(function(x){return x!==q.k})});aSelKeys=[];save();animUI();preview()}
+function delKeys(){const A=P.anims[curA];if(!A)return;aSelKeys.forEach(function(q){const a=A.keys[q.id];if(a){A.keys[q.id]=a.filter(function(x){return x!==q.k});if(!A.keys[q.id].length)delete A.keys[q.id]}});aSelKeys=[];save();animUI();preview()}
 function copyKeys(){if(!aSelKeys.length)return;const A0=P.anims[curA];const t0=Math.min.apply(null,aSelKeys.map(function(q){return q.k.t}));aClip=aSelKeys.map(function(q){return {id:q.id,dt:q.k.t-t0,r:q.k.r.slice(),p:q.k.p?q.k.p.slice():((A0&&(A0.keys[q.id]||[]).some(function(x){return x.p}))?(evalPose(A0,q.k.t)['p:'+q.id]||[0,0,0]).slice():null)}})}
 function pasteKeys(t){const A=P.anims[curA];if(!A||!aClip.length)return;aSelKeys=[];
   const sh={},lastT={};aClip.slice().sort(function(a,b){return a.dt-b.dt}).forEach(function(c){const tt=Math.min(A.len,+(t+c.dt).toFixed(3));if(!sh[c.id])sh[c.id]=keyShift(A,c.id,tt,c.r);lastT[c.id]=tt});
