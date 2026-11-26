@@ -9168,7 +9168,7 @@ function flOverlay(){if(RZ.ov||!cv.parentNode)return;const ov=document.createEle
     for(let i=0;i<9;i++){path(46-i*.6);x.lineWidth=14-i*1.5;x.lineJoin='round';x.strokeStyle='rgba('+rgb+','+al*.06+')';x.stroke()}
     path(44);x.lineWidth=3;x.strokeStyle='rgba('+rgb+','+al*.35+')';x.stroke();return c.toDataURL()};
   RZ.ghosts=[[-.3,6,'255,190,130',0,.55],[.3,3.2,'160,200,255',1,.7],[.62,9,'255,225,150',0,.4],[1.08,4.5,'170,255,200',1,.6],[1.5,12,'255,170,210',0,.3],[2.0,5.5,'150,190,255',1,.45]].map(function(g){
-    const d=document.createElement('div');d.style.cssText='position:absolute;left:0;top:0;will-change:transform,opacity;mix-blend-mode:screen;width:'+g[1]*1.6+'vmin;height:'+g[1]*1.6+'vmin;margin:-'+g[1]*.8+'vmin 0 0 -'+g[1]*.8+'vmin;background:url('+gtex(g[3],g[2],g[4])+') center/100% 100% no-repeat';d.k=g[0];ov.append(d);return d});
+    const d=document.createElement('div');d.style.cssText='position:absolute;left:0;top:0;will-change:transform,opacity;mix-blend-mode:screen;width:'+g[1]*2.4+'vmin;height:'+g[1]*2.4+'vmin;margin:-'+g[1]*1.2+'vmin 0 0 -'+g[1]*1.2+'vmin;background:url('+gtex(g[3],g[2],g[4])+') center/100% 100% no-repeat';d.k=g[0];ov.append(d);return d});
   cv.parentNode.insertBefore(ov,cv.nextSibling);RZ.ov=ov}
 function flHide(){if(FL.spr)for(const k in FL.spr)FL.spr[k].visible=false;if(RZ.ov)RZ.ov.style.display='none'}
 function flareUpdate(){
@@ -9184,18 +9184,18 @@ function flareUpdate(){
     const ev=(sunS.position.y-camera.position.y)/700,fade=Math.max(0,Math.min(1,(ev+.02)/.25)),edge=Math.max(0,Math.min(1,(1.6-Math.max(Math.abs(_sp.x),Math.abs(_sp.y)))/.6));
     place(SP.soft,h,h,fade*edge*soft);SP.veil.visible=SP.halo.visible=SP.core.visible=SP.streak.visible=SP.rays.visible=SP.ring.visible=false;if(RZ.ov)RZ.ov.style.display='none';return}
   SP.soft.visible=false;
-  const gl=Math.max(0,P.env&&P.env.glare!=null?P.env.glare:1),s=Math.min(1,sun.intensity/.7)*gl*sm(.03,.85,dot);
+  const gl=Math.max(0,P.env&&P.env.glare!=null?P.env.glare:1),s=Math.min(1,sun.intensity/.7)*gl*sm(.03,.2,dot);
   if(dot<=.03||s<.01){flHide();return}
   /* is the sun hidden behind terrain, a part or the avatar? (only used to fade the ghost rings; the glow itself is depth tested) */
-  if((FL.fr++%6)===0){let hit=0;const o=camera.position;
+  if(true){let hit=0;const o=camera.position;
     if(TER.on){for(let i=1;i<=28;i++){const t=i*i*.6,x=o.x+_fd.x*t,zz=o.z+_fd.z*t,y=o.y+_fd.y*t;if(terH(x,zz)>y){hit=1;break}}}
     if(!hit&&PG){_rc.set(o,_fd);_rc.far=600;try{const r=_rc.intersectObject(PG,true);for(let i=0;i<r.length;i++){const m=r[i].object;if(m.visible&&m.material&&m.material.opacity>.5&&!m.userData.isL){hit=1;break}}}catch(e){}}
     FL.tgt=hit?0:1}
-  FL.occ+=(FL.tgt-FL.occ)*.18;
-  const vd=Math.min(1.5*Math.hypot(Math.max(sx,w-sx),Math.max(sy,h-sy)),6*h);
-  SP.rays.material.rotation=_sp.x*.5+_sp.y*.2;place(SP.veil,vd,vd,s*.38);place(SP.halo,1.15*vm,1.15*vm,s*.9);place(SP.rays,1.3*vm,1.3*vm,s*.14);place(SP.ring,2.1*vm,2.1*vm,s*.9);place(SP.core,.17*vm,.17*vm,s*1.1);place(SP.streak,2.7*vm,.06*vm,s*.85);
+  FL.occ=FL.tgt;
+  const vd=Math.min(.9*Math.hypot(Math.max(sx,w-sx),Math.max(sy,h-sy)),6*h);
+  SP.rays.material.rotation=_sp.x*.5+_sp.y*.2;place(SP.veil,vd,vd,s*.38);place(SP.halo,.85*vm,.85*vm,s*.9);place(SP.rays,1.3*vm,1.3*vm,s*.14);place(SP.ring,2.1*vm,2.1*vm,s*.9);place(SP.core,.13*vm,.13*vm,s*1.1);place(SP.streak,2.7*vm,.06*vm,s*.85);
   flOverlay();
-  if(RZ.ov){const go=s*.8*sm(.15,.7,dot)*FL.occ*Math.max(0,1-Math.hypot(_sp.x,_sp.y)/2.2);
+  if(RZ.ov){const go=s*.8*sm(.15,.3,dot)*FL.occ*Math.max(0,1-Math.hypot(_sp.x,_sp.y)/2.2);
     if(go<.01)RZ.ov.style.display='none';
     else{RZ.ov.style.display='block';const cr=cv.getBoundingClientRect(),or=RZ.ov.getBoundingClientRect(),ox=cr.left-or.left,oy=cr.top-or.top,ax=sx+ox,ay=sy+oy,cx=w/2+ox,cy=h/2+oy;
       RZ.ghosts.forEach(function(g){g.style.transform='translate('+(ax+(cx-ax)*g.k)+'px,'+(ay+(cy-ay)*g.k)+'px)';g.style.opacity=Math.max(0,Math.min(1,go))})}}}
