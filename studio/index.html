@@ -277,6 +277,9 @@ input[type=text],input[type=email],input[type=password]{background:#191b1d;borde
 #studio.fs #s-anim{height:310px}
 /* Timeline styles */
 .pnl.anim{display:flex;flex-direction:column;gap:6px;overflow:hidden}
+/* nothing in the Animator can be selected or dragged like text (the number boxes you type in still work) */
+#s-anim,#s-anim *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
+#s-anim input,#s-anim textarea,#s-anim select{-webkit-user-select:text;user-select:text}
 .an-top{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .an-top .btn.small{min-height:30px;padding:0 10px}
 .an-top .btn[aria-pressed=true]{background:#2f78d0!important;color:#fff!important}
@@ -3642,6 +3645,7 @@ function stageVis(p){if(!animOn())return true;const r=rootOf(p);return kids(r).l
 function stageApply(){const on=animOn();
   P.parts.forEach(function(p){if(p.parent)return;const g=J[p.id];if(g)g.visible=inW(p)&&stageVis(p)});
   stage.visible=on;
+  try{if(TER.g)TER.g.visible=!on;if(on&&GR.g)GR.g.visible=false;if(on&&TB.ring)TB.ring.visible=false}catch(e){}
   if(on){let lo=1e9,cx=0,cz=0,n=0;
     P.parts.filter(function(p){return !p.parent&&inW(p)&&stageVis(p)}).forEach(function(q){rigParts(q).forEach(function(z){lo=Math.min(lo,z.pos[1]-z.size[1]/2);cx+=z.pos[0];cz+=z.pos[2];n++})});
     stage.position.set(n?cx/n:0,(n?lo:0)-.02,n?cz/n:0);
@@ -6703,6 +6707,9 @@ addEventListener('keyup',function(e){const n=keyNames(e);
   n.forEach(function(k){KP.delete(k)})});
 addEventListener('blur',function(){HL.forEach(function(st){st.down=false})});
 function animOn(){return curTab==='anim'&&!playing}
+(function(){const ok=function(e){const t=e.target;return t&&t.closest&&t.closest('#s-anim')&&!(t.closest('input,textarea,select'))};
+  document.addEventListener('selectstart',function(e){if(ok(e))e.preventDefault()},true);
+  document.addEventListener('dragstart',function(e){if(ok(e))e.preventDefault()},true)})();
 function setTab(k){setTab0(k);try{renderGui()}catch(e){}if(k==='tool'){try{tbShow()}catch(e){console.error(e)}}}
 function setTab0(k){const was=animOn();curTab=k;
   ['out','code','parts','anim','tool'].forEach(function(j){$('t-'+j).classList.toggle('on',j===k);$('s-'+j).hidden=fsOn?(j==='parts'?false:j!==k):j!==k});
@@ -7144,7 +7151,7 @@ histLast=snapState();
 save=function(){saveRaw();if(histBusy)return;const cur=snapState();if(cur===histLast)return;const now=performance.now();
   if(!hist.length||now-histT>500){hist.push(histLast);if(hist.length>40)hist.shift()}
   histT=now;histLast=cur;redoS.length=0};
-function histApply(str){histBusy=true;try{const st=coUndoMerge(JSON.parse(str));P.parts=st.parts;P.models=st.models;P.anims=st.anims;P.folders=st.folders||[];if(selFold&&!foldBy(selFold))selFold=null;if(st.guis){P.guis=st.guis;if(selGui&&!P.guis.some(function(g){return g.id===selGui}))selGui=null}P.nid=st.nid;P.avId=st.avId;terFromSnap(st);
+function histApply(str){histBusy=true;try{const st=coUndoMerge(JSON.parse(str));P.parts=st.parts;P.models=st.models;P.anims=st.anims;P.folders=st.folders||[];if(selFold&&!foldBy(selFold))selFold=null;if(st.guis){P.guis=st.guis;if(selGui&&!P.guis.some(function(g){return g.id===selGui}))selGui=null}P.nid=st.nid;P.avId=st.avId;if(!animOn())terFromSnap(st);
   sel=sel.filter(function(id){return byId(id)});if(selModel&&!byModel(selModel))selModel=null;if(selJ&&!byId(selJ))selJ=null;
   aSelKeys=[];live={};fixA();aJFix();
   rebuildParts();renderParts();
@@ -9042,6 +9049,7 @@ function terSync(){let cfg;try{cfg=terCfg()}catch(e){return}
   const sig=[cfg.on?1:0,cfg.seed,cfg.amp,cfg.trees?1:0,cfg.pal||'grass',cfg.flat?1:0,cfg.rv||0,cfg.sz||600,cfg.inf?1:0,cfg.mo||0,cfg.hl||0].join('|');
   if(sig!==TER.sig){TER.sig=sig;disposeTer();TER.on=!!cfg.on;TER.amp=cfg.amp;
     if(cfg.on){try{TER.g=buildTerrain(cfg);scene.add(TER.g)}catch(e){TER.on=false;TER.H=null;log('Error: terrain - '+(e&&e.message))}}else TER.H=null}
+  try{if(TER.g&&animOn()){TER.g.visible=false;if(GR.g)GR.g.visible=false}}catch(e){}
   const bp=P.parts.find(function(p){return p.name==='Baseplate'&&!p.av});if(bp&&M[bp.id])M[bp.id].visible=!TER.on}
 window.terSync=terSync;window.terForce=function(){TER.sig='';terSync()};
 /* ---- grass blades: 32x32 stud tiles built near the camera only, never cast shadows, wave in the wind ---- */
@@ -9067,7 +9075,10 @@ function grassBuild(gx,gz,dens,lod){lod=lod||0;const S=32,x0=gx*S,z0=gz*S,n=Math
   geo.setAttribute('position',new THREE.Float32BufferAttribute(PS,3));geo.setAttribute('normal',new THREE.BufferAttribute(NR,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(CS,3));geo.setAttribute('tw',new THREE.Float32BufferAttribute(TW,1));geo.setAttribute('by',new THREE.Float32BufferAttribute(BY,1));geo.setIndex(IX);geo.computeBoundingSphere();
   const m=new THREE.Mesh(geo,grassMat());m.receiveShadow=true;m.castShadow=lod===0;m.customDepthMaterial=GR.dep;m.userData.lod=lod;return m}
 window.terTick=function(dt){
+  if(typeof animOn==='function'&&animOn()){if(TER.g)TER.g.visible=false;if(GR.g)GR.g.visible=false;if(TB.ring)TB.ring.visible=false;return}
   if(!TER.on||!TER.g||!TER.C){if(GR.g)GR.g.visible=false;return}
+  /* the animator works on its own grey stage: no ground, trees or grass there, and nothing is streamed while it is open */
+  {const an=typeof animOn==='function'&&animOn();TER.g.visible=!an;if(an){if(GR.g)GR.g.visible=false;if(TB.ring)TB.ring.visible=false;return}}
   try{terStream(camera.position.x,camera.position.z,TER.cfg&&TER.cfg.inf?1400:800,TER.cfg&&TER.cfg.inf?6:4)}catch(e){}
   try{if(TER.rising&&TER.rising.length){const k=1-Math.exp(-dt*2.5);for(let i=TER.rising.length-1;i>=0;i--){const m=TER.rising[i];m.position.y+=(0-m.position.y)*k;if(m.position.y>-.05){m.position.y=0;TER.rising.splice(i,1)}}}}catch(e){}
   /* Infinite render: fade the far ground into the sky colour before generation stops (only when the game has no fog of its own) */
@@ -9087,7 +9098,7 @@ window.terTick=function(dt){
     if(m){m.userData.c=L[4];GR.g.add(m)}else m={userData:{c:L[4],lod:L[5]},geometry:null};GR.tiles.set(L[3],m)}};
 /* ---- sculpt brush ---- */
 const TB={on:false,tool:'raise',mat:1,size:14,str:5,down:false,pt:null,y0:0,undo:[],timer:0,ring:null};
-function terPick(e){if(!TER.g||!TER.tl||!TER.tl.length)return null;ray.setFromCamera(ndc(e),camera);return ray.intersectObjects(TER.tl,false)[0]||null}
+function terPick(e){if(!TER.g||!TER.tl||!TER.tl.length||(typeof animOn==='function'&&animOn()))return null;ray.setFromCamera(ndc(e),camera);return ray.intersectObjects(TER.tl,false)[0]||null}
 function terCursor(p){if(!TB.ring){TB.ring=new THREE.Mesh(new THREE.RingGeometry(.93,1,48),new THREE.MeshBasicMaterial({color:0x00ffa0,transparent:true,opacity:.85,depthTest:false,side:THREE.DoubleSide}));TB.ring.rotation.x=-Math.PI/2;TB.ring.renderOrder=20;scene.add(TB.ring)}
   TB.ring.visible=!!p&&TB.on&&!playing;if(p){TB.ring.position.set(p.x,p.y+.25,p.z);TB.ring.scale.setScalar(TB.size)}}
 function terSnap(){TB.cur=null}/* Ctrl+Z for sculpting now goes through the normal undo history */
