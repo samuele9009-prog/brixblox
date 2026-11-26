@@ -1084,7 +1084,7 @@ function clean(){P.scripts=P.scripts.filter(function(s){return s.length})}
 function inside(b,arr){return !!b.k&&(b.k===arr||b.k.some(function(x){return inside(x,arr)}))}
 /* ===== Code snippet block: write Lua (up to 10,000 characters). Click off it or press Enter and it folds down to one short line so it never lags. ===== */
 (function(){const st=document.createElement('style');st.textContent='.luab{display:inline-flex;flex-direction:column;max-width:100%}.luap{border-radius:6px;background:rgba(0,0,0,.3);color:#fff;border:1px solid rgba(255,255,255,.35);font:700 .74rem ui-monospace,Consolas,monospace;padding:3px 9px;cursor:text;text-align:left;max-width:280px;overflow:hidden;white-space:nowrap}.luat{width:min(540px,72vw);height:250px;resize:both;font:12px/1.45 ui-monospace,Consolas,monospace;background:#14161c;color:#d8f0ff;border:1px solid #4a4c4e;border-radius:8px;padding:8px;tab-size:2;white-space:pre;overflow:auto}';document.head.appendChild(st)})();
-BD.luacode={c:'ct',l:'Code snippet _',a:['-- Lua\nprint("hello from Lua")'],tip:'Write Lua code (up to 10,000 characters). Click the block to edit. Click off it or press Enter and it folds into one short line (Shift+Enter makes a new line). Examples: me.Color = "red"  |  part("Baseplate").Color = Color3.fromRGB(255,80,0)  |  me.Position = Vector3.new(0,10,0)  |  wait(1)  |  print("hi")  |  lighting("sunset"). me / script.Parent is the object this script belongs to; part("Name") or workspace.Name finds any part. More: Instance.new("Part") | player.Position / .Health / .WalkSpeed | game.Players:GetPlayers() | part.Touched:Connect(function(plr) end) | tween(part,{Position=Vector3.new(0,10,0)},2) | onKey("e",function() end) | Debris:AddItem(part,3) | part:Clone() | block("damageplayer","Bob",10) runs ANY block (ids are the names in the block list) | me.Touched:Connect(function(plr) end) works on editor parts too | onChat(function(plr,msg) end) | game.Players.PlayerAdded:Connect(fn) | RunService.Heartbeat:Connect(function(dt) end) | gui("Name").Text = "hi" | player:GetData("coins") / :SetData / :ChangeData / :SaveData | part:SetAttribute("k",v) | nearestPlayer(pos,range) | Random.new():NextInteger(1,6) | part("Rig").Rarm or part("Rarm","Rig") reaches just one piece of a model or rig.'};
+BD.luacode={c:'ct',l:'Code snippet _',a:['-- Lua\nprint("hello from Lua")'],tip:'Write Lua code (up to 10,000 characters). Premium: press the AI Code button to have the AI write, change or fix it for you. Click the block to edit. Click off it or press Enter and it folds into one short line (Shift+Enter makes a new line). Examples: me.Color = "red"  |  part("Baseplate").Color = Color3.fromRGB(255,80,0)  |  me.Position = Vector3.new(0,10,0)  |  wait(1)  |  print("hi")  |  lighting("sunset"). me / script.Parent is the object this script belongs to; part("Name") or workspace.Name finds any part. More: Instance.new("Part") | player.Position / .Health / .WalkSpeed | game.Players:GetPlayers() | part.Touched:Connect(function(plr) end) | tween(part,{Position=Vector3.new(0,10,0)},2) | onKey("e",function() end) | Debris:AddItem(part,3) | part:Clone() | block("damageplayer","Bob",10) runs ANY block (ids are the names in the block list) | me.Touched:Connect(function(plr) end) works on editor parts too | onChat(function(plr,msg) end) | game.Players.PlayerAdded:Connect(fn) | RunService.Heartbeat:Connect(function(dt) end) | gui("Name").Text = "hi" | player:GetData("coins") / :SetData / :ChangeData / :SaveData | part:SetAttribute("k",v) | nearestPlayer(pos,range) | Random.new():NextInteger(1,6) | part("Rig").Rarm or part("Rarm","Rig") reaches just one piece of a model or rig.'};
 function luaBox(b,ro){const w=el('span','luab'),prev=el('button','luap'),ta=el('textarea','luat');prev.type='button';ta.maxLength=10000;ta.value=String(b.a[0]||'').slice(0,10000);ta.spellcheck=false;ta.placeholder='-- Lua code (up to 10000 characters)';
   let svT=0;const sh=function(){const t=ta.value.replace(/\s+/g,' ').trim();prev.textContent=(t.length>24?t.slice(0,24)+'\u2026':(t||'(empty)'))+'  \u00b7  '+ta.value.length+' chars'};
   const fold=function(){b.a[0]=ta.value.slice(0,10000);sh();ta.style.display='none';prev.style.display='';clearTimeout(svT);save();try{view()}catch(e){}};
@@ -1095,7 +1095,243 @@ function luaBox(b,ro){const w=el('span','luab'),prev=el('button','luap'),ta=el('
   ta.onkeydown=function(e){e.stopPropagation();if(e.key==='Enter'&&!e.shiftKey&&!e.ctrlKey){e.preventDefault();ta.blur()}
     else if(e.key==='Tab'){e.preventDefault();const s=ta.selectionStart;ta.setRangeText('  ',s,ta.selectionEnd,'end');ta.oninput()}};
   ta.onkeyup=ta.onkeypress=function(e){e.stopPropagation()};
-  if(ro)ta.readOnly=true;w.append(prev,ta);return w}
+  if(ro)ta.readOnly=true;
+  const rw=el('span','luarow');rw.append(prev);
+  if(!ro){const ai=el('button','luaai');ai.type='button';ai.innerHTML='\u2728 AI Code<b>PRO</b>';ai.title='Premium: describe what you want and the AI writes working Lua for this block';
+    /* pointerdown (not click) so the snippet folding on blur can not rebuild the board before the click lands */
+    ai.onmousedown=function(e){e.preventDefault()};
+    ai.onpointerdown=function(e){e.preventDefault();e.stopPropagation();aiCodeOpen({get:function(){return ta.value},set:function(v){v=String(v).slice(0,10000);ta.value=v;b.a[0]=v;sh();save();try{view()}catch(x){}}})};
+    ai.onclick=function(e){e.preventDefault();e.stopPropagation()};rw.append(ai)}
+  w.append(rw,ta);return w}
+
+/* ===== AI Code Studio (Premium) =====
+   Groq writes Lua for the Code snippet block. Every answer is checked with the real BrixBlox Lua parser plus a list of things BrixBlox does not have.
+   If something is wrong the problem is sent back to the AI automatically (up to 2 times) before you ever see the code.
+   Needs the Supabase edge function "groq-code" (see supabase/functions/groq-code/index.ts). Premium is checked on the server. */
+(function(){
+  const css='@property --aic-a{syntax:"<angle>";initial-value:0deg;inherits:false}'+
+  '@keyframes aic-rot{to{--aic-a:360deg}}@keyframes aic-pop{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}'+
+  '@keyframes aic-shim{to{background-position:-200% 0}}@keyframes aic-spin{to{transform:rotate(360deg)}}@keyframes aic-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}'+
+  '@keyframes aic-fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}@keyframes aic-glow{0%,100%{box-shadow:0 6px 22px rgba(255,138,61,.35)}50%{box-shadow:0 8px 30px rgba(255,138,61,.6)}}'+
+  '.luarow{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}'+
+  '.luaai{position:relative;border:0;cursor:pointer;border-radius:999px;padding:4px 11px 4px 9px;font:800 .72rem Montserrat,system-ui,sans-serif;color:#2a1700;letter-spacing:.01em;white-space:nowrap;'+
+    'background:linear-gradient(115deg,#ffd45e,#ff9d3d 55%,#ff7a59);box-shadow:0 2px 10px rgba(255,138,61,.45);transition:transform .15s,box-shadow .15s}'+
+  '.luaai:hover{transform:translateY(-1px) scale(1.03);box-shadow:0 5px 16px rgba(255,138,61,.6)}.luaai b{font-size:.58rem;background:#2a1700;color:#ffd45e;border-radius:4px;padding:1px 4px;margin-left:5px;vertical-align:1px}'+
+  '.aic-ov{position:fixed;inset:0;z-index:96;display:flex;align-items:center;justify-content:center;padding:max(12px,env(safe-area-inset-top,0px)) 12px max(12px,env(safe-area-inset-bottom,0px));'+
+    'background:radial-gradient(900px 520px at 50% -8%,rgba(122,76,255,.34),transparent 62%),radial-gradient(700px 420px at 90% 110%,rgba(255,138,61,.16),transparent 60%),rgba(6,8,18,.8);'+
+    '-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#eef0ff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-weight:600}'+
+  '.aic-ov *{box-sizing:border-box}'+
+  '.aic-card{width:min(1020px,100%);max-height:min(720px,100%);display:flex;flex-direction:column;border-radius:20px;border:1.5px solid transparent;overflow:hidden;animation:aic-pop .35s cubic-bezier(.2,.9,.3,1.1);'+
+    'background:linear-gradient(#0e1124,#0e1124) padding-box,conic-gradient(from var(--aic-a),#ffc233,#ff6b57,#7a4cff,#36c8ff,#35e0a1,#ffc233) border-box;animation:aic-pop .35s cubic-bezier(.2,.9,.3,1.1),aic-rot 7s linear infinite;'+
+    'box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 80px rgba(122,76,255,.22)}'+
+  '.aic-hd{display:flex;align-items:center;gap:13px;padding:15px 18px;border-bottom:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,rgba(255,255,255,.045),transparent)}'+
+  '.aic-logo{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font-size:1.35rem;flex:none;background:linear-gradient(135deg,#7a4cff,#36c8ff);box-shadow:0 6px 20px rgba(122,76,255,.5);animation:aic-float 3.2s ease-in-out infinite}'+
+  '.aic-ttl{flex:1;min-width:0}.aic-ttl h2{margin:0;font:800 1.18rem Montserrat,system-ui,sans-serif;letter-spacing:.005em;display:flex;align-items:center;gap:9px;flex-wrap:wrap}'+
+  '.aic-ttl p{margin:3px 0 0;font-size:.8rem;color:#9aa3d1;font-weight:600;line-height:1.35}'+
+  '.aic-pro{font:800 .6rem Montserrat,system-ui,sans-serif;letter-spacing:.12em;color:#2a1700;padding:3px 8px;border-radius:999px;background:linear-gradient(100deg,#ffd45e 20%,#fff2b8 40%,#ffd45e 60%,#ff9d3d);background-size:200% 100%;animation:aic-shim 3.4s linear infinite}'+
+  '.aic-x{width:34px;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#cfd5ff;cursor:pointer;font-size:.95rem;flex:none;transition:background .15s}.aic-x:hover{background:rgba(255,255,255,.14)}'+
+  '.aic-body{display:grid;grid-template-columns:minmax(290px,370px) 1fr;min-height:0;flex:1}'+
+  '.aic-l{padding:16px 18px;display:flex;flex-direction:column;gap:10px;border-right:1px solid rgba(255,255,255,.08);overflow:auto;background:rgba(255,255,255,.015)}'+
+  '.aic-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;border-radius:12px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.07)}'+
+  '.aic-seg button{border:0;border-radius:9px;padding:8px 4px;cursor:pointer;background:transparent;color:#9aa3d1;font:800 .74rem Montserrat,system-ui,sans-serif;transition:all .15s;line-height:1.2}'+
+  '.aic-seg button:hover:not(:disabled){color:#fff}.aic-seg button.on{color:#fff;background:linear-gradient(135deg,#7a4cff,#4d6bff);box-shadow:0 3px 12px rgba(100,80,255,.5)}.aic-seg button:disabled{opacity:.35;cursor:not-allowed}'+
+  '.aic-lb{font:800 .78rem Montserrat,system-ui,sans-serif;color:#cfd5ff;margin-top:2px}'+
+  '.aic-ta{width:100%;min-height:118px;resize:vertical;border-radius:13px;padding:12px 13px;font:600 .9rem/1.45 system-ui,sans-serif;color:#fff;background:#0a0c1a;border:1.5px solid rgba(255,255,255,.12);outline:none;transition:border-color .15s,box-shadow .15s}'+
+  '.aic-ta:focus{border-color:#7a6bff;box-shadow:0 0 0 4px rgba(122,107,255,.2)}.aic-ta::placeholder{color:#626a99}'+
+  '.aic-cnt{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;font-size:.72rem;color:#7d86b8;margin-top:-4px}'+
+  '.aic-n{white-space:nowrap}.aic-ct{font:800 .7rem Montserrat,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#7d86b8;margin-top:2px}'+
+  '.aic-chips{display:flex;flex-wrap:wrap;gap:6px}.aic-chip{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#dfe3ff;border-radius:999px;padding:5px 10px;font:700 .74rem system-ui,sans-serif;cursor:pointer;transition:all .15s}'+
+  '.aic-chip:hover{background:rgba(122,107,255,.25);border-color:#7a6bff;transform:translateY(-1px)}'+
+  '.aic-opt{display:flex;align-items:center;gap:8px;font-size:.8rem;color:#b9c0ee;cursor:pointer;user-select:none}.aic-opt input{accent-color:#7a6bff;width:16px;height:16px}'+
+  '.aic-go{margin-top:auto;border:0;cursor:pointer;border-radius:14px;padding:14px 16px;font:800 .98rem Montserrat,system-ui,sans-serif;color:#2a1700;display:flex;align-items:center;justify-content:center;gap:9px;'+
+    'background:linear-gradient(115deg,#ffd45e,#ff9d3d 55%,#ff7a59);animation:aic-glow 2.6s ease-in-out infinite;transition:transform .15s,filter .15s}'+
+  '.aic-go:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.06)}.aic-go:active:not(:disabled){transform:translateY(0)}.aic-go:disabled{filter:grayscale(.6) brightness(.8);cursor:progress;animation:none}'+
+  '.aic-go kbd{font:700 .62rem system-ui,sans-serif;background:rgba(42,23,0,.18);padding:2px 6px;border-radius:5px}'+
+  '.aic-r{display:flex;flex-direction:column;min-width:0;min-height:0}'+
+  '.aic-rh{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08);flex-wrap:wrap;min-height:50px}'+
+  '.aic-tabs{display:flex;gap:5px;flex:1;flex-wrap:wrap}.aic-tab{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#aab2e6;border-radius:8px;padding:4px 10px;font:800 .72rem Montserrat,system-ui,sans-serif;cursor:pointer}'+
+  '.aic-tab.on{background:rgba(122,107,255,.28);border-color:#7a6bff;color:#fff}.aic-tabs .aic-mut{font-size:.76rem;color:#7d86b8;padding:4px 2px}'+
+  '.aic-pill{font:800 .72rem Montserrat,system-ui,sans-serif;border-radius:999px;padding:5px 11px;display:inline-flex;align-items:center;gap:6px}'+
+  '.aic-pill.ok{background:rgba(53,224,161,.14);color:#4cf0b3;border:1px solid rgba(53,224,161,.4)}.aic-pill.warn{background:rgba(255,194,51,.13);color:#ffd45e;border:1px solid rgba(255,194,51,.4)}'+
+  '.aic-code{position:relative;flex:1;min-height:250px;overflow:auto;background:#080a16}'+
+  '.aic-pre{margin:0;padding:12px 0;font:12.5px/1.6 ui-monospace,SFMono-Regular,Consolas,Menlo,monospace;color:#e6e9ff;tab-size:2;min-width:max-content;counter-reset:ln}'+
+  '.aic-ln{display:block;padding:0 16px 0 0;white-space:pre}.aic-ln::before{counter-increment:ln;content:counter(ln);display:inline-block;width:42px;margin-right:14px;text-align:right;color:#4d5586;user-select:none}'+
+  '.aic-ln:hover{background:rgba(255,255,255,.04)}.k{color:#ff7ab2;font-weight:700}.s{color:#ffd479}.n{color:#ffa26b}.c{color:#6f7bb0;font-style:italic}.b{color:#6fd3ff}.f{color:#b9a3ff}'+
+  '.aic-empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:26px;color:#8a93c6}'+
+  '.aic-empty .big{font-size:2.6rem;animation:aic-float 3.4s ease-in-out infinite}.aic-empty h3{margin:0;font:800 1.05rem Montserrat,system-ui,sans-serif;color:#dfe3ff}.aic-empty p{margin:0;max-width:340px;font-size:.84rem;line-height:1.5}'+
+  '.aic-feat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;max-width:520px;width:100%}.aic-feat div{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 8px;font-size:.74rem;line-height:1.3;color:#b9c0ee}.aic-feat b{display:block;font-size:1.1rem;margin-bottom:3px}'+
+  '.aic-work{position:absolute;inset:0;background:#080a16;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;padding:20px;z-index:2;animation:aic-fade .25s}'+
+  '.aic-orb{width:58px;height:58px;border-radius:50%;border:5px solid rgba(255,255,255,.1);border-top-color:#ffc233;border-right-color:#7a6bff;animation:aic-spin .9s linear infinite}'+
+  '.aic-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px;min-width:min(310px,100%)}.aic-steps li{display:flex;align-items:center;gap:10px;font-size:.88rem;color:#6a729f;transition:color .25s}'+
+  '.aic-steps li i{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:.7rem;border:2px solid rgba(255,255,255,.15);flex:none}'+
+  '.aic-steps li.run{color:#fff}.aic-steps li.run i{border-color:#ffc233;border-top-color:transparent;animation:aic-spin .8s linear infinite}.aic-steps li.ok{color:#9ff5d3}.aic-steps li.ok i{background:#35e0a1;border-color:#35e0a1;color:#04301f;font-weight:900}'+
+  '.aic-steps li.warn{color:#ffd45e}.aic-steps li.warn i{background:#ffc233;border-color:#ffc233;color:#2a1700;font-weight:900}.aic-steps li.skip{display:none}'+
+  '.aic-note{margin:0;padding:10px 14px;font-size:.78rem;line-height:1.45;border-top:1px solid rgba(255,255,255,.08);background:rgba(255,194,51,.07);color:#ffe29a}.aic-note ul{margin:4px 0 0;padding-left:18px}.aic-note.err{background:rgba(255,107,87,.1);color:#ffb3a8}'+
+  '.aic-ft{display:flex;gap:8px;padding:11px 14px;border-top:1px solid rgba(255,255,255,.08);flex-wrap:wrap;background:rgba(0,0,0,.2)}'+
+  '.aic-b{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;border-radius:11px;padding:9px 14px;font:800 .8rem Montserrat,system-ui,sans-serif;cursor:pointer;transition:all .15s}'+
+  '.aic-b:hover:not(:disabled){background:rgba(255,255,255,.14);transform:translateY(-1px)}.aic-b:disabled{opacity:.35;cursor:not-allowed}'+
+  '.aic-b.pri{border:0;color:#04301f;background:linear-gradient(115deg,#4cf0b3,#35e0a1 50%,#2bc4d8);box-shadow:0 4px 16px rgba(53,224,161,.35);margin-right:auto}.aic-b.pri:hover:not(:disabled){filter:brightness(1.08)}'+
+  '.aic-lock{position:absolute;inset:0;z-index:3;background:#080a16;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;text-align:center;padding:24px;animation:aic-fade .3s}'+
+  '.aic-b.gold{border:0;color:#2a1700;background:linear-gradient(115deg,#ffd45e,#ff9d3d 55%,#ff7a59);box-shadow:0 4px 18px rgba(255,138,61,.4)}.aic-lock .big{font-size:3rem}.aic-lock h3{margin:0;font:800 1.2rem Montserrat,system-ui,sans-serif}.aic-lock p{margin:0;max-width:360px;font-size:.86rem;line-height:1.5;color:#aab2e6}'+
+  '.aic-toast{position:absolute;left:50%;bottom:62px;transform:translateX(-50%);background:#35e0a1;color:#04301f;font:800 .78rem Montserrat,system-ui,sans-serif;padding:7px 14px;border-radius:999px;z-index:5;animation:aic-fade .2s;pointer-events:none}'+
+  '@media(hover:none){.aic-go kbd{display:none}}@media(max-width:760px){.aic-card{max-height:100%}.aic-body{grid-template-columns:1fr;overflow:auto;display:block}.aic-l{border-right:0;border-bottom:1px solid rgba(255,255,255,.08);overflow:visible}.aic-r{min-height:380px}.aic-go{margin-top:6px}.aic-feat{grid-template-columns:1fr}.aic-ttl p{display:none}}'+
+  '@media(prefers-reduced-motion:reduce){.aic-ov *{animation-duration:.01ms!important;animation-iteration-count:1!important}}';
+  const stl=document.createElement('style');stl.id='aic-css';stl.textContent=css;document.head.appendChild(stl);
+
+  const IDEAS=[
+    ['\uD83E\uDE99','Coin pickup','When a player touches the part called Coin, add 1 to their saved data coins, hide the coin, and bring it back after 5 seconds.'],
+    ['\uD83D\uDEAA','Door on E','When I press E, slide the part called Door up 8 studs over 1 second, wait 3 seconds, then slide it back down.'],
+    ['\uD83C\uDF0B','Lava','Make the part called Lava hurt any player touching it for 10 health every second, and turn it orange.'],
+    ['\uD83D\uDCA8','Speed pad','When a player touches the part called SpeedPad, set their walk speed to 40 for 5 seconds, then back to normal.'],
+    ['\uD83C\uDFC1','Checkpoint','When a player touches the part called Checkpoint, turn it green and teleport them back there when their health reaches 0.'],
+    ['\uD83D\uDCCA','Score GUI','Show the player\'s saved data coins in the gui called ScoreText and update it every second.'],
+    ['\uD83C\uDF05','Day & night','Slowly cycle the lighting between sunny, sunset and night, changing every 15 seconds, forever.'],
+    ['\uD83D\uDCAC','Chat command','When a player types /heal in chat, heal them to full health and say Healed!'],
+    ['\uD83D\uDD04','Spinning pickup','Make the part called Gem float up and down gently forever, and change its color through the rainbow.']
+  ];
+  const KWS=new Set('and break do else elseif end false for function goto if in local nil not or repeat return then true until while continue'.split(' '));
+  const BIS=new Set('me player part workspace Workspace game script Vector3 Color3 CFrame BrickColor Instance Lighting Players RunService Debris Random tween wait spawn delay task print say gui block onKey onChat getVar setVar broadcast playSound stopSound particle activateParticle lighting nearestPlayer playersNear math string table os tostring tonumber pairs ipairs type pcall tick time'.split(' '));
+  const esc=function(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')};
+  function hl(code){/* tiny Lua highlighter: comments, strings, numbers, keywords, built-ins, function calls */
+    const re=/(--\[\[[\s\S]*?\]\]|--[^\n]*)|("(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])*'?)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)/g;let out='',last=0,m;
+    while((m=re.exec(code))){out+=esc(code.slice(last,m.index));const t=m[0],e=esc(t);
+      if(m[1])out+='<span class="c">'+e+'</span>';else if(m[2])out+='<span class="s">'+e+'</span>';else if(m[3])out+='<span class="n">'+e+'</span>';
+      else if(KWS.has(t))out+='<span class="k">'+e+'</span>';else if(BIS.has(t))out+='<span class="b">'+e+'</span>';
+      else if(/^\s*[(\"']/.test(code.slice(re.lastIndex,re.lastIndex+3)))out+='<span class="f">'+e+'</span>';else out+=e;last=re.lastIndex}
+    return out+esc(code.slice(last))}
+  /* Things Lua in BrixBlox does NOT have. Found in the answer => the AI is told and fixes it before you see it. */
+  function bare(c){return c.replace(/--\[\[[\s\S]*?\]\]/g,'').replace(/--[^\n]*/g,'').replace(/"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'/g,'""')}
+  const LINT=[
+    [/\brequire\s*\(/,'require() does not exist in BrixBlox. Put everything in this one snippet.'],
+    [/\b(HttpService|DataStoreService|TweenService|MarketplaceService|ReplicatedStorage|ServerStorage|ServerScriptService|StarterGui|StarterPack|UserInputService|ContextActionService|SoundService|TeleportService|RemoteEvent|RemoteFunction|BindableEvent|TweenInfo|Enum|CurrentCamera)\b/,'That Roblox service/class does not exist in BrixBlox. Use tween(part,{...},secs), onKey, gui(), block("id",...) and playSound(name) instead.'],
+    [/\.(Anchored|CanCollide|CanTouch|CanQuery|Material|Shape|Velocity|AssemblyLinearVelocity|Reflectance|Massless|CastShadow|Locked|Rotation|Orientation)\s*=/,'Parts can only be changed with Color, Position, Size, Transparency and Visible (plus Name/Parent on Instance.new parts). Setting anything else fails. Move things with Position or tween().'],
+    [/\b(Humanoid|FindFirstChildOfClass|FindFirstChildWhichIsA|GetPlayerFromCharacter)\b/,'There is no Humanoid. Touched gives you the PLAYER directly: part.Touched:Connect(function(plr) ... end). Use plr.Health, plr:Damage(n), plr:Heal(n), plr.WalkSpeed.'],
+    [/Connect\s*\(\s*function\s*\(\s*(hit|otherPart|other|part|touch)\s*\)/,'Touched passes the PLAYER, not a part. Name the argument plr.'],
+    [/\bCFrame\s*\.\s*(Angles|lookAt|fromEulerAnglesXYZ)\b/,'CFrame only has CFrame.new(x,y,z) in BrixBlox (no rotation). Use Vector3 and Position.'],
+    [/Instance\s*\.\s*new\s*\(\s*["'](?!Part["'])/,'Instance.new only supports "Part" in BrixBlox.'],
+    [/\bwhile\s+true\s+do\b(?![\s\S]*\b(wait|task\.wait)\s*\()/,'A "while true do" loop needs wait(...) inside it or the game freezes.']
+  ];
+  function aicCheck(code){
+    const p=[];if(!code||!code.trim())return['The code was empty.'];
+    if(code.length>10000)p.push('The code is '+code.length+' characters but the limit is 10000. Write a shorter, simpler version.');
+    try{window.LuaEngine.parse(code)}catch(e){try{p.push('Syntax error: '+window.LuaEngine.fmtErr(e))}catch(x){p.push('Syntax error in the Lua code.')}}
+    const b=bare(code);LINT.forEach(function(l){if(l[0].test(b))p.push(l[1])});
+    const gs=code.match(/GetService\s*\(\s*["']([^"']+)["']/gi);if(gs)gs.forEach(function(g){const n=g.replace(/^[^"']*["']|["']$/g,'').toLowerCase();if(['workspace','lighting','players','debris','runservice'].indexOf(n)<0)p.push('GetService("'+n+'") is not available. Only Workspace, Lighting, Players, Debris and RunService exist.')});
+    return p.filter(function(x,i){return p.indexOf(x)===i})}
+  function aicClean(t){t=String(t==null?'':t).replace(/\r/g,'');const f=t.match(/```(?:lua|luau)?\s*\n([\s\S]*?)```/i);if(f)t=f[1];else t=t.replace(/^```(?:lua|luau)?\s*\n?/i,'').replace(/```\s*$/,'');return t.replace(/\s+$/,'').replace(/^\n+/,'')}
+  function aicCtx(prompt){/* names of what is in this game + the few blocks most related to the request, so the AI uses real names */
+    const nm=function(a){return (Array.isArray(a)?a:[]).map(function(x){return x&&x.name}).filter(Boolean).map(String).slice(0,40)};
+    const q=String(prompt||'').toLowerCase().split(/[^a-z0-9]+/).filter(function(w){return w.length>2});const sc=[];
+    try{Object.keys(BD).forEach(function(id){const d=BD[id];if(!d||d.hat||d.k||d.rep||id==='luacode')return;const hay=(id+' '+String(d.l||'')).toLowerCase();let s=0;q.forEach(function(w){if(hay.indexOf(w)>=0)s+=(hay.indexOf(' '+w)>=0||hay.indexOf(w)===0)?2:1});if(s)sc.push([s,id,d])})}catch(e){}
+    sc.sort(function(a,b){return b[0]-a[0]});
+    const blocks=sc.slice(0,14).map(function(x){return x[1]+' = '+String(x[2].l||'').replace(/\s+/g,' ').slice(0,90)+' [defaults: '+(x[2].a||[]).map(function(v){return String(v).replace(/\s+/g,' ')}).join(' | ').slice(0,70)+']'});
+    return {parts:nm(P&&P.parts),models:nm(P&&P.models),guis:nm(P&&P.guis),particles:nm(P&&P.particles),blocks:blocks}}
+  async function aicCall(body){
+    if(!ME||!sb){const e=new Error('signin');e.code='signin';throw e}
+    let ses=null;try{const g=await sb.auth.getSession();ses=g&&g.data&&g.data.session}catch(e){}
+    if(ses&&ses.expires_at&&ses.expires_at*1000-Date.now()<60000){try{const rf=await sb.auth.refreshSession();if(rf&&rf.data&&rf.data.session)ses=rf.data.session}catch(e){}}
+    if(!ses||!ses.access_token){const e=new Error('signin');e.code='signin';throw e}
+    let last=null;
+    for(let att=0;att<3;att++){
+      const r=await sb.functions.invoke('groq-code',{body:body,headers:{Authorization:'Bearer '+ses.access_token}});
+      if(!r.error){const d=r.data||{};if(!d.code){const e=new Error('The AI sent an empty answer.');e.code='empty';throw e}return String(d.code)}
+      let j=null,st=0;try{st=+(r.error.context&&r.error.context.status)||0}catch(e){}try{j=await r.error.context.json()}catch(e){}
+      const c=j&&(j.error||j.message);const e=new Error(String(c||r.error.message||'The AI service failed'));e.code=String(c||'');e.status=st;e.detail=j&&j.detail;last=e;
+      if(c==='premium'||c==='signin'||c==='slow'||st===401||st===403||st===404)throw e;
+      if(att<2&&(st===429||st>=500||c==='busy'||!st))await new Promise(function(res){setTimeout(res,1400*(att+1))});else throw e}
+    throw last}
+
+  window.aiCodeOpen=function(h){
+    if(document.getElementById('aic-ov'))return;
+    if(!ME||!sb){try{msg('Sign in to an online BrixBlox account to use AI Code.')}catch(e){}return}
+    let mode='new',vers=[],vi=-1,busy=false,gone=false;
+    const ov=el('div','aic-ov');ov.id='aic-ov';
+    ov.innerHTML='<div class="aic-card" role="dialog" aria-modal="true" aria-label="AI Code Studio">'+
+      '<div class="aic-hd"><div class="aic-logo">\u2728</div><div class="aic-ttl"><h2>AI Code Studio <span class="aic-pro">PREMIUM</span></h2><p>Describe it. Groq writes the Lua. BrixBlox checks it before it ever touches your game.</p></div><button type="button" class="aic-x" aria-label="Close">\u2715</button></div>'+
+      '<div class="aic-body"><section class="aic-l"><div class="aic-seg"><button type="button" data-m="new" class="on">\u270D\uFE0F Write new</button><button type="button" data-m="edit">\u270F\uFE0F Change</button><button type="button" data-m="fix">\uD83E\uDE79 Fix</button></div>'+
+      '<label class="aic-lb" for="aic-p"></label><textarea id="aic-p" class="aic-ta" maxlength="700" spellcheck="true"></textarea><div class="aic-cnt"><span class="aic-hint"></span><span class="aic-n">0 / 700</span></div>'+
+      '<div class="aic-ct">Try an idea</div><div class="aic-chips"></div>'+
+      '<label class="aic-opt"><input type="checkbox" checked> Add friendly comments so I can learn from it</label>'+
+      '<button type="button" class="aic-go"><span>\u2728 Generate code</span><kbd>Ctrl \u21B5</kbd></button></section>'+
+      '<section class="aic-r"><div class="aic-rh"><div class="aic-tabs"></div><span class="aic-st"></span></div><div class="aic-code"></div><div class="aic-nt"></div>'+
+      '<div class="aic-ft"><button type="button" class="aic-b pri" data-a="use" disabled>\u2714 Use this code</button><button type="button" class="aic-b" data-a="add" disabled>\uFF0B Add to end</button><button type="button" class="aic-b" data-a="copy" disabled>\u29C9 Copy</button><button type="button" class="aic-b" data-a="refine" disabled>\u21BB Refine it</button></div></section></div></div>';
+    const q=function(s){return ov.querySelector(s)};
+    const card=q('.aic-card'),ta=q('.aic-ta'),lb=q('.aic-lb'),hint=q('.aic-hint'),cnt=q('.aic-n'),go=q('.aic-go'),code=q('.aic-code'),tabs=q('.aic-tabs'),st=q('.aic-st'),nt=q('.aic-nt'),cm=q('.aic-opt input');
+    const btn=function(a){return q('[data-a="'+a+'"]')};
+    const close=function(){gone=true;ov.remove();document.removeEventListener('keydown',esck,true)};
+    function esck(e){if(e.key==='Escape'&&document.getElementById('aic-ov')){e.stopPropagation();if(!busy)close()}}
+    document.addEventListener('keydown',esck,true);
+    q('.aic-x').onclick=function(){if(!busy)close()};ov.onpointerdown=function(e){if(e.target===ov&&!busy)close()};
+    ['keydown','keyup','keypress'].forEach(function(t){ov.addEventListener(t,function(e){e.stopPropagation()})});
+    const toast=function(t){const o=el('div','aic-toast',t);card.append(o);setTimeout(function(){o.remove()},1600)};
+    const haveCode=function(){return !!String(h.get()||'').trim()};
+    const cur=function(){return vi>=0?vers[vi].code:null};
+    const base=function(){return vi>=0?vers[vi].code:String(h.get()||'')};
+    function setMode(m){
+      if((m==='edit'||m==='fix')&&!haveCode()&&vi<0)return;mode=m;
+      ov.querySelectorAll('.aic-seg button').forEach(function(b){b.classList.toggle('on',b.dataset.m===m)});
+      lb.textContent=m==='new'?'What should it do?':m==='edit'?'How should I change it?':'What is going wrong? (optional)';
+      ta.placeholder=m==='new'?'e.g. When a player touches the part called Coin, give them +1 coins and hide the coin for 5 seconds.':m==='edit'?'e.g. Make it twice as fast and add a sound when it happens.':'e.g. The door never opens. Or leave this empty and I will look for bugs.';
+      hint.textContent=m==='new'?'Mention part names from your game for best results.':m==='edit'?'Works on '+(vi>=0?'the version on the right.':'the code in your snippet block.'):'I check your code against what BrixBlox supports.'}
+    ov.querySelectorAll('.aic-seg button').forEach(function(b){b.onclick=function(){if(!busy)setMode(b.dataset.m)}});
+    if(!haveCode())ov.querySelectorAll('.aic-seg button[data-m="edit"],.aic-seg button[data-m="fix"]').forEach(function(b){b.disabled=true;b.title='Your snippet is empty - write something first, or use Write new.'});
+    const chips=q('.aic-chips');IDEAS.forEach(function(i){const c=el('button','aic-chip',i[0]+' '+i[1]);c.type='button';c.onclick=function(){if(busy)return;setMode('new');ta.value=i[2];ta.dispatchEvent(new Event('input'));ta.focus()};chips.append(c)});
+    ta.oninput=function(){cnt.textContent=ta.value.length+' / 700'};
+    ta.onkeydown=function(e){if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();run()}};
+    go.onclick=function(){run()};
+    function empty(){code.replaceChildren();const d=el('div','aic-empty');d.innerHTML='<div class="big">\uD83E\uDDE0</div><h3>Your code shows up here</h3><p>Tell the AI what you want in plain words. It writes Lua made for BrixBlox and tests it for mistakes first.</p><div class="aic-feat"><div><b>\u26A1</b>Groq speed</div><div><b>\uD83D\uDEE1\uFE0F</b>Syntax checked</div><div><b>\uD83D\uDD01</b>Fixes itself</div></div>';code.append(d)}
+    function showCode(){
+      const v=vers[vi];code.replaceChildren();const pre=el('pre','aic-pre');
+      pre.innerHTML=v.code.split('\n').map(function(l){return '<span class="aic-ln">'+(hl(l)||' ')+'</span>'}).join('');code.append(pre);code.scrollTop=0;
+      tabs.replaceChildren();vers.forEach(function(x,i){const t=el('button','aic-tab'+(i===vi?' on':''),'v'+(i+1));t.type='button';t.title=x.title;t.onclick=function(){if(busy)return;vi=i;showCode();setMode(mode)};tabs.append(t)});
+      const n=v.code.split('\n').length;st.replaceChildren();const p=el('span','aic-pill '+(v.problems.length?'warn':'ok'),v.problems.length?'\u26A0 Needs a look':'\u2713 Verified');st.append(p);const m=el('span','aic-mut',n+' lines \u00B7 '+v.code.length+' chars');m.style.cssText='font-size:.74rem;color:#7d86b8;margin-left:8px';st.append(m);
+      nt.replaceChildren();if(v.problems.length){const o=el('div','aic-note');o.append(el('b','','Heads up: the AI could not fully fix these. Check them before you use the code.'));const u=el('ul');v.problems.forEach(function(x){u.append(el('li','',x))});o.append(u);nt.append(o)}
+      ['use','add','copy','refine'].forEach(function(a){btn(a).disabled=false})}
+    function work(){/* the "thinking" overlay with 4 steps */
+      const w=el('div','aic-work');w.innerHTML='<div class="aic-orb"></div><ul class="aic-steps"><li data-s="0"><i></i>Understanding your idea</li><li data-s="1"><i></i>Writing the Lua with Groq</li><li data-s="2"><i></i>Checking it with the BrixBlox engine</li><li data-s="3" class="skip"><i></i>Fixing what the check found</li></ul>';code.append(w);
+      const set=function(i,s,t){const li=w.querySelector('[data-s="'+i+'"]');if(!li)return;li.className=s;li.querySelector('i').textContent=s==='ok'?'\u2713':s==='warn'?'!':'';if(t)li.lastChild.textContent=t};
+      return {set:set,el:w,end:function(){w.remove()}}}
+    function showLock(){
+      const d=el('div','aic-lock');d.innerHTML='<div class="big">\uD83D\uDC51</div><h3>AI Code is a Premium feature</h3><p>With BrixBlox Premium, you describe what you want and the AI writes working Lua for your Code snippet blocks, checks it, and fixes its own mistakes.</p>';
+      const r=el('div');r.style.cssText='display:flex;gap:8px;margin-top:6px';const g=el('button','aic-b gold','\u2728 Get Premium');g.type='button';g.onclick=function(){try{store.set('brixblox-gopremium','1')}catch(e){}location.href=SITE_URL};
+      const c=el('button','aic-b','Not now');c.type='button';c.onclick=close;r.append(g,c);d.append(r);code.append(d)}
+    async function run(){
+      if(busy)return;const txt=ta.value.trim();
+      if(mode!=='fix'&&!txt){hint.textContent='Type what you want first.';hint.style.color='#ffd45e';setTimeout(function(){hint.style.color=''},1600);ta.focus();return}
+      busy=true;go.disabled=true;go.firstChild.textContent='\u2728 Working...';try{q('.aic-r').scrollIntoView({behavior:'smooth',block:'nearest'})}catch(e){}['use','add','copy','refine'].forEach(function(a){btn(a).disabled=true});nt.replaceChildren();
+      const w=work();let tries=0,out=null,probs=[],err=null;const b0=mode==='new'?'':base();
+      try{
+        w.set(0,'ok');w.set(1,'run');
+        const ctx=aicCtx(txt+' '+b0.slice(0,600));
+        let prevCode=b0,fixNote='';
+        for(let a=0;a<3;a++){
+          const body={mode:a?'repair':mode,prompt:txt,current:a?prevCode:b0,error:a?fixNote:'',comments:!!cm.checked,ctx:ctx};
+          const raw=await aicCall(body);if(gone)return;
+          out=aicClean(raw);w.set(1,'ok');w.set(2,'run','Checking it with the BrixBlox engine'+(a?' again':'')+'...');
+          probs=aicCheck(out);await new Promise(function(r){setTimeout(r,350)});
+          if(!probs.length){w.set(2,'ok','Checked: no problems found');break}
+          if(a<2){w.set(2,'warn','Found '+probs.length+' problem'+(probs.length>1?'s':''));const s3=w.el.querySelector('[data-s="3"]');if(s3){s3.className='run';s3.querySelector('i').textContent='';s3.lastChild.textContent='Fixing it'+(a?' (try '+(a+1)+')':'')+'...'}
+            prevCode=out;fixNote=probs.join('\n');tries++}
+          else w.set(2,'warn','Still has '+probs.length+' problem'+(probs.length>1?'s':''))}
+        if(tries){const s3=w.el.querySelector('[data-s="3"]');if(s3){s3.className=probs.length?'warn':'ok';s3.querySelector('i').textContent=probs.length?'!':'\u2713';s3.lastChild.textContent=probs.length?'Fixed what I could':'Fixed '+tries+' mistake'+(tries>1?'s':'')+' by itself'}}
+        await new Promise(function(r){setTimeout(r,probs.length?600:500)});
+        vers.push({code:out,problems:probs,title:(mode==='new'?'Written: ':mode==='edit'?'Changed: ':'Fixed: ')+(txt||'bug hunt').slice(0,60)});vi=vers.length-1;
+      }catch(e){err=e}
+      if(gone)return;w.end();busy=false;go.disabled=false;go.firstChild.textContent=vi>=0?'\u2728 Generate again':'\u2728 Generate code';
+      if(err){
+        const c=err.code,s=err.status;if(vi>=0)showCode();else empty();
+        if(c==='premium'){showLock();return}
+        const m=c==='signin'||s===401?'You are not signed in, or your login expired. Sign out and back in, then try again.':c==='slow'?'You are asking too fast. Wait a few seconds, then try again.':s===404?'The AI Code service (groq-code) is not set up on the server yet. Deploy the groq-code function, then try again.':c==='busy'||s===429?'The AI is busy right now. Try again in a moment.':'Could not get code: '+String(err.message||err).slice(0,160)+(s?' (HTTP '+s+')':'');
+        const o=el('div','aic-note err',m);nt.replaceChildren(o);return}
+      showCode();setMode(mode)}
+    btn('use').onclick=function(){const c=cur();if(c==null)return;h.set(c);close();try{msg('AI code added to your Code snippet block.')}catch(e){}};
+    btn('add').onclick=function(){const c=cur();if(c==null)return;const o=String(h.get()||'').replace(/\s+$/,''),n=o?o+'\n\n'+c:c;
+      if(n.length>10000){toast('Too long to add (10,000 limit)');return}h.set(n);close();try{msg('AI code added to the end of your snippet.')}catch(e){}};
+    btn('copy').onclick=function(){const c=cur();if(c==null)return;const ok=function(){toast('Copied!')};
+      try{navigator.clipboard.writeText(c).then(ok,function(){const t=document.createElement('textarea');t.value=c;document.body.append(t);t.select();try{document.execCommand('copy');ok()}catch(e){}t.remove()})}catch(e){const t=document.createElement('textarea');t.value=c;document.body.append(t);t.select();try{document.execCommand('copy');ok()}catch(x){}t.remove()}};
+    btn('refine').onclick=function(){if(cur()==null)return;setMode('edit');ta.value='';ta.dispatchEvent(new Event('input'));ta.focus()};
+    empty();setMode('new');document.body.append(ov);setTimeout(function(){ta.focus()},60)};
+})();
 /* ===== Scratch-style block board: drag blocks anywhere, snap them together, drop them on the palette to delete ===== */
 let selScr=null,conns=[],slots=[],slHl=null,pvEl=null,pvSig='',pend=null,gh=null,dI=null,CV=null;
 const WS=$('s-ws');
