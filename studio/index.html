@@ -684,7 +684,7 @@ html.mob #hotbar button{width:48px!important;height:48px!important;font-size:.6r
       <div id="s-parts" class="pnl" hidden="">
         <div class="tb"><div class="tgrp"><span class="tgl">Add</span><button id="p-add" class="btn small" type="button">+ Part</button><select id="p-shape" class="btn ghost small" aria-label="Add a shape"><option value="">+ Shape</option><option value="cyl">Cylinder</option><option value="sphere">Sphere</option><option value="wedge">Triangle</option></select><select id="p-gui" class="btn ghost small" aria-label="Add a GUI element"><option value="">+ GUI</option><option value="text">Text</option><option value="button">Button</option><option value="frame">Frame</option><option value="image">Image</option></select></div><div class="tgrp"><span class="tgl">Models</span><button id="p-group" class="btn small" type="button">Group</button><button id="p-ungroup" class="btn ghost small" type="button">Ungroup</button><button id="p-union" class="btn small" type="button" title="Ctrl+Shift+G">Union</button><button id="p-split" class="btn ghost small" type="button" title="Ctrl+Alt+U">Split</button></div><div class="tgrp"><span class="tgl">Edit</span><button id="p-copy" class="btn ghost small" type="button">Copy</button><button id="p-paste" class="btn ghost small" type="button">Paste</button><button id="p-dup" class="btn ghost small" type="button">Duplicate</button><button id="p-del" class="btn ghost small" type="button">Delete</button></div><div class="tgrp"><span class="tgl">Rig</span><button id="p-weld" class="btn small" type="button">Weld</button><button id="p-unweld" class="btn ghost small" type="button">Unweld</button><button id="p-rig" class="btn ghost small" type="button" aria-pressed="false">Rig editor</button></div></div>
         <p id="p-msg" class="hint">Weld: select the Torso first, then ctrl-click the parts to weld to it.</p>
-        <details class="xhelp"><summary>Building shortcuts</summary><div class="kl"><kbd>P</kbd><span>Add a part in front of you</span><kbd>Ctrl+G</kbd><span>Group into a model</span><kbd>Ctrl+Alt+G</kbd><span>Ungroup</span><kbd>Ctrl+Shift+G</kbd><span>Union into one single part</span><kbd>Ctrl+Alt+U</kbd><span>Split a union back apart</span><kbd>Ctrl+R</kbd><span>Turn the selection 90&deg; (Ctrl+Shift+R the other way)</span><kbd>Ctrl+C / V / D</kbd><span>Copy / paste / duplicate</span><kbd>Backspace</kbd><span>Delete</span><kbd>Ctrl / Shift + click</kbd><span>Add or remove a part or model from the selection (in the 3D view or the Explorer)</span><kbd>Alt+click</kbd><span>Select just one piece of a model (double-click works too)</span><kbd>L</kbd><span>Lock or unlock the selection</span><kbd>Arrow keys</kbd><span>Nudge by the snap size (Shift = 4&times;)</span><kbd>PageUp / PageDown</kbd><span>Move up / down</span><kbd>End</kbd><span>Drop onto whatever is under it</span><kbd>Ctrl+A</kbd><span>Select everything</span></div></details><div class="xbar"><input id="p-find" type="search" placeholder="Search the explorer..." aria-label="Search the explorer" autocomplete="off"><button id="p-exp" class="btn ghost small" type="button" title="Open every folder and model">Expand</button><button id="p-col" class="btn ghost small" type="button" title="Close every folder and model">Collapse</button></div><div id="p-list"></div><div id="p-props"></div>
+        <details class="xhelp"><summary>Building shortcuts</summary><div class="kl"><kbd>P</kbd><span>Add a part in front of you</span><kbd>Ctrl+G</kbd><span>Group into a model</span><kbd>Ctrl+Alt+G</kbd><span>Ungroup</span><kbd>Ctrl+Shift+G</kbd><span>Union into one single part</span><kbd>Ctrl+Alt+U</kbd><span>Split a union back apart</span><kbd>Ctrl+R</kbd><span>Turn the selection 90&deg; (Ctrl+Shift+R the other way)</span><kbd>Ctrl+C / V / D</kbd><span>Copy / paste / duplicate</span><kbd>Backspace</kbd><span>Delete</span><kbd>Ctrl / Shift + click</kbd><span>Add or remove a part or model from the selection (in the 3D view or the Explorer)</span><kbd>Alt+click</kbd><span>Select just one piece of a model</span><kbd>Double-click / Enter</kbd><span>Go inside a model or rig: now every click picks just ONE part (an arm, the head...). Esc comes out</span><kbd>L</kbd><span>Lock or unlock the selection</span><kbd>Arrow keys</kbd><span>Nudge by the snap size (Shift = 4&times;)</span><kbd>PageUp / PageDown</kbd><span>Move up / down</span><kbd>End</kbd><span>Drop onto whatever is under it</span><kbd>Ctrl+A</kbd><span>Select everything</span></div></details><div class="xbar"><input id="p-find" type="search" placeholder="Search the explorer..." aria-label="Search the explorer" autocomplete="off"><button id="p-exp" class="btn ghost small" type="button" title="Open every folder and model">Expand</button><button id="p-col" class="btn ghost small" type="button" title="Close every folder and model">Collapse</button></div><div id="p-list"></div><div id="p-props"></div>
       </div>
       <div id="s-tool" class="pnl tbx" hidden=""></div>
       <div id="s-anim" class="pnl anim" hidden="">
@@ -1084,7 +1084,7 @@ function clean(){P.scripts=P.scripts.filter(function(s){return s.length})}
 function inside(b,arr){return !!b.k&&(b.k===arr||b.k.some(function(x){return inside(x,arr)}))}
 /* ===== Code snippet block: write Lua (up to 10,000 characters). Click off it or press Enter and it folds down to one short line so it never lags. ===== */
 (function(){const st=document.createElement('style');st.textContent='.luab{display:inline-flex;flex-direction:column;max-width:100%}.luap{border-radius:6px;background:rgba(0,0,0,.3);color:#fff;border:1px solid rgba(255,255,255,.35);font:700 .74rem ui-monospace,Consolas,monospace;padding:3px 9px;cursor:text;text-align:left;max-width:280px;overflow:hidden;white-space:nowrap}.luat{width:min(540px,72vw);height:250px;resize:both;font:12px/1.45 ui-monospace,Consolas,monospace;background:#14161c;color:#d8f0ff;border:1px solid #4a4c4e;border-radius:8px;padding:8px;tab-size:2;white-space:pre;overflow:auto}';document.head.appendChild(st)})();
-BD.luacode={c:'ct',l:'Code snippet _',a:['-- Lua\nprint("hello from Lua")'],tip:'Write Lua code (up to 10,000 characters). Click the block to edit. Click off it or press Enter and it folds into one short line (Shift+Enter makes a new line). Examples: me.Color = "red"  |  part("Baseplate").Color = Color3.fromRGB(255,80,0)  |  me.Position = Vector3.new(0,10,0)  |  wait(1)  |  print("hi")  |  lighting("sunset"). me / script.Parent is the object this script belongs to; part("Name") or workspace.Name finds any part. More: Instance.new("Part") | player.Position / .Health / .WalkSpeed | game.Players:GetPlayers() | part.Touched:Connect(function(plr) end) | tween(part,{Position=Vector3.new(0,10,0)},2) | onKey("e",function() end) | Debris:AddItem(part,3) | part:Clone() | block("damageplayer","Bob",10) runs ANY block (ids are the names in the block list) | me.Touched:Connect(function(plr) end) works on editor parts too | onChat(function(plr,msg) end) | game.Players.PlayerAdded:Connect(fn) | RunService.Heartbeat:Connect(function(dt) end) | gui("Name").Text = "hi" | player:GetData("coins") / :SetData / :ChangeData / :SaveData | part:SetAttribute("k",v) | nearestPlayer(pos,range) | Random.new():NextInteger(1,6).'};
+BD.luacode={c:'ct',l:'Code snippet _',a:['-- Lua\nprint("hello from Lua")'],tip:'Write Lua code (up to 10,000 characters). Click the block to edit. Click off it or press Enter and it folds into one short line (Shift+Enter makes a new line). Examples: me.Color = "red"  |  part("Baseplate").Color = Color3.fromRGB(255,80,0)  |  me.Position = Vector3.new(0,10,0)  |  wait(1)  |  print("hi")  |  lighting("sunset"). me / script.Parent is the object this script belongs to; part("Name") or workspace.Name finds any part. More: Instance.new("Part") | player.Position / .Health / .WalkSpeed | game.Players:GetPlayers() | part.Touched:Connect(function(plr) end) | tween(part,{Position=Vector3.new(0,10,0)},2) | onKey("e",function() end) | Debris:AddItem(part,3) | part:Clone() | block("damageplayer","Bob",10) runs ANY block (ids are the names in the block list) | me.Touched:Connect(function(plr) end) works on editor parts too | onChat(function(plr,msg) end) | game.Players.PlayerAdded:Connect(fn) | RunService.Heartbeat:Connect(function(dt) end) | gui("Name").Text = "hi" | player:GetData("coins") / :SetData / :ChangeData / :SaveData | part:SetAttribute("k",v) | nearestPlayer(pos,range) | Random.new():NextInteger(1,6) | part("Rig").Rarm or part("Rarm","Rig") reaches just one piece of a model or rig.'};
 function luaBox(b,ro){const w=el('span','luab'),prev=el('button','luap'),ta=el('textarea','luat');prev.type='button';ta.maxLength=10000;ta.value=String(b.a[0]||'').slice(0,10000);ta.spellcheck=false;ta.placeholder='-- Lua code (up to 10000 characters)';
   let svT=0;const sh=function(){const t=ta.value.replace(/\s+/g,' ').trim();prev.textContent=(t.length>24?t.slice(0,24)+'\u2026':(t||'(empty)'))+'  \u00b7  '+ta.value.length+' chars'};
   const fold=function(){b.a[0]=ta.value.slice(0,10000);sh();ta.style.display='none';prev.style.display='';clearTimeout(svT);save();try{view()}catch(e){}};
@@ -4194,6 +4194,30 @@ function exRun(ids,kind){
   });
 })();
 
+/* ===== Go inside a model or rig (double-click it, or select it and press Enter) =====
+   While you are "inside", ONE click picks just ONE part of it (an arm, the head, a hat...) and move / turn / resize / recolour touches only that part.
+   Esc, the "Come out" button, or clicking something outside it, comes out again. (Alt+click and the Explorer still pick a single part without going inside.) */
+let dive=null,diveBar=null;
+function diveGroup(p){if(!p||p.av)return null;
+  if(p.model){const tm=mTop(p.model),m=byModel(tm);return{key:'m:'+tm,name:m?m.name:'Model',ids:partsOf(tm).map(function(q){return q.id})}}
+  const r=rootOf(p);if(r&&!r.av&&kids(r).length)return{key:'r:'+r.id,name:(r.name||'Rig')+' (rig)',ids:treeOf(r).map(function(q){return q.id})};
+  return null}
+function diveShow(){
+  if(!dive){if(diveBar)diveBar.style.display='none';return}
+  if(!diveBar){diveBar=document.createElement('div');diveBar.id='divebar';
+    diveBar.style.cssText='position:fixed;top:62px;left:50%;transform:translateX(-50%);z-index:58;display:flex;align-items:center;gap:10px;padding:6px 8px 6px 12px;border-radius:12px;background:rgba(22,24,28,.9);color:#fff;font:700 12px/1.25 system-ui,sans-serif;box-shadow:0 3px 14px rgba(0,0,0,.35);border:1px solid rgba(77,163,255,.75)';
+    const t=document.createElement('span'),b=document.createElement('button');b.type='button';b.textContent='Come out (Esc)';
+    b.style.cssText='border:0;border-radius:8px;padding:4px 10px;background:#2f78d0;color:#fff;font:700 12px system-ui,sans-serif;cursor:pointer';b.onclick=function(){diveLeave()};
+    ['pointerdown','mousedown','click','dblclick','contextmenu'].forEach(function(n){diveBar.addEventListener(n,function(e){e.stopPropagation()})});
+    diveBar.append(t,b);document.body.append(diveBar)}
+  diveBar.firstChild.textContent='Inside '+dive.name+' \u2014 click a part to edit just that part';diveBar.style.display='flex'}
+function diveEnter(p){const gr=diveGroup(p);if(!gr)return false;dive={key:gr.key,name:gr.name,set:new Set(gr.ids)};diveShow();msg('Inside '+gr.name+'. Click any part to pick just that one. Esc comes out.');return true}
+function diveLeave(){if(!dive)return;dive=null;diveShow()}
+addEventListener('keydown',function(e){const t=document.activeElement&&document.activeElement.tagName||'';if(/INPUT|TEXTAREA|SELECT/.test(t))return;
+  if(e.code==='Escape'&&dive){diveLeave();return}
+  if((e.code==='Enter'||e.code==='NumpadEnter')&&!dive&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.shiftKey&&t!=='BUTTON'&&!playing&&!running&&!rigOn&&!animOn()){
+    const p=sel.length?byId(sel[0]):null;if(p&&diveGroup(p)&&diveEnter(p))e.preventDefault()}});
+setInterval(function(){if(dive&&(playing||running))diveLeave()},400);
 cv.onpointerdown=function(e){if(VIEWONLY&&!playing)return;try{cv.setPointerCapture(e.pointerId)}catch(x){}lx=e.clientX;ly=e.clientY;if(e.button===2){look=true;return}if(e.button===0&&playing){lcT=performance.now();screenClick(e);playClick(e);return}if(e.button!==0||playing)return;if(animOn()){ray.setFromCamera(ndc(e),camera);const gh=ray.intersectObjects(gizmo,false)[0];if(gh){animGizStart(gh.object,e);return}animClick(e);return}
   ray.setFromCamera(ndc(e),camera);let h=ray.intersectObjects(gizmo,false)[0];
   if(h&&h.object.userData.rotAx!==undefined){snapSel();const rs=rotStart(h.object.userData.rotAx,e);if(rs)gd=rs;return}
@@ -4201,7 +4225,7 @@ cv.onpointerdown=function(e){if(VIEWONLY&&!playing)return;try{cv.setPointerCaptu
   if(h){snapSel();gd={a:h.object.userData.axis.clone(),rig:rigOn,p:rigOn?byId(selJ):byId(sel[0])};return}
   if(rigOn){h=ray.intersectObjects(balls,false)[0];if(h){selJ=h.object.userData.joint;buildEdit();return}}
   if(e.shiftKey&&!rigOn){marqueeSel(e);return}
-  h=ray.intersectObjects(pickSel(),false)[0];const was=!!h&&sel.indexOf(h.object.userData.id)>=0;pick(h?h.object.userData.id:null,e.ctrlKey||e.shiftKey||e.metaKey,e.altKey);
+  h=ray.intersectObjects(pickSel(),false)[0];const inD=!!(dive&&h&&dive.set.has(h.object.userData.id));if(dive&&!inD)diveLeave();const was=!!h&&sel.indexOf(h.object.userData.id)>=0;pick(h?h.object.userData.id:null,e.ctrlKey||e.shiftKey||e.metaKey,e.altKey||inD);
   /* Alt+click picks just that one part (not its whole rig or model) and shows the resize handles for it */
   if(h&&e.altKey&&indivOn()&&!rigOn){try{setTool('scale')}catch(x){}return}
   /* only something that was already selected before this click can be dragged, so a first click just selects */
@@ -4267,7 +4291,7 @@ function rmoveDrag(e){const g=gd;if(!g.box)g.box=dragBox();const b=g.box;if(!b)r
   for(let i=0;i<3;i++){b.lo[i]+=d[i];b.hi[i]+=d[i];b.c[i]+=d[i]}
   editG.children.forEach(function(o){const f=o.userData.fx;if(f){f.b.x+=d[0];f.b.y+=d[1];f.b.z+=d[2]}else{o.position.x+=d[0];o.position.y+=d[1];o.position.z+=d[2]}});
   quickSync(g.mset,g.rig)}
-cv.ondblclick=function(e){if(playing||rigOn||animOn())return;ray.setFromCamera(ndc(e),camera);{const gh=ray.intersectObjects(gizmo,false)[0];if(gh&&gh.object.userData.rotAx!==undefined){rotReset();return}}const h=ray.intersectObjects(pickSel(),false)[0];if(h)pick(h.object.userData.id,false,true)};
+cv.ondblclick=function(e){if(playing||rigOn||animOn())return;ray.setFromCamera(ndc(e),camera);{const gh=ray.intersectObjects(gizmo,false)[0];if(gh&&gh.object.userData.rotAx!==undefined){rotReset();return}}const h=ray.intersectObjects(pickSel(),false)[0];if(h){const q=byId(h.object.userData.id);if(q&&!dive)diveEnter(q);pick(h.object.userData.id,false,true)}};
 /* Mouse-look only lasts while the right button is really held. If the release was missed (alt-tab, two-finger tap, context menu), look stayed on and the camera (and your character, which follows it) kept spinning with every mouse move. */
 function dropLook(){if(!look)return;look=false;if(document.pointerLockElement===cv&&!lockMode())try{document.exitPointerLock()}catch(x){}}
 addEventListener('blur',dropLook);document.addEventListener('visibilitychange',function(){if(document.hidden)dropLook()});
@@ -5224,7 +5248,7 @@ function touchTick(){const hs=P.scripts.filter(function(sc){return sc[0].t==='to
     const ps=[];roots(h.o,true).forEach(function(r){if(r.av||!inW(r)||goneKey('rig:'+r.id))return;rigParts(r).forEach(function(q){if(!q.stab)ps.push(q)})});
     if(!ps.length){if(!set.warned){set.warned=1;log('Warning: "when this block touched" needs a script that belongs to an object. Use the + next to an object in the Explorer.')}return}
     ents.forEach(function(e){let hit=false;
-      for(let i=0;i<ps.length&&!hit;i++){const q=ps[i],r0=rootOf(q),o=RO[r0.id]||[0,0],L=colsOf(q);if(L){if(colNear(q,L,o,e.x,e.z,R+.5)&&colTouch(q,L,o,e.x,e.z,e.fy,R))hit=true;continue}
+      for(let i=0;i<ps.length&&!hit;i++){const q=ps[i],r0=rootOf(q),o=RO[r0.id]||[0,0],L=colsOf(q);if(L){if(colNear(q,L,o,e.x,e.z,R+.5)&&colTouch(q,L,o,e.x,e.z,e.fy-(RY[r0.id]||0),R))hit=true;continue}
         const eq=eh(q),hx=eq[0],hy=eq[1],hz=eq[2],bx=q.pos[0]+o[0],bz=q.pos[2]+o[1],by=q.pos[1]+(RY[r0.id]||0);
         if(by+hy<e.fy-.2||by-hy>e.fy+6)continue;
         const dx=e.x-Math.max(bx-hx,Math.min(bx+hx,e.x)),dz=e.z-Math.max(bz-hz,Math.min(bz+hz,e.z));if(dx*dx+dz*dz<=R*R)hit=true}
@@ -8821,12 +8845,13 @@ function hsv(h,s,v){const i=Math.floor(h*6)%6,f=h*6-Math.floor(h*6),p=v*(1-s),q=
      Instance.new("Part") (+ .Name .Size .Position/.CFrame .Color .Transparency .Parent .Destroy() :IsTouchingPlayer()), CFrame.new, player.Position, player.Character.HumanoidRootPart, game.Players.LocalPlayer (parts made in Lua are not solid yet)
      activateParticle(emitterName, x, y, z, secs) and particle(...) -> "activate particle _ at x _ y _ z _ for _ secs" (block id actpart)
    Particles: emitters live in P.particles (made in the Explorer under Particles; the code is the "Particles" section, search ptStep/ptActivate/ptUI).
+   (batch 4) part("Name") targets ONLY that one part: Color/Size/Transparency/Visible/Touched affect just it, and Position puts that part there (pieces welded to it come along). Models are found by name too. Reach pieces with Model.Piece, Model:FindFirstChild("Piece"), part("Piece","Model"), part("Model.Piece"), :GetChildren(), :GetDescendants(). Editor: double-click / Enter goes inside a model (see diveEnter).
    Not in Lua yet: changing an emitter's colour/size/image, other blocks that were added before this note. Add them when asked. */
 /* ---------- Lua-made parts (Instance.new("Part")). They live in their own group, are removed when the game stops, and are NOT solid (players walk through them). ---------- */
 const LPG=new THREE.Group(),LPL=[],LPN=new Map();let LPin=false,LPwarned=false,LPuid=0;
 function lpAdd(st){if(!LPin){scene.add(LPG);LPin=true}if(!st.mesh.parent)LPG.add(st.mesh)}
-const LPK=[],LPC=[],LPJ=[],LPQ=[],LPH=[],ETL=new Map(),LATT=new Map();
-function lpClear(){LPL.splice(0).forEach(function(q){if(q.mesh.parent)q.mesh.parent.remove(q.mesh);q.mesh.geometry.dispose();q.mesh.material.dispose();q.dead=true;q.onTouch.length=0;q.onEnd.length=0});LPN.clear();LPK.length=0;LPC.length=0;LPJ.length=0;LPQ.length=0;LPH.length=0;ETL.clear();LATT.clear()}
+const LPK=[],LPC=[],LPJ=[],LPQ=[],LPH=[],ETL=new Map(),LATT=new Map(),PWARN=new Set();
+function lpClear(){LPL.splice(0).forEach(function(q){if(q.mesh.parent)q.mesh.parent.remove(q.mesh);q.mesh.geometry.dispose();q.mesh.material.dispose();q.dead=true;q.onTouch.length=0;q.onEnd.length=0});LPN.clear();LPK.length=0;LPC.length=0;LPJ.length=0;LPQ.length=0;LPH.length=0;ETL.clear();LATT.clear();PWARN.clear()}
 function lpHit(st,m){const q=st.mesh;return Math.abs(m.x-q.position.x)<=q.scale.x/2+1&&Math.abs(m.z-q.position.z)<=q.scale.z/2+1&&Math.abs(m.y-q.position.y)<=q.scale.y/2+3}
 /* touch events for Lua-made parts: checked ~16 times a second while the game runs */
 setInterval(function(){try{if(!(running||playing))return;
@@ -8839,10 +8864,11 @@ function etlTick(){if(!ETL.size||!(running||playing))return;const T=byId(P.avId)
   const R=1.15,f0=feet0(),ents=[{key:'main',x:T.pos[0]+S.x,z:T.pos[2]-S.y,fy:f0+S.h}];
   NP.forEach(function(n){if(n.net||goneKey('np:'+n.name))return;const q=n.g.position;ents.push({key:'np:'+n.name,x:T.pos[0]+q.x,z:T.pos[2]+q.z,fy:f0+q.y})});
   ETL.forEach(function(rec){if(!rec.on.length&&!rec.end.length)return;
-    const ps=[];roots(rec.o,true).forEach(function(r){if(r.av||!inW(r)||goneKey('rig:'+r.id))return;rigParts(r).forEach(function(q){if(!q.stab)ps.push(q)})});
+    const ps=[];if(byModel(rec.o)){roots(rec.o,true).forEach(function(r){if(r.av||!inW(r)||goneKey('rig:'+r.id))return;rigParts(r).forEach(function(q){if(!q.stab)ps.push(q)})})}
+    else{const q=byId(rec.o);if(q&&!q.stab){const r=rootOf(q);if(!r.av&&inW(r)&&!goneKey('rig:'+r.id))ps.push(q)}}/* a single named part only touches as itself, not as the whole rig it is welded into */
     if(!ps.length)return;
     ents.forEach(function(e){let hit=false;
-      for(let i=0;i<ps.length&&!hit;i++){const q=ps[i],r0=rootOf(q),o=RO[r0.id]||[0,0],L=colsOf(q);if(L){if(colNear(q,L,o,e.x,e.z,R+.5)&&colTouch(q,L,o,e.x,e.z,e.fy,R))hit=true;continue}
+      for(let i=0;i<ps.length&&!hit;i++){const q=ps[i],r0=rootOf(q),o=RO[r0.id]||[0,0],L=colsOf(q);if(L){if(colNear(q,L,o,e.x,e.z,R+.5)&&colTouch(q,L,o,e.x,e.z,e.fy-(RY[r0.id]||0),R))hit=true;continue}
         const eq=eh(q),hx=eq[0],hy=eq[1],hz=eq[2],bx=q.pos[0]+o[0],bz=q.pos[2]+o[1],by=q.pos[1]+(RY[r0.id]||0);
         if(by+hy<e.fy-.2||by-hy>e.fy+6)continue;
         const dx=e.x-Math.max(bx-hx,Math.min(bx+hx,e.x)),dz=e.z-Math.max(bz-hz,Math.min(bz+hz,e.z));if(dx*dx+dz*dz<=R*R)hit=true}
@@ -8890,42 +8916,77 @@ const hostApi={
     g.set('BrickColor',T({new:function(n){return fromThree(toColor(n))},Random:function(){return fromThree(new THREE.Color().setHSL(Math.random(),.7,.55))}}));
     /* parts */
     const targetByName=function(n){n=String(n);let m=null;try{m=byModel(n)}catch(e){}if(m)return n;
-      const lc=n.toLowerCase(),p=P.parts.find(function(q){return q.name===n})||P.parts.find(function(q){return String(q.name).toLowerCase()===lc});return p?p.id:null};
+      const lc=n.toLowerCase();
+      let p=P.parts.find(function(q){return q.name===n});if(p)return p.id;
+      m=P.models.find(function(q){return q.name===n});if(m)return m.id;
+      p=P.parts.find(function(q){return String(q.name).toLowerCase()===lc});if(p)return p.id;
+      m=P.models.find(function(q){return String(q.name).toLowerCase()===lc});return m?m.id:null};
     const hosts=new Map();
+    /* a model or rig finds the pieces inside it by name: workspace.Rig.Rarm | Rig:FindFirstChild("Rarm") | part("Rarm","Rig") | part("Rig.Rarm") */
+    const subOf=function(o,name){const nm=String(name),lc=nm.toLowerCase();let id=null;
+      if(byModel(o)){const km=mKids(o).find(function(m){return String(m.name).toLowerCase()===lc});
+        if(km)id=km.id;else{const ps=partsOf(o),q=ps.find(function(x){return x.name===nm})||ps.find(function(x){return String(x.name).toLowerCase()===lc});if(q)id=q.id}}
+      else{const q0=byId(o);if(q0){const q=treeOf(q0).find(function(x){return x.id!==q0.id&&(x.name===nm||String(x.name).toLowerCase()===lc)});if(q)id=q.id}}
+      return id?partHost(id):undefined};
+    const subList=function(o,deep){const t=new LuaTable();let i=0;
+      if(byModel(o)){if(!deep)mKids(o).forEach(function(m){t.set(++i,partHost(m.id))});(deep?partsOf(o):partsDirect(o)).forEach(function(q){t.set(++i,partHost(q.id))})}
+      else{const q0=byId(o);if(q0)(deep?treeOf(q0).slice(1):kids(q0)).forEach(function(q){t.set(++i,partHost(q.id))})}
+      return t};
     const partHost=function(o){if(hosts.has(o))return hosts.get(o);
-      const info=function(){const rs=roots(o,true);let ps=[];rs.forEach(function(r){ps=ps.concat(rigParts(r))});return{rs:rs,ps:ps}};
+      const isM=!!byModel(o);
+      /* a model counts every piece inside it; a single part counts only itself (so part("Rarm") never recolours or moves-as-if-it-were the whole rig) */
+      const info=function(){const rs=roots(o,true);let ps=[];
+        if(isM){rs.forEach(function(r){ps=ps.concat(rigParts(r))});partsOf(o).forEach(function(q){if(ps.indexOf(q)<0)ps.push(q)})}
+        else{const q=byId(o);if(q)ps=[q]}
+        return{rs:rs,ps:ps}};
       const curPos=function(r){const q=RO[r.id]||[0,0];return[r.pos[0]+q[0],r.pos[1]+(RY[r.id]||0),r.pos[2]+q[1]]};
       const setPos=function(rs,x,y,z){if(!rs.length)return;const c0=curPos(rs[0]),dx=x-c0[0],dy=y-c0[1],dz=z-c0[2];
         rs.forEach(function(r){const c=curPos(r),q=RO[r.id]||(RO[r.id]=[0,0]);q[0]=c[0]+dx-r.pos[0];q[1]=c[2]+dz-r.pos[2];RY[r.id]=c[1]+dy-r.pos[1]})};
+      /* put THIS part at x,y,z. A part that is welded under another one brings the pieces it is welded to along (like Roblox) */
+      const place=function(I,p){if(isM||!I.ps[0]){setPos(I.rs,p[0],p[1],p[2]);return}
+        const q=I.ps[0],r=rootOf(q);setPos([r],p[0]-(q.pos[0]-r.pos[0]),p[1]-(q.pos[1]-r.pos[1]),p[2]-(q.pos[2]-r.pos[2]))};
       const mesh=function(q){return M[q.id]};
       const h=new Host(function(k){
         const key=String(k).toLowerCase(),I=info(),r0=I.rs[0],p0=I.ps[0],m0=p0&&mesh(p0);
         switch(key){
-          case'name':return byModel(o)?String(o):(r0?r0.name:String(o));
+          case'name':{if(isM){const md=byModel(o);return md?md.name:String(o)}return p0?p0.name:String(o)}
+          case'classname':return isM?'Model':'Part';
           case'color':case'colour':case'brickcolor':return m0?fromThree(m0.material.color):undefined;
           case'transparency':return m0?1-m0.material.opacity:0;
-          case'position':return r0?V3.apply(null,curPos(r0)):undefined;
+          case'position':{if(isM)return r0?V3.apply(null,curPos(r0)):undefined;if(!p0)return undefined;const r=rootOf(p0),c=curPos(r);return V3(p0.pos[0]+c[0]-r.pos[0],p0.pos[1]+c[1]-r.pos[1],p0.pos[2]+c[2]-r.pos[2])}
           case'size':return p0?V3(p0.size[0],p0.size[1],p0.size[2]):undefined;
           case'visible':return m0?m0.visible:undefined;
-          case'moveto':return function(self,v){const p=vx(v),I2=info();setPos(I2.rs,p[0],p[1],p[2])};
+          case'moveto':return function(self,v){place(info(),vx(v))};
           case'hide':return function(){info().ps.forEach(function(q){const m=mesh(q);if(m)m.visible=false})};
           case'show':return function(){info().ps.forEach(function(q){const m=mesh(q);if(m&&!q.stab)m.visible=true})};
+          case'findfirstchild':case'waitforchild':return function(self,n){return subOf(o,n)};
+          case'getchildren':return function(){return subList(o,false)};
+          case'getdescendants':return function(){return subList(o,true)};
           case'getattribute':case'setattribute':return attrFor('p:'+String(o),key);
           case'touched':case'touchended':{let rec=ETL.get(o);if(!rec){rec={o:o,on:[],end:[],set:new Set()};ETL.set(o,rec)}
             return mkEvent(key==='touched'?rec.on:rec.end,function(fn){return{fire:function(pk){runCb(fn,[playerOf(pk)])}}})}
-        }return undefined},
+        }return subOf(o,k)},
       function(k,v){
         const key=String(k).toLowerCase(),I=info();
         switch(key){
           case'color':case'colour':case'brickcolor':{const col=toColor(v);I.ps.forEach(function(q){const m=mesh(q);if(!m||q.stab)return;m.material.color.copy(col);if(q.mat==='neon'&&m.material.emissive)m.material.emissive.copy(col)});return}
           case'transparency':{const t=Math.min(1,Math.max(0,num(v)));I.ps.forEach(function(q){const m=mesh(q);if(!m)return;const mt=m.material;if(!mt.transparent){mt.transparent=true;mt.needsUpdate=true}mt.opacity=1-t});return}
-          case'position':{const p=vx(v);setPos(I.rs,p[0],p[1],p[2]);return}
+          case'position':{place(I,vx(v));return}
           case'size':{const s=vx(v);I.ps.forEach(function(q){const m=mesh(q);if(m&&q.size[0]&&q.size[1]&&q.size[2])m.scale.set(s[0]/q.size[0],s[1]/q.size[1],s[2]/q.size[2])});return}
           case'visible':{const on=truthy(v);I.ps.forEach(function(q){const m=mesh(q);if(m&&(!q.stab||!on))m.visible=on});return}
         }throw new LuaError("cannot set '"+String(k)+"' (try Color, Position, Size, Transparency or Visible)",0)},
       'Part');
       hosts.set(o,h);return h};
-    const getPart=function(n){const t=targetByName(n);if(t)return partHost(t);const lp=LPN.get(String(n).toLowerCase());return lp?lp.h:undefined};
+    /* part("Name") | part("Piece","Model") | part("Model.Piece"). Warns once (instead of failing with "attempt to index nil") when nothing has that name. */
+    const getPart=function(n,inside,quiet){
+      if(inside!==undefined&&inside!==null){const mt=targetByName(inside);if(mt){const sh=subOf(mt,n);if(sh)return sh}}
+      const t=targetByName(n);if(t)return partHost(t);
+      const s=String(n),lp=LPN.get(s.toLowerCase());if(lp)return lp.h;
+      if(/[./]/.test(s)){const segs=s.split(/[./]/).filter(Boolean);let h=segs.length?getPart(segs[0],undefined,true):undefined;
+        for(let i=1;h&&i<segs.length;i++){h=(h instanceof Host&&h.g)?h.g(segs[i]):undefined;if(typeof h==='function')h=undefined}
+        if(h instanceof Host)return h}
+      if(!quiet){const key=s.toLowerCase();if(!PWARN.has(key)){PWARN.add(key);log('Warning: no part or model named "'+s+'" was found. Check the spelling in the Explorer (capital letters do not matter).')}}
+      return undefined};
     const player=new Host(function(k){const key=String(k).toLowerCase();if(key==='name')return P.player&&P.player.name||'Player';return undefined},null,'Player');
     const me=owner?partHost(owner):player;
     const lighting=new Host(function(k){const key=String(k).toLowerCase();
@@ -8935,7 +8996,7 @@ const hostApi={
       function(k,v){const key=String(k).toLowerCase();if(key==='realism'){RZ.rt=truthy(v);try{applyEnv()}catch(e){}return}if(key==='sunflare'||key==='flare'){RZ.frt=truthy(v);return}if(key==='preset'){lightSet(String(v));return}throw new LuaError("cannot set Lighting."+String(k),0)},'Lighting');
     const workspace=new Host(function(k){const key=String(k).toLowerCase();
       if(key==='findfirstchild'||key==='waitforchild')return function(self,n){return getPart(n)};
-      return getPart(k)},null,'Workspace');
+      return getPart(k,undefined,true)},null,'Workspace');
     g.set('workspace',workspace);g.set('Workspace',workspace);g.set('Lighting',lighting);g.set('me',me);g.set('player',player);
     g.set('script',new Host(function(k){return String(k).toLowerCase()==='parent'?me:undefined},null,'Script'));
     g.set('game',new Host(function(k){const key=String(k).toLowerCase();
