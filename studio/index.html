@@ -9181,18 +9181,19 @@ function flareUpdate(){
   camera.getWorldDirection(_fw);_fd.copy(sunS.position).sub(camera.position).normalize();const dot=_fw.dot(_fd);
   const SP=FL.spr,sx=(_sp.x*.5+.5)*w,sy=(-_sp.y*.5+.5)*h,vm=Math.min(w,h),wpp=2*z*Math.tan(camera.fov*Math.PI/360)/(camera.zoom||1)/h;
   const place=function(q,pw,ph,o){o=Math.max(0,Math.min(1,o));if(!(o>=.01)){q.visible=false;return}q.visible=true;q.position.copy(sunS.position);q.scale.set(pw*wpp,ph*wpp,1);q.material.opacity=o};
+  /* is the sun hidden behind terrain, a part or the avatar? (if so, ALL sun effects turn off instantly) */
+  if(true){let hit=0;const o=camera.position;
+    if(TER.on){for(let i=1;i<=28;i++){const t=i*i*.6,x=o.x+_fd.x*t,zz=o.z+_fd.z*t,y=o.y+_fd.y*t;if(terH(x,zz)>y){hit=1;break}}}
+    if(!hit&&PG){_rc.set(o,_fd);_rc.far=600;try{const r=_rc.intersectObject(PG,true);for(let i=0;i<r.length;i++){const m=r[i].object;if(m.visible&&m.material&&m.material.opacity>.5&&!m.userData.isL){hit=1;break}}}catch(e){}}
+    FL.tgt=hit?0:1}
+  FL.occ=FL.tgt;
+  if(!FL.tgt){flHide();return}
   if(!full){/* graphics High/Ultra: only the soft glow, same look as before */
     const ev=(sunS.position.y-camera.position.y)/700,fade=ev>-.02?1:0,edge=Math.max(Math.abs(_sp.x),Math.abs(_sp.y))<1.6?1:0;
     place(SP.soft,h,h,fade*edge*soft);SP.veil.visible=SP.halo.visible=SP.core.visible=SP.streak.visible=SP.rays.visible=SP.ring.visible=false;if(RZ.ov)RZ.ov.style.display='none';return}
   SP.soft.visible=false;
   const gl=Math.max(0,P.env&&P.env.glare!=null?P.env.glare:1),s=Math.min(1,sun.intensity/.7)*gl*(dot>.03?1:0);
   if(dot<=.03||s<.01){flHide();return}
-  /* is the sun hidden behind terrain, a part or the avatar? (only used to fade the ghost rings; the glow itself is depth tested) */
-  if(true){let hit=0;const o=camera.position;
-    if(TER.on){for(let i=1;i<=28;i++){const t=i*i*.6,x=o.x+_fd.x*t,zz=o.z+_fd.z*t,y=o.y+_fd.y*t;if(terH(x,zz)>y){hit=1;break}}}
-    if(!hit&&PG){_rc.set(o,_fd);_rc.far=600;try{const r=_rc.intersectObject(PG,true);for(let i=0;i<r.length;i++){const m=r[i].object;if(m.visible&&m.material&&m.material.opacity>.5&&!m.userData.isL){hit=1;break}}}catch(e){}}
-    FL.tgt=hit?0:1}
-  FL.occ=FL.tgt;
   const vd=Math.min(.9*Math.hypot(Math.max(sx,w-sx),Math.max(sy,h-sy)),6*h);
   SP.rays.material.rotation=_sp.x*.5+_sp.y*.2;place(SP.veil,vd,vd,s*.38);place(SP.halo,.85*vm,.85*vm,s*.9);place(SP.rays,1.3*vm,1.3*vm,s*.14);place(SP.ring,2.1*vm,2.1*vm,s*.9);place(SP.core,.13*vm,.13*vm,s*1.1);place(SP.streak,2.7*vm,.06*vm,s*.85);
   flOverlay();
