@@ -7486,7 +7486,7 @@ function itemRoom2(mn,E,ed){
 async function studioHome(){
   const ov=el('div','screen');ov.id='shome';ov.style.zIndex=200;
   const bar=el('header','bar'),lg=el('div','logo sm');lg.innerHTML='<span class="blk b1"></span><span class="blk b2"></span><span class="blk b3"></span>';lg.append(el('h1','','BrixBlox Studio'));
-  const who=el('div','who');who.append(mb('Create a new game','',function(){pickTemplate(function(){reloadInto('__new__')})}),mb('← BrixBlox','ghost',function(){location.href=SITE_URL}));bar.append(lg,who);
+  const who=el('div','who');who.append(mb('Continue editing: '+String(P.name||'your game').slice(0,24),'',function(){ov.remove()}),mb('Create a new game','ghost',function(){pickTemplate(function(){reloadInto('__new__')})}),mb('← BrixBlox','ghost',function(){location.href=SITE_URL}));bar.append(lg,who);
   const pg=el('div','page');pg.style.maxWidth='1280px';pg.append(el('h2','big','Your games'));const box=el('div');pg.append(box);ov.append(bar,pg);document.body.append(ov);
   const map={},L=glib();
   Object.keys(L).forEach(function(id){const g=L[id];if(mineG(g)&&!coGuestG(g)&&id.indexOf('acc_')!==0&&id.indexOf('avatar_')!==0&&id.indexOf('sys_')!==0)map[id]={id:id,name:g.name||'Untitled',vis:g.vis||'private',at:g.at||0,dr:!!g.dr}});
@@ -7546,8 +7546,11 @@ setInterval(spotSave,2000);
 addEventListener('pagehide',spotSave);addEventListener('beforeunload',spotSave);
 document.addEventListener('visibilitychange',function(){if(document.hidden)spotSave()});
 $('s-back').addEventListener('pointerdown',spotSave,true);
-/* the "Your games" start page only shows when there is no saved spot to go back to (My games in the top bar still lists everything) */
-if(HOME&&!VIEWONLY&&!(gameId&&RELOADED)&&!SPOT)studioHome();
+/* opening Studio from the site shows the "Your games" home page (Continue editing there puts you back in your saved spot); a page refresh stays in your game */
+if(HOME&&!VIEWONLY&&!(gameId&&RELOADED))studioHome();
+/* clicking "BrixBlox Studio" in the top bar goes to the Studio home page at any time */
+{const lg=document.querySelector('#studio .logo');if(lg&&!VIEWONLY){lg.style.cursor='pointer';lg.title='Studio home: all your games';lg.setAttribute('role','button');lg.tabIndex=0;
+  const go=function(){if(!$('shome'))studioHome()};lg.addEventListener('click',go);lg.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}})}}
 /* Real play (opened from the BrixBlox site): never show the Studio. Switch on the play-only layout (it hides the code, parts, explorer and every editor button),
    make the stage fill the whole window, start the game straight away, and tell the site the game is ready. The .vo styles were already in the file, but nothing was turning them on. */
 if(VIEWONLY){try{$('studio').classList.add('vo')}catch(e){}
