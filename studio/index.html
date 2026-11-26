@@ -9177,6 +9177,7 @@ function flareUpdate(){
   flInit();camera.updateMatrixWorld();
   _fv.copy(sunS.position).applyMatrix4(camera.matrixWorldInverse);const z=-_fv.z;if(z<=1){flHide();return}
   _sp.copy(sunS.position).project(camera);
+  if(Math.abs(_sp.x)>1||Math.abs(_sp.y)>1){flHide();return}/* sun is outside the frame: everything off instantly */
   camera.getWorldDirection(_fw);_fd.copy(sunS.position).sub(camera.position).normalize();const dot=_fw.dot(_fd);
   const SP=FL.spr,sx=(_sp.x*.5+.5)*w,sy=(-_sp.y*.5+.5)*h,vm=Math.min(w,h),wpp=2*z*Math.tan(camera.fov*Math.PI/360)/(camera.zoom||1)/h;
   const place=function(q,pw,ph,o){o=Math.max(0,Math.min(1,o));if(!(o>=.01)){q.visible=false;return}q.visible=true;q.position.copy(sunS.position);q.scale.set(pw*wpp,ph*wpp,1);q.material.opacity=o};
