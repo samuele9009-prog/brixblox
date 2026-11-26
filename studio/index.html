@@ -5155,7 +5155,7 @@ function npFree(n){try{scene.remove(n.g);scene.remove(n.tag)}catch(e){}
   try{if(n.bub){scene.remove(n.bub.sp);n.bub.t.dispose();n.bub.sp.material.dispose()}}catch(e){}}
 function dropNP(n){npFree(n);
   const i=NP.indexOf(n);if(i>=0)NP.splice(i,1);S.oth=S.oth.filter(function(x){return x!==n.name});delete RAG['np:'+n.name];delete RSZ['np:'+n.name];delete SKIN['np:'+n.name];TM.forEach(function(st){st.delete('np:'+n.name)});renderParts();gmPlRefresh();firePJ('pleave',n.name)}
-function endGameFor(kind,why,b){S.stop=true;running=false;playing=false;sync();resetWorld();
+function endGameFor(kind,why,b){S.stop=true;running=false;playing=false;sync();resetWorld();try{camRestore()}catch(e){}
   mdl(kind==='banned'?'You were banned from this game':'You were kicked from this game',function(c,close){
     c.append(el('p','','Reason: '+(why||'No reason given')));
     if(kind==='banned')c.append(el('p','note','Ban length: '+(b.until===null?'forever':leftText(b))+'. You own this game, so you can lift the ban under Roster in the Explorer.'));
@@ -6678,8 +6678,9 @@ function boot(my){reser();try{spawnHere()}catch(e){}const hs=P.scripts.filter(fu
 $('s-run').onclick=async function(){this.blur();AIWSEEN.clear();if(banGate())return;S.stop=true;resetWorld();const my=S;$('s-out').textContent='';OUTB.length=0;try{outLive()}catch(e){};setRun(true);
   const b=boot(my);await b.done;
   if(my===S&&!b.hs.some(function(s){return EVH.indexOf(s[0].t)>=0}))setRun(false)};
-$('s-play').onclick=function(){this.blur();AIWSEEN.clear();if(banGate())return;S.stop=true;sel=[];selModel=null;selSvc=null;selJ=null;resetWorld();cd=cdT=P.rules.cam;CAMN=0;camD=null;avHid=false;playing=true;sync();stageApply();buildEdit();$('s-out').textContent='';OUTB.length=0;try{outLive()}catch(e){};boot(S)};
-$('s-stop').onclick=function(){if(VIEWONLY)showLeaving();S.stop=true;running=false;playing=false;sync();resetWorld();if(VIEWONLY)leaveGame()};
+let CAMSAVE=null;function camRestore(){if(CAMSAVE){cam.x=CAMSAVE.x;cam.y=CAMSAVE.y;cam.z=CAMSAVE.z;cam.yaw=CAMSAVE.yaw;cam.pit=CAMSAVE.pit;CAMSAVE=null}}
+$('s-play').onclick=function(){this.blur();AIWSEEN.clear();if(banGate())return;CAMSAVE={x:cam.x,y:cam.y,z:cam.z,yaw:cam.yaw,pit:cam.pit};S.stop=true;sel=[];selModel=null;selSvc=null;selJ=null;resetWorld();cd=cdT=P.rules.cam;CAMN=0;camD=null;avHid=false;playing=true;sync();stageApply();buildEdit();$('s-out').textContent='';OUTB.length=0;try{outLive()}catch(e){};boot(S)};
+$('s-stop').onclick=function(){if(VIEWONLY)showLeaving();S.stop=true;running=false;playing=false;sync();resetWorld();camRestore();if(VIEWONLY)leaveGame()};
 /* Ctrl+L: start testing the game (Play). Press it again to stop. */
 addEventListener('keydown',function(e){if(e.code!=='KeyL'||!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey||e.repeat)return;
   e.preventDefault();if($('studio').getClientRects().length===0)return;
