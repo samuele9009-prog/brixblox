@@ -7531,7 +7531,23 @@ async function studioHome(){
   officialBox();
   if(!all.length)allBox.append(el('p','empty','No games found.'));else cards(allBox,all,true)}
 const RELOADED=(function(){try{const n=performance.getEntriesByType('navigation')[0];return !!n&&n.type==='reload'}catch(e){return false}})();
-if(HOME&&!VIEWONLY&&!(gameId&&RELOADED))studioHome();
+/* Remember where you were in Studio (which game and where the camera was) so leaving and coming back, or logging out and back in on this computer, puts you in the same spot. */
+const SPOTK='brixblox-spot';
+function spotUid(){return ME?String(ME.id||ME.username||''):''}
+function spotRead(){try{const o=JSON.parse(store.get(SPOTK)),c=o&&o.c;if(o&&gameId&&o.u===spotUid()&&o.g===gameId&&c&&[c.x,c.y,c.z,c.yaw,c.pit].every(function(v){return typeof v==='number'&&isFinite(v)}))return o}catch(e){}return null}
+let spotLast='';
+function spotSave(){try{if(VIEWONLY||!ME||!gameId||playing||running||animOn())return;
+  const c={x:+cam.x.toFixed(2),y:+cam.y.toFixed(2),z:+cam.z.toFixed(2),yaw:+cam.yaw.toFixed(3),pit:+cam.pit.toFixed(3)},k=gameId+'|'+JSON.stringify(c);
+  if(![c.x,c.y,c.z,c.yaw,c.pit].every(isFinite)||k===spotLast)return;spotLast=k;
+  store.set(SPOTK,JSON.stringify({u:spotUid(),g:gameId,c:c,at:Date.now()}))}catch(e){}}
+const SPOT=VIEWONLY?null:spotRead();
+if(SPOT){Object.assign(cam,SPOT.c);spotLast=SPOT.g+'|'+JSON.stringify(SPOT.c)}
+setInterval(spotSave,2000);
+addEventListener('pagehide',spotSave);addEventListener('beforeunload',spotSave);
+document.addEventListener('visibilitychange',function(){if(document.hidden)spotSave()});
+$('s-back').addEventListener('pointerdown',spotSave,true);
+/* the "Your games" start page only shows when there is no saved spot to go back to (My games in the top bar still lists everything) */
+if(HOME&&!VIEWONLY&&!(gameId&&RELOADED)&&!SPOT)studioHome();
 /* Real play (opened from the BrixBlox site): never show the Studio. Switch on the play-only layout (it hides the code, parts, explorer and every editor button),
    make the stage fill the whole window, start the game straight away, and tell the site the game is ready. The .vo styles were already in the file, but nothing was turning them on. */
 if(VIEWONLY){try{$('studio').classList.add('vo')}catch(e){}
