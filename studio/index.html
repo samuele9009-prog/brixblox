@@ -2238,7 +2238,7 @@ function evalPose(A,t){const rl=A.rl;if(!rl)return evalPose0(A,t);
 function curAName(A){for(const n in P.anims)if(P.anims[n]===A)return n;return ''}
 function evalPose0(A,t){const o={};for(const id in A.keys){const k=A.keys[id].slice().sort(function(a,b){return a.t-b.t});if(!k.length)continue;
   const f=k[0],l=k[k.length-1];
-  if(t<=f.t)o[id]=f.r;else if(t>=l.t)o[id]=l.r;else for(let i=0;i<k.length-1;i++)if(t>=k[i].t&&t<=k[i+1].t){const a=k[i],b=k[i+1],u=(t-a.t)/((b.t-a.t)||1),p0=k[i-1]||a,p3=k[i+2]||b;o[id]=interpRot(a,b,p0,p3,u);break}}evalPosKeys(A,t,o);return o}
+  if(t<=f.t)o[id]=f.r;else if(t>=l.t)o[id]=l.r;else for(let i=0;i<k.length-1;i++)if(t>=k[i].t&&t<=k[i+1].t){const a=k[i],b=k[i+1],u=(t-a.t)/((b.t-a.t)||1),p0=k[i-1]||a,p3=k[i+2]||b;/* two equal keys mean "stay still": hold exactly, no spline overshoot (the bounce) */if(Math.abs(a.r[0]-b.r[0])<.01&&Math.abs(a.r[1]-b.r[1])<.01&&Math.abs(a.r[2]-b.r[2])<.01)o[id]=a.r;else o[id]=interpRot(a,b,p0,p3,u);break}}evalPosKeys(A,t,o);return o}
 function preview(){if(rigOn)return;const A=P.anims[curA];applyPose(animOn()?Object.assign(A?evalPose(A,aT):{},live):{})}
 async function playAnim(name,S,only){let A=P.anims[name];if(!A){log('Error: no animation named "'+name+'"');return}
   if(only){const fk={};for(const id in A.keys)if(only[id])fk[id]=A.keys[id];A=Object.assign({},A,{keys:fk})}
