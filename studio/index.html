@@ -1819,19 +1819,10 @@ function gfxSet(v){if(v!=='auto'&&!GFXT[v])return;GFXL=v;try{localStorage.setIte
 const LRB={1:{hs:'#dbe9ff',hg:'#56606a',hk:1,sc:'#fff0d4',tm:1,ex:1.18,soft:1,g:null},
   2:{hs:'#dbe9ff',hg:'#56606a',hk:1,sc:'#fff0d4',tm:1,ex:1.18,soft:1,g:{f:'contrast(1.06) saturate(1.1)',vig:.1,tint:'#ffcf8a',ta:.04,tb:'soft-light'}},
   3:{hs:'#dbe9ff',hg:'#56606a',hk:1,sc:'#fff0d4',tm:1,ex:1.2,soft:1,g:{f:'contrast(1.08) saturate(1.12)',vig:.12,tint:'#ffcf8a',ta:.05,tb:'soft-light'}}};
-/* Sun glow (High and Ultra): a soft warm bloom around the sun when it is on screen. It fades behind solid parts. */
-let GG=null,ggOcc=0,ggN=0,ggHit=false;const ggR=new THREE.Raycaster(),ggV=new THREE.Vector3(),ggD=new THREE.Vector3();
-function gfxGlow(){const G=gfxEff();
-  if(!GG){if(!G.glow)return;const c=document.querySelector('.cvw');if(!c)return;GG=document.createElement('div');GG.id='gfx-glow';GG.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3;mix-blend-mode:screen;display:none';c.append(GG)}
-  const w=cv.clientWidth,h=cv.clientHeight;if(!G.glow||!sunS.visible||!w||!h){GG.style.display='none';return}
-  camera.updateMatrixWorld();ggV.copy(sunS.position).applyMatrix4(camera.matrixWorldInverse);if(ggV.z>=-1){GG.style.display='none';return}
-  ggV.copy(sunS.position).project(camera);
-  const ev=(sunS.position.y-camera.position.y)/700,fade=Math.max(0,Math.min(1,(ev+.02)/.25)),edge=Math.max(0,Math.min(1,(1.6-Math.max(Math.abs(ggV.x),Math.abs(ggV.y)))/.6));
-  if(playing&&typeof CAMM!=='undefined'&&CAMM&&CAMM.length){if(++ggN%3===0){ggD.copy(sunS.position).sub(camera.position).normalize();ggR.set(camera.position,ggD);ggR.far=600;ggHit=ggR.intersectObjects(CAMM,false).length>0}}else ggHit=false;
-  ggOcc+=((ggHit?1:0)-ggOcc)*.25;
-  const a=fade*edge*(1-ggOcc)*(G===GFXT.ultra?1:.8);if(a<.01){GG.style.display='none';return}
-  const x=(ggV.x*.5+.5)*w,y=(-ggV.y*.5+.5)*h,r2=h*.5;
-  GG.style.display='block';GG.style.background='radial-gradient(circle at '+x.toFixed(0)+'px '+y.toFixed(0)+'px,rgba(255,246,214,'+(a*.6).toFixed(3)+') 0,rgba(255,226,160,'+(a*.28).toFixed(3)+') '+(h*.1).toFixed(0)+'px,rgba(255,206,130,'+(a*.1).toFixed(3)+') '+(r2*.5).toFixed(0)+'px,rgba(255,200,120,0) '+r2.toFixed(0)+'px)'}
+/* Sun glow (High and Ultra graphics): the soft warm bloom around the sun is now drawn by the "Sun glare" code near the end of this file
+   (sprites inside the 3D scene with depth testing, so your avatar, other players, parts and terrain cover it). This only hides the old screen overlay if one exists. */
+let GG=null;
+function gfxGlow(){if(GG)GG.style.display='none'}
 
 /* Realistic reflections: a soft sky-and-ground environment lights every material (metal, glass, water and polished stone reflect it) */
 let ENVOK=false,ENVK=1,ENVT=null;
@@ -8107,7 +8098,7 @@ setInterval(function(){
       [bb,wb].forEach(function(b){b.type='button';b.style.cssText='width:auto;margin:0;min-height:28px;padding:0 10px;font-size:.8rem'});bb.onclick=function(){banDlg(e.un||e.name,e.net)};wb.onclick=function(){warnDlg(e.un||e.name,e.net)};row.append(wb,bb);admPl.append(row)})}
 },500);
 setInterval(admLoad,45000);admLoad();
-setInterval(function(){const w=document.getElementById('bb-who');if(w)w.textContent='build 2026-11-07 \u00b7 signed in as '+(ME?ME.username:'nobody')+' \u00b7 '+(amAdmin()?'admin':'not admin')},5000);setInterval(bansLoad,30000);bansLoad();
+setInterval(function(){const w=document.getElementById('bb-who');if(w)w.textContent='build 2026-11-25 \u00b7 signed in as '+(ME?ME.username:'nobody')+' \u00b7 '+(amAdmin()?'admin':'not admin')},5000);setInterval(bansLoad,30000);bansLoad();
 
 /* Debounced saving: stops the full-project stringify on every keystroke */
 (function(){
@@ -8789,6 +8780,7 @@ function hsv(h,s,v){const i=Math.floor(h*6)%6,f=h*6-Math.floor(h*6),p=v*(1-s),q=
    3) add a matching Lua global below with g.set('name',function(...){...}) inside hostApi (search "g.set('say'"), 4) add it to the list here.
    Lua globals that exist now (Lua function -> block it matches):
      say(text) -> say | lighting(name) -> set lighting to | part(name)/getPart/findPart -> part objects | game, workspace, Lighting, Workspace, me, player, script, BrickColor
+     Lighting.Realism and Lighting.SunFlare (true/false) -> the Atmosphere checkboxes "Realism" and "Sun lens flare" (settings, no block)
      activateParticle(emitterName, x, y, z, secs) and particle(...) -> "activate particle _ at x _ y _ z _ for _ secs" (block id actpart)
    Particles: emitters live in P.particles (made in the Explorer under Particles; the code is the "Particles" section, search ptStep/ptActivate/ptUI).
    Not in Lua yet: changing an emitter's colour/size/image, other blocks that were added before this note. Add them when asked. */
@@ -8858,8 +8850,9 @@ const hostApi={
     const me=owner?partHost(owner):player;
     const lighting=new Host(function(k){const key=String(k).toLowerCase();
       if(key==='realism')return RZ.on();
+      if(key==='sunflare'||key==='flare')return RZ.flareOn();
       if(key==='preset'||key==='set'||key==='setpreset')return function(self,n){lightSet(String(n===undefined?self:n))};return undefined},
-      function(k,v){const key=String(k).toLowerCase();if(key==='realism'){RZ.rt=truthy(v);try{applyEnv()}catch(e){}return}if(key==='preset'){lightSet(String(v));return}throw new LuaError("cannot set Lighting."+String(k),0)},'Lighting');
+      function(k,v){const key=String(k).toLowerCase();if(key==='realism'){RZ.rt=truthy(v);try{applyEnv()}catch(e){}return}if(key==='sunflare'||key==='flare'){RZ.frt=truthy(v);return}if(key==='preset'){lightSet(String(v));return}throw new LuaError("cannot set Lighting."+String(k),0)},'Lighting');
     const workspace=new Host(function(k){const key=String(k).toLowerCase();
       if(key==='findfirstchild'||key==='waitforchild')return function(self,n){return getPart(n)};
       return getPart(k)},null,'Workspace');
@@ -9127,7 +9120,7 @@ const _gAt=groundAt;groundAt=function(cx,cz,fy,skipId){const b=_gAt.apply(this,a
 const _solid=solid;solid=function(r){if(TER.on&&r&&r.name==='Baseplate'&&!r.av)return false;return _solid.apply(this,arguments)};
 
 /* ---------- Realism ---------- */
-const RZ={rt:null,on:function(){return this.rt!==null?this.rt:!!(P.env&&P.env.realism)},ov:null,parts:[],occ:1,fr:0,hazed:false,shMapped:false};
+const RZ={rt:null,frt:null,on:function(){return this.rt!==null?this.rt:!!(P.env&&P.env.realism)},flareOn:function(){return this.frt!==null?this.frt:!!(P.env&&P.env.flare)},ov:null,parts:[],occ:1,fr:0,hazed:false,shMapped:false};
 window.RZ=RZ;
 function realismApply(){const on=RZ.on();
   if(on){
@@ -9142,45 +9135,69 @@ function realismApply(){const on=RZ.on();
   if(!on&&RZ.ov)RZ.ov.style.display='none'}
 const _ae=applyEnv;applyEnv=function(){const r=_ae.apply(this,arguments);try{realismApply()}catch(e){}try{terSync()}catch(e){}return r};
 const _rp=rebuildParts;rebuildParts=function(){const r=_rp.apply(this,arguments);try{terSync()}catch(e){}return r};
-function mkOverlay(){if(RZ.ov||!cv.parentNode)return;const ov=document.createElement('div');ov.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden;display:none;z-index:1';
-  const L=function(css){const d=document.createElement('div');d.style.cssText='position:absolute;left:0;top:0;will-change:transform,opacity;mix-blend-mode:screen;border-radius:50%;'+css;ov.append(d);return d};
-  RZ.veil=L('width:100%;height:100%;border-radius:0;');
-  RZ.halo=L('width:90vmin;height:90vmin;margin:-45vmin 0 0 -45vmin;background:radial-gradient(circle,rgba(255,238,200,.62) 0,rgba(255,214,150,.22) 22%,rgba(255,190,120,.07) 45%,transparent 66%)');
-  RZ.core=L('width:15vmin;height:15vmin;margin:-7.5vmin 0 0 -7.5vmin;background:radial-gradient(circle,#fff 0,rgba(255,252,235,.95) 18%,rgba(255,235,190,.4) 45%,transparent 70%)');
-  RZ.streak=L('width:140vmin;height:1.1vmin;margin:-.55vmin 0 0 -70vmin;border-radius:50%;background:linear-gradient(90deg,transparent,rgba(255,236,200,.75) 50%,transparent);filter:blur(1.5px)');
+/* ---------- Sun glare (lens flare) ----------
+   NOTE FOR FUTURE AIs / DEVELOPERS: the bright glow around the sun is made of sprites INSIDE the 3D scene with depth testing (the same way the sun disc is drawn),
+   so your avatar, other players, parts and terrain cover it pixel by pixel. Do NOT draw it as a CSS overlay again: an overlay sits on top of everything and the glow shows through the avatar.
+   Only the faint ghost rings stay a screen overlay (RZ.ov); they fade out while the sun is hidden behind something (ray test that includes the avatar).
+   It is on when: Atmosphere > "Sun lens flare" is ticked (P.env.flare, Lua: Lighting.SunFlare), or Realism is on, or graphics is High/Ultra (soft glow only, no streak or rings).
+   Strength = the "Sun glare" slider (P.env.glare). flareUpdate() is hooked right after skyTick so it never lags a frame behind the camera. */
+const FL={occ:1,tgt:1,fr:0,spr:null};
+const _fv=new THREE.Vector3(),_sp=new THREE.Vector3(),_fw=new THREE.Vector3(),_fd=new THREE.Vector3(),_rc=new THREE.Raycaster();
+function flTex(w,h,draw){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;return t}
+function flRad(st){return flTex(256,256,function(x,w,h){const g=x.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);st.forEach(function(q){g.addColorStop(q[0],q[1])});x.fillStyle=g;x.fillRect(0,0,w,h)})}
+function flSpr(t){const q=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,blending:THREE.AdditiveBlending,depthTest:true,depthWrite:false,fog:false,toneMapped:false}));q.renderOrder=-4;q.frustumCulled=false;q.visible=false;scene.add(q);return q}
+function flInit(){if(FL.spr)return;
+  const streak=flTex(512,32,function(x,w,h){let g=x.createLinearGradient(0,0,w,0);g.addColorStop(0,'rgba(255,236,200,0)');g.addColorStop(.5,'rgba(255,236,200,.75)');g.addColorStop(1,'rgba(255,236,200,0)');x.fillStyle=g;x.fillRect(0,0,w,h);
+    g=x.createLinearGradient(0,0,0,h);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.5,'rgba(0,0,0,1)');g.addColorStop(1,'rgba(0,0,0,0)');x.globalCompositeOperation='destination-in';x.fillStyle=g;x.fillRect(0,0,w,h)});
+  FL.spr={
+    veil:flSpr(flRad([[0,'rgba(255,224,170,.20)'],[.5,'rgba(255,210,150,.07)'],[1,'rgba(255,210,150,0)']])),
+    halo:flSpr(flRad([[0,'rgba(255,238,200,.62)'],[.31,'rgba(255,214,150,.22)'],[.64,'rgba(255,190,120,.07)'],[.93,'rgba(255,190,120,0)'],[1,'rgba(255,190,120,0)']])),
+    core:flSpr(flRad([[0,'rgba(255,255,255,1)'],[.25,'rgba(255,252,235,.95)'],[.64,'rgba(255,235,190,.4)'],[1,'rgba(255,235,190,0)']])),
+    streak:flSpr(streak),
+    soft:flSpr(flRad([[0,'rgba(255,246,214,.6)'],[.2,'rgba(255,226,160,.28)'],[.5,'rgba(255,206,130,.1)'],[1,'rgba(255,200,120,0)']]))}}
+function flOverlay(){if(RZ.ov||!cv.parentNode)return;const ov=document.createElement('div');ov.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden;display:none;z-index:1';
   RZ.ghosts=[[-.35,9,'rgba(255,180,120,.5)'],[.45,5,'rgba(150,200,255,.5)'],[.85,13,'rgba(255,230,160,.35)'],[1.35,7,'rgba(190,255,200,.4)'],[1.9,16,'rgba(255,160,200,.25)']].map(function(g){
-    const d=L('width:'+g[1]+'vmin;height:'+g[1]+'vmin;margin:-'+g[1]/2+'vmin 0 0 -'+g[1]/2+'vmin;background:radial-gradient(circle,transparent 52%,'+g[2]+' 62%,transparent 72%)');d.k=g[0];return d});
+    const d=document.createElement('div');d.style.cssText='position:absolute;left:0;top:0;will-change:transform,opacity;mix-blend-mode:screen;border-radius:50%;width:'+g[1]+'vmin;height:'+g[1]+'vmin;margin:-'+g[1]/2+'vmin 0 0 -'+g[1]/2+'vmin;background:radial-gradient(circle,transparent 52%,'+g[2]+' 62%,transparent 72%)';d.k=g[0];ov.append(d);return d});
   cv.parentNode.insertBefore(ov,cv.nextSibling);RZ.ov=ov}
-const _fw=new THREE.Vector3(),_sp=new THREE.Vector3(),_rc=new THREE.Raycaster();
-function glareLoop(){requestAnimationFrame(glareLoop);
-  try{if(!RZ.on()||!cv.clientWidth||!cv.offsetParent){if(RZ.ov)RZ.ov.style.display='none';return}
-    mkOverlay();if(!RZ.ov)return;
-    const gl=Math.max(0,(P.env&&P.env.glare!=null?P.env.glare:1)),vis=Math.min(1,sun.intensity/.7)*gl;
-    camera.getWorldDirection(_fw);const dir=sunDir.clone().normalize(),dot=_fw.dot(dir);
-    _sp.copy(camera.position).addScaledVector(dir,1000).project(camera);
-    if(vis<=.02||dot<=.03||_sp.z>1){RZ.ov.style.display='none';return}
-    /* is the sun hidden behind terrain or a part? (checked a few times a second, then eased) */
-    if((RZ.fr++%8)===0){let hit=0;const o=camera.position;
-      if(TER.on){for(let i=1;i<=28;i++){const t=i*i*.6,x=o.x+dir.x*t,z=o.z+dir.z*t,y=o.y+dir.y*t;if(terH(x,z)>y){hit=1;break}}}
-      if(!hit&&PG){_rc.set(o,dir);_rc.far=600;try{const r=_rc.intersectObject(PG,true);for(let i=0;i<r.length;i++){const m=r[i].object;if(m.visible&&m.material&&m.material.opacity>.5&&!m.userData.isL){hit=1;break}}}catch(e){}}
-      RZ.tgt=hit?0:1}
-    RZ.occ+=((RZ.tgt===undefined?1:RZ.tgt)-RZ.occ)*.18;
-    const s=vis*RZ.occ*sm(.03,.85,dot);if(s<.01){RZ.ov.style.display='none';return}
-    RZ.ov.style.display='block';
-    const w=cv.clientWidth,h=cv.clientHeight,cr=cv.getBoundingClientRect(),or=RZ.ov.getBoundingClientRect(),ox=cr.left-or.left,oy=cr.top-or.top;
-    const sx=(_sp.x*.5+.5)*w+ox,sy=(-_sp.y*.5+.5)*h+oy,cx=w/2+ox,cy=h/2+oy;
-    const tr=function(el,x,y,o){el.style.transform='translate('+x+'px,'+y+'px)';el.style.opacity=Math.max(0,Math.min(1,o))};
-    tr(RZ.halo,sx,sy,s);tr(RZ.core,sx,sy,s*1.1);tr(RZ.streak,sx,sy,s*.8);
-    RZ.veil.style.transform='none';RZ.veil.style.opacity=s*.55;RZ.veil.style.background='radial-gradient(circle at '+sx+'px '+sy+'px,rgba(255,224,170,.20),rgba(255,210,150,.07) 40%,transparent 75%)';
-    RZ.ghosts.forEach(function(g){tr(g,sx+(cx-sx)*g.k,sy+(cy-sy)*g.k,s*.7*sm(.15,.7,dot))})
-  }catch(e){}}
-glareLoop();
+function flHide(){if(FL.spr)for(const k in FL.spr)FL.spr[k].visible=false;if(RZ.ov)RZ.ov.style.display='none'}
+function flareUpdate(){
+  const full=RZ.flareOn()||RZ.on(),G=gfxEff(),soft=G&&G.glow?(G===GFXT.ultra?1:.8):0,w=cv.clientWidth,h=cv.clientHeight;
+  if((!full&&!soft)||!w||!h||!cv.offsetParent||!sunS.visible){flHide();return}
+  flInit();camera.updateMatrixWorld();
+  _fv.copy(sunS.position).applyMatrix4(camera.matrixWorldInverse);const z=-_fv.z;if(z<=1){flHide();return}
+  _sp.copy(sunS.position).project(camera);
+  camera.getWorldDirection(_fw);_fd.copy(sunS.position).sub(camera.position).normalize();const dot=_fw.dot(_fd);
+  const SP=FL.spr,sx=(_sp.x*.5+.5)*w,sy=(-_sp.y*.5+.5)*h,vm=Math.min(w,h),wpp=2*z*Math.tan(camera.fov*Math.PI/360)/(camera.zoom||1)/h;
+  const place=function(q,pw,ph,o){o=Math.max(0,Math.min(1,o));if(!(o>=.01)){q.visible=false;return}q.visible=true;q.position.copy(sunS.position);q.scale.set(pw*wpp,ph*wpp,1);q.material.opacity=o};
+  if(!full){/* graphics High/Ultra: only the soft glow, same look as before */
+    const ev=(sunS.position.y-camera.position.y)/700,fade=Math.max(0,Math.min(1,(ev+.02)/.25)),edge=Math.max(0,Math.min(1,(1.6-Math.max(Math.abs(_sp.x),Math.abs(_sp.y)))/.6));
+    place(SP.soft,h,h,fade*edge*soft);SP.veil.visible=SP.halo.visible=SP.core.visible=SP.streak.visible=false;if(RZ.ov)RZ.ov.style.display='none';return}
+  SP.soft.visible=false;
+  const gl=Math.max(0,P.env&&P.env.glare!=null?P.env.glare:1),s=Math.min(1,sun.intensity/.7)*gl*sm(.03,.85,dot);
+  if(dot<=.03||s<.01){flHide();return}
+  /* is the sun hidden behind terrain, a part or the avatar? (only used to fade the ghost rings; the glow itself is depth tested) */
+  if((FL.fr++%6)===0){let hit=0;const o=camera.position;
+    if(TER.on){for(let i=1;i<=28;i++){const t=i*i*.6,x=o.x+_fd.x*t,zz=o.z+_fd.z*t,y=o.y+_fd.y*t;if(terH(x,zz)>y){hit=1;break}}}
+    if(!hit&&PG){_rc.set(o,_fd);_rc.far=600;try{const r=_rc.intersectObject(PG,true);for(let i=0;i<r.length;i++){const m=r[i].object;if(m.visible&&m.material&&m.material.opacity>.5&&!m.userData.isL){hit=1;break}}}catch(e){}}
+    FL.tgt=hit?0:1}
+  FL.occ+=(FL.tgt-FL.occ)*.18;
+  const vd=Math.min(1.5*Math.hypot(Math.max(sx,w-sx),Math.max(sy,h-sy)),6*h);
+  place(SP.veil,vd,vd,s*.55);place(SP.halo,.9*vm,.9*vm,s);place(SP.core,.15*vm,.15*vm,s*1.1);place(SP.streak,1.4*vm,.025*vm,s*.8);
+  flOverlay();
+  if(RZ.ov){const go=s*.7*sm(.15,.7,dot)*FL.occ;
+    if(go<.01)RZ.ov.style.display='none';
+    else{RZ.ov.style.display='block';const cr=cv.getBoundingClientRect(),or=RZ.ov.getBoundingClientRect(),ox=cr.left-or.left,oy=cr.top-or.top,ax=sx+ox,ay=sy+oy,cx=w/2+ox,cy=h/2+oy;
+      RZ.ghosts.forEach(function(g){g.style.transform='translate('+(ax+(cx-ax)*g.k)+'px,'+(ay+(cy-ay)*g.k)+'px)';g.style.opacity=Math.max(0,Math.min(1,go))})}}}
+const _skFl=skyTick;skyTick=function(){const r=_skFl.apply(this,arguments);try{flareUpdate()}catch(e){if(!FL.bad){FL.bad=1;try{log('Error: sun glare - '+(e&&e.message))}catch(x){}}}return r};
 
 /* ---------- Atmosphere panel UI ---------- */
 window.realismUI=function(d){
   const E=P.env;const c=el('input');c.type='checkbox';c.checked=!!E.realism;
   c.onchange=function(){E.realism=c.checked;RZ.rt=null;save();applyEnv()};
   const l=lab('Realism (sun glare + nicer light)',c);l.title='Adds a bright sun with lens glare, soft shadows, warm filmic colours and a little haze.';d.append(l);
+  const fc=el('input');fc.type='checkbox';fc.checked=!!E.flare;
+  fc.onchange=function(){E.flare=fc.checked;RZ.frt=null;save()};
+  const fl=lab('Sun lens flare (glare when you look at the sun)',fc);fl.title='A bright glow, a light streak and lens rings appear on the screen when you look toward the sun. Your avatar, parts and terrain block it. Works without Realism. The Sun glare slider sets how strong it is.';d.append(fl);
   slider(d,'Sun glare',E,'glare',0,2,.05,function(v){return Math.round((v==null?1:v)*100)+'%'},function(){});
   if(E.glare==null)E.glare=1};
 window.terrainUI=function(d){
