@@ -9270,12 +9270,21 @@ const hostApi={
     const LIMBS={rarm:'Rarm',rightarm:'Rarm',righthand:'Rarm',rightupperarm:'Rarm',rightlowerarm:'Rarm',larm:'Larm',leftarm:'Larm',lefthand:'Larm',leftupperarm:'Larm',leftlowerarm:'Larm',
       head:'Head',torso:'Torso',uppertorso:'Torso',lowertorso:'Torso',rleg:'Rleg',rightleg:'Rleg',rightfoot:'Rleg',lleg:'Lleg',leftleg:'Lleg',leftfoot:'Lleg'};
     const limbName=function(s){return LIMBS[String(s).toLowerCase().replace(/[\s_]/g,'')]||null};
-    const limbPos=function(key,nm){try{const pr=P.parts.find(function(x){return x.av&&x.name===nm&&!x.acc});if(!pr)return null;let o=null;
+    /* Finds the character part for a body part. Exact name first (Rarm), then any name that means the same (Right Arm, RightArm, right_arm, R Arm...),
+      then anything inside the player's own rig. If nothing is found it says so ONCE with the names it did find, instead of silently using the torso. */
+    const limbPart=function(nm){const ok=function(x){return !x.acc&&!x.stab};
+      let pr=P.parts.find(function(x){return x.av&&ok(x)&&x.name===nm});
+      if(!pr)pr=P.parts.find(function(x){return x.av&&ok(x)&&limbName(x.name)===nm});
+      if(!pr){const T0=byId(P.avId);if(T0){const tr=treeOf(T0);pr=tr.find(function(x){return ok(x)&&x.name===nm})||tr.find(function(x){return ok(x)&&limbName(x.name)===nm})}}
+      return pr||null};
+    const limbPos=function(key,nm){try{const pr=limbPart(nm);if(!pr)return null;let o=null;
       if(key==='main')o=M[pr.id];else{const n=NP.find(function(z){return 'np:'+z.name===key});const g=n&&n.JJ&&n.JJ[pr.id];o=g&&g.children&&g.children[0]}
       if(!o)return null;o.updateWorldMatrix(true,false);return o.getWorldPosition(new THREE.Vector3())}catch(e){return null}};
     const limbC={};
     const limbOf=function(key,nm){const ck=key+'|'+nm;return limbC[ck]||(limbC[ck]=new Host(function(k){const q=String(k).toLowerCase();
-      if(q==='position'||q==='cframe'){const w=limbPos(key,nm);return w?V3(w.x,w.y,w.z):plPosOf(key)}
+      if(q==='position'||q==='cframe'){const w=limbPos(key,nm);if(!w&&!PWARN.has('limb:'+nm)){PWARN.add('limb:'+nm);let names='';try{const T0=byId(P.avId);names=T0?treeOf(T0).map(function(x){return x.name}).join(', '):''}catch(e){}
+        log('Warning: the character has no body part that can be read as "'+nm+'", so the torso position is used instead. Rename the arm to exactly "'+nm+'" (parts found on the character: '+(names||'none')+').')}
+        return w?V3(w.x,w.y,w.z):plPosOf(key)}
       if(q==='name')return nm;if(q==='classname')return 'Part';if(q==='parent')return charOf(key);return undefined},function(k,v){throw new LuaError("cannot set '"+String(k)+"' on "+nm+" (a body part can only be read, move the player instead)",0)},'Part'))};
     const charOf=function(key){return chC[key]||(chC[key]=new Host(function(k){const q=String(k).toLowerCase();
       const lb=limbName(q);if(lb)return limbOf(key,lb);
