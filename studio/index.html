@@ -9187,7 +9187,7 @@ function flareUpdate(){
     if(!hit&&PG){_rc.set(o,_fd);_rc.far=600;try{const r=_rc.intersectObject(PG,true);for(let i=0;i<r.length;i++){const m=r[i].object;if(m.visible&&m.material&&m.material.opacity>.5&&!m.userData.isL){hit=1;break}}}catch(e){}}
     FL.tgt=hit?0:1}
   FL.occ=FL.tgt;
-  if(!FL.tgt){flHide();return}
+  if(!FL.tgt){flHide();sunS.visible=false;/* also hide the sky's own sun disc + its yellow glow, otherwise a yellow tint shows around the object */return}
   if(!full){/* graphics High/Ultra: only the soft glow, same look as before */
     const ev=(sunS.position.y-camera.position.y)/700,fade=ev>-.02?1:0,edge=Math.max(Math.abs(_sp.x),Math.abs(_sp.y))<1.6?1:0;
     place(SP.soft,h,h,fade*edge*soft);SP.veil.visible=SP.halo.visible=SP.core.visible=SP.streak.visible=SP.rays.visible=SP.ring.visible=false;if(RZ.ov)RZ.ov.style.display='none';return}
