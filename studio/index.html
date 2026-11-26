@@ -9172,7 +9172,7 @@ function flOverlay(){if(RZ.ov||!cv.parentNode)return;const ov=document.createEle
   cv.parentNode.insertBefore(ov,cv.nextSibling);RZ.ov=ov}
 function flHide(){if(FL.spr)for(const k in FL.spr)FL.spr[k].visible=false;if(RZ.ov)RZ.ov.style.display='none'}
 function flareUpdate(){
-  const full=RZ.flareOn()||RZ.on(),G=gfxEff(),soft=G&&G.glow?(G===GFXT.ultra?1:.8):0,w=cv.clientWidth,h=cv.clientHeight;
+  const full=RZ.flareOn(),G=gfxEff(),soft=G&&G.glow?(G===GFXT.ultra?1:.8):0,w=cv.clientWidth,h=cv.clientHeight;
   if((!full&&!soft)||!w||!h||!cv.offsetParent||!sunS.visible){flHide();return}
   flInit();camera.updateMatrixWorld();
   _fv.copy(sunS.position).applyMatrix4(camera.matrixWorldInverse);const z=-_fv.z;if(z<=1){flHide();return}
@@ -9205,12 +9205,10 @@ const _skFl=skyTick;skyTick=function(){const r=_skFl.apply(this,arguments);try{f
 
 /* ---------- Atmosphere panel UI ---------- */
 window.realismUI=function(d){
-  const E=P.env;const c=el('input');c.type='checkbox';c.checked=!!E.realism;
-  c.onchange=function(){E.realism=c.checked;RZ.rt=null;save();applyEnv()};
-  const l=lab('Realism (sun glare + nicer light)',c);l.title='Adds a bright sun with lens glare, soft shadows, warm filmic colours and a little haze.';d.append(l);
+  const E=P.env;
   const fc=el('input');fc.type='checkbox';fc.checked=!!E.flare;
   fc.onchange=function(){E.flare=fc.checked;RZ.frt=null;save()};
-  const fl=lab('Sun lens flare (glare when you look at the sun)',fc);fl.title='A bright glow, a light streak and lens rings appear on the screen when you look toward the sun. Your avatar, parts and terrain block it. Works without Realism. The Sun glare slider sets how strong it is.';d.append(fl);
+  const fl=lab('Sun lens flare',fc);fl.title='A bright glow, a light streak and lens rings appear on the screen when you look toward the sun. Your avatar, parts and terrain block it. The Sun glare slider sets how strong it is.';d.append(fl);
   slider(d,'Sun glare',E,'glare',0,2,.05,function(v){return Math.round((v==null?1:v)*100)+'%'},function(){});
   if(E.glare==null)E.glare=1};
 window.terrainUI=function(d){
