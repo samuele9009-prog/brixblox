@@ -1187,6 +1187,7 @@ function luaBox(b,ro){const w=el('span','luab'),prev=el('button','luap'),ta=el('
     ['\uD83D\uDCCA','Score GUI','Show the player\'s saved data coins in the gui called ScoreText and update it every second.'],
     ['\uD83C\uDF05','Day & night','Slowly cycle the lighting between sunny, sunset and night, changing every 15 seconds, forever.'],
     ['\uD83D\uDCAC','Chat command','When a player types /heal in chat, heal them to full health and say Healed!'],
+    ['\u2694\uFE0F','Arm hitbox','Make the part called Hitbox follow the player\'s right arm (player.Character.Rarm) every frame, semi transparent.'],
     ['\uD83D\uDD04','Spinning pickup','Make the part called Gem float up and down gently forever, and change its color through the rainbow.']
   ];
   const KWS=new Set('and break do else elseif end false for function goto if in local nil not or repeat return then true until while continue'.split(' '));
@@ -1211,12 +1212,18 @@ function luaBox(b,ro){const w=el('span','luab'),prev=el('button','luap'),ta=el('
     [/Instance\s*\.\s*new\s*\(\s*["'](?!Part["'])/,'Instance.new only supports "Part" in BrixBlox.'],
     [/\bwhile\s+true\s+do\b(?![\s\S]*\b(wait|task\.wait)\s*\()/,'A "while true do" loop needs wait(...) inside it or the game freezes.']
   ];
-  function aicCheck(code){
+  function aicCheck(code,said){
     const p=[];if(!code||!code.trim())return['The code was empty.'];
     if(code.length>10000)p.push('The code is '+code.length+' characters but the limit is 10000. Write a shorter, simpler version.');
     try{window.LuaEngine.parse(code)}catch(e){try{p.push('Syntax error: '+window.LuaEngine.fmtErr(e))}catch(x){p.push('Syntax error in the Lua code.')}}
     const b=bare(code);LINT.forEach(function(l){if(l[0].test(b))p.push(l[1])});
     const gs=code.match(/GetService\s*\(\s*["']([^"']+)["']/gi);if(gs)gs.forEach(function(g){const n=g.replace(/^[^"']*["']|["']$/g,'').toLowerCase();if(['workspace','lighting','players','debris','runservice'].indexOf(n)<0)p.push('GetService("'+n+'") is not available. Only Workspace, Lighting, Players, Debris and RunService exist.')});
+    /* names that do not exist in this game (and the player never typed) are invented: the script would silently do nothing */
+    try{const have={};['parts','models','guis'].forEach(function(k){(P&&P[k]||[]).forEach(function(x){if(x&&x.name)have[String(x.name).toLowerCase()]=1})});
+      const sd=String(said||'').toLowerCase(),bad=[];const re=/\b(?:part|getPart|findPart)\s*\(\s*["']([^"']+)["']/g;let m;
+      while((m=re.exec(code))){const n=m[1],l=n.toLowerCase();if(/[./]/.test(n)||have[l]||sd.indexOf(l)>=0||bad.indexOf(n)>=0)continue;bad.push(n)}
+      if(bad.length)p.push('part("'+bad.join('"), part("')+'") does not exist in this game, so the script would silently do nothing. Only use names from GAME OBJECTS. If you need a new object make it with Instance.new("Part"). NOTE: body parts of a player are player.Character.Rarm, .Larm, .Head, .Torso, .Rleg and .Lleg (read-only .Position). There is no facing direction.')}catch(e){}
+    try{const re2=/\bblock\s*\(\s*["']([^"']+)["']/g;let m2;while((m2=re2.exec(code))){const id=m2[1];if(!BD[id])p.push('block("'+id+'") is not a real block id. Use only ids from RELEVANT BLOCKS, or a normal Lua API instead.')}}catch(e){}
     return p.filter(function(x,i){return p.indexOf(x)===i})}
   function aicClean(t){t=String(t==null?'':t).replace(/\r/g,'');const f=t.match(/```(?:lua|luau)?\s*\n([\s\S]*?)```/i);if(f)t=f[1];else t=t.replace(/^```(?:lua|luau)?\s*\n?/i,'').replace(/```\s*$/,'');return t.replace(/\s+$/,'').replace(/^\n+/,'')}
   function aicCtx(prompt){/* names of what is in this game + the few blocks most related to the request, so the AI uses real names */
@@ -1308,7 +1315,7 @@ function luaBox(b,ro){const w=el('span','luab'),prev=el('button','luap'),ta=el('
           const body={mode:a?'repair':mode,prompt:txt,current:a?prevCode:b0,error:a?fixNote:'',comments:!!cm.checked,ctx:ctx};
           const raw=await aicCall(body);if(gone)return;
           out=aicClean(raw);w.set(1,'ok');w.set(2,'run','Checking it with the BrixBlox engine'+(a?' again':'')+'...');
-          probs=aicCheck(out);await new Promise(function(r){setTimeout(r,350)});
+          probs=aicCheck(out,txt+' '+b0);await new Promise(function(r){setTimeout(r,350)});
           if(!probs.length){w.set(2,'ok','Checked: no problems found');break}
           if(a<2){w.set(2,'warn','Found '+probs.length+' problem'+(probs.length>1?'s':''));const s3=w.el.querySelector('[data-s="3"]');if(s3){s3.className='run';s3.querySelector('i').textContent='';s3.lastChild.textContent='Fixing it'+(a?' (try '+(a+1)+')':'')+'...'}
             prevCode=out;fixNote=probs.join('\n');tries++}
@@ -9078,7 +9085,7 @@ function hsv(h,s,v){const i=Math.floor(h*6)%6,f=h*6-Math.floor(h*6),p=v*(1-s),q=
      Lighting.Realism and Lighting.SunFlare (true/false) -> the Atmosphere checkboxes "Realism" and "Sun lens flare" (settings, no block)
      (batch 2) me.Touched/TouchEnded also on editor parts, onChat, player.Chatted, Players.PlayerAdded/PlayerRemoving, RunService.Heartbeat, gui(name) .Text/.Visible/:Show/:Hide/:Toggle, player:GetData/SetData/ChangeData/SaveData, :GetAttribute/:SetAttribute, nearestPlayer, playersNear, Random.new, table.clone, string.split
      block("id", args...) runs ANY block from Lua (so new blocks are reachable automatically), getVar/setVar, broadcast, playSound, stopSound, tween(obj,{props},secs), onKey(key,fn), Debris:AddItem, part.Touched/TouchEnded:Connect, part:Clone(), part:GetTouchingPlayers(), player.Health/MaxHealth/WalkSpeed/:Damage/:Heal/:Teleport, game.Players:GetPlayers(), Vector3 .Unit :Dot :Cross :Lerp :Distance
-     Instance.new("Part") (+ .Name .Size .Position/.CFrame .Color .Transparency .Parent .Destroy() :IsTouchingPlayer()), CFrame.new, player.Position, player.Character.HumanoidRootPart, game.Players.LocalPlayer (parts made in Lua are not solid yet)
+     Instance.new("Part") (+ .Name .Size .Position/.CFrame .Color .Transparency .Parent .Destroy() :IsTouchingPlayer()), CFrame.new, player.Position, player.Character.HumanoidRootPart, player.Character.Rarm/Larm/Head/Torso/Rleg/Lleg (read-only live .Position), game.Players.LocalPlayer (parts made in Lua are not solid yet)
      activateParticle(emitterName, x, y, z, secs) and particle(...) -> "activate particle _ at x _ y _ z _ for _ secs" (block id actpart)
    Particles: emitters live in P.particles (made in the Explorer under Particles; the code is the "Particles" section, search ptStep/ptActivate/ptUI).
    (batch 4) part("Name") targets ONLY that one part: Color/Size/Transparency/Visible/Touched affect just it, and Position puts that part there (pieces welded to it come along). Models are found by name too. Reach pieces with Model.Piece, Model:FindFirstChild("Piece"), part("Piece","Model"), part("Model.Piece"), :GetChildren(), :GetDescendants(). Editor: double-click / Enter goes inside a model (see diveEnter).
@@ -9259,7 +9266,20 @@ const hostApi={
     const posSet=function(key){return function(k,v){const q=String(k).toLowerCase();if(q==='position'||q==='cframe'){const p=vx(v);teleKey(key,p[0],p[1],p[2]);return}throw new LuaError("cannot set '"+String(k)+"' (try Position)",0)}};
     const hrpOf=function(key){return hrpC[key]||(hrpC[key]=new Host(function(k){const q=String(k).toLowerCase();
       if(q==='position'||q==='cframe')return plPosOf(key);if(q==='name')return 'HumanoidRootPart';if(q==='parent')return workspace;return undefined},posSet(key),'Part'))};
+    /* ----- player.Character.Rarm / Larm / Head / Torso / Rleg / Lleg: the body part's live position (it follows walking, attacking and any animation). Read only. ----- */
+    const LIMBS={rarm:'Rarm',rightarm:'Rarm',righthand:'Rarm',rightupperarm:'Rarm',rightlowerarm:'Rarm',larm:'Larm',leftarm:'Larm',lefthand:'Larm',leftupperarm:'Larm',leftlowerarm:'Larm',
+      head:'Head',torso:'Torso',uppertorso:'Torso',lowertorso:'Torso',rleg:'Rleg',rightleg:'Rleg',rightfoot:'Rleg',lleg:'Lleg',leftleg:'Lleg',leftfoot:'Lleg'};
+    const limbName=function(s){return LIMBS[String(s).toLowerCase().replace(/[\s_]/g,'')]||null};
+    const limbPos=function(key,nm){try{const pr=P.parts.find(function(x){return x.av&&x.name===nm&&!x.acc});if(!pr)return null;let o=null;
+      if(key==='main')o=M[pr.id];else{const n=NP.find(function(z){return 'np:'+z.name===key});const g=n&&n.JJ&&n.JJ[pr.id];o=g&&g.children&&g.children[0]}
+      if(!o)return null;o.updateWorldMatrix(true,false);return o.getWorldPosition(new THREE.Vector3())}catch(e){return null}};
+    const limbC={};
+    const limbOf=function(key,nm){const ck=key+'|'+nm;return limbC[ck]||(limbC[ck]=new Host(function(k){const q=String(k).toLowerCase();
+      if(q==='position'||q==='cframe'){const w=limbPos(key,nm);return w?V3(w.x,w.y,w.z):plPosOf(key)}
+      if(q==='name')return nm;if(q==='classname')return 'Part';if(q==='parent')return charOf(key);return undefined},function(k,v){throw new LuaError("cannot set '"+String(k)+"' on "+nm+" (a body part can only be read, move the player instead)",0)},'Part'))};
     const charOf=function(key){return chC[key]||(chC[key]=new Host(function(k){const q=String(k).toLowerCase();
+      const lb=limbName(q);if(lb)return limbOf(key,lb);
+      if(q==='findfirstchild'||q==='waitforchild')return function(self,n){const sn=String(n).toLowerCase();if(sn==='humanoidrootpart')return hrpOf(key);const l2=limbName(sn);return l2?limbOf(key,l2):undefined};
       if(q==='humanoidrootpart'||q==='primarypart'||q==='root')return hrpOf(key);
       if(q==='position'||q==='cframe')return plPosOf(key);if(q==='name'){const m=plEntry(key);return m?m.name:'Player'}if(q==='parent')return workspace;return undefined},posSet(key),'Model'))};
     const playerOf=function(key){return plC[key]||(plC[key]=new Host(function(k){const q=String(k).toLowerCase();
