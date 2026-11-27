@@ -4333,7 +4333,7 @@ $('a-del').onclick=function(){const n=curA;if(!n||!P.anims[n])return;
 $('a-sel').onchange=function(){curA=this.value;aT=0;aSelKeys=[];animUI();preview()};
 $('a-add').onclick=function(){const n=$('a-new').value.trim().replace(/[^A-Za-z0-9_]/g,'');if(!n)return;if(!P.anims[n])P.anims[n]={len:1,keys:{}};curA=n;aT=0;aSelKeys=[];$('a-new').value='';save();animUI();preview()};
 $('a-len').onchange=function(){const A=P.anims[curA];if(!A)return;const nl=Math.max(.2,+this.value||1),rigOf=function(id){const p=byId(id),r=p&&rootOf(p);return r&&r.id};
-  const keyed={};Object.keys(A.keys).forEach(function(id){const r=rigOf(id);if(r)keyed[r]=1});const sel=animTs.filter(function(id){return byId(id)});
+  const keyed={};Object.keys(A.keys).forEach(function(id){const r=rigOf(id);if(r)keyed[r]=1});animTs.forEach(function(r){if(byId(r))keyed[r]=1});const sel=(animT&&byId(animT))?[animT]:animTs.filter(function(id){return byId(id)});
   const others=Object.keys(keyed).filter(function(r){return sel.indexOf(r)<0});
   if(!sel.length||!others.length){A.len=nl;delete A.rl}
   else{const rl=Object.assign({},A.rl||{}),old=A.len;Object.keys(keyed).forEach(function(r){if(!rl[r])rl[r]=old});sel.forEach(function(r){rl[r]=nl});A.len=Math.max.apply(null,Object.keys(rl).filter(function(r){return keyed[r]||sel.indexOf(r)>=0}).map(function(r){return rl[r]}));
