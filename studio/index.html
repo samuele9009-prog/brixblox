@@ -2068,7 +2068,7 @@ async function st(b,S,o){if(S.remote){if(RSKIP[b.t]||(!o&&RSELF[b.t])||b.t==='cl
     case'accwear':case'accstrip':{const nm=String(val(a[0],S)).trim(),tg=String(val(a[1],S)),wear=b.t==='accwear',sl0=String(a[2]===undefined?'auto':a[2]).trim().toLowerCase();
       const it=await accFind(nm);if(!it){log('Error: no accessory named "'+nm+'". '+(accFind.info||'Type its name as it is in the shop.'));break}
       const pl=playersOf(tg);if(!pl.length){log('Error: no player matches "'+tg+'".');break}
-      await accLoad([it.id]);const e=ACCI[it.id];if(wear&&!(e&&(e.obj||(e.it&&e.it.slot==='shirt'&&e.it.tex)))){log('Error: the accessory "'+it.name+'" could not be loaded.');break}
+      await accLoad([it.id]);const e=ACCI[it.id];if(wear&&!(e&&(e.obj||(e.it&&(e.it.slot==='shirt'||isFaceImg(e.it))&&e.it.tex)))){log('Error: the accessory "'+it.name+'" could not be loaded.');break}
       let slot=sl0;if(!ACCS[slot]){const d=(e&&e.it)||{};slot=['slot','type','cat','kind','cls'].map(function(k){return String(d[k]||'').toLowerCase()}).find(function(v){return ACCS[v]})||'hat'}
       pl.forEach(function(t){xeqSet(t,slot,it.id,wear)});break}
     case'setvol':{const nm=String(a[0]).trim(),key=nm.toLowerCase()==='all'?'all':audKey(nm);
@@ -2143,31 +2143,7 @@ const FACEG={};
 /* The face from character.fbx (eyes and smile), fitted to the head */
 function addFace(m,p){const k=p.size.join(','),sx=p.size[0]/1.4,sy=p.size[1]/1.5,sz=p.size[2]/1.4;let g=FACEG[k];
   if(!g){g=FACEG[k]=chGeo('Face',true);g.scale(sx,sy,sz);g.userData.keep=true}
-  const f=CHD.m.faceRel,fm=new THREE.Mesh(g,depthNudge(new THREE.MeshBasicMaterial({color:0x2b1a12}),0.008,0.0002));fm.position.set(-f[0]*sx,f[1]*sy,-f[2]*sz);fm.userData.fdef=1;m.add(fm);
-  const fu=NETFACE!==null?NETFACE:((ME&&ME.av&&ME.av.faceImg)||'');if(fu)applyFace(m,p,fu)}
-/* ===== Custom faces =====
-   NOTE FOR FUTURE AIs: a player's custom face is a small PNG/WebP data URL (ME.av.faceImg, max ~36 KB, 128x128) made in the Face maker on the main site's avatar page.
-   Studio reads it from localStorage 'brixblox-me' (written by the main site). Other players get it through the multiplayer heartbeat (field 'fc', sent every ~6 s).
-   The picture is projected onto the FRONT of the head mesh (curved to fit) and hides the default FBX face mesh (userData.fdef). NETFACE: null = use my face, '' = a remote player with the default face. */
-let NETFACE=null;
-const FACE_RE=/^data:image\/(png|webp|jpeg);base64,[A-Za-z0-9+\/=]+$/;
-function faceOk(s){return typeof s==='string'&&s.length<=36000&&FACE_RE.test(s)}
-const FTEX={},FHG={};
-function faceMap(url){let t=FTEX[url];if(t)return t;const k=Object.keys(FTEX);if(k.length>16){try{FTEX[k[0]].dispose()}catch(e){}delete FTEX[k[0]]}
-  const img=new Image();t=new THREE.Texture(img);t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;img.onload=function(){t.needsUpdate=true};img.src=url;FTEX[url]=t;return t}
-function faceHeadGeo(flip){const key=flip?1:0;if(FHG[key])return FHG[key];
-  const W=1.2,H=1.2,g=chGeo('Head',!!flip,.012),P=g.attributes.position,n=P.count,uv=new Float32Array(n*2),ok=new Uint8Array(n);
-  for(let i=0;i<n;i++){const x=P.getX(i),y=P.getY(i),z=P.getZ(i);uv[i*2]=flip?.5-x/W:.5+x/W;uv[i*2+1]=.5+y/H;ok[i]=((flip?z<-.1:z>.1)&&Math.abs(x)<=W/2&&Math.abs(y)<=H/2)?1:0}
-  const ix=g.index.array,out=[];for(let i=0;i<ix.length;i+=3){if(ok[ix[i]]&&ok[ix[i+1]]&&ok[ix[i+2]])out.push(ix[i],ix[i+1],ix[i+2])}
-  g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.setIndex(out);g.userData.keep=true;return FHG[key]=g}
-/* Puts (or removes) a custom face on a head mesh m made from avatar part p. url '' / invalid = bring the default face back. */
-function applyFace(m,p,url){
-  for(let i=m.children.length-1;i>=0;i--){const c=m.children[i];if(c.userData&&c.userData.fcust)m.remove(c)}
-  let def=null;m.children.forEach(function(c){if(c.userData&&c.userData.fdef)def=c});
-  if(!faceOk(url)){if(def)def.visible=true;return}
-  if(def)def.visible=false;
-  const sx=p.size[0]/1.4,sy=p.size[1]/1.5,sz=p.size[2]/1.4,f=new THREE.Mesh(faceHeadGeo(true),depthNudge(new THREE.MeshBasicMaterial({map:faceMap(url),transparent:true,alphaTest:.02}),0.008,0.0002));
-  f.scale.set(sx,sy,sz);f.renderOrder=2;f.userData.fcust=1;f.raycast=function(){};m.add(f)}
+  const f=CHD.m.faceRel,fm=new THREE.Mesh(g,depthNudge(new THREE.MeshBasicMaterial({color:0x2b1a12}),0.008,0.0002));fm.position.set(-f[0]*sx,f[1]*sy,-f[2]*sz);fm.userData.fdef=1;m.add(fm)}
 // S is the avatar's offset from where it was placed. x right, y forward (toward -z), h height, dir 90 faces forward.
 function initVars(){const o={};((P&&P.vars)||[]).forEach(function(n){o[n]=0});return o}
 function fresh(){return {items:[],heldItem:null,oth:[],x:0,y:0,h:0,vy:0,gr:true,wt:0,jt:0,pvx:0,pvz:0,bp:{},air:false,mv:false,dir:90,col:null,say:'',v:initVars(),fn:{},stop:false,d:0,sl:false,sla:false,slo:0,pcol:false,xeq:{},cm:null}}
@@ -2581,7 +2557,7 @@ function accRows(ids){
 function accLoad(ids){/* resolves once every id is loaded (or known to be unavailable) */
   const miss=ids.filter(function(id){return !ACCI[id]&&!ACCP[id]});
   if(miss.length){const pr=accRows(miss).then(function(rows){return accFbx().then(function(){
-      miss.forEach(function(id){const r=rows.find(function(x){return x.id===id});ACCI[id]={it:null,obj:null};if(r&&!r.removed&&r.slot==='shirt'&&r.tex){ACCI[id]={it:r,obj:null};return}if(!r||r.removed||!r.fbx)return;
+      miss.forEach(function(id){const r=rows.find(function(x){return x.id===id});ACCI[id]={it:null,obj:null};if(r&&!r.removed&&(r.slot==='shirt'||isFaceImg(r))&&r.tex){ACCI[id]={it:r,obj:null};return}if(!r||r.removed||!r.fbx)return;
         try{const b=atob(r.fbx),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);const o=new THREE.FBXLoader().parse(u.buffer,'');
           accStatic(o);o.traverse(function(m){if(m.geometry)m.geometry.userData.keep=true});ACCI[id]={it:r,obj:o}}catch(e){}})})}).catch(function(){miss.forEach(function(id){if(!ACCI[id])ACCI[id]={it:null,obj:null}})});
     miss.forEach(function(id){ACCP[id]=pr})}
@@ -2640,6 +2616,20 @@ function accMake(slot,id,hs){/* hs: head height scale, so items still fit a resi
 /* Dress a character. meshes = {Head:mesh,Torso:mesh} of one rig, eq = {slot:itemId} */
 function accMine(m){const T=byId(P.avId),g=T&&J[T.id];for(let o=m;o;o=o.parent)if(o===g)return true;return false}
 const SHG={};
+/* NOTE FOR FUTURE AIs: a "face" item with an image (tex) and no FBX is a Roblox-style decal face (admins create them on the main site: Avatar page > Create face; sold in the Catalog > Faces).
+   Worn, the picture is projected onto the FRONT of the Head mesh (curved to fit) and hides the built-in face (userData.fdef). It travels as a normal accessory id, so other players see it too. */
+function isFaceImg(it){return !!it&&it.slot==='face'&&!it.fbx&&!!it.tex}
+const FHG={};
+function faceHeadGeo(flip){const key=flip?1:0;if(FHG[key])return FHG[key];
+  const W=1.2,H=1.2,g=chGeo('Head',!!flip,.012),P=g.attributes.position,n=P.count,uv=new Float32Array(n*2),ok=new Uint8Array(n);
+  for(let i=0;i<n;i++){const x=P.getX(i),y=P.getY(i),z=P.getZ(i);uv[i*2]=flip?.5-x/W:.5+x/W;uv[i*2+1]=.5+y/H;ok[i]=((flip?z<-.1:z>.1)&&Math.abs(x)<=W/2&&Math.abs(y)<=H/2)?1:0}
+  const ix=g.index.array,out=[];for(let i=0;i<ix.length;i+=3){if(ok[ix[i]]&&ok[ix[i+1]]&&ok[ix[i+2]])out.push(ix[i],ix[i+1],ix[i+2])}
+  g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.setIndex(out);g.userData.keep=true;return FHG[key]=g}
+function facePut(meshes,id){const e=ACCI[id],it=e&&e.it,m=meshes.Head;if(!it||!it.tex||!m||!m.geometry||m.geometry.userData.fbx!=='Head')return;
+  m.geometry.computeBoundingBox();const sz=m.geometry.boundingBox.getSize(new THREE.Vector3()),b=CHD.m.Head.bb;
+  const mt=depthNudge(new THREE.MeshBasicMaterial({map:accTex(it.tex,false),transparent:true,alphaTest:.02}),0.008,0.0002),f=new THREE.Mesh(faceHeadGeo(true),mt);
+  f.scale.set(sz.x/b[0],sz.y/b[1],sz.z/b[2]);f.userData.acc=1;f.castShadow=false;f.renderOrder=2;f.raycast=function(){};if(avHid&&accMine(m))f.visible=false;
+  m.children.forEach(function(c){if(c.userData&&c.userData.fdef)c.visible=false});m.add(f);(m.userData.accs=m.userData.accs||[]).push(f)}
 /* A shirt is a thin textured shell over the Torso and both arms (nothing else). Anything not shaped like the character model is skipped. */
 function shirtPut(meshes,id){const e=ACCI[id],it=e&&e.it;if(!it||!it.tex)return;
   ['Torso','Larm','Rarm'].forEach(function(n){const m=meshes[n];if(!m||!m.geometry||m.geometry.userData.fbx!==n)return;
@@ -2650,9 +2640,9 @@ function shirtPut(meshes,id){const e=ACCI[id],it=e&&e.it;if(!it||!it.tex)return;
     const so=new THREE.Mesh(g,mt);so.userData.acc=1;so.castShadow=false;if(avHid&&accMine(m))so.visible=false;m.add(so);(m.userData.accs=m.userData.accs||[]).push(so)})}
 function accDress(meshes,eq,hs){
   eq=accClean(eq);const tok=++ACCTOK;
-  function clear(){Object.keys(meshes).forEach(function(n){const m=meshes[n];if(!m)return;(m.userData.accs||[]).forEach(function(a){m.remove(a)});m.userData.accs=[];m.userData.accTok=tok})}
+  function clear(){Object.keys(meshes).forEach(function(n){const m=meshes[n];if(!m)return;(m.userData.accs||[]).forEach(function(a){m.remove(a)});m.userData.accs=[];m.userData.accTok=tok;m.children.forEach(function(c){if(c.userData&&c.userData.fdef)c.visible=true})})}
   clear();const ids=[];Object.keys(eq).forEach(function(k){eq[k].forEach(function(x){ids.push(x)})});if(!ids.length)return;
-  function put(){clear();Object.keys(eq).forEach(function(slot){if(slot==='shirt'){try{shirtPut(meshes,eq.shirt[eq.shirt.length-1])}catch(e){}return}const at=ACCS[slot].at,m=meshes[at];if(!m)return;eq[slot].forEach(function(id){let f=null;try{f=accMake(slot,id,hs||1)}catch(e){f=null}if(f){if(avHid&&accMine(m))f.visible=false;m.add(f);m.userData.accs.push(f)}})})}
+  function put(){clear();Object.keys(eq).forEach(function(slot){if(slot==='shirt'){try{shirtPut(meshes,eq.shirt[eq.shirt.length-1])}catch(e){}return}if(slot==='face'){let fd=null;eq.face.forEach(function(id){const e=ACCI[id];if(e&&isFaceImg(e.it))fd=id});if(fd){try{facePut(meshes,fd)}catch(e){}}}const at=ACCS[slot].at,m=meshes[at];if(!m)return;eq[slot].forEach(function(id){let f=null;try{f=accMake(slot,id,hs||1)}catch(e){f=null}if(f){if(avHid&&accMine(m))f.visible=false;m.add(f);m.userData.accs.push(f)}})})}
   if(ids.every(function(id){return ACCI[id]}))put();
   else accLoad(ids).then(function(){const m0=meshes.Head||meshes.Torso;if(m0&&m0.userData.accTok!==tok)return;put()})}
 /* ===== Admin blocks: accessories in a player's inventory (the BrixBlox shop keeps it in the account: owned items and what is worn) =====
@@ -8219,9 +8209,8 @@ function ragOut(){const e=RAG.main;if(!e||!e.sim||e.gone)return null;const sm=e.
   B.forEach(function(b){const q=b.par<0?qS(sm.q0,b.q,u):qS([0,0,0,1],qm(qc(B[b.par].q),b.q),u);o[b.p.id]=q.map(r3)});return o}
 function netRecv(q){if(!q||!q.id||q.id===NET.id||!NET.on||!(running||playing))return;
   let e=NP.find(function(n){return n.net===q.id});
-  if(!e){NETCOL=/^#[0-9a-f]{6}$/i.test(q.c)?q.c:null;NETSK=/^#[0-9a-f]{6}$/i.test(q.sk)?q.sk:null;NETPN=/^#[0-9a-f]{6}$/i.test(q.pn)?q.pn:null;NETFACE='';spawnPlayer(String(q.n),S);NETFACE=null;NETCOL=null;NETSK=null;NETPN=null;e=NP[NP.length-1];if(!e)return;e.net=q.id;e.g.position.set(q.x,q.h,-q.y);e.seen=performance.now();
+  if(!e){NETCOL=/^#[0-9a-f]{6}$/i.test(q.c)?q.c:null;NETSK=/^#[0-9a-f]{6}$/i.test(q.sk)?q.sk:null;NETPN=/^#[0-9a-f]{6}$/i.test(q.pn)?q.pn:null;spawnPlayer(String(q.n),S);NETCOL=null;NETSK=null;NETPN=null;e=NP[NP.length-1];if(!e)return;e.net=q.id;e.g.position.set(q.x,q.h,-q.y);e.seen=performance.now();
     NP.slice().forEach(function(o){if(o!==e&&o.net&&String(o.un||o.name)===String(q.n)&&performance.now()-(o.seen||0)>1500)netDrop(o.net)})}
-  if(typeof q.fc==='string'&&e.fc!==q.fc&&faceOk(q.fc)){e.fc=q.fc;try{const Hm=e.MM&&e.MM.Head,hp=P.parts.find(function(a){return a.av&&a.name==='Head'});if(Hm&&hp)applyFace(Hm,hp,q.fc)}catch(er){}}
   {const nR=performance.now(),sT=(typeof q.T==='number'&&isFinite(q.T))?q.T:null,dS=(sT!=null&&e.sT!=null)?(sT-e.sT)/1000:(nR-(e.rT||nR))/1000;
     if(e.tx!=null&&dS>.015&&dS<.5){const dx=q.x-e.tx,dy=q.y-e.ty,dh=q.h-e.th;if(Math.hypot(dx,dy,dh)<6){e.nvx=dx/dS;e.nvy=dy/dS;e.nvh=dh/dS}else{e.nvx=e.nvy=e.nvh=0}}/* a jump of 6+ studs is a teleport, not running */
     else if(dS>=.5){e.nvx=e.nvy=e.nvh=0}
@@ -8259,7 +8248,7 @@ function netDrop(id){try{vcPeerGone(id)}catch(e){}const i=NP.findIndex(function(
   chatSys(n.name+' left the game');npFree(n);delete RAG['np:'+n.name];delete RSZ['np:'+n.name];delete SKIN['np:'+n.name];try{renderParts()}catch(e){}gmPlRefresh();firePJ('pleave',n.name)}
 setInterval(function(){if(!NET.on||!(running||playing))return;
   const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',fa:S.fallA||'',ha:S.holdA||'',hw:S.holdWA||'',pk:(S.pkOvId||(PKS===2&&PKA&&PKID&&!pkOff()?PKID:'')),pf:S.pkOvId?1:0,an:NANIM.n,ac:NANIM.c,rc:NRAG.c,hp:Math.round(hpGet('main')),hi:S.heldItem||'',sr:(SKIN.main&&SKIN.main.name)||'',T:Math.round(performance.now()),e:accStr(Object.assign({},(ME&&ME.av&&ME.av.eq)||{},S.xeq||{})),lj:window.luaRot?luaRot.pack():undefined},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.fa,q.ha,q.hw,q.pk,q.pf,q.an,q.ac,q.rc,q.e,q.hi,q.sr].join()+(rgo?JSON.stringify(rgo):'')+(q.lj?JSON.stringify(q.lj):'');
-  const nowT=performance.now();if(j===NET.last&&nowT-(NET.lt||0)<1500)return;NET.last=j;NET.idle=0;NET.lt=nowT;{const mf=ME&&ME.av&&ME.av.faceImg;if(faceOk(mf)&&nowT-(NET.fct||0)>6000){q.fc=mf;NET.fct=nowT}}NET.ch.send({type:'broadcast',event:'p',payload:q})},66);
+  const nowT=performance.now();if(j===NET.last&&nowT-(NET.lt||0)<1500)return;NET.last=j;NET.idle=0;NET.lt=nowT;NET.ch.send({type:'broadcast',event:'p',payload:q})},66);
 /* Ghost sweep, runs on every player's own game (so it works even if the player who left has an old version):
    the server's list of who is online is the truth. Someone who is not on it and has gone quiet is removed. */
 setInterval(function(){if(!NET.on||!NET.ch||!(running||playing))return;
