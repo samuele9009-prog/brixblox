@@ -544,6 +544,13 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
 .svr .btn,.svb .btn,.svp .btn{width:auto;margin:0}.svb{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .svp{margin-top:14px;padding:12px;border-radius:8px;background:#232527}[data-theme=light] .svp{background:#f2f4f6}.svp h4{margin:0 0 8px}
 .svp .addrow input{text-transform:uppercase;letter-spacing:.15em}.svp .own{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.overlay .fm-card{width:min(440px,100%)!important;max-height:94vh;overflow:auto;text-align:left}
+.fm-card h2{font-size:1.6rem}
+.fm-stage{position:relative;width:min(300px,100%);aspect-ratio:1;margin:8px auto;border-radius:22px;border:2px solid var(--line);overflow:hidden;touch-action:none;background:#f0c49a}
+.fm-stage canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none}
+.fm-guide{position:absolute;inset:14%;border:2px dashed rgba(0,0,0,.28);border-radius:18%;pointer-events:none}
+.fm-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+.fm-sw{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
 </style>
 </head>
 <body>
@@ -625,6 +632,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
             <button class="btn ghost small" type="button" data-a="wave" aria-pressed="false">Wave</button>
             <button class="btn ghost small" type="button" data-a="jump" aria-pressed="false">Jump</button>
             <button class="btn ghost small" type="button" id="av-face">Face close-up</button>
+            <button class="btn small" type="button" id="av-facemk">Make a face</button>
           </div>
           <div class="seg look-tabs" id="look-tabs">
             <button class="btn ghost small" type="button" data-k="shirt" aria-pressed="true">Shirt</button>
@@ -812,6 +820,23 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
   </div>
 </div>
 <aside id="dm" hidden><div class="dh"><div class="nm"><span id="dm-name"></span><small id="dm-st"></small></div><button id="dm-x" class="btn ghost small" type="button" aria-label="Close chat">&times;</button></div><div id="dm-log" class="dl"></div><form id="dm-f"><input id="dm-in" type="text" maxlength="500" placeholder="Message..." autocomplete="off"><button class="btn small" type="submit">Send</button></form></aside>
+<div id="fm" class="overlay" hidden role="dialog" aria-modal="true" aria-label="Face maker">
+  <div class="card fm-card">
+    <h2>Face maker</h2>
+    <p class="hint">Draw a face or upload a picture. It replaces the face on your character. Keep it inside the dashed box for the best look.</p>
+    <div class="fm-stage" id="fm-stage"><canvas id="fm-c" width="256" height="256" aria-label="Face drawing area"></canvas><i class="fm-guide"></i></div>
+    <div class="fm-row"><div class="seg" id="fm-tools" style="margin:0"><button class="btn ghost small" type="button" data-t="brush" aria-pressed="true">Brush</button><button class="btn ghost small" type="button" data-t="eraser" aria-pressed="false">Eraser</button></div>
+      <input id="fm-col" type="color" value="#2b1a12" aria-label="Brush color" style="width:40px;height:36px;padding:0;border:1px solid var(--line);border-radius:8px;background:none">
+      <span id="fm-sw" class="fm-row" style="margin:0;gap:4px"></span></div>
+    <div class="fm-row"><label class="hint" style="margin:0">Size <input id="fm-size" type="range" min="2" max="40" value="14"></label>
+      <label class="hint" style="margin:0;display:flex;align-items:center;gap:6px"><input id="fm-mir" type="checkbox" checked> Mirror</label></div>
+    <div class="fm-row" id="fm-starts"><span class="hint" style="margin:0">Start from:</span></div>
+    <div class="fm-row"><button class="btn ghost small" type="button" id="fm-up">Upload picture</button><input id="fm-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+      <button class="btn ghost small" type="button" id="fm-undo">Undo</button><button class="btn ghost small" type="button" id="fm-clear">Clear</button></div>
+    <div class="fm-row" style="margin-top:14px"><button class="btn small" type="button" id="fm-save">Save face</button><button class="btn ghost small" type="button" id="fm-def">Use default face</button><button class="btn ghost small" type="button" id="fm-x">Cancel</button></div>
+    <p id="fm-msg" class="hint"></p>
+  </div>
+</div>
 <div id="toast" role="status"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -949,7 +974,14 @@ function tooAlike(a,b){return colorDist(a,b)<MIN_LOOK_DIST}
 /* Each slot can hold up to 2 accessories (older saves held one id as a plain string) */
 function eqArr(v){return Array.isArray(v)?v.filter(function(x){return typeof x==='string'&&x}).slice(-2):(typeof v==='string'&&v?[v]:[])}
 function eqPut(arr,id){arr=arr.filter(function(x){return x!==id});arr.push(id);const it=itemById(id);return arr.slice(it&&it.slot==='shirt'?-1:-2)}
-function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:eqArr(e.hat),face:eqArr(e.face),facc:eqArr(e.facc),back:eqArr(e.back),neck:eqArr(e.neck),shirt:eqArr(e.shirt).slice(-1)},spent:a.spent||0,anim:(typeof a.anim==='string'&&/^sys_anp_[a-z0-9]{1,16}$/.test(a.anim))?a.anim:'',codes:Array.isArray(a.codes)?a.codes.filter(function(x){return typeof x==='string'}).slice(-500):[],codeBux:Math.max(0,Math.floor(+a.codeBux||0)),codeReset:a.codeReset?1:0,clog:Array.isArray(a.clog)?a.clog.slice(0,15).map(function(x){return {amount:+x.amount||0,reason:String(x.reason||'').slice(0,60),created_at:String(x.created_at||'')}}):[],skin:HEX.test(a.skin)?a.skin:DEF_SKIN,pants:HEX.test(a.pants)?a.pants:DEF_PANTS,
+/* ===== Custom faces =====
+   NOTE FOR FUTURE AIs: a player's custom face is a small PNG/WebP data URL (me.av.faceImg, max ~36 KB, 128x128), drawn or uploaded in the Face maker (avatar page).
+   It is NOT stored in the login profile (user_metadata goes into every request's token and would get too big). It lives in the public games row 'avatar_<id>' (field faceImg),
+   is copied into localStorage 'brixblox-me' (so Studio can read it) and is sent to other players in Studio's multiplayer heartbeat (field 'fc').
+   faceImg === undefined means "not loaded yet", '' means "default face". The picture is projected onto the FRONT of the head mesh (see faceDecal), replacing the FBX Face mesh. */
+const FACE_RE=/^data:image\/(png|webp|jpeg);base64,[A-Za-z0-9+\/=]+$/;
+function faceOk(s){return typeof s==='string'&&s.length<=36000&&FACE_RE.test(s)}
+function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:eqArr(e.hat),face:eqArr(e.face),facc:eqArr(e.facc),back:eqArr(e.back),neck:eqArr(e.neck),shirt:eqArr(e.shirt).slice(-1)},spent:a.spent||0,anim:(typeof a.anim==='string'&&/^sys_anp_[a-z0-9]{1,16}$/.test(a.anim))?a.anim:'',codes:Array.isArray(a.codes)?a.codes.filter(function(x){return typeof x==='string'}).slice(-500):[],codeBux:Math.max(0,Math.floor(+a.codeBux||0)),codeReset:a.codeReset?1:0,clog:Array.isArray(a.clog)?a.clog.slice(0,15).map(function(x){return {amount:+x.amount||0,reason:String(x.reason||'').slice(0,60),created_at:String(x.created_at||'')}}):[],faceImg:faceOk(a.faceImg)?a.faceImg:(a.faceImg===''?'':undefined),skin:HEX.test(a.skin)?a.skin:DEF_SKIN,pants:HEX.test(a.pants)?a.pants:DEF_PANTS,
     favI:Array.isArray(a.favI)?a.favI.filter(function(x){return typeof x==='string'&&x}).slice(0,100):[],
     favG:Array.isArray(a.favG)?a.favG.filter(function(g){return g&&g.id!=null}).slice(0,100).map(function(g){return {id:String(g.id),name:String(g.name||'').slice(0,60),ownerId:g.ownerId||null,ownerName:String(g.ownerName||'').slice(0,32)}}):[]}}
 function makeDemo(){
@@ -1026,7 +1058,8 @@ function makeDemo(){
 }
 function makeSupa(){
   const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,storage:{getItem:function(k){return store.get(k)},setItem:function(k,v){store.set(k,v)},removeItem:function(k){store.del(k)}}}});
-  async function profile(id,user){const r=await sb.from('profiles').select('id,username,avatar_color').eq('id',id).single();if(r.error)throw r.error;const md=(user&&user.user_metadata)||{};const em=(user&&user.email)||'';return {id:r.data.id,username:r.data.username,color:r.data.avatar_color,av:normAv(md.avatar),email:em.endsWith('@'+MAIL_DOMAIN)?'':em,pending:(user&&user.new_email)||'',age:md.age||null}}
+  async function profile(id,user){const r=await sb.from('profiles').select('id,username,avatar_color').eq('id',id).single();if(r.error)throw r.error;const md=(user&&user.user_metadata)||{};const em=(user&&user.email)||'';const av0=normAv(md.avatar);try{const q=await sb.from('games').select('data').eq('id','avatar_'+id).maybeSingle();let d=q.data&&q.data.data;if(typeof d==='string')d=JSON.parse(d);if(d&&(d.faceImg===''||faceOk(d.faceImg)))av0.faceImg=d.faceImg}catch(e){}
+    return {id:r.data.id,username:r.data.username,color:r.data.avatar_color,av:av0,email:em.endsWith('@'+MAIL_DOMAIN)?'':em,pending:(user&&user.new_email)||'',age:md.age||null}}
   async function call(body){const r=await fetch(SUPABASE_URL+'/functions/v1/account',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY},body:JSON.stringify(body)});let j={};try{j=await r.json()}catch(e){}if(!r.ok||j.error)throw new Error(j.error||(r.status===404?'ACCOUNT_FN_MISSING':'Something went wrong.'));return j}
   async function viaFn(body){const d=await call(body);const r=await sb.auth.setSession({access_token:d.access_token,refresh_token:d.refresh_token});if(r.error)throw r.error;return {profile:await profile(r.data.user.id,r.data.user)}}
   async function fixCall(body,tok){const r=await fetch(SUPABASE_URL+'/functions/v1/admin-fix',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+tok},body:JSON.stringify(body)});let j={};try{j=await r.json()}catch(e){}if(!r.ok||j.error)throw new Error(j.error||(r.status===404?'The admin-fix function is not deployed yet.':'Something went wrong.'));return j}
@@ -1136,8 +1169,9 @@ function makeSupa(){
     async codeDel(n){const r=await sb.from('games').delete().eq('id','sys_code_'+n).select('id');if(r.error)throw r.error;if(!(r.data||[]).length)throw new Error('That code could not be deleted. Only the admin who made it can delete it.')},
     async bankGift(id,n){const r=await sb.rpc('bank_admin_gift',{p_amount:n});if(r.error)throw r.error;return r.data},
     async bankTake(id,n){const r=await sb.rpc('bank_admin_take',{p_amount:n});if(r.error)throw r.error;return r.data},
-    async setAvatar(id,a){const r=await sb.auth.updateUser({data:{avatar:a}});if(r.error)throw r.error;try{await this.pubAvatar(id,a)}catch(e){console.warn('Avatar share failed',e);if(!window.__avWarn){window.__avWarn=1;toast('Friends cannot see your avatar yet: '+((e&&e.message)||e))}}},
-    async pubAvatar(id,a){if(!me||!a)return;const r=await sb.from('games').upsert({id:'avatar_'+id,owner_id:id,owner_name:me.username,name:'avatar',vis:'public',data:JSON.stringify({skin:a.skin,pants:a.pants,eq:a.eq,favI:a.favI||[],favG:a.favG||[]}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
+    async setAvatar(id,a){const meta=Object.assign({},a);delete meta.faceImg;const r=await sb.auth.updateUser({data:{avatar:meta}});if(r.error)throw r.error;try{await this.pubAvatar(id,a)}catch(e){console.warn('Avatar share failed',e);if(!window.__avWarn){window.__avWarn=1;toast('Friends cannot see your avatar yet: '+((e&&e.message)||e))}}},
+    async pubAvatar(id,a){if(!me||!a)return;let fi=a.faceImg;if(fi===undefined){try{const q=await sb.from('games').select('data').eq('id','avatar_'+id).maybeSingle();let d=q.data&&q.data.data;if(typeof d==='string')d=JSON.parse(d);fi=d&&faceOk(d.faceImg)?d.faceImg:''}catch(e){fi=''}}
+      const r=await sb.from('games').upsert({id:'avatar_'+id,owner_id:id,owner_name:me.username,name:'avatar',vis:'public',data:JSON.stringify({skin:a.skin,pants:a.pants,eq:a.eq,favI:a.favI||[],favG:a.favG||[],faceImg:faceOk(fi)?fi:''}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
     async setAccount(id,a,cur){const change=!!a.email&&a.email.toLowerCase()!==(cur||'').toLowerCase();const upd={data:{age:a.age}};if(change)upd.email=a.email;const r=await sb.auth.updateUser(upd,change?{emailRedirectTo:location.origin+location.pathname}:undefined);if(r.error)throw r.error;return {pending:change}},
     async setColor(id,c){const r=await sb.from('profiles').update({avatar_color:c}).eq('id',id);if(r.error)throw r.error},
     async submitRun(id,level,ms,coins){const r=await sb.rpc('submit_run',{p_level:level,p_time_ms:ms,p_coins:coins});if(r.error)throw r.error;return r.data},
@@ -1356,7 +1390,7 @@ $('n-home').onclick=function(){nav('home');loadGames()};$('n-discover').onclick=
 const FAV={r:null,sc:null,cam:null,fail:false,cache:{}};
 function friendAvatar(color,av){
   if(FAV.fail)return null;
-  av=normAv(av);const key=JSON.stringify([color,av.skin,av.pants,av.eq,Object.keys(FBXC).length,ITEMS.length]);
+  av=normAv(av);const key=JSON.stringify([color,av.skin,av.pants,av.eq,Object.keys(FBXC).length,ITEMS.length,av.faceImg?av.faceImg.length+':'+av.faceImg.slice(-30):'']);
   if(FAV.cache[key])return FAV.cache[key];
   try{
     if(!FAV.r){
@@ -2178,6 +2212,16 @@ async function loadItems(){
   try{await loadPacks()}catch(e){}
   if(me){pvRebuild();if(!$('p-avatar').hidden)paintShop();if(!$('p-catalog').hidden)paintCatalog();if(!$('p-item').hidden){paintItem();ivBuild()}loadFriends()}}
 function shirtOf(eq){const id=eq&&eqArr(eq.shirt).slice(-1)[0],it=id&&itemById(id);return it&&it.tex?it:null}
+/* Custom face: the picture is projected straight onto the front of the head mesh (so it follows the curve), only on the triangles that face front. */
+const FTEX={},FHG={};
+function faceMap(url){let t=FTEX[url];if(t)return t;const k=Object.keys(FTEX);if(k.length>12){try{FTEX[k[0]].dispose()}catch(e){}delete FTEX[k[0]]}
+  const img=new Image();t=new THREE.Texture(img);t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;img.onload=function(){t.needsUpdate=true};img.src=url;FTEX[url]=t;return t}
+function faceHeadGeo(flip){const key=flip?1:0;if(FHG[key])return FHG[key];
+  const W=1.2,H=1.2,g=chGeo('Head',!!flip,.012),P=g.attributes.position,n=P.count,uv=new Float32Array(n*2),ok=new Uint8Array(n);
+  for(let i=0;i<n;i++){const x=P.getX(i),y=P.getY(i),z=P.getZ(i);uv[i*2]=flip?.5-x/W:.5+x/W;uv[i*2+1]=.5+y/H;ok[i]=((flip?z<-.1:z>.1)&&Math.abs(x)<=W/2&&Math.abs(y)<=H/2)?1:0}
+  const ix=g.index.array,out=[];for(let i=0;i<ix.length;i+=3){if(ok[ix[i]]&&ok[ix[i+1]]&&ok[ix[i+2]])out.push(ix[i],ix[i+1],ix[i+2])}
+  g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.setIndex(out);g.userData.keep=true;return FHG[key]=g}
+function faceDecal(url,S){const f=new THREE.Mesh(faceHeadGeo(false),depthNudge(new THREE.MeshBasicMaterial({map:faceMap(url),transparent:true,alphaTest:.02}),.006,.0004));f.scale.set(S,S,S);f.renderOrder=2;f.userData.fcust=1;return f}
 function makeAvatar(color,eq,look){
   look=look||{};const g=new THREE.Group(),skin=look.skin||DEF_SKIN,leg=look.pants||DEF_PANTS,S=.34,fx={},sh=shirtOf(eq);
   /* Body = the meshes of character.fbx (sizes in studs, scaled by S). A shirt is a thin textured shell over the torso and both arms ONLY. */
@@ -2186,7 +2230,7 @@ function makeAvatar(color,eq,look){
     return m}
   const torso=body('Torso',color,true);torso.position.y=3*S;g.add(torso);
   const head=body('Head',skin);head.position.y=4.65*S;g.add(head);
-  const fg=chGeo('Face');fg.scale(S,S,S);const face=new THREE.Mesh(fg,new THREE.MeshBasicMaterial({color:0x2b1a12}));face.position.set(CHD.m.faceRel[0]*S,CHD.m.faceRel[1]*S,CHD.m.faceRel[2]*S);head.add(face);
+  const fg=chGeo('Face');fg.scale(S,S,S);const face=new THREE.Mesh(fg,new THREE.MeshBasicMaterial({color:0x2b1a12}));face.position.set(CHD.m.faceRel[0]*S,CHD.m.faceRel[1]*S,CHD.m.faceRel[2]*S);head.add(face);if(faceOk(look.faceImg)){face.visible=false;head.add(faceDecal(look.faceImg,S))}
   const L=[];
   [[-.4,2,'Lleg',leg,0],[.4,2,'Rleg',leg,0],[-1.1,3.9,'Larm',skin,1],[1.1,3.9,'Rarm',skin,1]].forEach(function(a){const pv=new THREE.Group();pv.position.set(a[0]*S,a[1]*S,0);g.add(pv);
     const m=body(a[2],a[3],a[4]);m.position.y=-S;pv.add(m);L.push(pv)});
@@ -2286,7 +2330,7 @@ function pvTick(now){
 function coinsEarned(){let n=10;Object.keys(recs).forEach(function(k){n+=recs[k].coins||0});return n}
 function balance(){return isBB()?Infinity:coinsEarned()+(bank&&bank.wallet||0)+(prem.bonus||0)+(gpe.total||0)+(tbe.total||0)+(adj.total||0)+cbx-(me.av.spent||0)-(prem.on?PREM_PRICE:0)}
 /* Always work from the newest copy of the account. A second computer (like a school laptop) can hold an old copy, and using it made codes redeem twice and spending go missing. */
-async function refreshAv(){try{const a=await api.freshAv(me.id);me.av=a;syncMe();return true}catch(e){return false}}
+async function refreshAv(){try{const a=await api.freshAv(me.id);if(a.faceImg===undefined&&me.av&&me.av.faceImg!==undefined)a.faceImg=me.av.faceImg;me.av=a;syncMe();return true}catch(e){return false}}
 /* Reload every part of the balance (account copy, premium/gamepass/admin amounts, Blockbank) so every page adds up the same */
 async function refreshMoney(){await refreshAv();await loadPrem();await loadBank()}
 async function saveAv(){try{await api.setAvatar(me.id,me.av);syncMe();return true}catch(e){toast('Could not save: '+errText(e));return false}}
@@ -2481,6 +2525,71 @@ function paintShop(){
 function edPreview(){const d=ED.draft,eq=me.av.eq,t=Object.assign({},eq);Object.keys(t).forEach(function(k){t[k]=eqArr(t[k]).filter(function(x){return x!==d.id})});t[d.slot]=eqPut(t[d.slot]||[],d.id);pv.tryEq=t;pvRebuild()}
 function openEdit(it){if(!isAdm())return;ED={id:it.id,draft:Object.assign({},it),guides:true};pvMode('idle');facePreview(true);pv.yaw=0;pv.pitch=.08;edPreview();edRender();$('acc-ed').scrollIntoView({block:'nearest',behavior:'smooth'})}
 function closeEdit(){ED=null;pv.tryEq=null;$('acc-ed').hidden=true;$('acc-ed').innerHTML='';pvRebuild();paintShop()}
+/* ===== Face maker (avatar page). Draws on a 256px canvas, saves a 128px PNG/WebP into me.av.faceImg. ===== */
+(function(){
+  const ov=$('fm'),cv=$('fm-c'),cx=cv.getContext('2d'),R=256,INK='#2b1a12';
+  let tool='brush',col=INK,size=14,mirror=true,hist=[],drawing=false,lx=0,ly=0;
+  const msg=function(t){$('fm-msg').textContent=t||''};
+  function snap(){try{hist.push(cx.getImageData(0,0,R,R));if(hist.length>25)hist.shift()}catch(e){}}
+  function clr(){cx.clearRect(0,0,R,R)}
+  function pos(e){const r=cv.getBoundingClientRect();return [(e.clientX-r.left)/r.width*R,(e.clientY-r.top)/r.height*R]}
+  function seg(x0,y0,x1,y1){cx.save();cx.lineCap=cx.lineJoin='round';cx.lineWidth=size;
+    if(tool==='eraser'){cx.globalCompositeOperation='destination-out';cx.strokeStyle='#000'}else cx.strokeStyle=col;
+    cx.beginPath();cx.moveTo(x0,y0);cx.lineTo(x1,y1);cx.stroke();
+    if(mirror){cx.beginPath();cx.moveTo(R-x0,y0);cx.lineTo(R-x1,y1);cx.stroke()}cx.restore()}
+  cv.addEventListener('pointerdown',function(e){e.preventDefault();cv.setPointerCapture(e.pointerId);snap();drawing=true;const p=pos(e);lx=p[0];ly=p[1];seg(lx,ly,lx+.01,ly)});
+  cv.addEventListener('pointermove',function(e){if(!drawing)return;const p=pos(e);seg(lx,ly,p[0],p[1]);lx=p[0];ly=p[1]});
+  const stop=function(){drawing=false};cv.addEventListener('pointerup',stop);cv.addEventListener('pointercancel',stop);
+  /* quick starting faces */
+  function eyeDots(r){cx.fillStyle=INK;[100,156].forEach(function(x){cx.beginPath();cx.ellipse(x,112,r||9,(r||9)*1.3,0,0,7);cx.fill()})}
+  function line(w,fn){cx.strokeStyle=INK;cx.lineWidth=w;cx.lineCap=cx.lineJoin='round';cx.beginPath();fn();cx.stroke()}
+  function smile(w,r,y){line(w||10,function(){cx.arc(128,y||104,r||46,.2*Math.PI,.8*Math.PI)})}
+  const STARTS={
+    Smile:function(){eyeDots();smile()},
+    Happy:function(){[100,156].forEach(function(x){line(9,function(){cx.arc(x,118,14,1.15*Math.PI,1.85*Math.PI)})});
+      cx.fillStyle=INK;cx.beginPath();cx.moveTo(86,142);cx.quadraticCurveTo(128,214,170,142);cx.closePath();cx.fill();cx.fillStyle='#ff8fa3';cx.beginPath();cx.ellipse(128,168,18,10,0,0,7);cx.fill()},
+    Wink:function(){cx.fillStyle=INK;cx.beginPath();cx.ellipse(100,112,9,12,0,0,7);cx.fill();line(9,function(){cx.moveTo(142,114);cx.lineTo(170,114)});smile()},
+    Cool:function(){cx.fillStyle=INK;[[78,98],[134,98]].forEach(function(a){cx.beginPath();cx.roundRect?cx.roundRect(a[0],a[1],44,32,9):cx.rect(a[0],a[1],44,32);cx.fill()});cx.fillRect(120,106,16,7);line(9,function(){cx.moveTo(100,160);cx.quadraticCurveTo(138,176,164,150)})},
+    Surprised:function(){[100,156].forEach(function(x){cx.fillStyle='#fff';cx.beginPath();cx.arc(x,110,15,0,7);cx.fill();line(5,function(){cx.arc(x,110,15,0,7)});cx.fillStyle=INK;cx.beginPath();cx.arc(x,110,6,0,7);cx.fill()});cx.fillStyle=INK;cx.beginPath();cx.ellipse(128,164,13,18,0,0,7);cx.fill()},
+    Silly:function(){eyeDots(8);cx.fillStyle=INK;cx.beginPath();cx.ellipse(156,110,13,17,0,0,7);cx.fill();smile(9,44,108);cx.fillStyle='#ff8fa3';cx.beginPath();cx.moveTo(116,150);cx.lineTo(116,176);cx.quadraticCurveTo(128,194,140,176);cx.lineTo(140,150);cx.closePath();cx.fill()},
+    Grumpy:function(){eyeDots(8);line(9,function(){cx.moveTo(80,86);cx.lineTo(116,98);cx.moveTo(176,86);cx.lineTo(140,98)});line(9,function(){cx.arc(128,182,34,1.2*Math.PI,1.8*Math.PI)})}};
+  Object.keys(STARTS).forEach(function(k){const b=document.createElement('button');b.type='button';b.className='btn ghost small';b.textContent=k;b.onclick=function(){snap();clr();STARTS[k]();msg('')};$('fm-starts').append(b)});
+  ['#2b1a12','#000000','#ffffff','#e5484d','#ff8fa3','#3b82f6','#2fa95a','#ffc233','#7a4cff'].forEach(function(c){const b=document.createElement('button');b.type='button';b.className='fm-sw';b.style.background=c;b.setAttribute('aria-label','Color '+c);b.onclick=function(){col=c;$('fm-col').value=c;setTool('brush')};$('fm-sw').append(b)});
+  function setTool(t){tool=t;$('fm-tools').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.t===t))})}
+  $('fm-tools').querySelectorAll('button').forEach(function(b){b.onclick=function(){setTool(b.dataset.t)}});
+  $('fm-col').oninput=function(){col=this.value;setTool('brush')};
+  $('fm-size').oninput=function(){size=+this.value};$('fm-mir').onchange=function(){mirror=this.checked};
+  $('fm-undo').onclick=function(){const h=hist.pop();if(h)cx.putImageData(h,0,0)};
+  $('fm-clear').onclick=function(){snap();clr()};
+  $('fm-up').onclick=function(){$('fm-file').click()};
+  $('fm-file').onchange=function(){const f=this.files&&this.files[0];this.value='';if(!f)return;
+    if(!/^image\//.test(f.type)){msg('Pick a picture file (PNG, JPG, WebP or GIF).');return}
+    const u=URL.createObjectURL(f),im=new Image();
+    im.onload=function(){snap();clr();const w=im.naturalWidth,h=im.naturalHeight,m=Math.min(w,h);cx.drawImage(im,(w-m)/2,(h-m)/2,m,m,0,0,R,R);URL.revokeObjectURL(u);msg('Picture added. You can draw on top of it, or press Save face.')};
+    im.onerror=function(){URL.revokeObjectURL(u);msg('Could not read that picture.')};im.src=u};
+  /* Shrinks the drawing to a small PNG/WebP (smallest that fits). A fully empty drawing saves as a see-through 1x1 image = no face at all. */
+  function exportFace(){
+    const d=cx.getImageData(0,0,R,R).data;let any=false;for(let i=3;i<d.length;i+=4){if(d[i]>8){any=true;break}}
+    if(!any){const c=document.createElement('canvas');c.width=c.height=1;return c.toDataURL('image/png')}
+    const sizes=[128,96,64];
+    for(let k=0;k<sizes.length;k++){const c=document.createElement('canvas');c.width=c.height=sizes[k];const x=c.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(cv,0,0,sizes[k],sizes[k]);
+      let best='';['image/png','image/webp'].forEach(function(f){const u=c.toDataURL(f,.88);if(u.indexOf('data:'+f)===0&&u.length<=34000&&(!best||u.length<best.length))best=u});
+      if(best&&faceOk(best))return best}
+    return ''}
+  function close(){ov.hidden=true;drawing=false}
+  function open(){
+    if(!me)return;ov.hidden=false;msg('');hist=[];$('fm-stage').style.background=(me.av&&me.av.skin)||'#f0c49a';clr();
+    const cur=me.av&&me.av.faceImg;
+    if(faceOk(cur)){const im=new Image();im.onload=function(){cx.drawImage(im,0,0,R,R)};im.src=cur}else STARTS.Smile()}
+  $('av-facemk').onclick=open;$('fm-x').onclick=close;
+  ov.addEventListener('pointerdown',function(e){if(e.target===ov)close()});
+  addEventListener('keydown',function(e){if(e.key==='Escape'&&!ov.hidden){e.stopPropagation();close()}},true);
+  async function commit(url,ok){const old=me.av.faceImg;me.av.faceImg=url;const saved=await saveAv();
+    if(!saved){me.av.faceImg=old;return}
+    close();pvRebuild();if(pv.mode!=='idle')pvMode('idle');facePreview(true);pv.yaw=0;pv.pitch=.08;toast(ok)}
+  $('fm-save').onclick=async function(){const u=exportFace();if(!u){msg('That picture has too much detail to save. Try a simpler one.');return}this.disabled=true;await commit(u,'Face saved');this.disabled=false};
+  $('fm-def').onclick=async function(){this.disabled=true;await commit('','Back to the default face');this.disabled=false};
+})();
 function facePreview(on){pv.ly=on?1.5:.95;pv.zoom=on?2.6:5.6;$('av-face').setAttribute('aria-pressed',String(on));$('av-face').textContent=on?'Full body':'Face close-up'}
 function readTex(f){return new Promise(function(ok,no){const u=URL.createObjectURL(f),im=new Image();
   im.onload=function(){const m=512,k=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));
