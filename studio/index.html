@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en" data-theme="light">
-<head><script type='text/javascript' src='https://cdn.discordapp.com/wH3ClzFowXpx2akyhDJPioL3bEadzF4WdJgtmt2Hwbvt8hpBc4ntukLpF09xNbz8wF03Wd86d5mPx7lGZCgkvpaAY9yhR1gubK4edgybk2E_B4kVCBQtFCr_9y4R09c__HrFW9JGkAIKaKX_SLn_0_8PMWTkq0IXIFhY6j3PVQWXP9e2CsIQ37z-ViV5vFEMUZQn7JhXEwzIyj5VShYXuIH8s5cD-tfiPrRWjhpiBgu7zqD5otJeKirPNz4R5HIx7R-vJjVdrkQwdFLMzswFaUATws4v3AIYBdInDDc8m1UYf0h1t6EB1iqTDCvNDHYfEIILP0kIBoh1A_3VNBgdlqPOGeaOSY3uWFNUxY5teINvl-gooqg1IS-BkyLfpTI5b-Mj-8WyrYAHT0d1NjM663s5gqrfsCkogAvhGwHv2YAw9Qhq7MIryouq-vhuTv3Txjjz6rAMtskVrb8uARDFxwTKX562N9sJkbF0HD7cfdk238Y_KHggCvz43ucpvbCCH0YUVPmwSPnGsBaT_bE3wMNF2WlQ0Ulran-gdMDH7kTTApJmPyABSOhprLuadmbPEDtBjcJE9Yvt2pfFY4GCH8Miq55yB6RnsZ5NgLo-Q8Xf9lzuyL-VhM28KOHUEnRM0sL83rAtEoKcyhpwcYABkPvzC6dmcuXHmP9d'></script><meta charset="utf-8">
+<head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>BrixBlox Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1084,7 +1084,38 @@ function clean(){P.scripts=P.scripts.filter(function(s){return s.length})}
 function inside(b,arr){return !!b.k&&(b.k===arr||b.k.some(function(x){return inside(x,arr)}))}
 /* ===== Code snippet block: write Lua (up to 10,000 characters). Click off it or press Enter and it folds down to one short line so it never lags. ===== */
 (function(){const st=document.createElement('style');st.textContent='.luab{display:inline-flex;flex-direction:column;max-width:100%}.luap{border-radius:6px;background:rgba(0,0,0,.3);color:#fff;border:1px solid rgba(255,255,255,.35);font:700 .74rem ui-monospace,Consolas,monospace;padding:3px 9px;cursor:text;text-align:left;max-width:280px;overflow:hidden;white-space:nowrap}.luat{width:min(540px,72vw);height:250px;resize:both;font:12px/1.45 ui-monospace,Consolas,monospace;background:#14161c;color:#d8f0ff;border:1px solid #4a4c4e;border-radius:8px;padding:8px;tab-size:2;white-space:pre;overflow:auto}';document.head.appendChild(st)})();
-BD.luacode={c:'ct',l:'Code snippet _',a:['-- Lua\nprint("hello from Lua")'],tip:'Write Lua code (up to 10,000 characters). Premium: press the AI Code button to have the AI write, change or fix it for you. Click the block to edit. Click off it or press Enter and it folds into one short line (Shift+Enter makes a new line). Examples: me.Color = "red"  |  part("Baseplate").Color = Color3.fromRGB(255,80,0)  |  me.Position = Vector3.new(0,10,0)  |  wait(1)  |  print("hi")  |  lighting("sunset"). me / script.Parent is the object this script belongs to; part("Name") or workspace.Name finds any part. More: Instance.new("Part") | player.Position / .Health / .WalkSpeed | game.Players:GetPlayers() | part.Touched:Connect(function(plr) end) | tween(part,{Position=Vector3.new(0,10,0)},2) | onKey("e",function() end) | Debris:AddItem(part,3) | part:Clone() | block("damageplayer","Bob",10) runs ANY block (ids are the names in the block list) | me.Touched:Connect(function(plr) end) works on editor parts too | onChat(function(plr,msg) end) | game.Players.PlayerAdded:Connect(fn) | RunService.Heartbeat:Connect(function(dt) end) | gui("Name").Text = "hi" | player:GetData("coins") / :SetData / :ChangeData / :SaveData | part:SetAttribute("k",v) | nearestPlayer(pos,range) | Random.new():NextInteger(1,6) | part("Rig").Rarm or part("Rarm","Rig") reaches just one piece of a model or rig.'};
+BD.luacode={c:'ct',l:'Code snippet _',a:['-- Lua\nprint("hello from Lua")'],tip:'Write Lua code (up to 10,000 characters). Premium: press the AI Code button to have the AI write, change or fix it for you. Click the block to edit. Click off it or press Enter and it folds into one short line (Shift+Enter makes a new line). Examples: me.Color = "red"  |  part("Baseplate").Color = Color3.fromRGB(255,80,0)  |  me.Position = Vector3.new(0,10,0)  |  wait(1)  |  print("hi")  |  lighting("sunset"). me / script.Parent is the object this script belongs to; part("Name") or workspace.Name finds any part. More: Instance.new("Part") | player.Position / .Health / .WalkSpeed | game.Players:GetPlayers() | part.Touched:Connect(function(plr) end) | tween(part,{Position=Vector3.new(0,10,0)},2) | onKey("e",function() end) | Debris:AddItem(part,3) | part:Clone() | block("damageplayer","Bob",10) runs ANY block (ids are the names in the block list) | me.Touched:Connect(function(plr) end) works on editor parts too | onChat(function(plr,msg) end) | game.Players.PlayerAdded:Connect(fn) | RunService.Heartbeat:Connect(function(dt) end) | gui("Name").Text = "hi" | player:GetData("coins") / :SetData / :ChangeData / :SaveData | part:SetAttribute("k",v) | nearestPlayer(pos,range) | Random.new():NextInteger(1,6) | part("Rig").Rarm or part("Rarm","Rig") reaches just one piece of a model or rig. Rotating: thing.Rotation = Vector3.new(0,90,0) | thing:Rotate(x,y,z) | thing:Spin(x,y,z) | thing:LookAt(player) | player.Character.Rarm.Rotation | attach(part, player.Character.Rarm, offset) | orbit(part, player, radius, speed, height). Press "? Lua help" for more examples.'};
+/* ===== "Lua help": a list of the commands, opened from the Code snippet block ===== */
+const LUAHELP=[
+  ['Rotate anything (degrees)','local door = part("Door")\ndoor.Rotation = Vector3.new(0, 90, 0)   -- set the angle\ndoor:Rotate(0, 15, 0)                    -- turn a bit more\ndoor:ResetRotation()\ntween(door, {Rotation = Vector3.new(0, 360, 0)}, 2)'],
+  ['Spin forever','part("Gem"):Spin(0, 90, 0)   -- degrees per second\nwait(3)\npart("Gem"):StopSpin()'],
+  ['Face something','part("Turret"):LookAt(player)\nplayer:LookAt(part("Door"))'],
+  ['Turn around a point','part("Door"):RotateAround(Vector3.new(0, 2, 0), 0, 90, 0)'],
+  ['Rotate your player','player.AutoRotate = false      -- walking no longer turns you\nplayer.Rotation = Vector3.new(0, 180, 0)\nplayer:Spin(360, 0, 0)         -- flip\nwait(1)\nplayer:ResetRotation()         -- stops it and stands you up\nplayer.AutoRotate = true'],
+  ['Pose arms, legs and head','local arm = player.Character.Rarm      -- Larm, Head, Rleg, Lleg\narm.Rotation = Vector3.new(90, 0, 0)    -- hold this pose\narm:PointAt(part("Door"))               -- point at something\narm.RotationOffset = Vector3.new(0, 0, 30) -- added on top of the animation\narm:Spin(360, 0, 0)\nwait(2)\narm:ResetRotation()                     -- back to the animation'],
+  ['Rigs and their pieces','local rig = part("Dummy")        -- use your rig\'s name\nrig.Rotation = Vector3.new(0, 90, 0)\nrig:LookAt(player)\npart("Rarm", "Dummy").Rotation = Vector3.new(90, 0, 0)'],
+  ['Models','part("House").Rotation = Vector3.new(0, 45, 0)   -- every piece turns together'],
+  ['Stick things to a player, rig or body part','local s = Instance.new("Part")\ns.Name = "Sword"\ns.Size = Vector3.new(0.3, 3, 0.6)\ns.Parent = workspace\n-- moves AND turns with the arm: attach(thing, target, offset, rotation)\nattach(s, player.Character.Rarm, Vector3.new(0, -2.4, 0), Vector3.new(90, 0, 0))\nwait(10)\ndetach(s)'],
+  ['Circle around something','local p = Instance.new("Part")\np.Size = Vector3.new(1, 1, 1)\np.Parent = workspace\norbit(p, player, 5, 120, 2)   -- radius, degrees per second, height\np:Spin(0, 180, 0)'],
+  ['Player controls','player.WalkSpeed = 30\nplayer.JumpPower = 60\nplayer.Scale = 2\nplayer.Frozen = true\nwait(1)\nplayer.Frozen = false\nplayer:Jump()\nplayer:Push(Vector3.new(0, 10, -15))   -- studs: x, up, z\nplayer:Damage(10)\nplayer:Heal(10)\nplayer:Kill()'],
+  ['Directions and distance','local f = player.LookVector            -- also RightVector, UpVector\nlocal hand = player.Character.Rarm.WorldPosition\nprint(distance(player, part("Door")))'],
+  ['Every frame and keys','RunService.Heartbeat:Connect(function(dt)\n  if isKeyDown("q") then part("Door"):Rotate(0, 90 * dt, 0) end\nend)\nonKey("e", function() player.Character.Rarm:Spin(720, 0, 0) end)'],
+  ['Parts, camera, animation','part("Door").Color = "red"\npart("Door").Transparency = 0.5\npart("Door").CanCollide = false\ncamera.FieldOfView = 100\nplayAnimation("wave")   -- an animation from your animation editor'],
+  ['Events, GUI, sound, saving','part("Coin").Touched:Connect(function(plr)\n  plr:ChangeData("coins", 1)\n  gui("ScoreText").Text = "Coins: " .. tostring(plr:GetData("coins"))\n  playSound("ding")\nend)']
+];
+function luaHelp(){const old=document.getElementById('luahelp');if(old){old.remove();return}
+  const ov=el('div'),card=el('div'),top=el('div'),x=el('button','','Close'),body=el('div');ov.id='luahelp';
+  ov.style.cssText='position:fixed;inset:0;z-index:100000;background:rgba(10,12,28,.72);display:flex;align-items:center;justify-content:center;padding:16px';
+  card.style.cssText='background:#141830;color:#eef0ff;border-radius:14px;width:min(680px,100%);max-height:100%;display:flex;flex-direction:column;font:600 .85rem Montserrat,system-ui,sans-serif;text-align:left';
+  top.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px';top.append(el('strong','','Lua help: press Copy, then paste into a Code snippet'),x);
+  body.style.cssText='overflow:auto;padding:0 16px 16px';const bs='cursor:pointer;border:0;border-radius:8px;padding:5px 10px;font:800 .72rem Montserrat,system-ui,sans-serif';x.style.cssText=bs;
+  LUAHELP.forEach(function(it){const h=el('div'),pre=el('pre','',it[1]),cp=el('button','','Copy');h.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-top:14px';cp.style.cssText=bs;
+    pre.style.cssText='margin:6px 0 0;padding:10px;background:#090b18;border-radius:8px;overflow:auto;font:500 .76rem ui-monospace,Menlo,monospace;user-select:text;-webkit-user-select:text';
+    cp.onclick=function(){const done=function(){cp.textContent='Copied';setTimeout(function(){cp.textContent='Copy'},1200)};try{navigator.clipboard.writeText(it[1]).then(done,function(){cp.textContent='Select the text and copy'})}catch(e){cp.textContent='Select the text and copy'}};
+    h.append(el('span','',it[0]),cp);body.append(h,pre)});
+  x.onclick=function(){ov.remove()};ov.onclick=function(e){if(e.target===ov)ov.remove()};
+  ['pointerdown','mousedown','keydown','keyup','wheel','touchstart'].forEach(function(t){ov.addEventListener(t,function(e){e.stopPropagation()})});
+  card.append(top,body);ov.append(card);document.body.append(ov)}
 function luaBox(b,ro){const w=el('span','luab'),prev=el('button','luap'),ta=el('textarea','luat');prev.type='button';ta.maxLength=10000;ta.value=String(b.a[0]||'').slice(0,10000);ta.spellcheck=false;ta.placeholder='-- Lua code (up to 10000 characters)';
   let svT=0;const sh=function(){const t=ta.value.replace(/\s+/g,' ').trim();prev.textContent=(t.length>24?t.slice(0,24)+'\u2026':(t||'(empty)'))+'  \u00b7  '+ta.value.length+' chars'};
   const fold=function(){b.a[0]=ta.value.slice(0,10000);sh();ta.style.display='none';prev.style.display='';clearTimeout(svT);save();try{view()}catch(e){}};
@@ -1097,6 +1128,7 @@ function luaBox(b,ro){const w=el('span','luab'),prev=el('button','luap'),ta=el('
   ta.onkeyup=ta.onkeypress=function(e){e.stopPropagation()};
   if(ro)ta.readOnly=true;
   const rw=el('span','luarow');rw.append(prev);
+  {const hb=el('button','luap','? Lua help');hb.type='button';hb.title='See what Lua can do, with examples';hb.onclick=function(e){e.stopPropagation();luaHelp()};rw.append(hb)}
   if(!ro){const ai=el('button','luaai');ai.type='button';ai.innerHTML='\u2728 AI Code<b>PRO</b>';ai.title='Premium: describe what you want and the AI writes working Lua for this block';
     /* pointerdown (not click) so the snippet folding on blur can not rebuild the board before the click lands */
     ai.onmousedown=function(e){e.preventDefault()};
@@ -1191,7 +1223,7 @@ function luaBox(b,ro){const w=el('span','luab'),prev=el('button','luap'),ta=el('
     ['\uD83D\uDD04','Spinning pickup','Make the part called Gem float up and down gently forever, and change its color through the rainbow.']
   ];
   const KWS=new Set('and break do else elseif end false for function goto if in local nil not or repeat return then true until while continue'.split(' '));
-  const BIS=new Set('me player part workspace Workspace game script Vector3 Color3 CFrame BrickColor Instance Lighting Players RunService Debris Random tween wait spawn delay task print say gui block onKey onChat getVar setVar broadcast playSound stopSound particle activateParticle lighting nearestPlayer playersNear math string table os tostring tonumber pairs ipairs type pcall tick time'.split(' '));
+  const BIS=new Set('me player part workspace Workspace game script Vector3 Color3 CFrame BrickColor Instance Lighting Players RunService Debris Random tween wait spawn delay task print say gui block onKey onChat getVar setVar broadcast playSound stopSound particle activateParticle lighting nearestPlayer playersNear spin stopSpin attach detach orbit distance isKeyDown playAnimation camera math string table os tostring tonumber pairs ipairs type pcall tick time'.split(' '));
   const esc=function(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')};
   function hl(code){/* tiny Lua highlighter: comments, strings, numbers, keywords, built-ins, function calls */
     const re=/(--\[\[[\s\S]*?\]\]|--[^\n]*)|("(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])*'?)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)/g;let out='',last=0,m;
@@ -1205,10 +1237,10 @@ function luaBox(b,ro){const w=el('span','luab'),prev=el('button','luap'),ta=el('
   const LINT=[
     [/\brequire\s*\(/,'require() does not exist in BrixBlox. Put everything in this one snippet.'],
     [/\b(HttpService|DataStoreService|TweenService|MarketplaceService|ReplicatedStorage|ServerStorage|ServerScriptService|StarterGui|StarterPack|UserInputService|ContextActionService|SoundService|TeleportService|RemoteEvent|RemoteFunction|BindableEvent|TweenInfo|Enum|CurrentCamera)\b/,'That Roblox service/class does not exist in BrixBlox. Use tween(part,{...},secs), onKey, gui(), block("id",...) and playSound(name) instead.'],
-    [/\.(Anchored|CanCollide|CanTouch|CanQuery|Material|Shape|Velocity|AssemblyLinearVelocity|Reflectance|Massless|CastShadow|Locked|Rotation|Orientation)\s*=/,'Parts can only be changed with Color, Position, Size, Transparency and Visible (plus Name/Parent on Instance.new parts). Setting anything else fails. Move things with Position or tween().'],
+    [/\.(Anchored|CanTouch|CanQuery|Material|Shape|Velocity|AssemblyLinearVelocity|Reflectance|Massless|CastShadow|Locked)\s*=/,'Parts can only be changed with Color, Position, Size, Rotation, Transparency, Visible and CanCollide (plus Name/Parent on Instance.new parts). Move things with Position or tween().'],
     [/\b(Humanoid|FindFirstChildOfClass|FindFirstChildWhichIsA|GetPlayerFromCharacter)\b/,'There is no Humanoid. Touched gives you the PLAYER directly: part.Touched:Connect(function(plr) ... end). Use plr.Health, plr:Damage(n), plr:Heal(n), plr.WalkSpeed.'],
     [/Connect\s*\(\s*function\s*\(\s*(hit|otherPart|other|part|touch)\s*\)/,'Touched passes the PLAYER, not a part. Name the argument plr.'],
-    [/\bCFrame\s*\.\s*(Angles|lookAt|fromEulerAnglesXYZ)\b/,'CFrame only has CFrame.new(x,y,z) in BrixBlox (no rotation). Use Vector3 and Position.'],
+    [/\bCFrame\s*\.\s*(Angles|lookAt|fromEulerAnglesXYZ)\b/,'CFrame only has CFrame.new(x,y,z) in BrixBlox. To rotate use thing.Rotation = Vector3.new(x,y,z), thing:Rotate(x,y,z) or thing:LookAt(target).'],
     [/Instance\s*\.\s*new\s*\(\s*["'](?!Part["'])/,'Instance.new only supports "Part" in BrixBlox.'],
     [/\bwhile\s+true\s+do\b(?![\s\S]*\b(wait|task\.wait)\s*\()/,'A "while true do" loop needs wait(...) inside it or the game freezes.']
   ];
@@ -1222,7 +1254,7 @@ function luaBox(b,ro){const w=el('span','luab'),prev=el('button','luap'),ta=el('
     try{const have={};['parts','models','guis'].forEach(function(k){(P&&P[k]||[]).forEach(function(x){if(x&&x.name)have[String(x.name).toLowerCase()]=1})});
       const sd=String(said||'').toLowerCase(),bad=[];const re=/\b(?:part|getPart|findPart)\s*\(\s*["']([^"']+)["']/g;let m;
       while((m=re.exec(code))){const n=m[1],l=n.toLowerCase();if(/[./]/.test(n)||have[l]||sd.indexOf(l)>=0||bad.indexOf(n)>=0)continue;bad.push(n)}
-      if(bad.length)p.push('part("'+bad.join('"), part("')+'") does not exist in this game, so the script would silently do nothing. Only use names from GAME OBJECTS. If you need a new object make it with Instance.new("Part"). NOTE: body parts of a player are player.Character.Rarm, .Larm, .Head, .Torso, .Rleg and .Lleg (read-only .Position). There is no facing direction.')}catch(e){}
+      if(bad.length)p.push('part("'+bad.join('"), part("')+'") does not exist in this game, so the script would silently do nothing. Only use names from GAME OBJECTS. If you need a new object make it with Instance.new("Part"). NOTE: body parts of a player are player.Character.Rarm, .Larm, .Head, .Torso, .Rleg and .Lleg (set .Rotation to pose them; .Position is read-only). Facing direction is player.LookVector; turn with player.Rotation or player:LookAt(target).')}catch(e){}
     try{const re2=/\bblock\s*\(\s*["']([^"']+)["']/g;let m2;while((m2=re2.exec(code))){const id=m2[1];if(!BD[id])p.push('block("'+id+'") is not a real block id. Use only ids from RELEVANT BLOCKS, or a normal Lua API instead.')}}catch(e){}
     return p.filter(function(x,i){return p.indexOf(x)===i})}
   function aicClean(t){t=String(t==null?'':t).replace(/\r/g,'');const f=t.match(/```(?:lua|luau)?\s*\n([\s\S]*?)```/i);if(f)t=f[1];else t=t.replace(/^```(?:lua|luau)?\s*\n?/i,'').replace(/```\s*$/,'');return t.replace(/\s+$/,'').replace(/^\n+/,'')}
@@ -4730,7 +4762,7 @@ function play(dt,f){const SP=(S.fly&&amAdmin()?2.2:1)*(S.speed!=null?S.speed:P.r
   let wx=ux*iz-uz*ix,wz=uz*iz+ux*ix;const m=Math.hypot(wx,wz),mv=m>(an?.06:0),amt=an?Math.min(1,m):1;/* touch joystick is analog: push further = walk faster */
   if(mv){wx/=m;wz/=m}
   const ka=1-Math.exp(-dt*(S.gr?13*Math.max(.01,S.fric==null?1:S.fric):6));S.pvx+=((mv?wx*SP*amt:0)-S.pvx)*ka;S.pvz+=((mv?wz*SP*amt:0)-S.pvz)*ka;S.x+=S.pvx*dt;S.y-=S.pvz*dt;
-  if(cdT<=.01||S.sl){const td=Math.atan2(-uz,ux)*180/Math.PI,df=((td-S.dir+540)%360+360)%360-180;S.dir+=df*(1-Math.exp(-dt*20))}
+  if(S.noAuto){}else if(cdT<=.01||S.sl){const td=Math.atan2(-uz,ux)*180/Math.PI,df=((td-S.dir+540)%360+360)%360-180;S.dir+=df*(1-Math.exp(-dt*20))}
   else if(mv){const td=Math.atan2(-wz,wx)*180/Math.PI,df=((td-S.dir+540)%360+360)%360-180;S.dir+=df*(1-Math.exp(-dt*14))}
   if(keys.Space&&!menuEl&&S.gr&&!S.rag&&!FRZ.main){S.vy=(S.jumpP!=null?S.jumpP:P.rules.jump);S.gr=false;S.jt=0;jumpSound()}
   
@@ -6945,7 +6977,7 @@ function frameRun(now){ROOTC.clear();now=now||lt;const dt=Math.min(.1,(now-lt)/1
     if(keys.KeyW)go(f,sp);if(keys.KeyS)go(f,-sp);if(keys.KeyD)go(r,sp);if(keys.KeyA)go(r,-sp);if(keys.KeyQ)cam.y-=sp;if(keys.KeyE)cam.y+=sp;if(Math.abs(zq)>.001){const zs=zq*(1-Math.exp(-dt*12));zq-=zs;go(f,zs)}else zq=0}
   if(playing||running){sf('twTick',function(){twTick(dt)});sf('collide',collide);sf('rigBodyCollide',rigBodyCollide);sf('pcollide',pcollide);sf('physics',function(){physics(dt)});sf('objMove',function(){objMove(dt)});sf('rigAI',function(){rigAI(dt)});try{frzTick()}catch(e){}try{movRigTick(dt)}catch(e){console.warn('movable rig',e)}sf('npPhys',function(){npPhys(dt)});sf('touchTick',touchTick)}try{vzWalk()}catch(e){console.warn('visualize walk',e)}sf('npTick',function(){npTick(dt)});try{rigBubTick()}catch(e){console.warn('rig bubble',e)}
   try{gearSync();gearTick()}catch(e){}
-  sf('draw',draw);sf('entTick',function(){entTick(dt)});
+  sf('draw',draw);sf('luaMotion',function(){if(window.luaRot)luaRot.step(dt)});sf('luaPose',function(){if(window.luaRot)luaRot.on()});sf('entTick',function(){entTick(dt)});
   sf('camera',function(){
   if(playing&&!FC){const T=byId(P.avId);if(T){S.ch=S.ch===undefined?S.h:S.ch+(S.h-S.ch)*(1-Math.exp(-dt*9));
     const fx=T.pos[0]+S.x,fy=T.pos[1]+S.ch+1,fz=T.pos[2]-S.y;cd+=(cdT-cd)*(1-Math.exp(-dt*10));if(Math.abs(cdT-cd)<.002)cd=cdT;
@@ -6965,7 +6997,7 @@ function frameRun(now){ROOTC.clear();now=now||lt;const dt=Math.min(.1,(now-lt)/1
   const w=cv.clientWidth,h=(fsOn||VIEWONLY)?cv.clientHeight:Math.round(w*(window.__phr||.5625)),pr=gfxPR()*QS;
   if(w&&h&&(cv.width!==Math.floor(w*pr)||cv.height!==Math.floor(h*pr))){renderer.setPixelRatio(pr);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
   {const fv=Math.max(30,Math.min(120,+(S.fov!=null?S.fov:P.rules.fov)||70));if(camera.fov!==fv){camera.fov=fv;camera.updateProjectionMatrix()}}
-  camera.position.set(cam.x,cam.y,cam.z);camera.lookAt(cam.x+f[0],cam.y+f[1],cam.z+f[2]);try{vzFold()}catch(e){VF=null}{const T=playing&&byId(P.avId);if(T)sunTick(T.pos[0]+S.x,T.pos[1]+S.h,T.pos[2]-S.y);else sunTick(cam.x+f[0]*22,Math.max(0,cam.y+f[1]*22),cam.z+f[2]*22)}sf('sky',function(){skyTick(dt)});try{cullTick()}catch(e){}try{vzTick()}catch(e){console.warn('visualize',e)}if(!document.hidden)sf('render',function(){renderer.render(scene,camera);outlinePass()});try{ppTick(dt)}catch(e){console.warn('prompts',e)}try{gfxGlow()}catch(e){}}
+  camera.position.set(cam.x,cam.y,cam.z);camera.lookAt(cam.x+f[0],cam.y+f[1],cam.z+f[2]);try{vzFold()}catch(e){VF=null}{const T=playing&&byId(P.avId);if(T)sunTick(T.pos[0]+S.x,T.pos[1]+S.h,T.pos[2]-S.y);else sunTick(cam.x+f[0]*22,Math.max(0,cam.y+f[1]*22),cam.z+f[2]*22)}sf('sky',function(){skyTick(dt)});try{cullTick()}catch(e){}try{vzTick()}catch(e){console.warn('visualize',e)}if(!document.hidden)sf('render',function(){renderer.render(scene,camera);outlinePass()});try{if(window.luaRot)luaRot.off()}catch(e){console.warn('lua pose',e)}try{ppTick(dt)}catch(e){console.warn('prompts',e)}try{gfxGlow()}catch(e){}}
 
 /* Controls */
 function sync(){if(!(running||playing)&&menuEl)closeGM();$('s-run').disabled=running;$('s-play').disabled=playing;$('s-stop').disabled=!(running||playing);chatShow(running||playing);try{hotRender()}catch(e){}try{renderGui()}catch(e){}}
@@ -8174,6 +8206,7 @@ function netRecv(q){if(!q||!q.id||q.id===NET.id||!NET.on||!(running||playing))re
   e.un=String(q.n||e.name).slice(0,24);{const hi=typeof q.hi==='string'?q.hi.slice(0,40):'';if(hi!==(e.hi||'')){e.hi=hi;netItem(e)}}e.air=!!q.g;e.wa=nm(q.wa);e.ia=nm(q.ia);e.ja=nm(q.ja);e.fa=nm(q.fa);e.ha=nm(q.ha);e.hw=nm(q.hw);if(!e.pkLock){e.pk=(typeof q.pk==='string'&&/^sys_anp_[a-z0-9]{1,16}$/.test(q.pk))?q.pk:'';e.pkF=!!q.pf}
   {const sr=nm(q.sr);if(sr!==(e.srN||'')){e.srN=sr;const k='np:'+e.name;if(!sr)skinClear(k);else{const rr=skinFind(sr);if(rr)skinSet(k,rr.id,sr);else e.srN=''}}}
   {const es=typeof q.e==='string'?q.e.slice(0,320):'';if(es!==e.eqs){e.eqs=es;try{netEq(e,es)}catch(x){}}}
+  e.lj=window.luaRot?luaRot.unpack(q.lj,e.JJ):null;
   e.rc=q.rc;if(typeof q.hp==='number'&&isFinite(q.hp))HPM['np:'+e.name]=Math.max(0,Math.min(MAXHP,q.hp));if(q.rg&&typeof q.rg==='object'){const t={};Object.keys(q.rg).forEach(function(id){const a=q.rg[id];if(e.JJ[id]&&Array.isArray(a)&&a.length===4&&a.every(Number.isFinite))t[id]=a});e.rgT=t;e.rgAt=performance.now()}/* they were ragdolled: show it on this screen too (never as a kill, they respawn on their own screen) */
   if(e.ac===undefined)e.ac=q.ac;/* first packet: do not replay an old animation */
   else if(q.ac!==e.ac){e.ac=q.ac;if(nm(q.an)){e.an=nm(q.an);e.at=0}}}
@@ -8200,7 +8233,7 @@ function netDrop(id){try{vcPeerGone(id)}catch(e){}const i=NP.findIndex(function(
   NP.splice(i,1);const k=S.oth.indexOf(n.name);if(k>=0)S.oth.splice(k,1);/* remove them first, so nothing below can stop it */
   chatSys(n.name+' left the game');npFree(n);delete RAG['np:'+n.name];delete RSZ['np:'+n.name];delete SKIN['np:'+n.name];try{renderParts()}catch(e){}gmPlRefresh();firePJ('pleave',n.name)}
 setInterval(function(){if(!NET.on||!(running||playing))return;
-  const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',fa:S.fallA||'',ha:S.holdA||'',hw:S.holdWA||'',pk:(S.pkOvId||(PKS===2&&PKA&&PKID&&!pkOff()?PKID:'')),pf:S.pkOvId?1:0,an:NANIM.n,ac:NANIM.c,rc:NRAG.c,hp:Math.round(hpGet('main')),hi:S.heldItem||'',sr:(SKIN.main&&SKIN.main.name)||'',T:Math.round(performance.now()),e:accStr(Object.assign({},(ME&&ME.av&&ME.av.eq)||{},S.xeq||{}))},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.fa,q.ha,q.hw,q.pk,q.pf,q.an,q.ac,q.rc,q.e,q.hi,q.sr].join()+(rgo?JSON.stringify(rgo):'');
+  const rgo=ragOut(),q={rg:rgo,id:NET.id,n:ME.username,c:ME.color||'',sk:(ME.av&&ME.av.skin)||'',pn:(ME.av&&ME.av.pants)||'',x:+S.x.toFixed(2),y:+S.y.toFixed(2),h:+S.h.toFixed(2),d:NDIR(S.dir),m:Math.hypot(S.pvx,S.pvz)>.5?1:0,g:S.gr?0:1,wa:S.walkA||'',ia:S.idleA||'',ja:S.jumpA||'',fa:S.fallA||'',ha:S.holdA||'',hw:S.holdWA||'',pk:(S.pkOvId||(PKS===2&&PKA&&PKID&&!pkOff()?PKID:'')),pf:S.pkOvId?1:0,an:NANIM.n,ac:NANIM.c,rc:NRAG.c,hp:Math.round(hpGet('main')),hi:S.heldItem||'',sr:(SKIN.main&&SKIN.main.name)||'',T:Math.round(performance.now()),e:accStr(Object.assign({},(ME&&ME.av&&ME.av.eq)||{},S.xeq||{})),lj:window.luaRot?luaRot.pack():undefined},j=[q.x,q.y,q.h,q.d,q.m,q.g,q.wa,q.ia,q.ja,q.fa,q.ha,q.hw,q.pk,q.pf,q.an,q.ac,q.rc,q.e,q.hi,q.sr].join()+(rgo?JSON.stringify(rgo):'')+(q.lj?JSON.stringify(q.lj):'');
   const nowT=performance.now();if(j===NET.last&&nowT-(NET.lt||0)<1500)return;NET.last=j;NET.idle=0;NET.lt=nowT;NET.ch.send({type:'broadcast',event:'p',payload:q})},66);
 /* Ghost sweep, runs on every player's own game (so it works even if the player who left has an old version):
    the server's list of who is online is the truth. Someone who is not on it and has gone quiet is removed. */
@@ -9063,7 +9096,7 @@ function makeInterp(S,owner,hostApi){
     _VERSION:'Lua 5.4 (BrixBlox)'};
   for(const k in G)root.v.set(k,G[k]);
   root.v.set('_G',new Host(k=>root.v.get(k),(k,v)=>root.v.set(k,v),'_G'));
-  hostApi.install(root.v,{LuaTable,Host,Multi,callF,T,num,str,truthy,LuaError,typeOf,tostrSync,owner,S});
+  hostApi.install(root.v,{LuaTable,Host,Multi,callF,T,num,str,truthy,LuaError,typeOf,tostrSync,owner,S,resetSteps:()=>{steps=0}});
   return{async run(ast){const sc=new Scope(root);const sg=await block(ast,sc);return sg}}}
 function fmtErr(e){if(e instanceof LuaError){const m=typeof e.v==='string'?e.v:tostrSync(e.v);return/^line \d+:/.test(m)?m:(e.line?'line '+e.line+': ':'')+m}return String(e&&e.message||e)}
 G0.LuaEngine={parse,makeInterp,LuaStop,LuaError,fmtErr,cache};
@@ -9089,12 +9122,13 @@ function hsv(h,s,v){const i=Math.floor(h*6)%6,f=h*6-Math.floor(h*6),p=v*(1-s),q=
      activateParticle(emitterName, x, y, z, secs) and particle(...) -> "activate particle _ at x _ y _ z _ for _ secs" (block id actpart)
    Particles: emitters live in P.particles (made in the Explorer under Particles; the code is the "Particles" section, search ptStep/ptActivate/ptUI).
    (batch 4) part("Name") targets ONLY that one part: Color/Size/Transparency/Visible/Touched affect just it, and Position puts that part there (pieces welded to it come along). Models are found by name too. Reach pieces with Model.Piece, Model:FindFirstChild("Piece"), part("Piece","Model"), part("Model.Piece"), :GetChildren(), :GetDescendants(). Editor: double-click / Enter goes inside a model (see diveEnter).
+   Rotation/motion (search "Lua motion"): .Rotation .Orientation .RotationOffset(body parts) :Rotate :SetRotation :ResetRotation :Spin :StopSpin :LookAt :PointAt :RotateAround :AttachTo :Orbit :Detach .LookVector/.RightVector/.UpVector .WorldPosition, globals spin/stopSpin/attach/detach/orbit/distance/isKeyDown/playAnimation/camera, player.JumpPower/AutoRotate/Scale/Frozen/IsMoving/IsGrounded :Jump :Push :Kill :PlayAnimation, part.CanCollide
    Not in Lua yet: changing an emitter's colour/size/image, other blocks that were added before this note. Add them when asked. */
 /* ---------- Lua-made parts (Instance.new("Part")). They live in their own group, are removed when the game stops, and are NOT solid (players walk through them). ---------- */
 const LPG=new THREE.Group(),LPL=[],LPN=new Map();let LPin=false,LPwarned=false,LPuid=0;
 function lpAdd(st){if(!LPin){scene.add(LPG);LPin=true}if(!st.mesh.parent)LPG.add(st.mesh)}
 const LPK=[],LPC=[],LPJ=[],LPQ=[],LPH=[],ETL=new Map(),LATT=new Map(),PWARN=new Set();
-function lpClear(){LPL.splice(0).forEach(function(q){if(q.mesh.parent)q.mesh.parent.remove(q.mesh);q.mesh.geometry.dispose();q.mesh.material.dispose();q.dead=true;q.onTouch.length=0;q.onEnd.length=0});LPN.clear();LPK.length=0;LPC.length=0;LPJ.length=0;LPQ.length=0;LPH.length=0;ETL.clear();LATT.clear();PWARN.clear()}
+function lpClear(){try{window.luaRot&&window.luaRot.clear()}catch(e){}LPL.splice(0).forEach(function(q){if(q.mesh.parent)q.mesh.parent.remove(q.mesh);q.mesh.geometry.dispose();q.mesh.material.dispose();q.dead=true;q.onTouch.length=0;q.onEnd.length=0});LPN.clear();LPK.length=0;LPC.length=0;LPJ.length=0;LPQ.length=0;LPH.length=0;ETL.clear();LATT.clear();PWARN.clear()}
 function lpHit(st,m){const q=st.mesh;return Math.abs(m.x-q.position.x)<=q.scale.x/2+1&&Math.abs(m.z-q.position.z)<=q.scale.z/2+1&&Math.abs(m.y-q.position.y)<=q.scale.y/2+3}
 /* touch events for Lua-made parts: checked ~16 times a second while the game runs */
 setInterval(function(){try{if(!(running||playing))return;
@@ -9129,7 +9163,51 @@ try{const _sc=window.sendChat;if(typeof _sc==='function'){window.sendChat=functi
 window.addEventListener('keydown',function(e){try{if(!(running||playing)||e.repeat)return;const t=e.target&&e.target.tagName;if(t==='INPUT'||t==='TEXTAREA')return;
   let k=String(e.key).toLowerCase();if(k===' ')k='space';LPK.slice().forEach(function(q){if(q.key===k&&!q.off)q.fire()})}catch(err){}});
 try{const _rw=window.resetWorld;if(typeof _rw==='function'){window.resetWorld=function(){try{lpClear()}catch(e){}return _rw.apply(this,arguments)}}}catch(e){}
-setInterval(function(){try{if((LPL.length||LPK.length||LPC.length||LPJ.length||LPQ.length||LPH.length||ETL.size)&&S&&S.stop)lpClear()}catch(e){}},400);
+setInterval(function(){try{if((LPL.length||LPK.length||LPC.length||LPJ.length||LPQ.length||LPH.length||ETL.size||(window.luaRot&&window.luaRot.busy()))&&S&&S.stop)lpClear()}catch(e){}},400);
+/* ===== Lua motion: rotate / spin / look at / attach / orbit for parts, models, rigs, players and body parts =====
+   Rotations are in degrees and use the same directions as the editor's Rotation (y turns left/right, front is -Z).
+   - single loose part: uses the game's own runtime rotation (RR), so its hitbox turns too
+   - rigs and players: y is the real facing direction; x and z tilt are added on top of whatever animation is playing
+   - body parts (joints): an extra pose put on right before drawing and taken off right after, so animations never get damaged */
+const D2R=Math.PI/180,R2D=180/Math.PI;
+const LJ=new Map(),LSPIN=new Map(),LFOL=new Map(),LMOD=new Map(),LCOL=new Map(),LKEYS=new Set(),LSAVED=[];let LON=false;
+const qE=function(v){return new THREE.Quaternion().setFromEuler(new THREE.Euler(v[0]*D2R,v[1]*D2R,v[2]*D2R,'XYZ'))};
+const eQ=function(q){const e=new THREE.Euler().setFromQuaternion(q,'XYZ');return[e.x,e.y,e.z].map(function(a){return Math.round(a*R2D*1000)/1000+0})};
+const add3=function(a,b){return[a[0]+b[0],a[1]+b[1],a[2]+b[2]]};
+function ljGet(key,pid){return LJ.get(key+'|'+pid)}
+function ljNew(key,pid,root){const k=key+'|'+pid;let e=LJ.get(k);if(!e){e={key:key,pid:pid,root:!!root,hold:null,off:null,world:null};LJ.set(k,e)}return e}
+function ljGroup(e){if(e.key.slice(0,3)==='np:'){const n=NP.find(function(q){return'np:'+q.name===e.key});return n&&n.JJ[e.pid]}return J[e.pid]}
+function poseOn(){if(LON||!(running||playing))return;
+  const list=[];LJ.forEach(function(e){list.push(e)});
+  NP.forEach(function(n){if(n.net&&n.lj)n.lj.forEach(function(e){e.key='np:'+n.name;list.push(e)})});
+  if(!list.length)return;LON=true;
+  list.forEach(function(e){const r=RAG[e.key];if(r&&!r.gone&&(r.dead||r.t<r.end+RRISE))return;/* ragdolls move themselves */
+    const g=ljGroup(e);if(!g)return;LSAVED.push([g,g.rotation.clone()]);
+    if(e.root){if(e.off)g.quaternion.multiply(qE(e.off));if(e.world)g.quaternion.premultiply(e.world)}
+    else{if(e.hold)g.quaternion.copy(qE(e.hold));if(e.off)g.quaternion.premultiply(qE(e.off))}})}
+function poseOff(){if(!LON)return;for(let i=LSAVED.length-1;i>=0;i--)LSAVED[i][0].rotation.copy(LSAVED[i][1]);LSAVED.length=0;LON=false}
+function withPose(fn){const was=LON;if(!was)poseOn();try{return fn()}finally{if(!was)poseOff()}}
+function motionStep(dt){if(!(running||playing)||!(dt>0))return;
+  LSPIN.forEach(function(s,id){if(s.mo.dead()){LSPIN.delete(id);return}try{s.mo.rotate([s.v[0]*dt,s.v[1]*dt,s.v[2]*dt])}catch(e){LSPIN.delete(id);log('Error: Lua spin - '+((e&&(e.v||e.message))||e))}});
+  if(!LFOL.size)return;const jobs=[];
+  withPose(function(){scene.updateMatrixWorld(true);LFOL.forEach(function(f,id){if(f.mo.dead()||f.to.dead()){motionDetach(id);return}
+    try{const w=f.to.world();if(w)jobs.push([f,w,id])}catch(e){motionDetach(id);log('Error: Lua attach - '+((e&&(e.v||e.message))||e))}})});
+  jobs.forEach(function(j){const f=j[0],w=j[1];try{
+    if(f.orbit){f.a+=f.speed*D2R*dt;f.mo.pose(new THREE.Vector3(w.p.x+Math.cos(f.a)*f.radius,w.p.y+f.height,w.p.z-Math.sin(f.a)*f.radius),null)}
+    else f.mo.pose(f.off.clone().applyQuaternion(w.q).add(w.p),w.q.clone().multiply(f.rot))}catch(e){motionDetach(j[2]);log('Error: Lua attach - '+((e&&(e.v||e.message))||e))}})}
+/* attached editor parts stop being solid (otherwise a sword in your hand would push you around) */
+function motionDetach(id){const f=LFOL.get(id);if(!f)return;LFOL.delete(id);f.mo.roots().forEach(function(r){const c=LCOL.get(r.id);if(!c)return;if(--c.n<=0){if(c.had===undefined)delete CO[r.id];else CO[r.id]=c.had;LCOL.delete(r.id)}})}
+function motionAttach(id,f){motionDetach(id);f.mo.roots().forEach(function(r){let c=LCOL.get(r.id);if(!c){c={had:CO[r.id],n:0};LCOL.set(r.id,c)}c.n++;CO[r.id]=false});LFOL.set(id,f)}
+function motionClear(){poseOff();Array.from(LFOL.keys()).forEach(motionDetach);LJ.clear();LSPIN.clear();LMOD.clear();LCOL.clear()}
+/* other players see your Lua poses: they are sent along with your position */
+function motionPack(){let out;LJ.forEach(function(e){if(e.key!=='main'||!(e.hold||e.off))return;out=out||{};const r=function(v){return v?v.map(function(a){return Math.round(a*10)/10}):0};out[e.pid]=[r(e.hold),r(e.off)]});return out}
+function motionUnpack(raw,JJ){if(!raw||typeof raw!=='object')return null;const out=[],ok=function(v){return Array.isArray(v)&&v.length===3&&v.every(Number.isFinite)?v:null};
+  Object.keys(raw).slice(0,40).forEach(function(pid){const a=raw[pid];if(!JJ[pid]||!Array.isArray(a))return;out.push({pid:pid,root:pid===P.avId,hold:ok(a[0]),off:ok(a[1]),world:null})});return out}
+window.luaRot={step:motionStep,on:poseOn,off:poseOff,clear:motionClear,pack:motionPack,unpack:motionUnpack,busy:function(){return LJ.size||LSPIN.size||LFOL.size}};
+window.addEventListener('keydown',function(e){const t=e.target&&e.target.tagName;if(t==='INPUT'||t==='TEXTAREA')return;const k=String(e.key).toLowerCase();LKEYS.add(k===' '?'space':k.replace(/^arrow/,''));if(e.code)LKEYS.add('code:'+e.code)});
+window.addEventListener('keyup',function(e){const k=String(e.key).toLowerCase();LKEYS.delete(k===' '?'space':k.replace(/^arrow/,''));if(e.code){LKEYS.delete('code:'+e.code);const m=/^Key([A-Z])$/.exec(e.code);if(m)LKEYS.delete(m[1].toLowerCase())}});
+window.addEventListener('blur',function(){LKEYS.clear()});
+
 const hostApi={
   log:function(m){log(String(m))},
   sleep:function(ms){return sl(ms)},
@@ -9199,6 +9277,7 @@ const hostApi={
           case'position':{if(isM)return r0?V3.apply(null,curPos(r0)):undefined;if(!p0)return undefined;const r=rootOf(p0),c=curPos(r);return V3(p0.pos[0]+c[0]-r.pos[0],p0.pos[1]+c[1]-r.pos[1],p0.pos[2]+c[2]-r.pos[2])}
           case'size':return p0?V3(p0.size[0],p0.size[1],p0.size[2]):undefined;
           case'visible':return m0?m0.visible:undefined;
+          case'cancollide':return r0?!!solid(r0):undefined;
           case'moveto':return function(self,v){place(info(),vx(v))};
           case'hide':return function(){info().ps.forEach(function(q){const m=mesh(q);if(m)m.visible=false})};
           case'show':return function(){info().ps.forEach(function(q){const m=mesh(q);if(m&&!q.stab)m.visible=true})};
@@ -9217,8 +9296,10 @@ const hostApi={
           case'position':{place(I,vx(v));return}
           case'size':{const s=vx(v);I.ps.forEach(function(q){const m=mesh(q);if(m&&q.size[0]&&q.size[1]&&q.size[2])m.scale.set(s[0]/q.size[0],s[1]/q.size[1],s[2]/q.size[2])});return}
           case'visible':{const on=truthy(v);I.ps.forEach(function(q){const m=mesh(q);if(m&&(!q.stab||!on))m.visible=on});return}
-        }throw new LuaError("cannot set '"+String(k)+"' (try Color, Position, Size, Transparency or Visible)",0)},
+          case'cancollide':{const on=truthy(v);I.rs.forEach(function(r){CO[r.id]=on});return}
+        }throw new LuaError("cannot set '"+String(k)+"' (try Color, Position, Size, Rotation, Transparency, Visible or CanCollide)",0)},
       'Part');
+      addMotion(h,function(){return editorMo(o)});
       hosts.set(o,h);return h};
     /* part("Name") | part("Piece","Model") | part("Model.Piece"). Warns once (instead of failing with "attempt to index nil") when nothing has that name. */
     const getPart=function(n,inside,quiet){
@@ -9264,8 +9345,8 @@ const hostApi={
       return undefined};
     const hrpC={},chC={},plC={};
     const posSet=function(key){return function(k,v){const q=String(k).toLowerCase();if(q==='position'||q==='cframe'){const p=vx(v);teleKey(key,p[0],p[1],p[2]);return}throw new LuaError("cannot set '"+String(k)+"' (try Position)",0)}};
-    const hrpOf=function(key){return hrpC[key]||(hrpC[key]=new Host(function(k){const q=String(k).toLowerCase();
-      if(q==='position'||q==='cframe')return plPosOf(key);if(q==='name')return 'HumanoidRootPart';if(q==='parent')return workspace;return undefined},posSet(key),'Part'))};
+    const hrpOf=function(key){return hrpC[key]||(hrpC[key]=addMotion(new Host(function(k){const q=String(k).toLowerCase();
+      if(q==='position'||q==='cframe')return plPosOf(key);if(q==='name')return 'HumanoidRootPart';if(q==='parent')return workspace;return undefined},posSet(key),'Part'),function(){return bodyMo(key)}))};
     /* ----- player.Character.Rarm / Larm / Head / Torso / Rleg / Lleg: the body part's live position (it follows walking, attacking and any animation). Read only. ----- */
     const LIMBS={rarm:'Rarm',rightarm:'Rarm',righthand:'Rarm',rightupperarm:'Rarm',rightlowerarm:'Rarm',larm:'Larm',leftarm:'Larm',lefthand:'Larm',leftupperarm:'Larm',leftlowerarm:'Larm',
       head:'Head',torso:'Torso',uppertorso:'Torso',lowertorso:'Torso',rleg:'Rleg',rightleg:'Rleg',rightfoot:'Rleg',lleg:'Lleg',leftleg:'Lleg',leftfoot:'Lleg'};
@@ -9281,18 +9362,32 @@ const hostApi={
       if(key==='main')o=M[pr.id];else{const n=NP.find(function(z){return 'np:'+z.name===key});const g=n&&n.JJ&&n.JJ[pr.id];o=g&&g.children&&g.children[0]}
       if(!o)return null;o.updateWorldMatrix(true,false);return o.getWorldPosition(new THREE.Vector3())}catch(e){return null}};
     const limbC={};
-    const limbOf=function(key,nm){const ck=key+'|'+nm;return limbC[ck]||(limbC[ck]=new Host(function(k){const q=String(k).toLowerCase();
-      if(q==='position'||q==='cframe'){const w=limbPos(key,nm);if(!w&&!PWARN.has('limb:'+nm)){PWARN.add('limb:'+nm);let names='';try{const T0=byId(P.avId);names=T0?treeOf(T0).map(function(x){return x.name}).join(', '):''}catch(e){}
+    const limbMo=function(key,nm){const pr=limbPart(nm);if(!pr)throw new LuaError('the character has no body part called "'+nm+'"',0);return pr.id===P.avId||!pr.parent?bodyMo(key):jointMo(key,pr.id)};
+    const limbOf=function(key,nm){const ck=key+'|'+nm;return limbC[ck]||(limbC[ck]=addMotion(new Host(function(k){const q=String(k).toLowerCase();
+      if(q==='position'||q==='cframe'){const w=withPose(function(){return limbPos(key,nm)});if(!w&&!PWARN.has('limb:'+nm)){PWARN.add('limb:'+nm);let names='';try{const T0=byId(P.avId);names=T0?treeOf(T0).map(function(x){return x.name}).join(', '):''}catch(e){}
         log('Warning: the character has no body part that can be read as "'+nm+'", so the torso position is used instead. Rename the arm to exactly "'+nm+'" (parts found on the character: '+(names||'none')+').')}
         return w?V3(w.x,w.y,w.z):plPosOf(key)}
-      if(q==='name')return nm;if(q==='classname')return 'Part';if(q==='parent')return charOf(key);return undefined},function(k,v){throw new LuaError("cannot set '"+String(k)+"' on "+nm+" (a body part can only be read, move the player instead)",0)},'Part'))};
-    const charOf=function(key){return chC[key]||(chC[key]=new Host(function(k){const q=String(k).toLowerCase();
+      if(q==='name')return nm;if(q==='classname')return 'Part';if(q==='parent')return charOf(key);return undefined},function(k,v){throw new LuaError("cannot set '"+String(k)+"' on "+nm+" (you can set Rotation or RotationOffset on a body part; to move it, move the player)",0)},'Part'),function(){return limbMo(key,nm)}))};
+    const charOf=function(key){return chC[key]||(chC[key]=addMotion(new Host(function(k){const q=String(k).toLowerCase();
       const lb=limbName(q);if(lb)return limbOf(key,lb);
       if(q==='findfirstchild'||q==='waitforchild')return function(self,n){const sn=String(n).toLowerCase();if(sn==='humanoidrootpart')return hrpOf(key);const l2=limbName(sn);return l2?limbOf(key,l2):undefined};
       if(q==='humanoidrootpart'||q==='primarypart'||q==='root')return hrpOf(key);
-      if(q==='position'||q==='cframe')return plPosOf(key);if(q==='name'){const m=plEntry(key);return m?m.name:'Player'}if(q==='parent')return workspace;return undefined},posSet(key),'Model'))};
-    const playerOf=function(key){return plC[key]||(plC[key]=new Host(function(k){const q=String(k).toLowerCase();
+      if(q==='position'||q==='cframe')return plPosOf(key);if(q==='name'){const m=plEntry(key);return m?m.name:'Player'}if(q==='parent')return workspace;return undefined},posSet(key),'Model'),function(){return bodyMo(key)}))};
+    const playerOf=function(key){return plC[key]||(plC[key]=addMotion(new Host(function(k){const q=String(k).toLowerCase();
       switch(q){
+        case'jumppower':return key==='main'?(SS.jumpP!=null?SS.jumpP:P.rules.jump):undefined;
+        case'autorotate':return key==='main'?!SS.noAuto:undefined;
+        case'scale':return RSZ[key]||1;
+        case'frozen':return!!FRZ[key];
+        case'ismoving':return key==='main'?Math.hypot(SS.pvx||0,SS.pvz||0)>.5:undefined;
+        case'isgrounded':return key==='main'?!!SS.gr:undefined;
+        case'jump':return function(){if(key==='main'&&SS.gr&&!SS.rag&&!FRZ.main){SS.vy=SS.jumpP!=null?SS.jumpP:P.rules.jump;SS.gr=false;jumpSound()}};
+        case'kill':return function(){hpPut(key,0)};
+        /* push by a Vector3: how many studs in x, y (up) and z */
+        case'push':return function(self,v,secs){const p=vx(v),dur=Math.max(.05,num(secs,.35));
+          if(key!=='main'){log('Warning: Push only works on your own player.');return}
+          SS.pd={dx:p[0],dy:-p[2],dur:dur,el:0,ep:0};if(p[1]>0){SS.vy=Math.sqrt(2*P.rules.grav*p[1]);SS.gr=false}else if(p[1]<0)SS.vy=-Math.sqrt(-2*P.rules.grav*p[1])};
+        case'playanimation':return async function(self,n){if(key!=='main'){log('Warning: PlayAnimation only works on your own player.');return}await playAnim(String(n),SS)};
         case'name':{const m=plEntry(key);return m?m.name:'Player'}
         case'position':case'cframe':return plPosOf(key);
         case'character':return charOf(key);case'humanoidrootpart':return hrpOf(key);
@@ -9314,7 +9409,11 @@ const hostApi={
         if(q==='position'||q==='cframe'){const p=vx(v);teleKey(key,p[0],p[1],p[2]);return}
         if(q==='health'){hpPut(key,num(v,0));return}
         if(q==='walkspeed'&&key==='main'){SS.speed=Math.max(0,Math.min(120,num(v,0)));return}
-        throw new LuaError("cannot set '"+String(k)+"' on a player (try Health, WalkSpeed or Position)",0)},'Player'))};
+        if(q==='jumppower'&&key==='main'){SS.jumpP=v===undefined?null:Math.max(0,Math.min(500,num(v)));return}
+        if(q==='autorotate'&&key==='main'){SS.noAuto=!truthy(v);return}
+        if(q==='scale'){const s=Math.max(.1,Math.min(20,num(v,1)));RSZ[key]=s;return}
+        if(q==='frozen'){frzSet(key,truthy(v));return}
+        throw new LuaError("cannot set '"+String(k)+"' on a player (try Health, WalkSpeed, JumpPower, Position, Rotation, AutoRotate, Scale or Frozen)",0)},'Player'),function(){return bodyMo(key)}))};
     const player2=playerOf('main');
     g.set('player',player2);if(!owner)g.set('me',player2);
     const playersH=new Host(function(k){const q=String(k).toLowerCase();
@@ -9326,7 +9425,7 @@ const hostApi={
       return undefined},null,'Players');
     g.set('Players',playersH);
     const runSvc=new Host(function(k){const q=String(k).toLowerCase();
-      if(q==='heartbeat'||q==='renderstepped'||q==='stepped')return mkEvent(LPH,function(fn){return{busy:false,fire:function(dt){if(this.busy)return;const me3=this;me3.busy=true;runCb(fn,[dt]).then(function(){me3.busy=false})}}});
+      if(q==='heartbeat'||q==='renderstepped'||q==='stepped')return mkEvent(LPH,function(fn){return{busy:false,fire:function(dt){if(this.busy)return;const me3=this;me3.busy=true;if(c.resetSteps)c.resetSteps();runCb(fn,[dt]).then(function(){me3.busy=false})}}});
       if(q==='isrunning')return function(){return true};return undefined},null,'RunService');
     g.set('RunService',runSvc);
     const debris=new Host(function(k){if(String(k).toLowerCase()==='additem')return function(self,obj,secs){secs=Math.max(0,num(secs,1));
@@ -9368,7 +9467,7 @@ const hostApi={
           case'gettouchingplayers':return function(){const t=new LuaTable();let i=0;if(m.parent&&!st.dead)plist().forEach(function(e){if(lpHit(st,e))t.set(++i,playerOf(e.key))});return t};
           case'clone':return function(){const q=mkLuaPart('Part');q.st.name=st.name;q.st.mesh.scale.copy?q.st.mesh.scale.copy(m.scale):q.st.mesh.scale.set(m.scale.x,m.scale.y,m.scale.z);
             q.st.mesh.position.set(m.position.x,m.position.y,m.position.z);q.st.mesh.material.color.copy(m.material.color);q.st.mesh.material.opacity=m.material.opacity;q.st.mesh.visible=m.visible;
-            Object.keys(st.bag).forEach(function(b){q.st.bag[b]=st.bag[b]});return q};
+            Object.keys(st.bag).forEach(function(b){q.st.bag[b]=st.bag[b]});q.st.rot=st.rot&&st.rot.slice();q.st.mesh.rotation.copy(m.rotation);return q};
           case'istouchingplayer':case'touchingplayer':return function(){const a=plist(),pl=a&&a[0];if(!pl||!m.parent||st.dead)return false;
             return Math.abs(pl.x-m.position.x)<=m.scale.x/2+1&&Math.abs(pl.z-m.position.z)<=m.scale.z/2+1&&Math.abs(pl.y-m.position.y)<=m.scale.y/2+3};
         }return st.bag[key]},
@@ -9382,7 +9481,7 @@ const hostApi={
           case'visible':m.visible=truthy(v);return;
           case'parent':setParent(v);return;
         }st.bag[key]=v},'Part');
-      st.h=h;h.st=st;if(par!==undefined)setParent(par);return h};
+      st.h=h;h.st=st;addMotion(h,function(){return luaMo(st)});if(par!==undefined)setParent(par);return h};
     /* ----- Vector3 extras: v.Unit, v:Dot(b), v:Cross(b), v:Lerp(b,t), v:Distance(b), lowercase .x .y .z ----- */
     vecMT.set('__index',function(t,k){const key=String(k).toLowerCase(),p=vx(t);
       switch(key){
@@ -9393,7 +9492,153 @@ const hostApi={
         case'lerp':return function(self,o,a){const q=vx(o);a=num(a,0);return V3(p[0]+(q[0]-p[0])*a,p[1]+(q[1]-p[1])*a,p[2]+(q[2]-p[2])*a)};
         case'distance':return function(self,o){const q=vx(o);return Math.hypot(p[0]-q[0],p[1]-q[1],p[2]-q[2])};
       }return undefined});
-    /* ----- tween(obj, {Position=..., Transparency=..., Color=..., Size=...}, secs [, wait]) ----- */
+    /* ----- rotation and motion for every object (see "Lua motion" above) ----- */
+    const toV=function(a){return new THREE.Vector3(a[0],a[1],a[2])},v3=function(v){return V3(v.x,v.y,v.z)};
+    /* "x,y,z" or Vector3 */
+    const xyz=function(a,b,cc){if(a instanceof LuaTable)return vx(a);return[num(a,0),num(b,0),num(cc,0)]};
+    const toPoint=function(t){if(t instanceof LuaTable)return toV(vx(t));
+      if(t instanceof Host){if(t.mo){const w=withPose(function(){scene.updateMatrixWorld(true);return t.mo().world()});if(w)return w.p}const p=t.g&&t.g('position');if(p instanceof LuaTable)return toV(vx(p))}
+      throw new LuaError('a position, player or part was expected',0)};
+    const rootNow=function(r){const q=RO[r.id]||[0,0];return new THREE.Vector3(r.pos[0]+q[0],r.pos[1]+(RY[r.id]||0),r.pos[2]+q[1])};
+    const rootPut=function(r,p){const q=RO[r.id]||(RO[r.id]=[0,0]);q[0]=p.x-r.pos[0];q[1]=p.z-r.pos[2];RY[r.id]=p.y-r.pos[1];delete RV[r.id];const g=J[r.id];if(g)g.position.copy(p)};
+    const meshWorld=function(o){if(!o)return null;o.updateWorldMatrix(true,false);const p=new THREE.Vector3(),q=new THREE.Quaternion(),s=new THREE.Vector3();o.matrixWorld.decompose(p,q,s);return{p:p,q:q}};
+    const yawOf=function(q){const f=new THREE.Vector3(0,0,-1).applyQuaternion(q);return Math.abs(f.x)+Math.abs(f.z)<1e-6?null:Math.atan2(-f.x,-f.z)*R2D};
+    const lookQ=function(from,to){return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(from,to,new THREE.Vector3(0,1,0)))};
+    /* the shared part of every kind of object. A kind gives: id, get(), set(v), pos(), moveTo(v3) */
+    const makeMo=function(m){
+      if(!m.dead)m.dead=function(){return false};if(!m.roots)m.roots=function(){return[]};
+      if(!m.rotate)m.rotate=function(d){m.set(add3(m.get(),d))};
+      if(!m.reset)m.reset=function(){m.set([0,0,0])};
+      if(!m.quat)m.quat=function(){return qE(m.get())};
+      if(!m.lookAt)m.lookAt=function(pt){const p=m.pos();if(p.distanceTo(pt)>1e-4)m.set(eQ(lookQ(p,pt)))};
+      if(!m.world)m.world=function(){return{p:m.pos(),q:m.quat()}};
+      if(!m.around)m.around=function(center,d){const dq=qE(d),p=m.pos().sub(center).applyQuaternion(dq).add(center);m.moveTo(p);m.turnWorld(dq,d)};
+      if(!m.turnWorld)m.turnWorld=function(dq){m.set(eQ(dq.clone().multiply(m.quat())))};
+      if(!m.pose)m.pose=function(p,q){if(q)m.set(eQ(q));m.moveTo(p)};
+      return m};
+    /* characters and rigs: y = facing, x/z = tilt */
+    const standing=function(m,key,pid,getYaw,setYaw){
+      m.get=function(){const e=ljGet(key,pid),o=e&&e.off||[0,0,0];return[o[0],getYaw(),o[2]]};
+      m.set=function(v){setYaw(v[1]);if(v[0]||v[2])ljNew(key,pid,true).off=[v[0],0,v[2]];else{const e=ljGet(key,pid);if(e){e.off=null;if(!e.world)LJ.delete(key+'|'+pid)}}};
+      m.reset=function(){LJ.delete(key+'|'+pid);setYaw(0)};
+      m.quat=function(){const v=m.get(),e=ljGet(key,pid),q=qE([0,v[1],0]).multiply(qE([v[0],0,v[2]]));if(e&&e.world)q.premultiply(e.world);return q};
+      m.lookAt=function(pt){const p=m.pos(),dx=pt.x-p.x,dz=pt.z-p.z;if(Math.abs(dx)+Math.abs(dz)<1e-4)return;const v=m.get();m.set([v[0],Math.atan2(-dx,-dz)*R2D,v[2]])};
+      m.turnWorld=function(dq,d){const v=m.get();if(!d[0]&&!d[2])m.set([v[0],v[1]+d[1],v[2]]);else{const e=ljNew(key,pid,true);e.world=dq.clone().multiply(e.world||new THREE.Quaternion())}};
+      m.pose=function(p,q){if(q){const y=yawOf(q);if(y!==null){setYaw(y);ljNew(key,pid,true).off=eQ(qE([0,y,0]).invert().multiply(q))}}m.moveTo(p)};
+      return makeMo(m)};
+    const moC={};
+    const bodyMo=function(key){const ck='body|'+key;if(moC[ck])return moC[ck];
+      const net=function(){const n=NP.find(function(q){return'np:'+q.name===key});if(n&&n.net){if(!PWARN.has('netrot')){PWARN.add('netrot');log('Warning: another online player can only be rotated by their own game.')}return true}return false};
+      const bot=function(){return NP.find(function(q){return'np:'+q.name===key})};
+      const m={id:ck,pos:function(){const T=byId(P.avId),p=plEntry(key);if(!T||!p)return new THREE.Vector3();return new THREE.Vector3(p.x,p.y,p.z)},
+        moveTo:function(p){const T=byId(P.avId);if(T)teleKey(key,p.x,p.y-(T.pos[1]-feet0()),p.z)},dead:function(){return key!=='main'&&!bot()}};
+      standing(m,key,P.avId,function(){if(key==='main')return SS.dir-90;const n=bot();return n?(n.yaw||0)*R2D:0},
+        function(y){if(key==='main'){SS.dir=90+y;if(FRZ.main)FRZ.main.d=SS.dir}else{const n=bot();if(n&&!n.net)n.yaw=y*D2R}});
+      const s0=m.set;m.set=function(v){if(!net())s0(v)};
+      m.reset=function(){LJ.delete(key+'|'+P.avId)};/* upright again, still facing the same way */
+      m.world=function(){if(key==='main')return meshWorld(M[P.avId]);const n=bot(),g=n&&n.JJ[P.avId];return meshWorld(g&&g.children[0])};
+      return moC[ck]=m};
+    const rigMo=function(r){const key='rig:'+r.id;if(moC[key])return moC[key];
+      const m={id:key,pos:function(){return rootNow(r)},moveTo:function(p){rootPut(r,p);const G=MRG[r.id];if(G)G.vy=0},roots:function(){return[r]}};
+      standing(m,key,r.id,function(){return(r.ry||0)+(RYAW[r.id]||0)*R2D},function(y){const id=r.id,yaw=y*D2R;RYAW[id]=yaw-(r.ry||0)*D2R;
+        if(MRA[id])MRA[id].yaw=yaw;if(RB[id])RB[id].yaw=yaw;if(FRZ[key])FRZ[key].yw=RYAW[id];const g=J[id];if(g){g.userData.gry=yaw;g.rotation.set(0,yaw,0);if(g.userData.sq)g.quaternion.premultiply(g.userData.sq)}});
+      m.reset=function(){LJ.delete(key+'|'+r.id);const y=r.ry||0;m.set([0,y,0])};
+      m.world=function(){return meshWorld(M[r.id])};
+      return moC[key]=m};
+    const looseMo=function(r){const id='part:'+r.id;if(moC[id])return moC[id];
+      return moC[id]=makeMo({id:id,roots:function(){return[r]},pos:function(){return rootNow(r)},moveTo:function(p){rootPut(r,p)},
+        get:function(){return(prot(r)||[0,0,0]).slice()},set:function(v){RR[r.id]=v.slice();twRot(r)},reset:function(){RR[r.id]=(r.rot||[0,0,0]).slice();twRot(r)}})};
+    /* a model made of several separate pieces turns as one thing around its middle */
+    const groupMo=function(o){const id='model:'+o;if(moC[id])return moC[id];
+      const list=function(){return roots(o,false)};
+      const state=function(){let st=LMOD.get(o);if(st)return st;const rs=list(),lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];
+        rs.forEach(function(r){const d=rootNow(r);rigParts(r).forEach(function(q){const h=eh(q),c=[q.pos[0]-r.pos[0]+d.x,q.pos[1]-r.pos[1]+d.y,q.pos[2]-r.pos[2]+d.z];for(let i=0;i<3;i++){lo[i]=Math.min(lo[i],c[i]-h[i]);hi[i]=Math.max(hi[i],c[i]+h[i])}})});
+        st={rot:[0,0,0],rel:new THREE.Vector3((lo[0]+hi[0])/2,(lo[1]+hi[1])/2,(lo[2]+hi[2])/2).sub(rootNow(rs[0]))};LMOD.set(o,st);return st};
+      const center=function(){const st=state();return st.rel.clone().applyQuaternion(qE(st.rot)).add(rootNow(list()[0]))};
+      const turn=function(dq,c){list().forEach(function(r){const p=rootNow(r).sub(c).applyQuaternion(dq).add(c);rootPut(r,p);
+        if(kids(r).length){const e=ljNew('rig:'+r.id,r.id,true);e.world=dq.clone().multiply(e.world||new THREE.Quaternion())}
+        else{RR[r.id]=eQ(dq.clone().multiply(qE(prot(r)||[0,0,0])));twRot(r)}})};
+      const m={id:id,roots:list,pos:center,get:function(){return state().rot.slice()},
+        set:function(v){const st=state(),c=center();turn(qE(v).multiply(qE(st.rot).invert()),c);st.rot=v.slice()},
+        moveTo:function(p){const d=p.clone().sub(center());list().forEach(function(r){rootPut(r,rootNow(r).add(d))})},
+        around:function(pivot,d){const st=state(),c=center(),dq=qE(d),nc=c.clone().sub(pivot).applyQuaternion(dq).add(pivot);turn(dq,c);st.rot=eQ(dq.clone().multiply(qE(st.rot)));m.moveTo(nc)}};
+      return moC[id]=makeMo(m)};
+    /* a body part / welded piece: turns around its joint */
+    const jointMo=function(key,pid){const id='joint:'+key+'|'+pid;if(moC[id])return moC[id];
+      const grp=function(){return ljGroup({key:key,pid:pid})};
+      const blocked=function(){if(key.slice(0,3)!=='np:')return false;const n=NP.find(function(q){return'np:'+q.name===key});if(n&&n.net){if(!PWARN.has('netrot')){PWARN.add('netrot');log('Warning: another online player can only be posed by their own game.')}return true}return false};
+      const tidy=function(){const e=ljGet(key,pid);if(e&&!e.hold&&!e.off)LJ.delete(key+'|'+pid)};
+      const m={id:id,joint:true,dead:function(){return!grp()},
+        get:function(){const e=ljGet(key,pid);if(e&&e.hold)return e.hold.slice();const g=grp();return g?[g.rotation.x*R2D,(g.rotation.y-(g.userData.gry||0))*R2D,g.rotation.z*R2D]:[0,0,0]},
+        set:function(v){if(blocked())return;const e=ljNew(key,pid,false);e.hold=v.slice();e.off=null},
+        getOff:function(){const e=ljGet(key,pid);return e&&e.off?e.off.slice():[0,0,0]},
+        setOff:function(v){if(blocked())return;const e=ljNew(key,pid,false);e.off=v?v.slice():null;e.hold=null;tidy()},
+        rotate:function(d){if(blocked())return;const e=ljNew(key,pid,false);if(e.hold)e.hold=add3(e.hold,d);else e.off=add3(e.off||[0,0,0],d)},
+        reset:function(){LJ.delete(key+'|'+pid)},
+        world:function(){const g=grp();return meshWorld(g&&(key.slice(0,3)==='np:'?g.children[0]:M[pid]))},
+        pos:function(){const w=withPose(function(){return m.world()});return w?w.p:new THREE.Vector3()},
+        quat:function(){const w=withPose(function(){return m.world()});return w?w.q:new THREE.Quaternion()},
+        aim:function(pt,axis){if(blocked())return;withPose(function(){const g=grp();if(!g||!g.parent)return;g.updateWorldMatrix(true,false);const from=new THREE.Vector3().setFromMatrixPosition(g.matrixWorld),
+            pq=g.parent.getWorldQuaternion(new THREE.Quaternion()).invert(),d=pt.clone().sub(from).applyQuaternion(pq);if(d.length()<1e-4)return;
+          const q=new THREE.Quaternion().setFromUnitVectors(axis,d.normalize()),e=ljNew(key,pid,false);e.hold=eQ(q);e.off=null})},
+        lookAt:function(pt){m.aim(pt,new THREE.Vector3(0,0,-1))}};
+      makeMo(m);m.around=null;m.pose=null;return moC[id]=m};
+    const luaMo=function(st){const id='lua:'+st.uid;if(moC[id])return moC[id];const me2=st.mesh;
+      return moC[id]=makeMo({id:id,dead:function(){return st.dead||!me2.parent},pos:function(){return me2.position.clone()},moveTo:function(p){me2.position.copy(p)},
+        get:function(){return(st.rot||[0,0,0]).slice()},set:function(v){st.rot=v.slice();me2.rotation.set(v[0]*D2R,v[1]*D2R,v[2]*D2R,'XYZ')},world:function(){return meshWorld(me2)}})};
+    /* which kind of object is this editor part or model? */
+    const editorMo=function(o){
+      if(byModel(o)){const rs=roots(o,true);if(!rs.length)throw new LuaError('this model has no pieces that can be rotated',0);
+        if(rs.some(function(r){return r.av}))return bodyMo('main');
+        if(rs.length===1)return kids(rs[0]).length?rigMo(rs[0]):looseMo(rs[0]);return groupMo(o)}
+      const q=byId(o);if(!q)throw new LuaError('that object does not exist any more',0);
+      if(q.parent){const r=rootOf(q);return jointMo(r.av?'main':'rig:'+r.id,q.id)}
+      if(q.av)return bodyMo('main');return kids(q).length?rigMo(q):looseMo(q)};
+    const movable=function(mo){if(!mo.pose)throw new LuaError('a body part stays on its joint: rotate it, or attach something to it',0);return mo};
+    const targetMo=function(t){if(t instanceof Host&&t.mo)return t.mo();throw new LuaError('expected a player, body part, part or model',0)};
+    const conn=function(stop){return new Host(function(k){const q=String(k).toLowerCase();if(q==='disconnect'||q==='stop')return function(){stop()};return undefined},null,'Connection')};
+    const doSpin=function(obj,a,b,cc){const mo=targetMo(obj),v=a===undefined?[0,90,0]:xyz(a,b,cc);if(v[0]||v[1]||v[2])LSPIN.set(mo.id,{mo:mo,v:v});else LSPIN.delete(mo.id);return conn(function(){LSPIN.delete(mo.id)})};
+    const doAttach=function(obj,to,off,rot){const mo=movable(targetMo(obj)),t=targetMo(to);if(mo.id===t.id)throw new LuaError('attach: an object cannot be attached to itself',0);
+      motionAttach(mo.id,{mo:mo,to:t,off:off===undefined?new THREE.Vector3():toV(vx(off)),rot:rot===undefined?new THREE.Quaternion():qE(vx(rot))});return conn(function(){motionDetach(mo.id)})};
+    const doOrbit=function(obj,to,radius,speed,height){const mo=movable(targetMo(obj)),t=targetMo(to);if(mo.id===t.id)throw new LuaError('orbit: an object cannot orbit itself',0);
+      motionAttach(mo.id,{mo:mo,to:t,orbit:true,a:0,radius:num(radius,5),speed:num(speed,90),height:num(height,0)});return conn(function(){motionDetach(mo.id)})};
+    const AXIS={lookvector:[0,0,-1],rightvector:[1,0,0],upvector:[0,1,0]};
+    /* gives a Lua object all the rotation members, keeping everything it already had */
+    function addMotion(h,mo){if(h.mo)return h;h.mo=mo;const g0=h.g,s0=h.s;
+      h.g=function(k){const q=String(k).toLowerCase();
+        switch(q){
+          case'rotation':case'orientation':return V3.apply(null,mo().get());
+          case'rotationoffset':{const m=mo();return m.getOff?V3.apply(null,m.getOff()):V3(0,0,0)}
+          case'rotate':return function(self,a,b,cc){mo().rotate(xyz(a,b,cc))};
+          case'setrotation':return function(self,a,b,cc){mo().set(xyz(a,b,cc))};
+          case'resetrotation':return function(){const m=mo();LSPIN.delete(m.id);m.reset()};
+          case'spin':return function(self,a,b,cc){return doSpin(self,a,b,cc)};
+          case'stopspin':return function(){LSPIN.delete(mo().id)};
+          case'lookat':return function(self,t){mo().lookAt(toPoint(t))};
+          case'pointat':return function(self,t){const m=mo();if(m.aim)m.aim(toPoint(t),new THREE.Vector3(0,-1,0));else m.lookAt(toPoint(t))};
+          case'rotatearound':case'orbitaround':return function(self,c0,a,b,cc){movable(mo()).around(toPoint(c0),xyz(a,b,cc))};
+          case'attachto':return function(self,t,off,rot){return doAttach(self,t,off,rot)};
+          case'orbit':return function(self,t,r,sp,ht){return doOrbit(self,t,r,sp,ht)};
+          case'detach':case'stoporbit':return function(){motionDetach(mo().id)};
+          case'worldposition':{const w=withPose(function(){scene.updateMatrixWorld(true);return mo().world()});return w?v3(w.p):undefined}
+          case'lookvector':case'rightvector':case'upvector':return v3(toV(AXIS[q]).applyQuaternion(mo().quat()));
+        }return g0(k)};
+      h.s=function(k,v){const q=String(k).toLowerCase();
+        if(q==='rotation'||q==='orientation'){const m=mo();if(v===undefined)m.reset();else m.set(vx(v));return}
+        if(q==='rotationoffset'){const m=mo();if(!m.setOff)throw new LuaError('RotationOffset only works on body parts (like player.Character.Rarm). Use Rotation here.',0);m.setOff(v===undefined?null:vx(v));return}
+        if(!s0)throw new LuaError("cannot set '"+String(k)+"' on this",0);return s0(k,v)};
+      return h}
+    g.set('spin',doSpin);g.set('stopSpin',function(o){LSPIN.delete(targetMo(o).id)});
+    g.set('attach',doAttach);g.set('orbit',doOrbit);g.set('detach',function(o){motionDetach(targetMo(o).id)});
+    g.set('distance',function(a,b){return toPoint(a).distanceTo(toPoint(b))});
+    g.set('isKeyDown',function(k){k=String(k).toLowerCase();if(k===' ')k='space';return LKEYS.has(k)||(/^[a-z]$/.test(k)&&LKEYS.has('code:Key'+k.toUpperCase()))});
+    g.set('playAnimation',async function(n){await playAnim(String(n),SS)});
+    g.set('camera',new Host(function(k){const q=String(k).toLowerCase();
+      if(q==='fieldofview'||q==='fov')return SS.fov!=null?SS.fov:(+P.rules.fov||70);
+      if(q==='position')return V3(cam.x,cam.y,cam.z);if(q==='lookvector'){const f=fwd();return V3(f[0],f[1],f[2])}return undefined},
+      function(k,v){const q=String(k).toLowerCase();if(q==='fieldofview'||q==='fov'){SS.fov=v===undefined?null:Math.max(30,Math.min(120,num(v)));return}
+        throw new LuaError("cannot set camera."+String(k)+" (try FieldOfView)",0)},'Camera'));
+    /* ----- tween(obj, {Position=..., Rotation=..., Transparency=..., Color=..., Size=...}, secs [, wait]) ----- */
     const lerpAny=function(a,b,t){
       if(typeof a==='number'&&typeof b==='number')return a+(b-a)*t;
       if(a instanceof LuaTable&&b instanceof LuaTable){
@@ -9404,7 +9649,7 @@ const hostApi={
       if(!(obj instanceof Host)||!obj.s)throw new LuaError('tween: the first thing must be a part, like me or part("Name")',0);
       if(!(props instanceof LuaTable))throw new LuaError('tween: the second thing must be a table, like {Position = Vector3.new(0,10,0)}',0);
       secs=Math.max(.01,num(secs,1));const jobs=[];
-      props.h.forEach(function(v,k){let from=obj.g(k);if(from===undefined)throw new LuaError("tween: cannot read '"+String(k)+"' (try Position, Size, Transparency or Color)",0);
+      props.h.forEach(function(v,k){let from=obj.g(k);if(from===undefined)throw new LuaError("tween: cannot read '"+String(k)+"' (try Position, Rotation, Size, Transparency or Color)",0);
         if(typeof v==='string')v=fromThree(toColor(v));jobs.push([k,from,v])});
       const done=new Promise(function(res){const t0=performance.now();
         const step=function(){if(SS.stop){res();return}const t=Math.min(1,(performance.now()-t0)/(secs*1000)),e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
