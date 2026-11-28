@@ -2660,7 +2660,8 @@ function accTex(url,flip){const k=(flip?'f':'n')+url;if(ACCT[k])return ACCT[k];c
 function shineMat(mt,k,m){const n=mt.isMeshStandardMaterial?mt:new THREE.MeshStandardMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0});
   if(k!=null){n.roughness=Math.max(.1,.92-k*.8);n.userData.envB=.3+k*.9;n.envMapIntensity=n.userData.envB*ENVK;n.envMap=(ENVOK&&k>.35)?ENVT:null}else if(n.userData.envB==null)n.userData.envB=.3;
   n.metalness=0;/* Metallic slider: solid metal reflects the world, so it needs the reflection map (without it a metal would look black, so it is held back on low graphics) */
-  if(m!=null){n.metalness=ENVOK?m:m*.35;if(ENVOK){n.envMap=ENVT;n.userData.envB=Math.max(n.userData.envB,.8+m*3.2);n.envMapIntensity=n.userData.envB*ENVK}n.roughness=Math.max(.08,(n.roughness==null?.42:n.roughness)*(1-.45*m))}
+  if(m!=null){/* the slider alone decides how metal it looks (the Shine value only fine-tunes it): a quarter of the way already gives a clearly metallic surface, and metal is always fairly smooth so it reflects */
+    const e=Math.min(1,m*1.5);n.metalness=ENVOK?e:e*.35;if(ENVOK){n.envMap=ENVT;n.userData.envB=Math.max(n.userData.envB,.8+e*3.4);n.envMapIntensity=n.userData.envB*ENVK}n.roughness=Math.max(.1,(n.roughness==null?.42:n.roughness)*(1-e)+.22*e)}
   pbrPatch(n);n.needsUpdate=true;return n}
 function accMake(slot,id,hs){/* hs: head height scale, so items still fit a resized head */
   const e=ACCI[id];if(!e||!e.obj)return null;const it=e.it,sl=ACCS[slot];if(!sl)return null;
