@@ -2500,9 +2500,17 @@ function edPreview(){const d=ED.draft,eq=me.av.eq,t=Object.assign({},eq);Object.
 function openEdit(it){if(!isAdm())return;ED={id:it.id,draft:Object.assign({},it),guides:true};pvMode('idle');facePreview(true);pv.yaw=0;pv.pitch=.08;edPreview();edRender();$('acc-ed').scrollIntoView({block:'nearest',behavior:'smooth'})}
 function closeEdit(){ED=null;pv.tryEq=null;$('acc-ed').hidden=true;$('acc-ed').innerHTML='';pvRebuild();paintShop()}
 function facePreview(on){pv.ly=on?1.5:.95;pv.zoom=on?2.6:5.6;$('av-face').setAttribute('aria-pressed',String(on));$('av-face').textContent=on?'Full body':'Face close-up'}
-function readTex(f){return new Promise(function(ok,no){const u=URL.createObjectURL(f),im=new Image();
-  im.onload=function(){const m=512,k=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));
-    c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);let d=c.toDataURL('image/png');if(d.length>900000)d=c.toDataURL('image/jpeg',.88);ok(d)};
+function readTex(f){/* accessory pictures keep up to 2048 px (they used to be shrunk to 512, which made worn items look blurry); big ones are re-encoded to stay under about 2.5 MB */
+  return new Promise(function(ok,no){const u=URL.createObjectURL(f),im=new Image();
+  im.onload=function(){URL.revokeObjectURL(u);try{
+    const M=2048,k=Math.min(1,M/Math.max(im.width,im.height)),w=Math.max(1,Math.round(im.width*k)),h=Math.max(1,Math.round(im.height*k)),c=document.createElement('canvas');c.width=w;c.height=h;
+    const x=c.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(im,0,0,w,h);
+    let alpha=false;try{const a=x.getImageData(0,0,w,h).data;for(let i=3;i<a.length;i+=4*7){if(a[i]<250){alpha=true;break}}}catch(e){alpha=/png|webp|gif/i.test(f.type)}
+    const LIM=2.5e6;let d;
+    if(alpha){d=c.toDataURL('image/png');if(d.length>LIM){/* too big with transparency: step the size down until it fits */
+      for(let s=.75;s>=.3&&d.length>LIM;s-=.15){const c2=document.createElement('canvas');c2.width=Math.max(1,Math.round(w*s));c2.height=Math.max(1,Math.round(h*s));const x2=c2.getContext('2d');x2.imageSmoothingQuality='high';x2.drawImage(c,0,0,c2.width,c2.height);d=c2.toDataURL('image/png')}}}
+    else{d=c.toDataURL('image/jpeg',.93);if(d.length>LIM)d=c.toDataURL('image/jpeg',.85);if(d.length>LIM)d=c.toDataURL('image/jpeg',.75)}
+    ok(d)}catch(e){no(new Error('Could not read that image.'))}};
   im.onerror=function(){URL.revokeObjectURL(u);no(new Error('Could not read that image.'))};im.src=u})}
 function edRender(){
   const el=$('acc-ed'),d=ED.draft;el.hidden=false;el.innerHTML='';
@@ -2559,7 +2567,7 @@ function edRender(){
   const info=mk('p','hint');ts.appendChild(info);
   const fl=mk('label','chk'),fc=mk('input');fc.type='checkbox';fc.checked=!!d.tf;fc.onchange=function(){d.tf=fc.checked;edPreview()};fl.append(fc,document.createTextNode('Flip texture vertically (use if it looks upside down)'));ts.appendChild(fl);
   function paint(){img.hidden=!d.tex;if(d.tex)img.src=d.tex;rm.hidden=!d.tex;fl.hidden=!d.tex;up.textContent=d.tex?'Replace image':'Upload image';
-    info.textContent=d.tex?'Applied to every material on the model. The model needs UV mapping for it to show.':'No texture. The model uses its own colours. PNG keeps transparency; large images are shrunk to 512 px.'}
+    info.textContent=d.tex?'Applied to every material on the model. The model needs UV mapping for it to show.':'No texture. The model uses its own colours. PNG keeps transparency; large images are shrunk to 2048 px.'}
   file.onchange=async function(){const f=file.files[0];file.value='';if(!f)return;try{d.tex=await readTex(f);paint();edPreview()}catch(e){toast(errText(e))}};
   paint();
   /* buttons */
