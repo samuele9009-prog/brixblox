@@ -2151,6 +2151,10 @@ function addItem(g,id,fx){const it=itemById(id),o=it&&FBXC[id];if(!o)return;
 const TEXC={};
 /* Accessory fixes: items are flattened to plain meshes (a cloned skeleton pointed at the wrong bones, which made items look cut open or glitched), drawn on both sides,
    never frustum-culled, pulled slightly toward the camera so they do not z-fight with the head, and frozen so they stay locked to the part they are worn on. */
+function accNoExt(buf,o){/* textures that point at files on the maker's computer can never load here and make the item draw black or see-through; only embedded textures are kept */
+  try{const u=new Uint8Array(buf),k=[67,111,110,116,101,110,116];let emb=false;
+    for(let i=0;i<u.length-7&&!emb;i++){if(u[i]===67){let j=1;while(j<7&&u[i+j]===k[j])j++;if(j===7)emb=true}}
+    if(!emb)o.traverse(function(m){if(!m.isMesh)return;[].concat(m.material).forEach(function(mt){if(mt){if(mt.map)mt.map=null;if(mt.alphaMap)mt.alphaMap=null;if(mt.bumpMap)mt.bumpMap=null;if(mt.normalMap)mt.normalMap=null;mt.needsUpdate=true}})})}catch(e){}return o}
 function accStatic(o){const sk=[];o.traverse(function(m){if(m.isSkinnedMesh)sk.push(m)});
   sk.forEach(function(m){const s=new THREE.Mesh(m.geometry,m.material);s.name=m.name;m.matrix.decompose(s.position,s.quaternion,s.scale);s.userData=m.userData;s.visible=m.visible;if(m.parent){m.parent.add(s);m.parent.remove(m)}});
   o.traverse(function(m){if(!m.isMesh)return;(Array.isArray(m.material)?m.material:[m.material]).forEach(function(mt){if(mt&&'skinning' in mt)mt.skinning=false})});return o}
@@ -2177,7 +2181,7 @@ function ensureFbx(){return new Promise(function(ok,no){if(THREE.FBXLoader)retur
   const L=['https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js','https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js'];let i=0;
   (function nx(){if(i>=L.length){THREE.FBXLoader?ok():no(new Error('Could not load the FBX loader.'));return}const s=document.createElement('script');s.src=L[i++];s.onload=nx;s.onerror=nx;document.head.append(s)})()})}
 async function loadItems(){
-  try{const all=await api.listAcc(),rows=all.filter(function(r){return !r.removed});if(rows.length){if(rows.some(function(r){return r.slot!=='shirt'&&!isFaceImg(r)}))await ensureFbx();rows.forEach(function(it){if(FBXC[it.id]||it.slot==='shirt'||isFaceImg(it))return;try{const b=atob(it.fbx),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);FBXC[it.id]=accStatic(new THREE.FBXLoader().parse(u.buffer,''));delete LOADERR[it.id]}catch(e){LOADERR[it.id]=String((e&&e.message)||e).slice(0,120);try{if(isAdm())toast('Item "'+it.name+'" could not be read: '+LOADERR[it.id])}catch(x){}}})}
+  try{const all=await api.listAcc(),rows=all.filter(function(r){return !r.removed});if(rows.length){if(rows.some(function(r){return r.slot!=='shirt'&&!isFaceImg(r)}))await ensureFbx();rows.forEach(function(it){if(FBXC[it.id]||it.slot==='shirt'||isFaceImg(it))return;try{const b=atob(it.fbx),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);FBXC[it.id]=accNoExt(u.buffer,accStatic(new THREE.FBXLoader().parse(u.buffer,'')));delete LOADERR[it.id]}catch(e){LOADERR[it.id]=String((e&&e.message)||e).slice(0,120);try{if(isAdm())toast('Item "'+it.name+'" could not be read: '+LOADERR[it.id])}catch(x){}}})}
     ITEMS=rows.filter(function(r){return r.slot==='shirt'?!!r.tex:(isFaceImg(r)||FBXC[r.id])});
     /* Items taken out of circulation are removed from this player's inventory (and refunded). Only runs when the list loaded OK. */
     if(me){let ch=false;const av=me.av;
