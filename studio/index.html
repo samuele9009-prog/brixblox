@@ -2572,12 +2572,16 @@ function accLoad(ids){/* resolves once every id is loaded (or known to be unavai
   if(miss.length){const pr=accRows(miss).then(function(rows){return accFbx().then(function(){
       miss.forEach(function(id){const r=rows.find(function(x){return x.id===id});ACCI[id]={it:null,obj:null};if(r&&!r.removed&&(r.slot==='shirt'||isFaceImg(r))&&r.tex){ACCI[id]={it:r,obj:null};return}if(!r||r.removed||!r.fbx)return;
         try{const b=atob(r.fbx),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);const o=new THREE.FBXLoader().parse(u.buffer,'');
-          accStatic(o);o.traverse(function(m){if(m.geometry)m.geometry.userData.keep=true});ACCI[id]={it:r,obj:o}}catch(e){}})})}).catch(function(){/* a failed download (server hiccup, FBX loader not loaded yet) must NOT be remembered as 'this item does not exist', or other players' items never show for the rest of the session */miss.forEach(function(id){if(ACCI[id]&&!ACCI[id].it&&!ACCI[id].obj)delete ACCI[id];delete ACCP[id]})});
+          accStatic(o);accNoExt(u.buffer,o);o.traverse(function(m){if(m.geometry)m.geometry.userData.keep=true});ACCI[id]={it:r,obj:o}}catch(e){try{console.warn('Accessory '+id+' could not be read:',e);if(!accLoad.said)accLoad.said={};if(!accLoad.said[id]){accLoad.said[id]=1;chatSys('The accessory "'+((r&&r.name)||id)+'" could not be read: '+String((e&&e.message)||e).slice(0,100))}}catch(x){}}})})}).catch(function(){/* a failed download (server hiccup, FBX loader not loaded yet) must NOT be remembered as 'this item does not exist', or other players' items never show for the rest of the session */miss.forEach(function(id){if(ACCI[id]&&!ACCI[id].it&&!ACCI[id].obj)delete ACCI[id];delete ACCP[id]})});
     miss.forEach(function(id){ACCP[id]=pr})}
   return Promise.all(ids.map(function(id){return ACCP[id]||Promise.resolve()}))}
 const ACCT={};
 /* Accessory fixes: items are flattened to plain meshes (a cloned skeleton pointed at the wrong bones, which made items look cut open or glitched), drawn on both sides,
    never frustum-culled, pulled slightly toward the camera so they do not z-fight with the head, and frozen so they stay locked to the part they are worn on. */
+function accNoExt(buf,o){/* textures that point at files on the maker's computer can never load here and make the item draw black or see-through; only embedded textures are kept */
+  try{const u=new Uint8Array(buf),k=[67,111,110,116,101,110,116];let emb=false;
+    for(let i=0;i<u.length-7&&!emb;i++){if(u[i]===67){let j=1;while(j<7&&u[i+j]===k[j])j++;if(j===7)emb=true}}
+    if(!emb)o.traverse(function(m){if(!m.isMesh)return;[].concat(m.material).forEach(function(mt){if(mt){if(mt.map)mt.map=null;if(mt.alphaMap)mt.alphaMap=null;if(mt.bumpMap)mt.bumpMap=null;if(mt.normalMap)mt.normalMap=null;mt.needsUpdate=true}})})}catch(e){}return o}
 function accStatic(o){const sk=[];o.traverse(function(m){if(m.isSkinnedMesh)sk.push(m)});
   sk.forEach(function(m){const s=new THREE.Mesh(m.geometry,m.material);s.name=m.name;m.matrix.decompose(s.position,s.quaternion,s.scale);s.userData=m.userData;s.visible=m.visible;if(m.parent){m.parent.add(s);m.parent.remove(m)}});
   o.traverse(function(m){if(!m.isMesh)return;(Array.isArray(m.material)?m.material:[m.material]).forEach(function(mt){if(mt&&'skinning' in mt)mt.skinning=false})});
