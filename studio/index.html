@@ -2118,6 +2118,13 @@ try{const es=new THREE.Scene(),sg=new THREE.SphereGeometry(50,48,24),pa=sg.attri
   es.add(new THREE.Mesh(sg,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.BackSide})));
   const sb=new THREE.Mesh(new THREE.SphereGeometry(5,16,12),new THREE.MeshBasicMaterial({color:new THREE.Color(14,13,11)}));sb.position.set(8,14,6).normalize().multiplyScalar(45);es.add(sb);
   const pm=new THREE.PMREMGenerator(renderer);ENVT=pm.fromScene(es,.03).texture;pm.dispose();ENVOK=true}catch(e){ENVOK=false}
+/* Metal reflection scene: metal only looks like metal when it reflects strong contrast (bright sky, a sharp dark horizon, dark ground, bright light panels), so metallic items get their own punchier reflection than the soft sky used for everything else. */
+let ENVM=null;
+try{const es=new THREE.Scene(),sg=new THREE.SphereGeometry(50,64,32),pa=sg.attributes.position,cl=[],t=new THREE.Color(),top=new THREE.Color('#4f8fe0'),hor=new THREE.Color('#ffffff'),gd1=new THREE.Color('#2b2824'),gd2=new THREE.Color('#0d0c0b');
+  for(let i=0;i<pa.count;i++){const y=pa.getY(i)/50;if(y>=0)t.copy(hor).lerp(top,Math.min(1,Math.pow(y,.45)*1.15));else t.copy(gd1).lerp(gd2,Math.min(1,Math.pow(-y,.6)*1.2));cl.push(t.r,t.g,t.b)}
+  sg.setAttribute('color',new THREE.Float32BufferAttribute(cl,3));es.add(new THREE.Mesh(sg,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.BackSide})));
+  [[8,14,6,5,[16,15,13]],[-30,22,18,7,[5,5.5,6.5]],[26,10,-26,5,[4,4,4.5]],[-20,6,-34,4,[3,3,3.4]]].forEach(function(a){const m=new THREE.Mesh(new THREE.SphereGeometry(a[3],16,12),new THREE.MeshBasicMaterial({color:new THREE.Color(a[4][0],a[4][1],a[4][2])}));m.position.set(a[0],a[1],a[2]).normalize().multiplyScalar(45);es.add(m)});
+  const pm=new THREE.PMREMGenerator(renderer);ENVM=pm.fromScene(es,.02).texture;pm.dispose()}catch(e){ENVM=null}
 function envK(v){v=Math.max(0,v);if(Math.abs(v-ENVK)<.01)return;ENVK=v;scene.traverse(function(o){const ms=o.material;if(!ms)return;(Array.isArray(ms)?ms:[ms]).forEach(function(m){if(m.isMeshStandardMaterial&&m.userData&&m.userData.envB!=null)m.envMapIntensity=m.userData.envB*ENVK})})}
 function sunTick(cx,cy,cz){const sc=sun.shadow.camera,tx=(sc.right-sc.left)/sun.shadow.mapSize.x,g=tx*Math.max(1,Math.round(.5/tx));/* snap to whole shadow pixels so shadows do not shimmer as you move */sun.target.position.set(Math.round(cx/g)*g,Math.round(cy/g)*g,Math.round(cz/g)*g);
   sun.position.copy(sun.target.position).addScaledVector(sunDir.clone().normalize(),120);sun.target.updateMatrixWorld()}
@@ -2652,8 +2659,8 @@ function hqUpdate(r){const I=HQI.get(r);if(!I||!I.o)return;const o=I.o;
   if(!hqOn()){if(r.map!==o||r.bumpMap){r.map=o;r.bumpMap=null;r.needsUpdate=true}return}
   const e=hqGet(o,I.lab,I.tx);if(!e)return;
   if(e.hq&&r.map!==e.hq)r.map=e.hq;
-  if(e.bump){if(r.bumpMap!==e.bump){r.bumpMap=e.bump;r.needsUpdate=true}r.bumpScale=HQR*I.ws/e.bw}}
-function hqReg(r,ws,inf){if(!r||!r.isMeshStandardMaterial||!r.map){if(inf)hqToast((inf.nm||'Item')+': no texture on this material');return}HQI.set(r,{o:r.map,ws:isFinite(ws)&&ws>0?ws:1,lab:inf&&inf.nm,tx:inf&&inf.tx});if(!hqOn())hqToast(((inf&&inf.nm)||'Item')+': Graphics is not on Ultra, so the extra detail is off');HQM.add(typeof WeakRef==='function'?new WeakRef(r):r);hqUpdate(r)}
+  if(e.bump&&!I.mt){if(r.bumpMap!==e.bump){r.bumpMap=e.bump;r.needsUpdate=true}r.bumpScale=HQR*I.ws/e.bw}}
+function hqReg(r,ws,inf){if(!r||!r.isMeshStandardMaterial||!r.map){if(inf)hqToast((inf.nm||'Item')+': no texture on this material');return}HQI.set(r,{o:r.map,ws:isFinite(ws)&&ws>0?ws:1,lab:inf&&inf.nm,tx:inf&&inf.tx,mt:!!(inf&&inf.mt)});if(!hqOn())hqToast(((inf&&inf.nm)||'Item')+': Graphics is not on Ultra, so the extra detail is off');HQM.add(typeof WeakRef==='function'?new WeakRef(r):r);hqUpdate(r)}
 function hqAll(){const on=hqOn(),dead=[];HQM.forEach(function(w){const r=w.deref?w.deref():w;if(!r){dead.push(w);return}try{hqUpdate(r)}catch(x){}});dead.forEach(function(w){HQM.delete(w)});
   if(!on&&HQE.size){HQE.forEach(function(e){try{if(e.hq)e.hq.dispose();if(e.bump)e.bump.dispose()}catch(x){}HQT.delete(e.o)});HQE.clear();HQQ.length=0}}
 function accTex(url,flip){const k=(flip?'f':'n')+url;if(ACCT[k])return ACCT[k];const t=new THREE.TextureLoader().load(url);t.flipY=!flip;t.wrapS=t.wrapT=THREE.RepeatWrapping;texSharp(t);return ACCT[k]=t}
@@ -2661,13 +2668,13 @@ function shineMat(mt,k,m){const n=mt.isMeshStandardMaterial?mt:new THREE.MeshSta
   if(k!=null){n.roughness=Math.max(.1,.92-k*.8);n.userData.envB=.3+k*.9;n.envMapIntensity=n.userData.envB*ENVK;n.envMap=(ENVOK&&k>.35)?ENVT:null}else if(n.userData.envB==null)n.userData.envB=.3;
   n.metalness=0;/* Metallic slider: solid metal reflects the world, so it needs the reflection map (without it a metal would look black, so it is held back on low graphics) */
   if(m!=null){/* the slider alone decides how metal it looks (the Shine value only fine-tunes it): a quarter of the way already gives a clearly metallic surface, and metal is always fairly smooth so it reflects */
-    const e=Math.min(1,m*1.5);n.metalness=ENVOK?e:e*.35;if(ENVOK){n.envMap=ENVT;n.userData.envB=Math.max(n.userData.envB,.8+e*3.4);n.envMapIntensity=n.userData.envB*ENVK}n.roughness=Math.max(.1,(n.roughness==null?.42:n.roughness)*(1-e)+.22*e)}
+    const e=Math.min(1,m*1.5);n.metalness=ENVOK?e:e*.35;if(ENVOK){n.envMap=ENVM||ENVT;n.userData.envB=Math.max(n.userData.envB,.8+e*2.6);n.envMapIntensity=n.userData.envB*ENVK}n.roughness=Math.max(.1,(n.roughness==null?.42:n.roughness)*(1-e)+.22*e)}
   pbrPatch(n);n.needsUpdate=true;return n}
 function accMake(slot,id,hs){/* hs: head height scale, so items still fit a resized head */
   const e=ACCI[id];if(!e||!e.obj)return null;const it=e.it,sl=ACCS[slot];if(!sl)return null;
   const c=e.obj.clone(true);c.position.set(0,0,0);const hqW=sl.s*Math.max(.1,Math.min(5,+it.scale||1))*((hs||1)/ACCU);
   c.traverse(function(m){if(!m.isMesh)return;m.castShadow=false;m.frustumCulled=false;/* own copies of the materials: hiding your avatar in first person must not hide anyone else's item */
-    const ap=function(mt){let n=mt.clone();if(n.map)texSharp(n.map);if(it.tex){n.userData.rawTex=true;n.map=accTex(it.tex,it.tf);if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true}if((it.sh!=null&&isFinite(it.sh))||(it.mt!=null&&isFinite(it.mt)))n=shineMat(n,it.sh!=null&&isFinite(it.sh)?Math.max(0,Math.min(100,+it.sh))/100:null,it.mt!=null&&isFinite(it.mt)?Math.max(0,Math.min(100,+it.mt))/100:null);const r=accMat(n);r.userData.lb=1;try{hqReg(r,hqW,{nm:(it.name||'Item')+' ['+(it.sh==null?'no shine':'shine '+it.sh)+', '+(it.mt==null?'no metal':'metal '+it.mt)+']',tx:!!it.tex})}catch(x){}return r};
+    const ap=function(mt){let n=mt.clone();if(n.map)texSharp(n.map);if(it.tex){n.userData.rawTex=true;n.map=accTex(it.tex,it.tf);if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true}if((it.sh!=null&&isFinite(it.sh))||(it.mt!=null&&isFinite(it.mt)))n=shineMat(n,it.sh!=null&&isFinite(it.sh)?Math.max(0,Math.min(100,+it.sh))/100:null,it.mt!=null&&isFinite(it.mt)?Math.max(0,Math.min(100,+it.mt))/100:null);const r=accMat(n);r.userData.lb=1;try{hqReg(r,hqW,{mt:it.mt!=null,nm:(it.name||'Item')+' ['+(it.sh==null?'no shine':'shine '+it.sh)+', '+(it.mt==null?'no metal':'metal '+it.mt)+']',tx:!!it.tex})}catch(x){}return r};
     m.material=Array.isArray(m.material)?m.material.map(ap):ap(m.material);if([].concat(m.material).some(function(t){return t.transparent}))m.renderOrder=-1});
   c.updateMatrixWorld(true);
   const bx=new THREE.Box3().setFromObject(c),sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),mx=Math.max(sz.x,sz.y,sz.z);
