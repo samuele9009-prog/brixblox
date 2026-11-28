@@ -2381,15 +2381,15 @@ function imgApply(q,key){const m=M[q.id];if(!m||!texOK(q))return;const old=m.mat
   try{old.dispose()}catch(e){}hl()}
 /* Real-life lighting maths for part materials: colours are read as sRGB and lit in linear light, then filmic-mapped and encoded back. Everything else in the scene is untouched. */
 /* Texture detail bias (Ultra / High): item textures are read from a sharper mip level, so tiny scratches and grain stay visible when the item is small on screen. TLB is shared, TLB0 = no bias. */
-const TLB={value:0},TLB0={value:0};
-function texLBset(){const G=gfxEff();TLB.value=G===GFXT.ultra?-1.3:G===GFXT.high?-.6:0}
+const TLB={value:0},TLB0={value:0},TDT={value:0},TDT0={value:0};
+function texLBset(){const G=gfxEff();TLB.value=G===GFXT.ultra?-1.8:G===GFXT.high?-.8:0;TDT.value=G===GFXT.ultra?2:G===GFXT.high?.8:0}
 try{texLBset()}catch(e){}
 function pbrPatch(m,o){o=o||{};const fn=function(sh){sh.fragmentShader=sh.fragmentShader
-    .replace(/void\s+main\s*\(\s*\)\s*\{/,function(){return 'uniform float uLB;\nvec3 acesP(vec3 x){return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0);}\nvoid main() {'})
-    .replace('#include <map_fragment>','#ifdef USE_MAP\n vec4 texelColor = texture2D( map, vUv, uLB );\n texelColor = mapTexelToLinear( texelColor );\n diffuseColor *= texelColor;\n#endif')
+    .replace(/void\s+main\s*\(\s*\)\s*\{/,function(){return 'uniform float uLB;\nuniform float uDT;\nvec3 acesP(vec3 x){return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0);}\nvoid main() {'})
+    .replace('#include <map_fragment>','#ifdef USE_MAP\n vec4 texelColor = texture2D( map, vUv, uLB );\n if(uDT>0.0){vec4 tb=texture2D( map, vUv, uLB+2.5 );texelColor.rgb=max(texelColor.rgb+(texelColor.rgb-tb.rgb)*uDT,vec3(0.0));}\n texelColor = mapTexelToLinear( texelColor );\n diffuseColor *= texelColor;\n#endif')
     .replace('#include <color_fragment>',o.lin?'#include <color_fragment>':'#include <color_fragment>\n diffuseColor.rgb=pow(max(diffuseColor.rgb,vec3(0.0)),vec3(2.2));')
     .replace('#include <emissivemap_fragment>',o.lin?'#include <emissivemap_fragment>':'#include <emissivemap_fragment>\n totalEmissiveRadiance=pow(max(totalEmissiveRadiance,vec3(0.0)),vec3(2.2));')
-    .replace('#include <encodings_fragment>',(o.k?'gl_FragColor.rgb*='+(+o.k).toFixed(3)+';\n':'')+'#ifndef TONE_MAPPING\n gl_FragColor.rgb=acesP(gl_FragColor.rgb);\n#endif\n gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.0)),vec3(0.4545));');sh.uniforms.uLB=(m.userData&&m.userData.lb)?TLB:TLB0};
+    .replace('#include <encodings_fragment>',(o.k?'gl_FragColor.rgb*='+(+o.k).toFixed(3)+';\n':'')+'#ifndef TONE_MAPPING\n gl_FragColor.rgb=acesP(gl_FragColor.rgb);\n#endif\n gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.0)),vec3(0.4545));');sh.uniforms.uLB=(m.userData&&m.userData.lb)?TLB:TLB0;sh.uniforms.uDT=(m.userData&&m.userData.lb)?TDT:TDT0};
   m.userData.pbr=1;m.userData.pbrFn=fn;m.onBeforeCompile=fn;m.customProgramCacheKey=function(){return 'pbr2'+(o.lin?'L':'')+(o.k?'k'+o.k:'')}}
 /* Shininess: 0 = dull / matte, 1 = mirror-like. Stored on the part as p.shine; a part without it keeps its material's normal look. */
 function shineDef(p){if(p.shape==='mesh')return meshShineDef(p);const q=PBR[MATS[p.mat]?p.mat:'plastic']||PBR.plastic;return Math.round(Math.max(0,Math.min(1,(1-q[0])/.95))*20)/20}
