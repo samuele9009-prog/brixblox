@@ -1402,7 +1402,7 @@ const BEHOPT=[['idle','Idle'],['wander','Wander'],['follow nearest','Follow near
 /* AI response block: where the answer is shown, and the list of rigs to pick from */
 const AIOUTOPT=[['chat','Chat'],['above rig','Above the rig'],['both','Chat and above the rig'],['variable only','Nowhere (only the variable)']];
 function rigOpts(){const seen={},r=[['this','this rig']];P.parts.forEach(function(p){if(p.parent||p.av||p.stab||!kids(p).length)return;const m=p.model&&byModel(p.model),n=m?m.name:p.name;if(seen[n])return;seen[n]=1;r.push([n,n])});return r}
-const ACCSLOTOPT=[['auto','Auto'],['hat','Hat'],['face','Face'],['facc','Face accessory'],['neck','Neck'],['back','Back']];
+const ACCSLOTOPT=[['auto','Auto'],['hat','Hat'],['face','Face'],['facc','Face accessory'],['neck','Neck'],['back','Back'],['larm','Left arm'],['rarm','Right arm']];
 function ownerObj(o){return o?(byId(o)||byModel(o)||guiById(o)||null):null}
 function ownName(o){const x=ownerObj(o);return x?x.name:null}
 /* Dropdowns on blocks: keys, true/false and variables. A variable dropdown lists every variable made so far and has "New variable...". */
@@ -2556,8 +2556,8 @@ function objMove(dt){pushMe(dt);for(const id in RD){const d=RD[id];d.el+=dt;cons
 /* ===== Avatar accessories (made in the BrixBlox shop). Your equipped items come from your profile (ME.av.eq); other players send only the item ids,
    and every player downloads the item models themselves, so nothing big is ever sent over the game connection. ===== */
 const ACCI={},ACCP={};let ACCTOK=0;
-const ACCS={hat:{y:1.82,z:0,s:.55,base:1,at:'Head'},face:{y:1.58,z:.27,s:.32,at:'Head'},facc:{y:1.63,z:.27,s:.46,at:'Head'},back:{y:1,z:-.27,s:.9,at:'Torso'},neck:{y:1.3,z:0,s:.6,at:'Torso'},shirt:{y:0,z:0,s:1,at:'Torso'}};
-const ACCU=.34,ACCC={Head:4.65,Torso:3};/* the shop avatar is drawn at .34 scale; Head / Torso centres in studs above the feet */
+const ACCS={hat:{y:1.82,z:0,s:.55,base:1,at:'Head'},face:{y:1.58,z:.27,s:.32,at:'Head'},facc:{y:1.63,z:.27,s:.46,at:'Head'},back:{y:1,z:-.27,s:.9,at:'Torso'},neck:{y:1.3,z:0,s:.6,at:'Torso'},larm:{y:.986,z:0,s:.5,at:'Larm'},rarm:{y:.986,z:0,s:.5,at:'Rarm'},shirt:{y:0,z:0,s:1,at:'Torso'}};
+const ACCU=.34,ACCC={Head:4.65,Torso:3,Larm:2.9,Rarm:2.9};/* the shop avatar is drawn at .34 scale; Head / Torso centres in studs above the feet */
 function accClean(eq){const o={};if(eq&&typeof eq==='object')Object.keys(ACCS).forEach(function(k){const v=eq[k],a=[];(Array.isArray(v)?v:[v]).forEach(function(x){if(typeof x==='string'&&/^acc_[a-z0-9]{1,16}$/.test(x)&&a.indexOf(x)<0)a.push(x)});if(a.length)o[k]=a.slice(-2)});return o}
 function accStr(eq){eq=accClean(eq);const o=[];Object.keys(eq).forEach(function(k){eq[k].forEach(function(id){o.push(k+':'+id)})});return o.join(',')}
 function accParse(t){const o={};if(typeof t!=='string')return o;t.slice(0,320).split(',').forEach(function(x){const a=x.split(':');if(a.length===2&&Object.prototype.hasOwnProperty.call(ACCS,a[0])&&/^acc_[a-z0-9]{1,16}$/.test(a[1])){const l=o[a[0]]=o[a[0]]||[];if(l.length<2&&l.indexOf(a[1])<0)l.push(a[1])}});return o}
@@ -3226,11 +3226,13 @@ function setAcc(p,slot,rigId){
   if(!slot){if(!p.acc)return;delete p.acc;p.av=false;p.parent=null;p.pivot=null;delete p.model;cleanModels();msg('Removed from your character.');all();props();return}
   const RR0=rigId&&byId(rigId),RP=RR0?rigParts(RR0):null;
   const H=RP?RP.find(function(q){return q.name==='Head'&&!q.acc}):P.parts.find(function(q){return q.av&&q.name==='Head'&&!q.acc}),T=RP?RP.find(function(q){return q.name==='Torso'&&!q.acc}):avTorso();
-  const to=(slot==='hat'||slot==='face')?H:T;
-  if(!to){msg(RP?'That rig has no '+((slot==='hat'||slot==='face')?'Head':'Torso')+' part to wear this on.':'There is no player character to wear this on.');props();return}
+  const armN=slot==='larm'?'Larm':slot==='rarm'?'Rarm':'',AR=armN?(RP?RP.find(function(q){return q.name===armN&&!q.acc}):P.parts.find(function(q){return q.av&&q.name===armN&&!q.acc})):null;
+  const to=armN?AR:(slot==='hat'||slot==='face')?H:T;
+  if(!to){msg(RP?'That rig has no '+(armN||((slot==='hat'||slot==='face')?'Head':'Torso'))+' part to wear this on.':'There is no player character to wear this on.');props();return}
   const r=function(v){return Math.round(v*100)/100};let x;
   if(slot==='hat')x=[H.pos[0],H.pos[1]+H.size[1]/2+p.size[1]/2,H.pos[2]];
   else if(slot==='face')x=[H.pos[0],H.pos[1],H.pos[2]-(H.size[2]/2+p.size[2]/2)];
+  else if(armN)x=[AR.pos[0],AR.pos[1],AR.pos[2]];
   else if(slot==='neck')x=[T.pos[0],T.pos[1]+T.size[1]/2,T.pos[2]];
   else x=[T.pos[0],T.pos[1],T.pos[2]+T.size[2]/2+p.size[2]/2];
   p.pos=x.map(r);p.acc=slot;p.av=!RP;p.parent=to.id;p.pivot=defPivot(p);ensureRigModel(rootOf(to));
@@ -3282,7 +3284,7 @@ function props0(){const d=$('p-props');d.replaceChildren();if(selFold&&!sel.leng
     const c2=el('input');c2.type='checkbox';c2.checked=!p.nocol;c2.onchange=function(){if(c2.checked)delete p.nocol;else p.nocol=true;save()};const l2=el('label','','Collision (solid: blocks your character)');l2.append(c2);sP.append(l2);{const px={get fr(){return p.fr==null?1:p.fr},set fr(v){if(v===1)delete p.fr;else p.fr=v}};slider(sP,'Friction (0 ice, 1 normal, 3+ grippy)',px,'fr',0,5,.05,function(v){return (+v).toFixed(2)})}}
   else sP.append(el('p','note','Welded: moves with the part it is welded to.'));if((!p.av||p.acc)&&!p.sm&&!p.stab&&p.shape!=='mesh'&&p.shape!=='union'){const ss=el('select');[['box','Block'],['cyl','Cylinder'],['sphere','Sphere'],['wedge','Triangle']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];ss.append(op)});ss.value=p.shape||'box';ss.onchange=function(){if(ss.value==='box')delete p.shape;else p.shape=ss.value;all()};d.append(lab('Shape',ss))}
   if(p.shape==='mesh')meshProps(d,p);
-  if(!p.stab&&(p.acc||(!p.av&&!p.parent&&!p.model))){const as=el('select');[['','Not an accessory'],['hat','Hat (top of the head)'],['face','Face accessory (front of the head)'],['neck','Neck (where the head meets the body)'],['back','Back (on the back)']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];as.append(op)});
+  if(!p.stab&&(p.acc||(!p.av&&!p.parent&&!p.model))){const as=el('select');[['','Not an accessory'],['hat','Hat (top of the head)'],['face','Face accessory (front of the head)'],['neck','Neck (where the head meets the body)'],['back','Back (on the back)'],['larm','Left arm'],['rarm','Right arm']].forEach(function(o){const op=el('option','',o[1]);op.value=o[0];as.append(op)});
     as.value=p.acc||'';
     const wt=el('select');{const o0=el('option','','Your character');o0.value='';wt.append(o0);rigRoots().forEach(function(r){const o=el('option','','Rig: '+rigLabel(r));o.value=r.id;wt.append(o)});
       const cur=p.acc&&!p.av&&p.parent&&byId(p.parent)?rootOf(byId(p.parent)).id:'';wt.value=cur;if(wt.value!==cur)wt.value=''}
