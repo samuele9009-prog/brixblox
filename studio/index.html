@@ -2100,7 +2100,7 @@ const GFXCROS=/\bCrOS\b/.test(navigator.userAgent);let GFXL='auto';try{const gv=
 const GFXUI=[];
 function gfxEff(){return GFXL==='auto'?GFXT[GFXCROS?'medium':'high']:GFXT[GFXL]}
 function gfxPR(){const d=window.devicePixelRatio||1,tc=matchMedia('(pointer:coarse)').matches;let r;if(GFXL==='auto')r=Math.min(d,GFXCROS?1.25:1.5);else{const G=GFXT[GFXL];r=Math.min(d,G.cap)*G.mul;if(tc)r=Math.min(r,1.5)}const w=Math.max(1,cv.clientWidth),h=Math.max(1,cv.clientHeight),mx=tc?2.4e6:7e6;return Math.max(.5,Math.min(r,Math.sqrt(mx/(w*h))))}
-function gfxSet(v){if(v!=='auto'&&!GFXT[v])return;GFXL=v;try{localStorage.setItem('bbGfx',v)}catch(e){}try{QS=1;QC=0}catch(e){}lxSig='';try{applyEnv()}catch(e){}try{renderer.shadowMap.needsUpdate=true}catch(e){}try{texSharpAll();texLBset()}catch(e){}GFXUI.forEach(function(f){try{f()}catch(e){}})}
+function gfxSet(v){if(v!=='auto'&&!GFXT[v])return;GFXL=v;try{localStorage.setItem('bbGfx',v)}catch(e){}try{QS=1;QC=0}catch(e){}lxSig='';try{applyEnv()}catch(e){}try{renderer.shadowMap.needsUpdate=true}catch(e){}try{texSharpAll();texLBset()}catch(e){}try{hqAll()}catch(e){}GFXUI.forEach(function(f){try{f()}catch(e){}})}
 /* The stylised look that Medium, High and Ultra put on top of the normal lighting (a lighting preset you pick still wins) */
 const LRB={1:{hs:'#dbe9ff',hg:'#56606a',hk:1,sc:'#fff0d4',tm:1,ex:1.18,soft:1,g:null},
   2:{hs:'#dbe9ff',hg:'#56606a',hk:1,sc:'#fff0d4',tm:1,ex:1.18,soft:1,g:{f:'contrast(1.06) saturate(1.1)',vig:.1,tint:'#ffcf8a',ta:.04,tb:'soft-light'}},
@@ -2606,14 +2606,60 @@ const SHT=new Set();
 function texAn(){const G=gfxEff(),a=G===GFXT.ultra?16:G===GFXT.high?8:G===GFXT.medium?4:G===GFXT.low?2:1;return Math.max(1,Math.min(a,renderer.capabilities.getMaxAnisotropy()||1))}
 function texSharp(t){if(!t)return t;try{SHT.add(t);const a=texAn();if(t.anisotropy!==a||t.minFilter!==THREE.LinearMipmapLinearFilter){t.anisotropy=a;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=true;if(t.image&&t.image.width>0)t.needsUpdate=true}}catch(e){}return t}
 function texSharpAll(){SHT.forEach(function(t){try{texSharp(t)}catch(e){}})}
+/* ===== Ultra accessory detail (Ultra graphics only) =====
+   On top of the sharp filtering above, Ultra now gives every worn item that has a texture two extras:
+   1) a sharper picture: textures smaller than 2048 px are enlarged with high quality smoothing and lightly sharpened, so close-ups are no longer blurry;
+   2) real surface relief: a bump map is made from the texture (edges, stitching, scratches and grain become tiny bumps that catch the light), so items look 3D, not painted on.
+   Built one texture at a time in the background (the item shows normally until it is ready), shared by every copy of that item, and removed again when Graphics is set below Ultra.
+   Lua twin: none needed (a graphics setting, not a block). */
+const HQT=new WeakMap(),HQI=new WeakMap(),HQM=new Set(),HQE=new Set(),HQQ=[];let HQB=0;const HQR=4;
+function hqOn(){return gfxEff()===GFXT.ultra}
+function hqMax(){let m=2048;try{if(matchMedia('(pointer:coarse)').matches)m=1024}catch(e){}return Math.max(256,Math.min(m,renderer.capabilities.maxTextureSize||2048))}
+function hqP2(n){let p=1;while(p<n)p<<=1;return p}
+function hqSrc(t){const im=t&&t.image;if(!im||im.complete===false)return null;const w=im.naturalWidth||im.width,h=im.naturalHeight||im.height;return w>0&&h>0?{im:im,w:w,h:h}:null}
+/* box blur (running sum) on the first nc channels of an RGBA byte array */
+function hqBlur(a,w,h,r,nc){const n=w*h*4,t=new Uint8ClampedArray(n),o=new Uint8ClampedArray(n),k=1/(2*r+1);
+  for(let y=0;y<h;y++){const row=y*w*4;for(let c=0;c<nc;c++){let s=0;for(let i=-r;i<=r;i++)s+=a[row+Math.min(w-1,Math.max(0,i))*4+c];
+    for(let x=0;x<w;x++){t[row+x*4+c]=s*k;s+=a[row+Math.min(w-1,x+r+1)*4+c]-a[row+Math.max(0,x-r)*4+c]}}}
+  for(let x=0;x<w;x++){for(let c=0;c<nc;c++){let s=0;for(let i=-r;i<=r;i++)s+=t[(Math.min(h-1,Math.max(0,i))*w+x)*4+c];
+    for(let y=0;y<h;y++){o[(y*w+x)*4+c]=s*k;s+=t[(Math.min(h-1,y+r+1)*w+x)*4+c]-t[(Math.max(0,y-r)*w+x)*4+c]}}}
+  return o}
+function hqCopy(d,s){d.encoding=s.encoding;d.flipY=s.flipY;d.wrapS=s.wrapS;d.wrapT=s.wrapT;d.repeat.copy(s.repeat);d.offset.copy(s.offset);d.center.copy(s.center);d.rotation=s.rotation;
+  d.premultiplyAlpha=s.premultiplyAlpha;d.anisotropy=texAn();d.minFilter=THREE.LinearMipmapLinearFilter;d.magFilter=THREE.LinearFilter;d.generateMipmaps=true;d.needsUpdate=true;return d}
+function hqCanvas(S,w,h){const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d',{willReadFrequently:true});x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(S.im,0,0,w,h);return{c:c,x:x}}
+function hqBuild(e){const o=e.o,S=hqSrc(o);if(!S)return false;const mx=hqMax(),big=Math.max(S.w,S.h);
+  if(big<mx){/* sharper colour picture: smooth 2x enlargement + gentle unsharp mask (colour only, alpha untouched) */
+    const s=Math.min(2,mx/big),tw=Math.min(mx,hqP2(Math.round(S.w*s))),th=Math.min(mx,hqP2(Math.round(S.h*s))),cc=hqCanvas(S,tw,th),g=cc.x.getImageData(0,0,tw,th),a=g.data,b=hqBlur(a,tw,th,2,3);
+    for(let i=0;i<a.length;i+=4){if(a[i+3]===0)continue;for(let c=0;c<3;c++){a[i+c]=a[i+c]+.7*(a[i+c]-b[i+c])}}
+    cc.x.putImageData(g,0,0);e.hq=hqCopy(new THREE.CanvasTexture(cc.c),o)}
+  /* relief: bump map from the texture's fine detail (brightness minus its own wide blur, so painted-in shading does not become fake slopes) */
+  const s2=Math.min(2,1024/big),bw=Math.min(1024,hqP2(Math.round(S.w*s2))),bh=Math.min(1024,hqP2(Math.round(S.h*s2))),bc=hqCanvas(S,bw,bh),bg=bc.x.getImageData(0,0,bw,bh),d=bg.data;
+  for(let i=0;i<d.length;i+=4)d[i]=d[i]*.299+d[i+1]*.587+d[i+2]*.114;
+  const fi=hqBlur(d,bw,bh,1,1),lo=hqBlur(d,bw,bh,Math.max(3,bw>>6),1);
+  for(let i=0;i<d.length;i+=4){const v=128+(fi[i]-lo[i])*2.4;d[i]=d[i+1]=d[i+2]=v;d[i+3]=255}
+  bc.x.putImageData(bg,0,0);e.bump=hqCopy(new THREE.CanvasTexture(bc.c),o);e.bump.encoding=THREE.LinearEncoding;e.bw=bw;return true}
+function hqPump(d){if(HQB)return;HQB=1;setTimeout(hqStep,d||40)}
+function hqStep(){HQB=0;if(!hqOn()){HQQ.length=0;return}const e=HQQ.shift();if(!e){return}
+  if(HQT.get(e.o)===e){let ok=false;try{ok=hqBuild(e)}catch(x){e.hq=e.bump=null;ok=true}
+    if(ok){e.done=true;HQE.add(e);try{hqAll()}catch(x){}}else if(++e.tries<80)HQQ.push(e);else e.done=true}
+  if(HQQ.length)hqPump(HQQ[0].tries?250:40)}
+function hqGet(o){let e=HQT.get(o);if(!e){e={o:o,done:false,tries:0,hq:null,bump:null,bw:1};HQT.set(o,e);HQQ.push(e);hqPump()}return e.done?e:null}
+function hqUpdate(r){const I=HQI.get(r);if(!I||!I.o)return;const o=I.o;
+  if(!hqOn()){if(r.map!==o||r.bumpMap){r.map=o;r.bumpMap=null;r.needsUpdate=true}return}
+  const e=hqGet(o);if(!e)return;
+  if(e.hq&&r.map!==e.hq)r.map=e.hq;
+  if(e.bump){if(r.bumpMap!==e.bump){r.bumpMap=e.bump;r.needsUpdate=true}r.bumpScale=HQR*I.ws/e.bw}}
+function hqReg(r,ws){if(!r||!r.isMeshStandardMaterial||!r.map)return;HQI.set(r,{o:r.map,ws:isFinite(ws)&&ws>0?ws:1});HQM.add(typeof WeakRef==='function'?new WeakRef(r):r);hqUpdate(r)}
+function hqAll(){const on=hqOn(),dead=[];HQM.forEach(function(w){const r=w.deref?w.deref():w;if(!r){dead.push(w);return}try{hqUpdate(r)}catch(x){}});dead.forEach(function(w){HQM.delete(w)});
+  if(!on&&HQE.size){HQE.forEach(function(e){try{if(e.hq)e.hq.dispose();if(e.bump)e.bump.dispose()}catch(x){}HQT.delete(e.o)});HQE.clear();HQQ.length=0}}
 function accTex(url,flip){const k=(flip?'f':'n')+url;if(ACCT[k])return ACCT[k];const t=new THREE.TextureLoader().load(url);t.flipY=!flip;t.wrapS=t.wrapT=THREE.RepeatWrapping;texSharp(t);return ACCT[k]=t}
 function shineMat(mt,k){const n=mt.isMeshStandardMaterial?mt:new THREE.MeshStandardMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0});
   n.roughness=Math.max(.1,.92-k*.8);n.metalness=0;n.userData.envB=.3+k*.9;n.envMapIntensity=n.userData.envB*ENVK;n.envMap=(ENVOK&&k>.35)?ENVT:null;pbrPatch(n);n.needsUpdate=true;return n}
 function accMake(slot,id,hs){/* hs: head height scale, so items still fit a resized head */
   const e=ACCI[id];if(!e||!e.obj)return null;const it=e.it,sl=ACCS[slot];if(!sl)return null;
-  const c=e.obj.clone(true);c.position.set(0,0,0);
+  const c=e.obj.clone(true);c.position.set(0,0,0);const hqW=sl.s*Math.max(.1,Math.min(5,+it.scale||1))*((hs||1)/ACCU);
   c.traverse(function(m){if(!m.isMesh)return;m.castShadow=false;m.frustumCulled=false;/* own copies of the materials: hiding your avatar in first person must not hide anyone else's item */
-    const ap=function(mt){let n=mt.clone();if(n.map)texSharp(n.map);if(it.tex){n.userData.rawTex=true;n.map=accTex(it.tex,it.tf);if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true}if(it.sh!=null&&isFinite(it.sh))n=shineMat(n,Math.max(0,Math.min(100,+it.sh))/100);const r=accMat(n);r.userData.lb=1;return r};
+    const ap=function(mt){let n=mt.clone();if(n.map)texSharp(n.map);if(it.tex){n.userData.rawTex=true;n.map=accTex(it.tex,it.tf);if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true}if(it.sh!=null&&isFinite(it.sh))n=shineMat(n,Math.max(0,Math.min(100,+it.sh))/100);const r=accMat(n);r.userData.lb=1;try{hqReg(r,hqW)}catch(x){}return r};
     m.material=Array.isArray(m.material)?m.material.map(ap):ap(m.material);if([].concat(m.material).some(function(t){return t.transparent}))m.renderOrder=-1});
   c.updateMatrixWorld(true);
   const bx=new THREE.Box3().setFromObject(c),sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),mx=Math.max(sz.x,sz.y,sz.z);
