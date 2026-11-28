@@ -2613,6 +2613,9 @@ function texSharpAll(){SHT.forEach(function(t){try{texSharp(t)}catch(e){}})}
    2) real surface relief: a bump map is made from the texture (edges, stitching, scratches and grain become tiny bumps that catch the light), so items look 3D, not painted on.
    Built one texture at a time in the background (the item shows normally until it is ready), shared by every copy of that item, and removed again when Graphics is set below Ultra.
    Lua twin: none needed (a graphics setting, not a block). */
+let HQD=null,HQL=[],HQTM=0;
+function hqToast(t){try{if(!HQD){HQD=document.createElement('div');HQD.style.cssText='position:fixed;left:8px;bottom:8px;z-index:99999;max-width:92vw;padding:6px 9px;border-radius:8px;background:rgba(0,0,0,.72);color:#fff;font:600 12px/1.35 system-ui,sans-serif;pointer-events:none;white-space:pre-wrap;transition:opacity .4s';document.body.appendChild(HQD)}
+  HQL.push(t);if(HQL.length>4)HQL.shift();HQD.textContent='Accessory texture check\n'+HQL.join('\n');HQD.style.opacity='1';clearTimeout(HQTM);HQTM=setTimeout(function(){HQD.style.opacity='0';HQL=[]},14000)}catch(x){}}
 const HQT=new WeakMap(),HQI=new WeakMap(),HQM=new Set(),HQE=new Set(),HQQ=[];let HQB=0;const HQR=4;
 function hqOn(){return gfxEff()===GFXT.ultra}
 function hqMax(){let m=2048;try{if(matchMedia('(pointer:coarse)').matches)m=1024}catch(e){}return Math.max(256,Math.min(m,renderer.capabilities.maxTextureSize||2048))}
@@ -2628,7 +2631,7 @@ function hqBlur(a,w,h,r,nc){const n=w*h*4,t=new Uint8ClampedArray(n),o=new Uint8
 function hqCopy(d,s){d.encoding=s.encoding;d.flipY=s.flipY;d.wrapS=s.wrapS;d.wrapT=s.wrapT;d.repeat.copy(s.repeat);d.offset.copy(s.offset);d.center.copy(s.center);d.rotation=s.rotation;
   d.premultiplyAlpha=s.premultiplyAlpha;d.anisotropy=texAn();d.minFilter=THREE.LinearMipmapLinearFilter;d.magFilter=THREE.LinearFilter;d.generateMipmaps=true;d.needsUpdate=true;return d}
 function hqCanvas(S,w,h){const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d',{willReadFrequently:true});x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(S.im,0,0,w,h);return{c:c,x:x}}
-function hqBuild(e){const o=e.o,S=hqSrc(o);if(!S)return false;const mx=hqMax(),big=Math.max(S.w,S.h);
+function hqBuild(e){const o=e.o,S=hqSrc(o);if(!S)return false;e.sw=S.w;e.sh=S.h;const mx=hqMax(),big=Math.max(S.w,S.h);
   if(big<mx){/* sharper colour picture: smooth 2x enlargement + gentle unsharp mask (colour only, alpha untouched) */
     const s=Math.min(4,mx/big),tw=Math.min(mx,hqP2(Math.round(S.w*s))),th=Math.min(mx,hqP2(Math.round(S.h*s))),cc=hqCanvas(S,tw,th),g=cc.x.getImageData(0,0,tw,th),a=g.data,b=hqBlur(a,tw,th,s>=3?3:2,3);
     for(let i=0;i<a.length;i+=4){if(a[i+3]===0)continue;for(let c=0;c<3;c++){a[i+c]=a[i+c]+.7*(a[i+c]-b[i+c])}}
@@ -2642,25 +2645,28 @@ function hqBuild(e){const o=e.o,S=hqSrc(o);if(!S)return false;const mx=hqMax(),b
 function hqPump(d){if(HQB)return;HQB=1;setTimeout(hqStep,d||40)}
 function hqStep(){HQB=0;if(!hqOn()){HQQ.length=0;return}const e=HQQ.shift();if(!e){return}
   if(HQT.get(e.o)===e){let ok=false;try{ok=hqBuild(e)}catch(x){e.hq=e.bump=null;ok=true}
-    if(ok){e.done=true;HQE.add(e);try{hqAll()}catch(x){}}else if(++e.tries<80)HQQ.push(e);else e.done=true}
+    if(ok){e.done=true;HQE.add(e);try{hqAll()}catch(x){}hqToast((e.lab||'Item')+': picture is '+e.sw+'x'+e.sh+(e.tx?' (the saved item picture)':' (from the model file)')+(e.hq?' -> enlarged to '+e.hq.image.width+'px':' -> already full size')+', relief '+(e.bump?'on':'off')+(e.sw<=512?'. This picture is small, so re-upload a bigger one for real detail.':''))}else if(++e.tries<80)HQQ.push(e);else e.done=true}
   if(HQQ.length)hqPump(HQQ[0].tries?250:40)}
-function hqGet(o){let e=HQT.get(o);if(!e){e={o:o,done:false,tries:0,hq:null,bump:null,bw:1};HQT.set(o,e);HQQ.push(e);hqPump()}return e.done?e:null}
+function hqGet(o,lab,tx){let e=HQT.get(o);if(!e){e={o:o,lab:lab,tx:tx,done:false,tries:0,hq:null,bump:null,bw:1};HQT.set(o,e);HQQ.push(e);hqPump()}return e.done?e:null}
 function hqUpdate(r){const I=HQI.get(r);if(!I||!I.o)return;const o=I.o;
   if(!hqOn()){if(r.map!==o||r.bumpMap){r.map=o;r.bumpMap=null;r.needsUpdate=true}return}
-  const e=hqGet(o);if(!e)return;
+  const e=hqGet(o,I.lab,I.tx);if(!e)return;
   if(e.hq&&r.map!==e.hq)r.map=e.hq;
   if(e.bump){if(r.bumpMap!==e.bump){r.bumpMap=e.bump;r.needsUpdate=true}r.bumpScale=HQR*I.ws/e.bw}}
-function hqReg(r,ws){if(!r||!r.isMeshStandardMaterial||!r.map)return;HQI.set(r,{o:r.map,ws:isFinite(ws)&&ws>0?ws:1});HQM.add(typeof WeakRef==='function'?new WeakRef(r):r);hqUpdate(r)}
+function hqReg(r,ws,inf){if(!r||!r.isMeshStandardMaterial||!r.map){if(inf)hqToast((inf.nm||'Item')+': no texture on this material');return}HQI.set(r,{o:r.map,ws:isFinite(ws)&&ws>0?ws:1,lab:inf&&inf.nm,tx:inf&&inf.tx});if(!hqOn())hqToast(((inf&&inf.nm)||'Item')+': Graphics is not on Ultra, so the extra detail is off');HQM.add(typeof WeakRef==='function'?new WeakRef(r):r);hqUpdate(r)}
 function hqAll(){const on=hqOn(),dead=[];HQM.forEach(function(w){const r=w.deref?w.deref():w;if(!r){dead.push(w);return}try{hqUpdate(r)}catch(x){}});dead.forEach(function(w){HQM.delete(w)});
   if(!on&&HQE.size){HQE.forEach(function(e){try{if(e.hq)e.hq.dispose();if(e.bump)e.bump.dispose()}catch(x){}HQT.delete(e.o)});HQE.clear();HQQ.length=0}}
 function accTex(url,flip){const k=(flip?'f':'n')+url;if(ACCT[k])return ACCT[k];const t=new THREE.TextureLoader().load(url);t.flipY=!flip;t.wrapS=t.wrapT=THREE.RepeatWrapping;texSharp(t);return ACCT[k]=t}
-function shineMat(mt,k){const n=mt.isMeshStandardMaterial?mt:new THREE.MeshStandardMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0});
-  n.roughness=Math.max(.1,.92-k*.8);n.metalness=0;n.userData.envB=.3+k*.9;n.envMapIntensity=n.userData.envB*ENVK;n.envMap=(ENVOK&&k>.35)?ENVT:null;pbrPatch(n);n.needsUpdate=true;return n}
+function shineMat(mt,k,m){const n=mt.isMeshStandardMaterial?mt:new THREE.MeshStandardMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0});
+  if(k!=null){n.roughness=Math.max(.1,.92-k*.8);n.userData.envB=.3+k*.9;n.envMapIntensity=n.userData.envB*ENVK;n.envMap=(ENVOK&&k>.35)?ENVT:null}else if(n.userData.envB==null)n.userData.envB=.3;
+  n.metalness=0;/* Metallic slider: solid metal reflects the world, so it needs the reflection map (without it a metal would look black, so it is held back on low graphics) */
+  if(m!=null){n.metalness=ENVOK?m:m*.35;if(ENVOK){n.envMap=ENVT;n.userData.envB=Math.max(n.userData.envB,.5+m*1.1);n.envMapIntensity=n.userData.envB*ENVK}if(k==null)n.roughness=Math.min(n.roughness==null?.42:n.roughness,.62-m*.25)}
+  pbrPatch(n);n.needsUpdate=true;return n}
 function accMake(slot,id,hs){/* hs: head height scale, so items still fit a resized head */
   const e=ACCI[id];if(!e||!e.obj)return null;const it=e.it,sl=ACCS[slot];if(!sl)return null;
   const c=e.obj.clone(true);c.position.set(0,0,0);const hqW=sl.s*Math.max(.1,Math.min(5,+it.scale||1))*((hs||1)/ACCU);
   c.traverse(function(m){if(!m.isMesh)return;m.castShadow=false;m.frustumCulled=false;/* own copies of the materials: hiding your avatar in first person must not hide anyone else's item */
-    const ap=function(mt){let n=mt.clone();if(n.map)texSharp(n.map);if(it.tex){n.userData.rawTex=true;n.map=accTex(it.tex,it.tf);if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true}if(it.sh!=null&&isFinite(it.sh))n=shineMat(n,Math.max(0,Math.min(100,+it.sh))/100);const r=accMat(n);r.userData.lb=1;try{hqReg(r,hqW)}catch(x){}return r};
+    const ap=function(mt){let n=mt.clone();if(n.map)texSharp(n.map);if(it.tex){n.userData.rawTex=true;n.map=accTex(it.tex,it.tf);if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true}if((it.sh!=null&&isFinite(it.sh))||(it.mt!=null&&isFinite(it.mt)))n=shineMat(n,it.sh!=null&&isFinite(it.sh)?Math.max(0,Math.min(100,+it.sh))/100:null,it.mt!=null&&isFinite(it.mt)?Math.max(0,Math.min(100,+it.mt))/100:null);const r=accMat(n);r.userData.lb=1;try{hqReg(r,hqW,{nm:it.name,tx:!!it.tex})}catch(x){}return r};
     m.material=Array.isArray(m.material)?m.material.map(ap):ap(m.material);if([].concat(m.material).some(function(t){return t.transparent}))m.renderOrder=-1});
   c.updateMatrixWorld(true);
   const bx=new THREE.Box3().setFromObject(c),sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),mx=Math.max(sz.x,sz.y,sz.z);
