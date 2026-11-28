@@ -2100,7 +2100,7 @@ const GFXCROS=/\bCrOS\b/.test(navigator.userAgent);let GFXL='auto';try{const gv=
 const GFXUI=[];
 function gfxEff(){return GFXL==='auto'?GFXT[GFXCROS?'medium':'high']:GFXT[GFXL]}
 function gfxPR(){const d=window.devicePixelRatio||1,tc=matchMedia('(pointer:coarse)').matches;let r;if(GFXL==='auto')r=Math.min(d,GFXCROS?1.25:1.5);else{const G=GFXT[GFXL];r=Math.min(d,G.cap)*G.mul;if(tc)r=Math.min(r,1.5)}const w=Math.max(1,cv.clientWidth),h=Math.max(1,cv.clientHeight),mx=tc?2.4e6:7e6;return Math.max(.5,Math.min(r,Math.sqrt(mx/(w*h))))}
-function gfxSet(v){if(v!=='auto'&&!GFXT[v])return;GFXL=v;try{localStorage.setItem('bbGfx',v)}catch(e){}try{QS=1;QC=0}catch(e){}lxSig='';try{applyEnv()}catch(e){}try{renderer.shadowMap.needsUpdate=true}catch(e){}try{texSharpAll();texLBset()}catch(e){}try{hqAll()}catch(e){}GFXUI.forEach(function(f){try{f()}catch(e){}})}
+function gfxSet(v){if(v!=='auto'&&!GFXT[v])return;GFXL=v;try{localStorage.setItem('bbGfx',v)}catch(e){}try{QS=1;QC=0}catch(e){}lxSig='';try{applyEnv()}catch(e){}try{renderer.shadowMap.needsUpdate=true}catch(e){}try{texSharpAll();texLBset()}catch(e){}try{hqAll()}catch(e){}try{metSet()}catch(e){}GFXUI.forEach(function(f){try{f()}catch(e){}})}
 /* The stylised look that Medium, High and Ultra put on top of the normal lighting (a lighting preset you pick still wins) */
 const LRB={1:{hs:'#dbe9ff',hg:'#56606a',hk:1,sc:'#fff0d4',tm:1,ex:1.18,soft:1,g:null},
   2:{hs:'#dbe9ff',hg:'#56606a',hk:1,sc:'#fff0d4',tm:1,ex:1.18,soft:1,g:{f:'contrast(1.06) saturate(1.1)',vig:.1,tint:'#ffcf8a',ta:.04,tb:'soft-light'}},
@@ -2572,7 +2572,7 @@ function accLoad(ids){/* resolves once every id is loaded (or known to be unavai
   if(miss.length){const pr=accRows(miss).then(function(rows){return accFbx().then(function(){
       miss.forEach(function(id){const r=rows.find(function(x){return x.id===id});ACCI[id]={it:null,obj:null};if(r&&!r.removed&&(r.slot==='shirt'||isFaceImg(r))&&r.tex){ACCI[id]={it:r,obj:null};return}if(!r||r.removed||!r.fbx)return;
         try{const b=atob(r.fbx),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);const o=new THREE.FBXLoader().parse(u.buffer,'');
-          accStatic(o);o.traverse(function(m){if(m.geometry)m.geometry.userData.keep=true});ACCI[id]={it:r,obj:o}}catch(e){}})})}).catch(function(){miss.forEach(function(id){if(!ACCI[id])ACCI[id]={it:null,obj:null}})});
+          accStatic(o);o.traverse(function(m){if(m.geometry)m.geometry.userData.keep=true});ACCI[id]={it:r,obj:o}}catch(e){}})})}).catch(function(){/* a failed download (server hiccup, FBX loader not loaded yet) must NOT be remembered as 'this item does not exist', or other players' items never show for the rest of the session */miss.forEach(function(id){if(ACCI[id]&&!ACCI[id].it&&!ACCI[id].obj)delete ACCI[id];delete ACCP[id]})});
     miss.forEach(function(id){ACCP[id]=pr})}
   return Promise.all(ids.map(function(id){return ACCP[id]||Promise.resolve()}))}
 const ACCT={};
@@ -2669,7 +2669,12 @@ function accTex(url,flip){const k=(flip?'f':'n')+url;if(ACCT[k])return ACCT[k];c
    and back to 1 on Low and up. It starts at the right value when the game opens, so only switching Graphics animates. */
 const METS=new Set();let METF=-1,METT=0;
 function metTarget(){const G=gfxEff();return G.env>0?Math.min(1,G.env/.4):0}
-function metSet(){const dead=[];METS.forEach(function(w){const n=w.deref?w.deref():w;if(!n||n.userData.metE==null){dead.push(w);return}n.metalness=(ENVOK?n.userData.metE:n.userData.metE*.35)*METF});dead.forEach(function(w){METS.delete(w)})}
+function metSet(){const dead=[];METS.forEach(function(w){const n=w.deref?w.deref():w;if(!n||n.userData.metE==null){dead.push(w);return}n.metalness=(ENVOK?n.userData.metE:n.userData.metE*.35)*METF*(n.userData.metN?metNat():1)});dead.forEach(function(w){METS.delete(w)})}
+/* Metal that comes from the item's own model file (a .glb with metalness, and no Shine / Metal value set in the shop) used to be left alone, so with weak or no reflections
+   (Low and Lowest graphics) it came out pitch black and the item looked like it had vanished. It now joins the same fade: none on Lowest, half on Low, full on Medium and up. */
+function metNat(){const G=gfxEff();return Math.min(1,G.env/.8)/Math.max(.001,Math.min(1,G.env/.4))}
+function metReg(n){if(!n||!n.isMeshStandardMaterial||n.userData.metE!=null||!(n.metalness>0))return n;if(METF<0)METF=metTarget();
+  n.userData.metE=n.metalness;n.userData.metN=1;n.metalness=(ENVOK?n.userData.metE:n.userData.metE*.35)*METF*metNat();METS.add(typeof WeakRef==='function'?new WeakRef(n):n);return n}
 function metTick(now){if(METF<0)METF=metTarget();const T=metTarget(),dt=Math.min(.1,Math.max(0,(now-METT)/1000));METT=now;
   if(Math.abs(T-METF)<.001){if(METF!==T){METF=T;metSet()}return}
   METF+=(T>METF?1:-1)*Math.min(Math.abs(T-METF),dt/4);metSet()}
@@ -2683,7 +2688,7 @@ function accMake(slot,id,hs){/* hs: head height scale, so items still fit a resi
   const e=ACCI[id];if(!e||!e.obj)return null;const it=e.it,sl=ACCS[slot];if(!sl)return null;
   const c=e.obj.clone(true);c.position.set(0,0,0);const hqW=sl.s*Math.max(.1,Math.min(5,+it.scale||1))*((hs||1)/ACCU);
   c.traverse(function(m){if(!m.isMesh)return;m.castShadow=false;m.frustumCulled=false;/* own copies of the materials: hiding your avatar in first person must not hide anyone else's item */
-    const ap=function(mt){let n=mt.clone();if(n.map)texSharp(n.map);if(it.tex){n.userData.rawTex=true;n.map=accTex(it.tex,it.tf);if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true}if((it.sh!=null&&isFinite(it.sh))||(it.mt!=null&&isFinite(it.mt)))n=shineMat(n,it.sh!=null&&isFinite(it.sh)?Math.max(0,Math.min(100,+it.sh))/100:null,it.mt!=null&&isFinite(it.mt)?Math.max(0,Math.min(100,+it.mt))/100:null);const r=accMat(n);r.userData.lb=1;try{hqReg(r,hqW,{mt:it.mt!=null,nm:(it.name||'Item')+' ['+(it.sh==null?'no shine':'shine '+it.sh)+', '+(it.mt==null?'no metal':'metal '+it.mt)+']',tx:!!it.tex})}catch(x){}return r};
+    const ap=function(mt){let n=mt.clone();if(n.map)texSharp(n.map);if(it.tex){n.userData.rawTex=true;n.map=accTex(it.tex,it.tf);if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true}if((it.sh!=null&&isFinite(it.sh))||(it.mt!=null&&isFinite(it.mt)))n=shineMat(n,it.sh!=null&&isFinite(it.sh)?Math.max(0,Math.min(100,+it.sh))/100:null,it.mt!=null&&isFinite(it.mt)?Math.max(0,Math.min(100,+it.mt))/100:null);const r=accMat(n);r.userData.lb=1;try{metReg(r)}catch(x){}try{hqReg(r,hqW,{mt:it.mt!=null,nm:(it.name||'Item')+' ['+(it.sh==null?'no shine':'shine '+it.sh)+', '+(it.mt==null?'no metal':'metal '+it.mt)+']',tx:!!it.tex})}catch(x){}return r};
     m.material=Array.isArray(m.material)?m.material.map(ap):ap(m.material);if([].concat(m.material).some(function(t){return t.transparent}))m.renderOrder=-1});
   c.updateMatrixWorld(true);
   const bx=new THREE.Box3().setFromObject(c),sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),mx=Math.max(sz.x,sz.y,sz.z);
@@ -2726,7 +2731,8 @@ function accDress(meshes,eq,hs){
   clear();const ids=[];Object.keys(eq).forEach(function(k){eq[k].forEach(function(x){ids.push(x)})});if(!ids.length)return;
   function put(){clear();Object.keys(eq).forEach(function(slot){if(slot==='shirt'){try{shirtPut(meshes,eq.shirt[eq.shirt.length-1])}catch(e){}return}if(slot==='face'){let fd=null;eq.face.forEach(function(id){const e=ACCI[id];if(e&&isFaceImg(e.it))fd=id});if(fd){try{facePut(meshes,fd)}catch(e){}}}const at=ACCS[slot].at,m=meshes[at];if(!m)return;eq[slot].forEach(function(id){let f=null;try{f=accMake(slot,id,hs||1)}catch(e){f=null}if(f){if(avHid&&accMine(m))f.visible=false;m.add(f);m.userData.accs.push(f)}})})}
   if(ids.every(function(id){return ACCI[id]}))put();
-  else accLoad(ids).then(function(){const m0=meshes.Head||meshes.Torso;if(m0&&m0.userData.accTok!==tok)return;put()})}
+  else accLoad(ids).then(function(){const m0=meshes.Head||meshes.Torso;if(m0&&m0.userData.accTok!==tok)return;put();
+    if(!ids.every(function(id){return ACCI[id]})){const n=(accDress.try||0)+1;accDress.try=n;if(n<=8)setTimeout(function(){const m1=meshes.Head||meshes.Torso;if(m1&&m1.userData.accTok!==tok)return;accDress(meshes,eq,hs)},3000)}else accDress.try=0})}
 /* ===== Admin blocks: accessories in a player's inventory (the BrixBlox shop keeps it in the account: owned items and what is worn) =====
    They only work in games made by an admin. You can change your own inventory in such a game; changing another player's needs you to be an admin yourself. */
 function adminGame(){return VIEWONLY?isAdminName(PLAYINFO&&PLAYINFO.owner):amAdmin()}
