@@ -652,7 +652,7 @@ input[type=text],input[type=email],input[type=password],input[type=number]{backg
             <input id="fc-file" type="file" accept="image/png,image/jpeg,image/webp" style="margin-top:8px"><div class="seg"><button id="fc-go" class="btn small" type="button">Create face</button></div><p id="fc-msg" class="hint"></p></div>
           <div id="acc-ed" class="ed" hidden=""></div>
           <div id="acc-up" hidden=""><h3>Upload accessory (FBX)</h3>
-            <div class="addrow" style="flex-wrap:wrap"><input id="ac-name" type="text" maxlength="24" placeholder="Name"><select id="ac-slot" class="sname"><option value="hat">Hat</option><option value="face">Face</option><option value="facc">Face accessory (glasses, mask, mustache)</option><option value="back">Back</option><option value="neck">Neck</option></select><input id="ac-price" type="number" min="0" max="999" value="10" style="width:90px" title="Price in blockbucks"><input id="ac-scale" type="number" min=".1" max="5" step=".1" value="1" style="width:90px" title="Size multiplier"></div>
+            <div class="addrow" style="flex-wrap:wrap"><input id="ac-name" type="text" maxlength="24" placeholder="Name"><select id="ac-slot" class="sname"><option value="hat">Hat</option><option value="face">Face</option><option value="facc">Face accessory (glasses, mask, mustache)</option><option value="back">Back</option><option value="neck">Neck</option><option value="larm">Left arm</option><option value="rarm">Right arm</option></select><input id="ac-price" type="number" min="0" max="999" value="10" style="width:90px" title="Price in blockbucks"><input id="ac-scale" type="number" min=".1" max="5" step=".1" value="1" style="width:90px" title="Size multiplier"></div>
             <input id="ac-file" type="file" accept=".fbx" style="margin-top:8px"><div class="seg"><button id="ac-go" class="btn small" type="button">Upload accessory</button></div><p id="ac-msg" class="hint"></p></div>
         </div>
       </div>
@@ -957,7 +957,7 @@ function eqArr(v){return Array.isArray(v)?v.filter(function(x){return typeof x==
    (makeAvatar here, facePut in Studio). Studio and other players get it through the normal accessory ids, so no extra networking is needed. */
 function isFaceImg(it){return !!it&&it.slot==='face'&&!it.fbx&&!!it.tex}
 function eqPut(arr,id){const it0=itemById(id);if(isFaceImg(it0))arr=arr.filter(function(x){return !isFaceImg(itemById(x))});arr=arr.filter(function(x){return x!==id});arr.push(id);const it=itemById(id);return arr.slice(it&&it.slot==='shirt'?-1:-2)}
-function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:eqArr(e.hat),face:eqArr(e.face),facc:eqArr(e.facc),back:eqArr(e.back),neck:eqArr(e.neck),shirt:eqArr(e.shirt).slice(-1)},spent:a.spent||0,anim:(typeof a.anim==='string'&&/^sys_anp_[a-z0-9]{1,16}$/.test(a.anim))?a.anim:'',codes:Array.isArray(a.codes)?a.codes.filter(function(x){return typeof x==='string'}).slice(-500):[],codeBux:Math.max(0,Math.floor(+a.codeBux||0)),codeReset:a.codeReset?1:0,clog:Array.isArray(a.clog)?a.clog.slice(0,15).map(function(x){return {amount:+x.amount||0,reason:String(x.reason||'').slice(0,60),created_at:String(x.created_at||'')}}):[],skin:HEX.test(a.skin)?a.skin:DEF_SKIN,pants:HEX.test(a.pants)?a.pants:DEF_PANTS,
+function normAv(a){a=a||{};const e=a.eq||{};return {owned:Array.isArray(a.owned)?a.owned.slice():[],eq:{hat:eqArr(e.hat),face:eqArr(e.face),facc:eqArr(e.facc),back:eqArr(e.back),neck:eqArr(e.neck),larm:eqArr(e.larm),rarm:eqArr(e.rarm),shirt:eqArr(e.shirt).slice(-1)},spent:a.spent||0,anim:(typeof a.anim==='string'&&/^sys_anp_[a-z0-9]{1,16}$/.test(a.anim))?a.anim:'',codes:Array.isArray(a.codes)?a.codes.filter(function(x){return typeof x==='string'}).slice(-500):[],codeBux:Math.max(0,Math.floor(+a.codeBux||0)),codeReset:a.codeReset?1:0,clog:Array.isArray(a.clog)?a.clog.slice(0,15).map(function(x){return {amount:+x.amount||0,reason:String(x.reason||'').slice(0,60),created_at:String(x.created_at||'')}}):[],skin:HEX.test(a.skin)?a.skin:DEF_SKIN,pants:HEX.test(a.pants)?a.pants:DEF_PANTS,
     favI:Array.isArray(a.favI)?a.favI.filter(function(x){return typeof x==='string'&&x}).slice(0,100):[],
     favG:Array.isArray(a.favG)?a.favG.filter(function(g){return g&&g.id!=null}).slice(0,100).map(function(g){return {id:String(g.id),name:String(g.name||'').slice(0,60),ownerId:g.ownerId||null,ownerName:String(g.ownerName||'').slice(0,32)}}):[]}}
 function makeDemo(){
@@ -1968,7 +1968,7 @@ $('f-bb').addEventListener('submit',async function(e){e.preventDefault();const c
 
 /* ===== 5e. Codes: admins make a named code, players type it in. Blockbuck codes are redeemed on the Blockbank page, item codes on the Codes page. ===== */
 const CODE_RE=/^[A-Z0-9_-]{2,24}$/;
-const SLOT_ONE={hat:'Hat',face:'Face',facc:'Face accessory',back:'Back item',neck:'Neck item',shirt:'Shirt'};
+const SLOT_ONE={hat:'Hat',face:'Face',facc:'Face accessory',back:'Back item',neck:'Neck item',larm:'Left arm item',rarm:'Right arm item',shirt:'Shirt'};
 function cdKey(c){return c.name+'@'+(c.v||0)}/* re-making a code gives it a new key, so players can use the new one */
 function cdMsg(id,t,good){const m=$(id);m.textContent=t||'';m.className='msg'+(good?' good':'')}
 function cdRefresh(){
@@ -2116,8 +2116,8 @@ function chGeo(name,rot,eps){if(!CHB){const s=atob(CHD.b),u=new Uint8Array(s.len
     P[i*3]=f*(pos[i*3]*k+nx*e);P[i*3+1]=pos[i*3+1]*k+ny*e;P[i*3+2]=f*(pos[i*3+2]*k+nz*e);N[i*3]=f*nx;N[i*3+1]=ny;N[i*3+2]=f*nz;U[i*2]=uv[i*2]/65535;U[i*2+1]=uv[i*2+1]/65535}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));g.setAttribute('normal',new THREE.BufferAttribute(N,3));g.setAttribute('uv',new THREE.BufferAttribute(U,2));g.setIndex(new THREE.BufferAttribute(ix.slice(),1));return g}
 let ITEMS=[];const FBXC={};
-const SLOTS=[['hat','Hats'],['face','Faces'],['facc','Face acc.'],['back','Back'],['neck','Neck'],['shirt','Shirts']];
-const ISLOT={hat:{y:1.82,z:0,s:.55,base:1},face:{y:1.58,z:.27,s:.32},facc:{y:1.63,z:.27,s:.46},back:{y:1,z:-.27,s:.9},neck:{y:1.3,z:0,s:.6}};
+const SLOTS=[['hat','Hats'],['face','Faces'],['facc','Face acc.'],['back','Back'],['neck','Neck'],['larm','Left arm'],['rarm','Right arm'],['shirt','Shirts']];
+const ISLOT={hat:{y:1.82,z:0,s:.55,base:1},face:{y:1.58,z:.27,s:.32},facc:{y:1.63,z:.27,s:.46},back:{y:1,z:-.27,s:.9},neck:{y:1.3,z:0,s:.6},larm:{y:-.34,z:0,s:.5},rarm:{y:-.34,z:0,s:.5}};
 let ED=null;/* item being adjusted in the editor; its draft is shown live on the preview avatar */
 const REFUND_REMOVED=true;/* players get their coins back when an item is removed from inventories */
 function itemById(id){if(ED&&ED.id===id)return ED.draft;return ITEMS.find(function(x){return x.id===id})}
@@ -2209,7 +2209,7 @@ function makeAvatar(color,eq,look){
   const L=[];
   [[-.4,2,'Lleg',leg,0],[.4,2,'Rleg',leg,0],[-1.1,3.9,'Larm',skin,1],[1.1,3.9,'Rarm',skin,1]].forEach(function(a){const pv=new THREE.Group();pv.position.set(a[0]*S,a[1]*S,0);g.add(pv);
     const m=body(a[2],a[3],a[4]);m.position.y=-S;pv.add(m);L.push(pv)});
-  if(eq)Object.keys(eq).forEach(function(k){eqArr(eq[k]).forEach(function(id){addItem(g,id,fx)})});
+  if(eq)Object.keys(eq).forEach(function(k){eqArr(eq[k]).forEach(function(id){addItem(k==='larm'?L[2]:k==='rarm'?L[3]:g,id,fx)})});
   return {g:g,limbs:L,fx:fx}}
 function buildScene(L){
   disposeWorld();world=new THREE.Group();scene.add(world);platMeshes=[];coinMeshes=[];flagMats={};
@@ -2715,7 +2715,7 @@ function paintRecs(it){
   const box=$('it-recs'),l=recItems(it);box.replaceChildren();$('it-recs-box').hidden=!l.length;
   l.forEach(function(x){box.append(itemCard(x))})}
 
-const ITYPE={hat:'Head Accessory',face:'Face',facc:'Face Accessory',back:'Back Accessory',neck:'Neck Accessory',shirt:'Shirt'},IPLACE={hat:'Head',face:'Face',facc:'Face',back:'Back',neck:'Neck',shirt:'Torso and arms'};
+const ITYPE={hat:'Head Accessory',face:'Face',facc:'Face Accessory',back:'Back Accessory',neck:'Neck Accessory',larm:'Left Arm Accessory',rarm:'Right Arm Accessory',shirt:'Shirt'},IPLACE={hat:'Head',face:'Face',facc:'Face',back:'Back',neck:'Neck',larm:'Left arm',rarm:'Right arm',shirt:'Torso and arms'};
 const ITA=mkx('div','it-acts');ITA.id='it-acts';
 
 /* ----- the animation pack page (uses the item page layout) ----- */
@@ -2818,7 +2818,7 @@ function ivBuild(){
   if(IV.mode==='worn'){
     const eq=Object.assign({},me.av.eq);eq[it.slot]=eqPut(eqArr(eq[it.slot]),it.id);
     const a=makeAvatar(me.color,eq,me.av);IV.obj=a.g;IV.fx=a.fx;
-    const hd=it.slot!=='back'&&it.slot!=='shirt';IV.cam.position.set(0,hd?1.6:1.2,hd?3.4:6);IV.cam.lookAt(0,hd?1.55:1,0)}
+    const hd=it.slot!=='back'&&it.slot!=='shirt'&&it.slot!=='larm'&&it.slot!=='rarm';IV.cam.position.set(0,hd?1.6:1.2,hd?3.4:6);IV.cam.lookAt(0,hd?1.55:1,0)}
   else{
     let o=null;try{o=thModel(it)}catch(e){o=null}if(!o)return;
     IV.obj=o.clone(true);IV.fx={};IV.cam.position.set(0,.2,3.3);IV.cam.lookAt(0,0,0)}
