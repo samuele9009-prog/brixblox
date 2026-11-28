@@ -2172,11 +2172,12 @@ function mkAxes(len,r,op,tip){const grp=new THREE.Group();
     if(tip){const cn=new THREE.Mesh(new THREE.ConeGeometry(r*3.2,len*.2,12),mat);cn.position.y=len*1.1;cn.renderOrder=1000;ax.add(cn);
       const sp=labelSprite(a[0].toUpperCase(),a[1]);sp.position.y=len*1.32;ax.add(sp)}
     grp.add(ax)});return grp}
+const LOADERR={};
 function ensureFbx(){return new Promise(function(ok,no){if(THREE.FBXLoader)return ok();
   const L=['https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js','https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js'];let i=0;
   (function nx(){if(i>=L.length){THREE.FBXLoader?ok():no(new Error('Could not load the FBX loader.'));return}const s=document.createElement('script');s.src=L[i++];s.onload=nx;s.onerror=nx;document.head.append(s)})()})}
 async function loadItems(){
-  try{const all=await api.listAcc(),rows=all.filter(function(r){return !r.removed});if(rows.length){if(rows.some(function(r){return r.slot!=='shirt'&&!isFaceImg(r)}))await ensureFbx();rows.forEach(function(it){if(FBXC[it.id]||it.slot==='shirt'||isFaceImg(it))return;try{const b=atob(it.fbx),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);FBXC[it.id]=accStatic(new THREE.FBXLoader().parse(u.buffer,''))}catch(e){}})}
+  try{const all=await api.listAcc(),rows=all.filter(function(r){return !r.removed});if(rows.length){if(rows.some(function(r){return r.slot!=='shirt'&&!isFaceImg(r)}))await ensureFbx();rows.forEach(function(it){if(FBXC[it.id]||it.slot==='shirt'||isFaceImg(it))return;try{const b=atob(it.fbx),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);FBXC[it.id]=accStatic(new THREE.FBXLoader().parse(u.buffer,''));delete LOADERR[it.id]}catch(e){LOADERR[it.id]=String((e&&e.message)||e).slice(0,120);try{if(isAdm())toast('Item "'+it.name+'" could not be read: '+LOADERR[it.id])}catch(x){}}})}
     ITEMS=rows.filter(function(r){return r.slot==='shirt'?!!r.tex:(isFaceImg(r)||FBXC[r.id])});
     /* Items taken out of circulation are removed from this player's inventory (and refunded). Only runs when the list loaded OK. */
     if(me){let ch=false;const av=me.av;
@@ -2591,9 +2592,13 @@ $('ac-go').onclick=async function(){const f=$('ac-file').files[0],nm=$('ac-name'
   if(!isAdm())return;if(!nm){say('Give it a name.');return}if(!f||!/\.fbx$/i.test(f.name)){say('Choose an .fbx file.');return}if(f.size>4e6){say('That file is over 4 MB.');return}
   $('ac-go').disabled=true;say('Reading...',true);
   try{await ensureFbx();const buf=await f.arrayBuffer(),u=new Uint8Array(buf);let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));
-    new THREE.FBXLoader().parse(buf,'');
+    const chk=accStatic(new THREE.FBXLoader().parse(buf,''));chk.updateMatrixWorld(true);let nm0=0;chk.traverse(function(m){if(m.isMesh&&m.geometry&&m.geometry.attributes.position)nm0++});
+    const bb=new THREE.Box3().setFromObject(chk);if(!nm0){say('That FBX has no mesh in it (only bones, lights or cameras). Export the model as a mesh.');$('ac-go').disabled=false;return}
+    if(bb.isEmpty()||!isFinite(bb.min.x+bb.max.x+bb.min.y+bb.max.y+bb.min.z+bb.max.z)){say('That FBX has a broken size (empty or NaN). Apply scale/transforms in your 3D program and export again.');$('ac-go').disabled=false;return}
     const it={id:'acc_'+Date.now().toString(36),name:nm,slot:$('ac-slot').value,price:Math.max(0,Math.min(999,parseInt($('ac-price').value,10)||0)),scale:Math.max(.1,Math.min(5,parseFloat($('ac-scale').value)||1)),fbx:btoa(s)};
-    await api.saveAcc(it);say('Uploaded '+nm+'.',true);$('ac-name').value='';$('ac-file').value='';await loadItems()}catch(e){say('Could not upload: '+((e&&e.message)||e))}
+    await api.saveAcc(it);await loadItems();
+    if(!ITEMS.some(function(x){return x.id===it.id})){say('Saved, but it did not load back: '+(LOADERR[it.id]||'the shop could not read it')+'. Try uploading again.');$('ac-go').disabled=false;return}
+    say('Uploaded '+nm+'.',true);$('ac-name').value='';$('ac-file').value=''}catch(e){say('Could not upload: '+((e&&e.message)||e))}
   $('ac-go').disabled=false};
 function readShirt(f){return new Promise(function(ok,no){const u=URL.createObjectURL(f),im=new Image();
   im.onload=function(){URL.revokeObjectURL(u);let m=1024,d='';
