@@ -1110,8 +1110,8 @@ function makeSupa(){
     async notices(){const r=await sb.rpc('my_notices');if(r.error)throw r.error;return r.data},
     async ackNotices(){const r=await sb.rpc('ack_warnings');if(r.error)throw r.error},
     async gameData(id){const r=await sb.from('games').select('data').eq('id',id).single();if(r.error)throw r.error;return r.data.data},
-    async listAcc(){const r=await sb.from('games').select('id,name,data').like('id','acc_%');if(r.error)throw r.error;return r.data.map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,slot:d.slot,price:d.price,descr:d.descr||'',scale:d.scale,fbx:d.fbx||'',tex:d.tex||'',tf:!!d.tf,sh:d.sh==null?null:d.sh,px:d.px||0,py:d.py||0,pz:d.pz||0,rx:d.rx||0,ry:d.ry||0,rz:d.rz||0,sale:d.sale!==false,prem:!!d.prem,removed:!!d.removed,c:'#4a4c4e'}})},
-    async saveAcc(it){const r=await sb.from('games').upsert({id:it.id,owner_id:me.id,owner_name:me.username,name:it.name,vis:'public',data:JSON.stringify({slot:it.slot,price:it.price,descr:String(it.descr||'').slice(0,500),scale:it.scale,fbx:it.fbx||'',tex:it.tex||'',tf:!!it.tf,sh:it.sh==null?null:it.sh,px:it.px||0,py:it.py||0,pz:it.pz||0,rx:it.rx||0,ry:it.ry||0,rz:it.rz||0,sale:it.sale!==false,prem:!!it.prem,removed:!!it.removed}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
+    async listAcc(){const r=await sb.from('games').select('id,name,data').like('id','acc_%');if(r.error)throw r.error;return r.data.map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,slot:d.slot,price:d.price,descr:d.descr||'',scale:d.scale,fbx:d.fbx||'',tex:d.tex||'',tf:!!d.tf,sh:d.sh==null?null:d.sh,mt:d.mt==null?null:d.mt,px:d.px||0,py:d.py||0,pz:d.pz||0,rx:d.rx||0,ry:d.ry||0,rz:d.rz||0,sale:d.sale!==false,prem:!!d.prem,removed:!!d.removed,c:'#4a4c4e'}})},
+    async saveAcc(it){const r=await sb.from('games').upsert({id:it.id,owner_id:me.id,owner_name:me.username,name:it.name,vis:'public',data:JSON.stringify({slot:it.slot,price:it.price,descr:String(it.descr||'').slice(0,500),scale:it.scale,fbx:it.fbx||'',tex:it.tex||'',tf:!!it.tf,sh:it.sh==null?null:it.sh,mt:it.mt==null?null:it.mt,px:it.px||0,py:it.py||0,pz:it.pz||0,rx:it.rx||0,ry:it.ry||0,rz:it.rz||0,sale:it.sale!==false,prem:!!it.prem,removed:!!it.removed}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
     async admins(){const r=await sb.from('games').select('data').eq('id','sys_admins').maybeSingle();if(r.error)throw r.error;let d=r.data&&r.data.data;if(typeof d==='string')d=JSON.parse(d);return d&&d.admins||[]},
     async listPacks(){const r=await sb.from('games').select('id,name,data').like('id','sys_anp_%');if(r.error)throw r.error;return (r.data||[]).map(function(x){let d=x.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}d=d||{};return {id:x.id,name:x.name,owner:d.owner||'',price:d.price||0,descr:d.descr||'',pub:!!d.pub,sale:d.sale!==false,removed:!!d.removed,anims:d.anims||{}}})},
     async savePack(p){/* keep the newest animations from the database, so a stale copy in this page can never wipe or swap a pack's animations */let anims=p.anims||{};try{const c=await sb.from('games').select('data').eq('id',p.id).maybeSingle();if(!c.error&&c.data){let d=c.data.data;if(typeof d==='string')d=JSON.parse(d);if(d&&d.anims)anims=d.anims}}catch(e){}const r=await sb.from('games').upsert({id:p.id,owner_id:me.id,owner_name:me.username,name:p.name,vis:'public',data:JSON.stringify({owner:p.owner,price:p.price||0,descr:p.descr||'',pub:!!p.pub,sale:p.sale!==false,removed:!!p.removed,anims:anims}),updated_at:new Date().toISOString()});if(r.error)throw r.error},
@@ -2127,14 +2127,16 @@ let ADMS=[];
 function isAdm(){return isBB()||(!!me&&ADMS.indexOf(me.username.toLowerCase())>=0)}
 /* Admins listed by brixblox can warn and ban from the Admin tab too. Only brixblox can remove games, delete accounts or make billboards. */
 async function loadAdmins(){try{ADMS=(await api.admins()||[]).map(function(x){return String(x).toLowerCase()})}catch(e){}try{paintBB()}catch(e){}const n=$('n-admin');if(n)n.hidden=!isAdm()}
-function shineMat(mt,k){const n=mt.isMeshPhongMaterial?mt:new THREE.MeshPhongMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0});
-  n.shininess=1+k*149;n.specular=new THREE.Color().setScalar(k);n.needsUpdate=true;return n}
+function shineMat(mt,k,m){const n=mt.isMeshPhongMaterial?mt:new THREE.MeshPhongMaterial({color:mt.color?mt.color.clone():new THREE.Color(0xffffff),map:mt.map||null,transparent:!!mt.transparent,opacity:mt.opacity==null?1:mt.opacity,side:mt.side,alphaTest:mt.alphaTest||0});
+  n.shininess=1+Math.max(k,(m||0)*.8)*149;n.specular=new THREE.Color().setScalar(k);
+  if(m!=null&&m>0){const c=n.color?n.color.clone():new THREE.Color(1,1,1);n.color=c.clone().multiplyScalar(1-.6*m);n.specular=new THREE.Color(1,1,1).lerp(c,m*.7).multiplyScalar(Math.min(1,k*.6+m*.7))}
+  n.needsUpdate=true;return n}
 function addItem(g,id,fx){const it=itemById(id),o=it&&FBXC[id];if(!o)return;
   const c=o.clone(true);c.position.set(0,0,0);
   if(it.tex){const tx=getTex(it.tex,it.tf);c.traverse(function(m){if(!m.isMesh)return;
     const ap=function(mt){const n=mt.clone();n.map=tx;if(n.color)n.color.set(0xffffff);n.transparent=true;n.alphaTest=.02;n.needsUpdate=true;return n};
     m.material=Array.isArray(m.material)?m.material.map(ap):ap(m.material)})}
-  if(it.sh!=null&&isFinite(it.sh)){const k=Math.max(0,Math.min(100,+it.sh))/100;c.traverse(function(m){if(!m.isMesh)return;const f=function(mt){return shineMat(mt.clone(),k)};m.material=Array.isArray(m.material)?m.material.map(f):f(m.material)})}
+  if((it.sh!=null&&isFinite(it.sh))||(it.mt!=null&&isFinite(it.mt))){const k=it.sh!=null&&isFinite(it.sh)?Math.max(0,Math.min(100,+it.sh))/100:.4,mm=it.mt!=null&&isFinite(it.mt)?Math.max(0,Math.min(100,+it.mt))/100:null;c.traverse(function(m){if(!m.isMesh)return;const f=function(mt){return shineMat(mt.clone(),k,mm)};m.material=Array.isArray(m.material)?m.material.map(f):f(m.material)})}
   c.traverse(function(m){if(!m.isMesh)return;m.frustumCulled=false;const f=function(mt){return accMat(mt.clone())};m.material=Array.isArray(m.material)?m.material.map(f):f(m.material)});
   c.updateMatrixWorld(true);
   const bx=new THREE.Box3().setFromObject(c),sz=bx.getSize(new THREE.Vector3()),ct=bx.getCenter(new THREE.Vector3()),sl=ISLOT[it.slot]||ISLOT.hat,k=sl.s*(it.scale||1)/(Math.max(sz.x,sz.y,sz.z)||1);
@@ -2320,7 +2322,7 @@ function shirtModel(it){const g=new THREE.Group(),tx=getTex(it.tex,false);
   [['Torso',0,0],['Larm',-1.1,-.1],['Rarm',1.1,-.1]].forEach(function(a){const m=new THREE.Mesh(chGeo(a[0]),new THREE.MeshPhongMaterial({color:0xffffff,map:tx,transparent:true,alphaTest:.02,shininess:30}));m.position.set(a[1],a[2],0);g.add(m)});return g}
 function faceThumb(it){const g=new THREE.Group();g.add(new THREE.Mesh(chGeo('Head'),new THREE.MeshPhongMaterial({color:DEF_SKIN,shininess:30})));g.add(faceDecal(it.tex,1));return g}
 function thModel(it){
-  const key=[it.id,it.scale,it.tex?it.tex.length:0,it.tf?1:0,it.sh,it.rx,it.ry,it.rz].join('|');
+  const key=[it.id,it.scale,it.tex?it.tex.length:0,it.tf?1:0,it.sh,it.mt,it.rx,it.ry,it.rz].join('|');
   if(TH.models[key])return TH.models[key];
   const g=new THREE.Group(),keep=ED;ED=null;/* no editor guides in the tile */
   try{if(it.slot==='shirt')g.add(shirtModel(it));else if(isFaceImg(it))g.add(faceThumb(it));else addItem(g,it.id,{})}finally{ED=keep}
@@ -2559,6 +2561,14 @@ function edRender(){
   shn.oninput=function(){const v=parseFloat(shn.value);if(isNaN(v))return;d.sh=Math.max(0,Math.min(100,v));shg.value=d.sh;shPaint();edPreview()};
   shl.onclick=function(){d.sh=null;shPaint();edPreview()};ctl.sh=function(v){d.sh=v;shPaint();edPreview()};
   shr.append(shl,shg,shn);hs.append(shr,shh);shPaint();
+  /* metallic: empty = the model's own look; 0 is plain, 100 is solid metal (reflects the world and tints its highlights with the surface colour) */
+  const hm=sec('Metallic',['mt'],null),mtr=mk('div','r'),mtl=mk('button','ax s','Metal');mtl.type='button';mtl.title="Click to go back to the model's own look";
+  const mtg=mk('input','s'),mtn=mk('input'),mth=mk('div','hn');mtg.type='range';mtn.type='number';[mtg,mtn].forEach(function(i){i.min=0;i.max=100;i.step=1});
+  function mtPaint(){const on=d.mt!=null;mtg.value=on?d.mt:50;mtn.value=on?d.mt:'';mth.textContent=on?"0 is not metal, 100 is solid metal like steel or gold. Press Metal to go back to the model's own look.":"Using the model's own look. Move the slider to make it metallic."}
+  mtg.oninput=function(){d.mt=+mtg.value;mtn.value=d.mt;mtPaint();edPreview()};
+  mtn.oninput=function(){const v=parseFloat(mtn.value);if(isNaN(v))return;d.mt=Math.max(0,Math.min(100,v));mtg.value=d.mt;mtPaint();edPreview()};
+  mtl.onclick=function(){d.mt=null;mtPaint();edPreview()};ctl.mt=function(v){d.mt=v;mtPaint();edPreview()};
+  mtr.append(mtl,mtg,mtn);hm.append(mtr,mth);mtPaint();
   /* texture */
   const ts=sec('Texture'),tr=mk('div','texrow'),img=mk('img','texprev');img.alt='Texture preview';
   const file=mk('input');file.type='file';file.accept='image/*';file.style.display='none';
@@ -2573,7 +2583,7 @@ function edRender(){
   /* buttons */
   const bt=mk('div','btns');
   const save=btn(bt,'Save',async function(){save.disabled=true;try{await api.saveAcc(Object.assign({},d));ED=null;pv.tryEq=null;$('acc-ed').hidden=true;$('acc-ed').innerHTML='';await loadItems();toast('Saved '+d.name+'.')}catch(e){toast('Could not save: '+errText(e));save.disabled=false}});
-  btn(bt,'Reset all',function(){['px','py','pz','rx','ry','rz'].forEach(function(k){ctl[k](0)});ctl.scale(1);ctl.sh(null)},true);
+  btn(bt,'Reset all',function(){['px','py','pz','rx','ry','rz'].forEach(function(k){ctl[k](0)});ctl.scale(1);ctl.sh(null);ctl.mt(null)},true);
   btn(bt,'Cancel',closeEdit,true);
   el.appendChild(bt)}
 $('ac-go').onclick=async function(){const f=$('ac-file').files[0],nm=$('ac-name').value.trim(),m=$('ac-msg');
