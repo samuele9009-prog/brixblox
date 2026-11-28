@@ -6205,9 +6205,40 @@ function skyLook(dt,k){let v=LIGHTO&&SKYV[LIGHTO]||null;if(!v&&!SKYO&&!SKYGEN&&s
   const cn=cl?cl.n:10,co=cl?cl.o:1;
   cloudS.forEach(function(q){const u=q.userData;u.o+=((u.i<cn?co:0)-u.o)*f;q.visible=u.o>.01;q.material.opacity=u.o;q.material.color.copy(SKYS.cc);q.scale.set(u.w*SKYS.cz,u.w*SKYS.cz/2,1)})}
 let LSP=null;/* when a different game's settings load in the studio, switch to its starting lighting so the sky shows without pressing Play */
+/* ===== Reflections follow the real sky =====
+   Metal, glass and shiny parts used to reflect one fixed blue sky, so a red sunset still gave blue reflections. Now the reflection picture is rebuilt from the sky that is really showing:
+   the painted skybox (built-in, custom or uploaded) when there is one, otherwise a gradient from the sky colour and horizon colour, plus the sun (or moon) in the right spot and colour.
+   It only rebuilds when the sky, the time of day or the lighting changes (at most about once a second). */
+let ENVSIG='',ENVAT=0,ENVRT=null;
+function envFromSky(e,k,d,day){
+  if(!ENVOK||typeof THREE.PMREMGenerator!=='function'||!renderer)return;
+  const now=performance.now();if(now-ENVAT<900)return;
+  const useBox=!!(skyBox.visible&&(skyAny||skyGenOn));let loaded=0;
+  if(useBox)skyBox.material.forEach(function(m){const im=m.visible&&m.map&&m.map.image;if(im&&(im.width||im.naturalWidth))loaded++});
+  if(useBox&&!loaded)return;/* the sky pictures are still loading */
+  const sky=new THREE.Color(e.sky||'#87ceeb'),fh=skyFogHex(),sig=[useBox?skySig+'#'+loaded:'g'+sky.getHexString()+(fh!==null?fh:''),Math.round(e.tod*2),Math.round(k*20),LIGHTO||''].join('|');
+  if(sig===ENVSIG)return;ENVSIG=sig;ENVAT=now;
+  const top=sky.clone().multiplyScalar(k),hor=(fh!==null?new THREE.Color(fh):sky.clone().lerp(new THREE.Color(0xffffff),.55)).multiplyScalar(k),
+    gnd=new THREE.Color('#6d6a5c').lerp(sky,.12).multiplyScalar(k),gnd2=gnd.clone().multiplyScalar(.25),sc=SKYS&&SKYS.sc?SKYS.sc.clone():new THREE.Color(1,1,1);
+  const mk=function(strong){const es=new THREE.Scene();es.background=hor.clone();
+    if(useBox){const mats=skyBox.material.map(function(m){const c=m.clone();c.depthTest=true;c.depthWrite=true;c.fog=false;return c});es.add(new THREE.Mesh(new THREE.BoxGeometry(100,100,100),mats))}
+    else{const sg=new THREE.SphereGeometry(50,48,24),pa=sg.attributes.position,cl=[],t=new THREE.Color();
+      for(let i=0;i<pa.count;i++){const y=pa.getY(i)/50;if(y>=0)t.copy(hor).lerp(top,Math.pow(y,.55));else if(strong)t.copy(gnd).lerp(gnd2,Math.min(1,Math.pow(-y,.6)*1.2));else t.copy(hor).lerp(gnd,Math.min(1,Math.pow(-y,.45)*1.4));cl.push(t.r,t.g,t.b)}
+      sg.setAttribute('color',new THREE.Float32BufferAttribute(cl,3));es.add(new THREE.Mesh(sg,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.BackSide})))}
+    const bright=(strong?16:14)*Math.max(0,Math.min(1,day*2.5));
+    if(bright>.05&&d.y>-.05){const m=new THREE.Mesh(new THREE.SphereGeometry(5,16,12),new THREE.MeshBasicMaterial({color:new THREE.Color(sc.r*bright,sc.g*bright*.96,sc.b*bright*.9)}));m.position.copy(d).multiplyScalar(45);es.add(m)}
+    else if(day<.2&&d.y<.05){const m=new THREE.Mesh(new THREE.SphereGeometry(4,16,12),new THREE.MeshBasicMaterial({color:new THREE.Color(1.6,1.7,2)}));m.position.copy(d).multiplyScalar(-45);es.add(m)}
+    return es};
+  const oT=ENVT,oM=ENVM,pm=new THREE.PMREMGenerator(renderer);let rT=null,rM=null;
+  try{rT=pm.fromScene(mk(false),.03);rM=pm.fromScene(mk(true),.02)}finally{pm.dispose()}
+  if(!rT||!rM)return;
+  const nT=rT.texture,nM=rM.texture;ENVT=nT;ENVM=nM;
+  scene.traverse(function(o){const ms=o.material;if(!ms)return;(Array.isArray(ms)?ms:[ms]).forEach(function(m){if(m.envMap===oT)m.envMap=nT;else if(m.envMap===oM)m.envMap=nM})});
+  try{if(ENVRT){ENVRT.t.dispose();ENVRT.m.dispose()}}catch(x){}ENVRT={t:rT,m:rM};try{if(oT)oT.dispose();if(oM)oM.dispose()}catch(x){}}
 function skyTick(dt){if(!playing&&!running&&LSP!==P.env){LSP=P.env;if(P.env.light&&LPRE[P.env.light]){lightStart();try{applyEnv()}catch(e){}}}
   const e=lightEnv(),a=(e.tod-6)/12*Math.PI,d=new THREE.Vector3(Math.cos(a)*14,Math.sin(a)*14,6).normalize(),day=Math.max(0,Math.sin(a)),k=.2+.8*Math.min(1,day*2.5),R=700,cp=camera.position;
   skyApply();skyG.visible=!stage.visible&&!skyAny;skyBox.visible=!stage.visible&&(skyAny||skyGenOn);skyBox.position.copy(cp);
+  try{envFromSky(e,k,d,day)}catch(er){if(!envFromSky.bad){envFromSky.bad=1;log('Error: sky reflections - '+(er&&er.message))}}
   sunS.visible=d.y>-.03;sunS.position.set(cp.x+d.x*R,cp.y+d.y*R,cp.z+d.z*R);
   moonS.visible=d.y<.03;moonS.position.set(cp.x-d.x*R,cp.y-d.y*R,cp.z-d.z*R);
   try{skyLook(dt,k)}catch(err){if(!skyLook.bad){skyLook.bad=1;log('Error: sun/moon/clouds - '+(err&&err.message))}}cloudS.forEach(function(q){const u=q.userData;u.az+=u.sp*dt*SKYS.cs;const ce=Math.cos(u.el);q.position.set(cp.x+Math.sin(u.az)*ce*800,cp.y+Math.sin(u.el)*800,cp.z-Math.cos(u.az)*ce*800)})}
