@@ -2556,7 +2556,7 @@ function objMove(dt){pushMe(dt);for(const id in RD){const d=RD[id];d.el+=dt;cons
 /* ===== Avatar accessories (made in the BrixBlox shop). Your equipped items come from your profile (ME.av.eq); other players send only the item ids,
    and every player downloads the item models themselves, so nothing big is ever sent over the game connection. ===== */
 const ACCI={},ACCP={};let ACCTOK=0;
-const ACCS={hat:{y:1.82,z:0,s:.55,base:1,at:'Head'},face:{y:1.58,z:.27,s:.32,at:'Head'},facc:{y:1.63,z:.27,s:.46,at:'Head'},back:{y:1,z:-.27,s:.9,at:'Torso'},neck:{y:1.3,z:0,s:.6,at:'Torso'},larm:{y:.986,z:0,s:.5,at:'Larm'},rarm:{y:.986,z:0,s:.5,at:'Rarm'},shirt:{y:0,z:0,s:1,at:'Torso'}};
+const ACCS={hat:{y:1.82,z:0,s:.55,base:1,at:'Head'},face:{y:1.58,z:.27,s:.32,at:'Head'},facc:{y:1.63,z:.27,s:.46,at:'Head'},back:{y:1,z:-.27,s:.9,at:'Torso'},neck:{y:1.3,z:0,s:.6,at:'Torso'},larm:{x:.27,y:.986,z:0,s:.5,at:'Larm'},rarm:{x:-.27,y:.986,z:0,s:.5,at:'Rarm'},shirt:{y:0,z:0,s:1,at:'Torso'}};
 const ACCU=.34,ACCC={Head:4.65,Torso:3,Larm:2.9,Rarm:2.9};/* the shop avatar is drawn at .34 scale; Head / Torso centres in studs above the feet */
 function accClean(eq){const o={};if(eq&&typeof eq==='object')Object.keys(ACCS).forEach(function(k){const v=eq[k],a=[];(Array.isArray(v)?v:[v]).forEach(function(x){if(typeof x==='string'&&/^acc_[a-z0-9]{1,16}$/.test(x)&&a.indexOf(x)<0)a.push(x)});if(a.length)o[k]=a.slice(-2)});return o}
 function accStr(eq){eq=accClean(eq);const o=[];Object.keys(eq).forEach(function(k){eq[k].forEach(function(id){o.push(k+':'+id)})});return o.join(',')}
@@ -2579,7 +2579,8 @@ const ACCT={};
 /* Accessory fixes: items are flattened to plain meshes (a cloned skeleton pointed at the wrong bones, which made items look cut open or glitched), drawn on both sides,
    never frustum-culled, pulled slightly toward the camera so they do not z-fight with the head, and frozen so they stay locked to the part they are worn on. */
 function accNoExt(buf,o){/* textures that point at files on the maker's computer can never load here and make the item draw black or see-through; only embedded textures are kept */
-  try{const u=new Uint8Array(buf),k=[67,111,110,116,101,110,116];let emb=false;
+  try{/* a mesh with several materials but no material groups is not drawn at all by three.js (Blender leaves an unused material slot): use its first material */o.traverse(function(m){if(m.isMesh&&Array.isArray(m.material)&&m.material.length&&m.geometry&&!(m.geometry.groups&&m.geometry.groups.length))m.material=m.material[0]});
+    const u=new Uint8Array(buf),k=[67,111,110,116,101,110,116];let emb=false;
     for(let i=0;i<u.length-7&&!emb;i++){if(u[i]===67){let j=1;while(j<7&&u[i+j]===k[j])j++;if(j===7)emb=true}}
     if(!emb)o.traverse(function(m){if(!m.isMesh)return;[].concat(m.material).forEach(function(mt){if(mt){if(mt.map)mt.map=null;if(mt.alphaMap)mt.alphaMap=null;if(mt.bumpMap)mt.bumpMap=null;if(mt.normalMap)mt.normalMap=null;mt.needsUpdate=true}})})}catch(e){}return o}
 function accStatic(o){const sk=[];o.traverse(function(m){if(m.isSkinnedMesh)sk.push(m)});
@@ -2700,7 +2701,7 @@ function accMake(slot,id,hs){/* hs: head height scale, so items still fit a resi
   const num=function(v,d,lo,hi){v=+v;return isFinite(v)?Math.max(lo,Math.min(hi,v)):d},k=sl.s*num(it.scale,1,.1,5)/mx,D=Math.PI/180;
   const w=new THREE.Group();c.position.set(-ct.x,sl.base?-bx.min.y:-ct.y,-ct.z);w.add(c);w.scale.setScalar(k);
   w.rotation.set(num(it.rx,0,-360,360)*D,num(it.ry,0,-360,360)*D,num(it.rz,0,-360,360)*D);
-  w.position.set(num(it.px,0,-3,3),sl.y+num(it.py,0,-3,3)-ACCC[sl.at]*ACCU,sl.z+num(it.pz,0,-3,3));
+  w.position.set((sl.x||0)+num(it.px,0,-3,3),sl.y+num(it.py,0,-3,3)-ACCC[sl.at]*ACCU,sl.z+num(it.pz,0,-3,3));
   /* The shop avatar faces +z and is measured in .34 units; the game character faces -z and is measured in studs. */
   accFreeze(c,w);const F=new THREE.Group();F.rotation.y=Math.PI;F.scale.setScalar(hs/ACCU);F.add(w);F.userData.acc=1;F.updateMatrix();F.matrixAutoUpdate=false;
   if(!F.matrix.elements.every(isFinite)||!w.matrix.elements.every(isFinite))return null;return F}
