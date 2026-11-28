@@ -2416,7 +2416,7 @@ function meshShine(o,v){const g=o&&o.userData.mi;if(!g)return;g.traverse(functio
 function meshShineDef(p){const o=M[p.id],g=o&&o.userData.mi;let r=null;
   if(g)g.traverse(function(x){if(r!==null||!x.isMesh)return;const mt=Array.isArray(x.material)?x.material[0]:x.material;if(!mt)return;r=mt.isMeshStandardMaterial?(1-mt.roughness)/.95:mt.isMeshPhongMaterial?(mt.shininess||0)/220:.2});
   return Math.round(Math.max(0,Math.min(1,r===null?.2:r))*20)/20}
-function mkMat(p){const k=MATS[p.mat]?p.mat:'plastic',d=MATS[k],q=PBR[k]||PBR.plastic,m=new THREE.MeshStandardMaterial({color:p.color,roughness:p.av?.42:q[0],metalness:p.av?0:(ENVOK?q[1]:q[1]*.35)});
+function mkMat(p){const k=MATS[p.mat]?p.mat:'plastic',d=MATS[k],q=PBR[k]||PBR.plastic,m=new THREE.MeshStandardMaterial({color:p.color,roughness:p.av?.42:q[0],metalness:p.av?0:(ENVOK?q[1]:q[1]*.35)});try{if(!p.av&&q[1]>0){if(METF<0)METF=metTarget();m.userData.metE=q[1];m.metalness=(ENVOK?q[1]:q[1]*.35)*METF;METS.add(typeof WeakRef==='function'?new WeakRef(m):m)}}catch(_e){}
   m.userData.envB=p.av?.4:q[3];m.envMapIntensity=m.userData.envB*ENVK;if(ENVOK&&(p.av||q[3]>=.5))m.envMap=ENVT;
   if(TX[k]){m.map=tex(k);if(!p.av){if(Math.abs(q[2])>=.035){m.bumpMap=texH(k);m.bumpScale=q[2]*1.3}}}
   if(d.op){m.transparent=true;m.opacity=d.op}if(k==='neon')m.emissive.set(p.color);if(p.tr>0){m.transparent=true;m.opacity=(d.op||1)*(1-Math.min(1,p.tr))}if(p.shape==='union'&&p.un){m.vertexColors=true;if(p.un.pc!==p.color)m.color.set(p.color);else m.color.set(0xffffff)}
@@ -2668,11 +2668,11 @@ function accTex(url,flip){const k=(flip?'f':'n')+url;if(ACCT[k])return ACCT[k];c
    So the metalness of worn items is multiplied by METF, which slowly eases (about 4 seconds) to 0 on Lowest (the item then shows its plain colour and shine)
    and back to 1 on Low and up. It starts at the right value when the game opens, so only switching Graphics animates. */
 const METS=new Set();let METF=-1,METT=0;
-function metTarget(){const G=gfxEff();return G.env>0?Math.min(1,G.env/.4):0}
+function metTarget(){const G=gfxEff();return G===GFXT.ultra?1:G===GFXT.high?.85:G===GFXT.medium?.6:G===GFXT.low?.3:0}/* the lower the graphics, the less metallic everything is: Ultra 100%, High 85%, Medium 60%, Low 30%, Lowest 0% */
 function metSet(){const dead=[];METS.forEach(function(w){const n=w.deref?w.deref():w;if(!n||n.userData.metE==null){dead.push(w);return}n.metalness=(ENVOK?n.userData.metE:n.userData.metE*.35)*METF*(n.userData.metN?metNat():1)});dead.forEach(function(w){METS.delete(w)})}
 /* Metal that comes from the item's own model file (a .glb with metalness, and no Shine / Metal value set in the shop) used to be left alone, so with weak or no reflections
    (Low and Lowest graphics) it came out pitch black and the item looked like it had vanished. It now joins the same fade: none on Lowest, half on Low, full on Medium and up. */
-function metNat(){const G=gfxEff();return Math.min(1,G.env/.8)/Math.max(.001,Math.min(1,G.env/.4))}
+function metNat(){return 1}
 function metReg(n){if(!n||!n.isMeshStandardMaterial||n.userData.metE!=null||!(n.metalness>0))return n;if(METF<0)METF=metTarget();
   n.userData.metE=n.metalness;n.userData.metN=1;n.metalness=(ENVOK?n.userData.metE:n.userData.metE*.35)*METF*metNat();METS.add(typeof WeakRef==='function'?new WeakRef(n):n);return n}
 function metTick(now){if(METF<0)METF=metTarget();const T=metTarget(),dt=Math.min(.1,Math.max(0,(now-METT)/1000));METT=now;
