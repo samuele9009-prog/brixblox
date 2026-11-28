@@ -2614,7 +2614,7 @@ function texSharpAll(){SHT.forEach(function(t){try{texSharp(t)}catch(e){}})}
    Built one texture at a time in the background (the item shows normally until it is ready), shared by every copy of that item, and removed again when Graphics is set below Ultra.
    Lua twin: none needed (a graphics setting, not a block). */
 let HQD=null,HQL=[],HQTM=0;
-function hqToast(t){try{if(!HQD){HQD=document.createElement('div');HQD.style.cssText='position:fixed;left:8px;bottom:8px;z-index:99999;max-width:92vw;padding:6px 9px;border-radius:8px;background:rgba(0,0,0,.72);color:#fff;font:600 12px/1.35 system-ui,sans-serif;pointer-events:none;white-space:pre-wrap;transition:opacity .4s';document.body.appendChild(HQD)}
+function hqToast(t){return;try{if(!HQD){HQD=document.createElement('div');HQD.style.cssText='position:fixed;left:8px;bottom:8px;z-index:99999;max-width:92vw;padding:6px 9px;border-radius:8px;background:rgba(0,0,0,.72);color:#fff;font:600 12px/1.35 system-ui,sans-serif;pointer-events:none;white-space:pre-wrap;transition:opacity .4s';document.body.appendChild(HQD)}
   HQL.push(t);if(HQL.length>4)HQL.shift();HQD.textContent='Accessory texture check\n'+HQL.join('\n');HQD.style.opacity='1';clearTimeout(HQTM);HQTM=setTimeout(function(){HQD.style.opacity='0';HQL=[]},14000)}catch(x){}}
 const HQT=new WeakMap(),HQI=new WeakMap(),HQM=new Set(),HQE=new Set(),HQQ=[];let HQB=0;const HQR=4;
 function hqOn(){return gfxEff()===GFXT.ultra}
